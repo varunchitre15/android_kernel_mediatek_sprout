@@ -363,9 +363,8 @@ static int ashmem_shrink(struct shrinker *s, struct shrink_control *sc)
 	if (!sc->nr_to_scan)
 		return lru_count;
 
-	//To avoid deadlock when memory is shortage
 	if (!mutex_trylock(&ashmem_mutex))
-		return -1;		
+		return -1;
 
 	list_for_each_entry_safe(range, next, &ashmem_lru_list, lru) {
 		loff_t start = range->pgstart * PAGE_SIZE;
