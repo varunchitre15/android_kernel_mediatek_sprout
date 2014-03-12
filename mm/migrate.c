@@ -145,6 +145,12 @@ static int remove_migration_pte(struct page *new, struct vm_area_struct *vma,
 	if (PageHuge(new))
 		pte = pte_mkhuge(pte);
 #endif
+	/* 
+	 * https://git.kernel.org/
+	 * commit: c2cc499c5bcf9040a738f49e8051b42078205748
+	 * mm compaction: fix of improper cache flush in migration code
+	 */
+	//flush_cache_page(vma, addr, pte_pfn(pte));
 	flush_dcache_page(new);
 	set_pte_at(mm, addr, ptep, pte);
 

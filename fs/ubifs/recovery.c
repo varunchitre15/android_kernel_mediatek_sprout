@@ -113,7 +113,7 @@ static int get_master_node(const struct ubifs_info *c, int lnum, void **pbuf,
 	int err, offs, len;
 	void *sbuf, *buf;
 
-	sbuf = vmalloc(c->leb_size);
+	sbuf = kmalloc(c->leb_size, GFP_KERNEL);
 	if (!sbuf)
 		return -ENOMEM;
 
@@ -188,7 +188,7 @@ static int get_master_node(const struct ubifs_info *c, int lnum, void **pbuf,
 out_err:
 	err = -EINVAL;
 out_free:
-	vfree(sbuf);
+	kfree(sbuf);
 	*mst = NULL;
 	*cor = NULL;
 	return err;
@@ -352,8 +352,8 @@ int ubifs_recover_master_node(struct ubifs_info *c)
 			goto out_free;
 	}
 
-	vfree(buf2);
-	vfree(buf1);
+	kfree(buf2);
+	kfree(buf1);
 
 	return 0;
 
@@ -369,8 +369,8 @@ out_free:
 		dbg_err("dumping second master node");
 		dbg_dump_node(c, mst2);
 	}
-	vfree(buf2);
-	vfree(buf1);
+	kfree(buf2);
+	kfree(buf1);
 	return err;
 }
 

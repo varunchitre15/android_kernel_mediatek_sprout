@@ -274,6 +274,14 @@ config BPF_JIT
 	  packet sniffing (libpcap/tcpdump). Note : Admin should enable
 	  this feature changing /proc/sys/net/core/bpf_jit_enable
 
+config UNIX_SOCKET_TRACK_TOOL
+	tristate "UNIX: socket track tool"
+	depends on UNIX
+	default n
+	---help---
+	  used to track unix socket action.
+	  default, say n.	  	  
+
 menu "Network testing"
 
 config NET_PKTGEN

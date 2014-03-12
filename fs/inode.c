@@ -18,6 +18,7 @@
 #include <linux/buffer_head.h> /* for inode_has_buffers */
 #include <linux/ratelimit.h>
 #include "internal.h"
+#include <mach/mtk_memcfg.h>
 
 /*
  * Inode locking rules:
@@ -164,7 +165,10 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
 	mapping->a_ops = &empty_aops;
 	mapping->host = inode;
 	mapping->flags = 0;
-	mapping_set_gfp_mask(mapping, GFP_HIGHUSER_MOVABLE);
+
+        mapping_set_gfp_mask(mapping, (GFP_HIGHUSER_MOVABLE & ~__GFP_HIGHMEM) | __GFP_SLOWHIGHMEM);
+        //mapping_set_gfp_mask(mapping, GFP_HIGHUSER_MOVABLE);
+
 	mapping->assoc_mapping = NULL;
 	mapping->backing_dev_info = &default_backing_dev_info;
 	mapping->writeback_index = 0;

@@ -35,6 +35,8 @@
  */
 struct iio_event_interface {
 	wait_queue_head_t	wait;
+	//Google Kernel Patch
+	//https://android.googlesource.com/kernel/common/+/770e3fe028efe42ff29d85da7f6c04518ecc11cf%5E%21/#F0
 	struct mutex		read_lock;
 	DECLARE_KFIFO(det_events, struct iio_event_data, 16);
 
@@ -96,7 +98,9 @@ static ssize_t iio_event_chrdev_read(struct file *filep,
 
 	if (count < sizeof(struct iio_event_data))
 		return -EINVAL;
-
+	//Google Patch
+	//https://android.googlesource.com/kernel/common/+/770e3fe028efe42ff29d85da7f6c04518ecc11cf%5E%21/#F0
+	//spin_lock(&ev_int->wait.lock);
 	if (mutex_lock_interruptible(&ev_int->read_lock))
 		return -ERESTARTSYS;
 
@@ -106,6 +110,9 @@ static ssize_t iio_event_chrdev_read(struct file *filep,
 			goto error_unlock;
 		}
 		/* Blocking on device; waiting for something to be there */
+		//Google Patch
+		//https://android.googlesource.com/kernel/common/+/770e3fe028efe42ff29d85da7f6c04518ecc11cf%5E%21/#F0
+		//ret = wait_event_interruptible_locked(ev_int->wait,
 		ret = wait_event_interruptible(ev_int->wait,
 					!kfifo_is_empty(&ev_int->det_events));
 		if (ret)
@@ -116,6 +123,9 @@ static ssize_t iio_event_chrdev_read(struct file *filep,
 	ret = kfifo_to_user(&ev_int->det_events, buf, count, &copied);
 
 error_unlock:
+	//Google Patch
+        //https://android.googlesource.com/kernel/common/+/770e3fe028efe42ff29d85da7f6c04518ecc11cf%5E%21/#F0
+	//spin_unlock(&ev_int->wait.lock);
 	mutex_unlock(&ev_int->read_lock);
 
 	return ret ? ret : copied;
@@ -379,6 +389,8 @@ static void iio_setup_ev_int(struct iio_event_interface *ev_int)
 {
 	INIT_KFIFO(ev_int->det_events);
 	init_waitqueue_head(&ev_int->wait);
+	//Google Patch
+        //https://android.googlesource.com/kernel/common/+/770e3fe028efe42ff29d85da7f6c04518ecc11cf%5E%21/#F0
 	mutex_init(&ev_int->read_lock);
 }
 
@@ -441,6 +453,8 @@ int iio_device_register_eventset(struct iio_dev *indio_dev)
 
 error_free_setup_event_lines:
 	__iio_remove_event_config_attrs(indio_dev);
+	//Google Patch
+        //https://android.googlesource.com/kernel/common/+/770e3fe028efe42ff29d85da7f6c04518ecc11cf%5E%21/#F0
 	mutex_destroy(&indio_dev->event_interface->read_lock);
 	kfree(indio_dev->event_interface);
 error_ret:
@@ -454,6 +468,8 @@ void iio_device_unregister_eventset(struct iio_dev *indio_dev)
 		return;
 	__iio_remove_event_config_attrs(indio_dev);
 	kfree(indio_dev->event_interface->group.attrs);
+	//Google Patch
+        //https://android.googlesource.com/kernel/common/+/770e3fe028efe42ff29d85da7f6c04518ecc11cf%5E%21/#F0
 	mutex_destroy(&indio_dev->event_interface->read_lock);
 	kfree(indio_dev->event_interface);
 }

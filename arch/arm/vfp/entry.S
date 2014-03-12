@@ -21,6 +21,7 @@
 @  lr  = unrecognised instruction return address
 @  IRQs disabled.
 @
+
 ENTRY(do_vfp)
 #ifdef CONFIG_PREEMPT_COUNT
 	ldr	r4, [r10, #TI_PREEMPT]	@ get preempt count

@@ -23,8 +23,13 @@
 #define __pgd_alloc()	kmalloc(PTRS_PER_PGD * sizeof(pgd_t), GFP_KERNEL)
 #define __pgd_free(pgd)	kfree(pgd)
 #else
+#ifndef CONFIG_MTK_PAGERECORDER
 #define __pgd_alloc()	(pgd_t *)__get_free_pages(GFP_KERNEL, 2)
 #define __pgd_free(pgd)	free_pages((unsigned long)pgd, 2)
+#else
+#define __pgd_alloc()   (pgd_t *)__get_free_pages_nopagedebug(GFP_KERNEL, 2)
+#define __pgd_free(pgd) free_pages_nopagedebug((unsigned long)pgd, 2)
+#endif
 #endif
 
 /*

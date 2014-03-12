@@ -344,6 +344,7 @@ static void fuse_ctl_kill_sb(struct super_block *sb)
 static struct file_system_type fuse_ctl_fs_type = {
 	.owner		= THIS_MODULE,
 	.name		= "fusectl",
+	.fs_flags	= FS_IS_FUSE,
 	.mount		= fuse_ctl_mount,
 	.kill_sb	= fuse_ctl_kill_sb,
 };

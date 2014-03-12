@@ -192,8 +192,10 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 # Default value for CROSS_COMPILE is not to prefix executables
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 export KBUILD_BUILDHOST := $(SUBARCH)
-ARCH		?= $(SUBARCH)
-CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
+#ARCH		?= $(SUBARCH)
+#CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
+ARCH		?= arm
+CROSS_COMPILE	?= arm-linux-androideabi-
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
@@ -329,7 +331,7 @@ include $(srctree)/scripts/Kbuild.include
 # Make variables (CC, etc...)
 
 AS		= $(CROSS_COMPILE)as
-LD		= $(CROSS_COMPILE)ld
+LD		= $(CROSS_COMPILE)ld.bfd
 CC		= $(CROSS_COMPILE)gcc
 CPP		= $(CC) -E
 AR		= $(CROSS_COMPILE)ar
@@ -567,6 +569,7 @@ endif
 include $(srctree)/arch/$(SRCARCH)/Makefile
 
 ifneq ($(CONFIG_FRAME_WARN),0)
+KBUILD_CFLAGS += $(call cc-option,-Werror=frame-larger-than=1)
 KBUILD_CFLAGS += $(call cc-option,-Wframe-larger-than=${CONFIG_FRAME_WARN})
 endif
 
@@ -609,6 +612,12 @@ ifdef CONFIG_DYNAMIC_FTRACE
 		export BUILD_C_RECORDMCOUNT
 	endif
 endif
+endif
+
+# Mediatek
+# arch Makefile detects if the compiler permits use of immediate values
+ifdef USE_IMMEDIATE
+KBUILD_CFLAGS	+= -DUSE_IMMEDIATE
 endif
 
 # We trigger additional mismatches with less inlining
@@ -999,7 +1008,8 @@ define filechk_utsrelease.h
 	  echo '"$(KERNELRELEASE)" exceeds $(uts_len) characters' >&2;    \
 	  exit 1;                                                         \
 	fi;                                                               \
-	(echo \#define UTS_RELEASE \"$(KERNELRELEASE)\";)
+	(echo \#define UTS_RELEASE \"$(KERNELRELEASE)\";                  \
+	echo \#define BUILD_FINGERPRINT \"$(TARGET_PRODUCT)\";)
 endef
 
 define filechk_version.h
@@ -1135,6 +1145,28 @@ _modinst_post: _modinst_
 	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.fwinst obj=firmware __fw_modinst
 	$(call cmd,depmod)
 
+# MTK
+# Target to install android modules
+
+AMODLIB	= $(INSTALL_MOD_PATH)/lib/modules
+export AMODLIB
+AMODSYMLIB = $(INSTALL_MOD_PATH)/../symbols/system/lib/modules
+export AMODSYMLIB
+
+PHONY += android_modules_install
+android_modules_install: _android_modinst_ 
+
+PHONY += _android_modinst_
+_android_modinst_:
+	@if [ ! -d $(AMODLIB) ]; then \
+	   mkdir -p $(AMODLIB); \
+	fi
+	@if [ ! -d $(AMODSYMLIB) ]; then \
+	   mkdir -p $(AMODSYMLIB); \
+	fi
+	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.android.modinst
+# MTK
+
 else # CONFIG_MODULES
 
 # Modules not configured
@@ -1205,7 +1237,7 @@ distclean: mrproper
 		-o -name '*.bak' -o -name '#*#' -o -name '.*.orig' \
 		-o -name '.*.rej' \
 		-o -name '*%' -o -name '.*.cmd' -o -name 'core' \) \
-		-type f -print | xargs rm -f
+		-type f -print | grep -v "/prebuilt/" | xargs rm -f
 
 
 # Packaging of the kernel to various formats
@@ -1413,7 +1445,7 @@ clean: $(clean-dirs)
 		-o -name '.*.d' -o -name '.*.tmp' -o -name '*.mod.c' \
 		-o -name '*.symtypes' -o -name 'modules.order' \
 		-o -name modules.builtin -o -name '.tmp_*.o.*' \
-		-o -name '*.gcno' \) -type f -print | xargs rm -f
+		-o -name '*.gcno' \) -type f -print | grep -v "/prebuilt/" | xargs rm -f
 
 # Generate tags for editors
 # ---------------------------------------------------------------------------

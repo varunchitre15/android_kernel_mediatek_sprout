@@ -17,6 +17,7 @@ extern __read_mostly int scheduler_running;
 #define PRIO_TO_NICE(prio)	((prio) - MAX_RT_PRIO - 20)
 #define TASK_NICE(p)		PRIO_TO_NICE((p)->static_prio)
 
+extern unsigned long get_cpu_load(int cpu);
 /*
  * 'User priority' is the nice value converted to something we
  * can work with better when scaling various scheduler parameters,
@@ -111,7 +112,14 @@ struct task_group {
 	struct cfs_rq **cfs_rq;
 	unsigned long shares;
 
+#ifdef CONFIG_MTK_SCHED_CMP
+#ifdef CONFIG_SMP
+	atomic_long_t load_avg;
+	atomic_t runnable_avg;
+#endif
+#else /* !CONFIG_MTK_SCHED_CMP */
 	atomic_t load_weight;
+#endif
 #endif
 
 #ifdef CONFIG_RT_GROUP_SCHED
@@ -222,6 +230,35 @@ struct cfs_rq {
 	unsigned int nr_spread_over;
 #endif
 
+#ifdef CONFIG_MTK_SCHED_CMP
+#ifdef CONFIG_SMP
+	/*
+	 * CFS Load tracking
+	 * Under CFS, load is tracked on a per-entity basis and aggregated up.
+	 * This allows for the description of both thread and group usage (in
+	 * the FAIR_GROUP_SCHED case).
+	 */
+	unsigned long runnable_load_avg, blocked_load_avg;
+	atomic64_t decay_counter;
+	u64 last_decay;
+	atomic_long_t removed_load;
+
+#ifdef CONFIG_FAIR_GROUP_SCHED
+	/* Required to track per-cpu representation of a task_group */
+	u32 tg_runnable_contrib;
+	unsigned long tg_load_contrib;
+#endif /* CONFIG_FAIR_GROUP_SCHED */
+
+	/*
+	 *   h_load = weight * f(tg)
+	 *
+	 * Where f(tg) is the recursive weight fraction assigned to
+	 * this group.
+	 */
+	unsigned long h_load;
+#endif /* CONFIG_SMP */
+#endif /* CONFIG_MTK_SCHED_CMP */
+
 #ifdef CONFIG_FAIR_GROUP_SCHED
 	struct rq *rq;	/* cpu runqueue to which this cfs_rq is attached */
 
@@ -237,6 +274,7 @@ struct cfs_rq {
 	struct list_head leaf_cfs_rq_list;
 	struct task_group *tg;	/* group that "owns" this runqueue */
 
+#ifndef CONFIG_MTK_SCHED_CMP
 #ifdef CONFIG_SMP
 	/*
 	 *   h_load = weight * f(tg)
@@ -259,12 +297,18 @@ struct cfs_rq {
 
 	unsigned long load_contribution;
 #endif /* CONFIG_SMP */
+#endif /* !CONFIG_MTK_SCHED_CMP */
 #ifdef CONFIG_CFS_BANDWIDTH
 	int runtime_enabled;
 	u64 runtime_expires;
 	s64 runtime_remaining;
 
 	u64 throttled_timestamp;
+# ifdef CONFIG_MTK_SCHED_CMP
+	u64 throttled_clock_task;
+	u64 throttled_clock_task_time;
+# endif
+
 	int throttled, throttle_count;
 	struct list_head throttled_list;
 #endif /* CONFIG_CFS_BANDWIDTH */
@@ -295,6 +339,7 @@ struct rt_rq {
 	struct plist_head pushable_tasks;
 #endif
 	int rt_throttled;
+	int rt_disable_borrow;
 	u64 rt_time;
 	u64 rt_runtime;
 	/* Nests inside the rq lock: */
@@ -462,6 +507,10 @@ struct rq {
 
 #ifdef CONFIG_SMP
 	struct llist_head wake_list;
+#endif
+
+#ifdef CONFIG_MTK_SCHED_CMP
+	struct sched_avg avg;
 #endif
 };
 
@@ -848,9 +897,18 @@ extern const struct sched_class idle_sched_class;
 
 #ifdef CONFIG_SMP
 
+extern void update_group_power(struct sched_domain *sd, int cpu);
+
 extern void trigger_load_balance(struct rq *rq, int cpu);
 extern void idle_balance(int this_cpu, struct rq *this_rq);
 
+# ifdef CONFIG_MTK_SCHED_CMP
+extern void idle_enter_fair(struct rq *this_rq);
+extern void idle_exit_fair(struct rq *this_rq);
+#  ifdef CONFIG_MTK_SCHED_CMP_TGS 
+extern int group_leader_is_empty(struct task_struct *p);
+#  endif 
+# endif
 #else	/* CONFIG_SMP */
 
 static inline void idle_balance(int cpu, struct rq *rq)
@@ -861,8 +919,10 @@ static inline void idle_balance(int cpu, struct rq *rq)
 
 extern void sysrq_sched_debug_show(void);
 extern void sched_init_granularity(void);
+#ifdef CONFIG_MTK_SCHED_CMP_PACK_SMALL_TASK
+extern void update_packing_domain(int cpu);
+#endif /* CONFIG_HMP_PACK_SMALL_TASK */
 extern void update_max_interval(void);
-extern void update_group_power(struct sched_domain *sd, int cpu);
 extern int update_runtime(struct notifier_block *nfb, unsigned long action, void *hcpu);
 extern void init_sched_rt_class(void);
 extern void init_sched_fair_class(void);
@@ -873,7 +933,13 @@ extern void resched_cpu(int cpu);
 extern struct rt_bandwidth def_rt_bandwidth;
 extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime);
 
+#ifdef CONFIG_MTK_SCHED_CMP
+extern void update_idle_cpu_load(struct rq *this_rq);
+
+extern void init_task_runnable_average(struct task_struct *p);
+#else
 extern void update_cpu_load(struct rq *this_rq);
+#endif
 
 #ifdef CONFIG_CGROUP_CPUACCT
 #include <linux/cgroup.h>
@@ -911,13 +977,24 @@ extern void cpuacct_charge(struct task_struct *tsk, u64 cputime);
 static inline void cpuacct_charge(struct task_struct *tsk, u64 cputime) {}
 #endif
 
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+extern void sched_update_nr_prod(int cpu, unsigned long nr, bool inc);
+extern void sched_get_nr_running_avg(int *avg, int *iowait_avg);
+#endif /* CONFIG_MTK_SCHED_RQAVG_KS */
+
 static inline void inc_nr_running(struct rq *rq)
 {
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+    sched_update_nr_prod(cpu_of(rq), rq->nr_running, true);
+#endif /* CONFIG_MTK_SCHED_RQAVG_KS */
 	rq->nr_running++;
 }
 
 static inline void dec_nr_running(struct rq *rq)
 {
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+    sched_update_nr_prod(cpu_of(rq), rq->nr_running, false);
+#endif /* CONFIG_MTK_SCHED_RQAVG_KS */
 	rq->nr_running--;
 }
 
@@ -1138,6 +1215,7 @@ extern void print_rt_stats(struct seq_file *m, int cpu);
 
 extern void init_cfs_rq(struct cfs_rq *cfs_rq);
 extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
+extern void unthrottle_offline_rt_rqs(struct rq *rq);
 extern void unthrottle_offline_cfs_rqs(struct rq *rq);
 
 extern void account_cfs_bandwidth_used(int enabled, int was_enabled);
@@ -1150,4 +1228,10 @@ enum rq_nohz_flag_bits {
 };
 
 #define nohz_flags(cpu)	(&cpu_rq(cpu)->nohz_flags)
+#endif
+
+#ifdef CONFIG_SMP
+static inline int rq_cpu(const struct rq *rq) { return rq->cpu; }
+#else
+static inline int rq_cpu(const struct rq *rq) { return 0; }
 #endif

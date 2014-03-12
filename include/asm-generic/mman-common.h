@@ -10,6 +10,9 @@
 #define PROT_WRITE	0x2		/* page can be written */
 #define PROT_EXEC	0x4		/* page can be executed */
 #define PROT_SEM	0x8		/* page may be used for atomic ops */
+#define PROT_NOCACHE    0x10            /* page can be non-cache. */
+#define PROT_MALLOCFROMBIONIC 0x20 /*Use to mark the dlmalloc memory allocation path. by loda*/
+
 #define PROT_NONE	0x0		/* page can not be accessed */
 #define PROT_GROWSDOWN	0x01000000	/* mprotect flag: extend change to start of growsdown vma */
 #define PROT_GROWSUP	0x02000000	/* mprotect flag: extend change to end of growsup vma */
@@ -51,6 +54,8 @@
 #define MADV_DONTDUMP   16		/* Explicity exclude from the core dump,
 					   overrides the coredump filter bits */
 #define MADV_DODUMP	17		/* Clear the MADV_NODUMP flag */
+
+#define MADV_ZEROPAGE	18		/* zeroed anonymous pages */
 
 /* compatibility flags */
 #define MAP_FILE	0

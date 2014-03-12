@@ -307,6 +307,8 @@ static int worker_loop(void *arg)
 	INIT_LIST_HEAD(&head);
 	INIT_LIST_HEAD(&prio_head);
 
+	set_freezable();
+
 	do {
 again:
 		while (1) {

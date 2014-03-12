@@ -300,11 +300,8 @@ void ubifs_add_to_cat(struct ubifs_info *c, struct ubifs_lprops *lprops,
 	default:
 		ubifs_assert(0);
 	}
-
 	lprops->flags &= ~LPROPS_CAT_MASK;
 	lprops->flags |= cat;
-	c->in_a_category_cnt += 1;
-	ubifs_assert(c->in_a_category_cnt <= c->main_lebs);
 }
 
 /**
@@ -337,9 +334,6 @@ static void ubifs_remove_from_cat(struct ubifs_info *c,
 	default:
 		ubifs_assert(0);
 	}
-
-	c->in_a_category_cnt -= 1;
-	ubifs_assert(c->in_a_category_cnt >= 0);
 }
 
 /**
@@ -1089,7 +1083,7 @@ static int scan_check_cb(struct ubifs_info *c,
 		}
 	}
 
-	buf = __vmalloc(c->leb_size, GFP_NOFS, PAGE_KERNEL);
+	buf = kmalloc(c->leb_size, GFP_KERNEL);
 	if (!buf)
 		return -ENOMEM;
 
@@ -1236,7 +1230,7 @@ static int scan_check_cb(struct ubifs_info *c,
 	}
 
 	ubifs_scan_destroy(sleb);
-	vfree(buf);
+	kfree(buf);
 	return LPT_SCAN_CONTINUE;
 
 out_print:
@@ -1248,7 +1242,7 @@ out_destroy:
 	ubifs_scan_destroy(sleb);
 	ret = -EINVAL;
 out:
-	vfree(buf);
+	kfree(buf);
 	return ret;
 }
 

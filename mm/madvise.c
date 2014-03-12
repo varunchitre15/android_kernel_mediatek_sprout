@@ -13,6 +13,11 @@
 #include <linux/hugetlb.h>
 #include <linux/sched.h>
 #include <linux/ksm.h>
+/*
+ * kernel patch
+ * commit: 0c4ad5cc8c01f62fe5211b5ce9563c27f795a4ab
+ * https://android.googlesource.com/kernel/common/+/0c4ad5cc8c01f62fe5211b5ce9563c27f795a4ab%5E!/#F0
+ */
 #include <linux/file.h>
 
 /*
@@ -26,6 +31,9 @@ static int madvise_need_mmap_write(int behavior)
 	case MADV_REMOVE:
 	case MADV_WILLNEED:
 	case MADV_DONTNEED:
+#ifdef CONFIG_ZEROPAGE
+	case MADV_ZEROPAGE:
+#endif
 		return 0;
 	default:
 		/* be safe, default to 1. list exceptions explicitly */
@@ -191,6 +199,26 @@ static long madvise_dontneed(struct vm_area_struct * vma,
 	return 0;
 }
 
+#ifdef CONFIG_ZEROPAGE
+/*
+ * Application wants to zero these ANONYMOUS pages.  This is effectively
+ * to throw them away and fault them for read at the same time.
+ */
+static long madvise_zeropage(struct vm_area_struct * vma,
+			     struct vm_area_struct ** prev,
+			     unsigned long start, unsigned long end)
+{
+	*prev = vma;
+	if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
+		return -EPERM;
+
+	if (vma->vm_ops)
+		return -EPERM;
+
+	return zero_page_range(vma, start, end - start);
+}
+#endif
+
 /*
  * Application wants to free up the pages and associated backing store.
  * This is effectively punching a hole into the middle of a file.
@@ -205,6 +233,11 @@ static long madvise_remove(struct vm_area_struct *vma,
 	struct address_space *mapping;
 	loff_t offset, endoff;
 	int error;
+/*
+ * kernel patch
+ * commit: 0c4ad5cc8c01f62fe5211b5ce9563c27f795a4ab
+ * https://android.googlesource.com/kernel/common/+/0c4ad5cc8c01f62fe5211b5ce9563c27f795a4ab%5E!/#F0
+ */
 	struct file *f;
 
 	*prev = NULL;	/* tell sys_madvise we drop mmap_sem */
@@ -212,6 +245,13 @@ static long madvise_remove(struct vm_area_struct *vma,
 	if (vma->vm_flags & (VM_LOCKED|VM_NONLINEAR|VM_HUGETLB))
 		return -EINVAL;
 
+/*
+ * kernel patch
+ * commit: 0c4ad5cc8c01f62fe5211b5ce9563c27f795a4ab
+ * https://android.googlesource.com/kernel/common/+/0c4ad5cc8c01f62fe5211b5ce9563c27f795a4ab%5E!/#F0
+ */
+	//if (!vma->vm_file || !vma->vm_file->f_mapping
+	//	|| !vma->vm_file->f_mapping->host) {
 	f = vma->vm_file;
 
 	if (!f || !f->f_mapping || !f->f_mapping->host) {
@@ -228,6 +268,11 @@ static long madvise_remove(struct vm_area_struct *vma,
 	endoff = (loff_t)(end - vma->vm_start - 1)
 			+ ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
 
+/*
+ * kernel patch
+ * commit: 0c4ad5cc8c01f62fe5211b5ce9563c27f795a4ab
+ * https://android.googlesource.com/kernel/common/+/0c4ad5cc8c01f62fe5211b5ce9563c27f795a4ab%5E!/#F0
+ */
 	/*
 	 * vmtruncate_range may need to take i_mutex.  We need to
 	 * explicitly grab a reference because the vma (and hence the
@@ -285,6 +330,10 @@ madvise_vma(struct vm_area_struct *vma, struct vm_area_struct **prev,
 		return madvise_willneed(vma, prev, start, end);
 	case MADV_DONTNEED:
 		return madvise_dontneed(vma, prev, start, end);
+#ifdef CONFIG_ZEROPAGE
+	case MADV_ZEROPAGE:
+		return madvise_zeropage(vma, prev, start, end);
+#endif
 	default:
 		return madvise_behavior(vma, prev, start, end, behavior);
 	}
@@ -312,6 +361,9 @@ madvise_behavior_valid(int behavior)
 #endif
 	case MADV_DONTDUMP:
 	case MADV_DODUMP:
+#ifdef CONFIG_ZEROPAGE
+	case MADV_ZEROPAGE:
+#endif
 		return 1;
 
 	default:

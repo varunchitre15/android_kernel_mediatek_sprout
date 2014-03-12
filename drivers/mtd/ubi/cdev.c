@@ -138,13 +138,13 @@ static int vol_cdev_release(struct inode *inode, struct file *file)
 			 vol->vol_id);
 		ubi_assert(!vol->changing_leb);
 		vol->updating = 0;
-		vfree(vol->upd_buf);
+		kfree(vol->upd_buf);
 	} else if (vol->changing_leb) {
 		dbg_gen("only %lld of %lld bytes received for atomic LEB change"
 			" for volume %d:%d, cancel", vol->upd_received,
 			vol->upd_bytes, vol->ubi->ubi_num, vol->vol_id);
 		vol->changing_leb = 0;
-		vfree(vol->upd_buf);
+		kfree(vol->upd_buf);
 	}
 
 	ubi_close_volume(desc);
@@ -235,7 +235,7 @@ static ssize_t vol_cdev_read(struct file *file, __user char *buf, size_t count,
 	tbuf_size = vol->usable_leb_size;
 	if (count < tbuf_size)
 		tbuf_size = ALIGN(count, ubi->min_io_size);
-	tbuf = vmalloc(tbuf_size);
+	tbuf = kmalloc(tbuf_size, GFP_KERNEL);
 	if (!tbuf)
 		return -ENOMEM;
 
@@ -271,7 +271,7 @@ static ssize_t vol_cdev_read(struct file *file, __user char *buf, size_t count,
 		len = count > tbuf_size ? tbuf_size : count;
 	} while (count);
 
-	vfree(tbuf);
+	kfree(tbuf);
 	return err ? err : count_save - count;
 }
 
@@ -316,7 +316,7 @@ static ssize_t vol_cdev_direct_write(struct file *file, const char __user *buf,
 	tbuf_size = vol->usable_leb_size;
 	if (count < tbuf_size)
 		tbuf_size = ALIGN(count, ubi->min_io_size);
-	tbuf = vmalloc(tbuf_size);
+	tbuf = kmalloc(tbuf_size, GFP_KERNEL);
 	if (!tbuf)
 		return -ENOMEM;
 
@@ -351,7 +351,7 @@ static ssize_t vol_cdev_direct_write(struct file *file, const char __user *buf,
 		len = count > tbuf_size ? tbuf_size : count;
 	}
 
-	vfree(tbuf);
+	kfree(tbuf);
 	return err ? err : count_save - count;
 }
 

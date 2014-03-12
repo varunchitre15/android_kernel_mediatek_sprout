@@ -1121,7 +1121,22 @@ static unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
 	error = security_file_mmap(file, reqprot, prot, flags, addr, 0);
 	if (error)
 		return error;
-
+	/////////////////////////
+	//Add User-Space MMAP No-Cache support.
+	if(reqprot&PROT_NOCACHE)
+		vm_flags|=VM_SAO;
+	if(reqprot&PROT_MALLOCFROMBIONIC)
+                vm_flags|=VM_MERGEABLE;
+	else
+		vm_flags&= ~VM_MERGEABLE;
+	if(vm_flags&VM_NOHUGEPAGE)//use to mark MMAP path.
+	{
+		printk("############## MMAP already set VM_NOHUGEPAGE................");
+	}//use to mark MMAP path.
+	else
+	{
+		vm_flags|=VM_NOHUGEPAGE;
+	}
 	return mmap_region(file, addr, len, flags, vm_flags, pgoff);
 }
 
@@ -1337,8 +1352,17 @@ munmap_back:
 	vma = vma_merge(mm, prev, addr, addr + len, vm_flags, NULL, file, pgoff,
 			NULL, NULL);
 	if (vma)
+	{
+		//Add User-Space MMAP No-Cache support
+		if(vm_flags&VM_SAO)
+		{
+			//printk("A #0 vma->vm_page_prot:%xh vm_flags:%xh\n",vma->vm_page_prot,(unsigned int)vm_flags);
+			vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+			vm_flags&= ~VM_SAO;
+			//printk("A #1 vma->vm_page_prot:%xh vm_flags:%xh\n",vma->vm_page_prot,(unsigned int)vm_flags);
+		}
 		goto out;
-
+	}
 	/*
 	 * Determine the object being mapped and call the appropriate
 	 * specific mapper. the address has already been validated, but
@@ -1354,7 +1378,22 @@ munmap_back:
 	vma->vm_start = addr;
 	vma->vm_end = addr + len;
 	vma->vm_flags = vm_flags;
-	vma->vm_page_prot = vm_get_page_prot(vm_flags);
+	//vma->vm_page_prot = vm_get_page_prot(vm_flags);
+	//Add User-Space MMAP No-Cache support
+	if(vm_flags&VM_SAO)
+        {
+	     //printk("C #0 vma->vm_page_prot:%xh vm_flags:%xh\n",vma->vm_page_prot,(unsigned int)vm_flags);
+	     vm_flags&= ~VM_SAO;
+             vma->vm_page_prot = vm_get_page_prot(vm_flags);
+	     //printk("C #1 vma->vm_page_prot:%xh vm_flags:%xh\n",vma->vm_page_prot,(unsigned int)vm_flags);
+             vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+             //vm_flags&= ~VM_SAO;
+             //printk("C #2 vma->vm_page_prot:%xh vm_flags:%xh\n",vma->vm_page_prot,(unsigned int)vm_flags);
+	}
+	else
+	{
+	     vma->vm_page_prot = vm_get_page_prot(vm_flags);
+	}
 	vma->vm_pgoff = pgoff;
 	INIT_LIST_HEAD(&vma->anon_vma_chain);
 
@@ -2131,6 +2170,13 @@ int split_vma(struct mm_struct *mm, struct vm_area_struct *vma,
  * work.  This now handles partial unmappings.
  * Jeremy Fitzhardinge <jeremy@goop.org>
  */
+#ifdef CONFIG_MTK_EXTMEM
+extern bool extmem_in_mspace(struct vm_area_struct *vma);
+extern void * get_virt_from_mspace(void * pa);
+extern size_t extmem_get_mem_size(unsigned long pgoff);
+extern void extmem_free(void* mem);
+#endif
+
 int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
 {
 	unsigned long end;
@@ -2148,6 +2194,12 @@ int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
 		return 0;
 	prev = vma->vm_prev;
 	/* we have  start < vma->vm_end  */
+
+#ifdef CONFIG_MTK_EXTMEM
+	/* get correct mmap size if in mspace. */
+    	if (extmem_in_mspace(vma))
+        	len = extmem_get_mem_size(vma->vm_pgoff);
+#endif
 
 	/* if it doesn't overlap, we have nothing.. */
 	end = start + len;
@@ -2205,6 +2257,12 @@ int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
 	 * Remove the vma's, and unmap the actual pages
 	 */
 	detach_vmas_to_be_unmapped(mm, vma, prev, end);
+#if 0    
+#ifdef CONFIG_MTK_EXTMEM
+    	if (extmem_in_mspace(vma))
+        	extmem_free((void *)get_virt_from_mspace((vma->vm_pgoff << PAGE_SHIFT)));
+#endif
+#endif
 	unmap_region(mm, vma, prev, start, end);
 
 	/* Fix up all other VM information */

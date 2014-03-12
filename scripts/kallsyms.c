@@ -210,6 +210,7 @@ static int symbol_valid(struct sym_entry *s)
 		 * rules.
 		 */
 		if ((s->addr == text_range_text->end &&
+				strcmp((char *)s->sym + offset, "__stop___modver") &&
 				strcmp((char *)s->sym + offset, text_range_text->etext)) ||
 		    (s->addr == text_range_inittext->end &&
 				strcmp((char *)s->sym + offset, text_range_inittext->etext)))

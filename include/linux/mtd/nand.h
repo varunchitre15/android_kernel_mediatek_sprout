@@ -503,6 +503,11 @@ struct nand_chip {
 			int status, int page);
 	int (*write_page)(struct mtd_info *mtd, struct nand_chip *chip,
 			const uint8_t *buf, int page, int cached, int raw);
+	
+#ifdef CONFIG_MTK_MTD_NAND
+    	int     (*read_page)(struct mtd_info *mtd, struct nand_chip *chip, u8 *buf, int page);
+    	int     (*erase)(struct mtd_info *mtd, int page);
+#endif
 
 	int chip_delay;
 	unsigned int options;

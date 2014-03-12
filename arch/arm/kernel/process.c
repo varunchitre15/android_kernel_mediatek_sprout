@@ -38,7 +38,11 @@
 #include <asm/thread_notify.h>
 #include <asm/stacktrace.h>
 #include <asm/mach/time.h>
+#include <mach/system.h>
 
+#ifdef CONFIG_MT_LOAD_BALANCE_PROFILER
+#include <mtlbprof/mtlbprof.h>
+#endif
 #ifdef CONFIG_CC_STACKPROTECTOR
 #include <linux/stackprotector.h>
 unsigned long __stack_chk_guard __read_mostly;
@@ -137,6 +141,53 @@ void arm_machine_flush_console(void)
  * code.
  */
 static u64 soft_restart_stack[16];
+
+void arm_machine_restart(char mode, const char *cmd)
+{
+        /* Flush the console to make sure all the relevant messages make it
+         * out to the console drivers */
+        arm_machine_flush_console();
+
+        /* Disable interrupts first */
+        local_irq_disable();
+        local_fiq_disable();
+
+        /*
+         * Tell the mm system that we are going to reboot -
+         * we may need it to insert some 1:1 mappings so that
+         * soft boot works.
+         */
+        setup_mm_for_reboot();
+
+        /* When l1 is disabled and l2 is enabled, the spinlock cannot get the lock,
+         * so we need to disable the l2 as well. by Chia-Hao Hsu
+         */
+        outer_flush_all();
+        outer_disable();
+        outer_flush_all();
+
+        /* Clean and invalidate caches */
+        flush_cache_all();
+
+        /* Turn off caching */
+        cpu_proc_fin();
+
+        /* Push out any further dirty data, and ensure cache is empty */
+        flush_cache_all();
+
+        /*
+         * Now call the architecture specific reboot code.
+         */
+        arch_reset(mode, cmd);
+
+        /*
+         * Whoops - the architecture was unable to reboot.
+         * Tell the user!
+         */
+        mdelay(1000);
+        printk("Reboot failed -- System halted\n");
+        while (1);
+}
 
 static void __soft_restart(void *addr)
 {
@@ -241,6 +292,9 @@ EXPORT_SYMBOL(pm_idle);
 void cpu_idle(void)
 {
 	local_fiq_enable();
+#ifdef CONFIG_MT_LOAD_BALANCE_PROFILER
+	mt_lbprof_update_state(smp_processor_id(), MT_LBPROF_NO_TASK_STATE);
+#endif
 
 	/* endless idle loop with no priority at all */
 	while (1) {
@@ -250,9 +304,19 @@ void cpu_idle(void)
 		while (!need_resched()) {
 #ifdef CONFIG_HOTPLUG_CPU
 			if (cpu_is_offline(smp_processor_id()))
+#ifdef CONFIG_MTK_IDLE_TIME_FIX			
+			{
+			  tick_set_cpu_plugoff_flag(1);
 				cpu_die();
+			}
+#else			
+				cpu_die();
+#endif	
 #endif
 
+#ifdef CONFIG_MT_LOAD_BALANCE_PROFILER
+			mt_lbprof_update_state(smp_processor_id(), MT_LBPROF_IDLE_STATE);
+#endif
 			/*
 			 * We need to disable interrupts here
 			 * to ensure we don't miss a wakeup call.
@@ -274,6 +338,9 @@ void cpu_idle(void)
 				 * return with IRQs enabled.
 				 */
 				WARN_ON(irqs_disabled());
+#ifdef CONFIG_MT_LOAD_BALANCE_PROFILER				
+				mt_lbprof_update_state(smp_processor_id(), MT_LBPROF_NO_TASK_STATE);
+#endif				
 			} else
 				local_irq_enable();
 		}
@@ -297,16 +364,11 @@ __setup("reboot=", reboot_setup);
 void machine_shutdown(void)
 {
 #ifdef CONFIG_SMP
-	/*
-	 * Disable preemption so we're guaranteed to
-	 * run to power off or reboot and prevent
-	 * the possibility of switching to another
-	 * thread that might wind up blocking on
-	 * one of the stopped CPUs.
-	 */
-	preempt_disable();
-
+  printk("machine_shutdown: start, Proess(%s:%d)\n", current->comm, current->pid);
+  dump_stack();
+  preempt_disable();
 	smp_send_stop();
+  printk("machine_shutdown: done\n");
 #endif
 }
 
@@ -327,7 +389,7 @@ void machine_power_off(void)
 void machine_restart(char *cmd)
 {
 	machine_shutdown();
-
+    printk("Reboot:machine restart...\n");
 	/* Flush the console to make sure all the relevant messages make it
 	 * out to the console drivers */
 	arm_machine_flush_console();
@@ -626,6 +688,9 @@ EXPORT_SYMBOL(kernel_thread);
 unsigned long get_wchan(struct task_struct *p)
 {
 	struct stackframe frame;
+	unsigned long stack_top;
+	unsigned long stack_bottom;
+	int ret;
 	int count = 0;
 	if (!p || p == current || p->state == TASK_RUNNING)
 		return 0;
@@ -634,8 +699,17 @@ unsigned long get_wchan(struct task_struct *p)
 	frame.sp = thread_saved_sp(p);
 	frame.lr = 0;			/* recovered from the stack */
 	frame.pc = thread_saved_pc(p);
+	stack_top = frame.sp;
+	stack_bottom = ALIGN(stack_top, THREAD_SIZE);
 	do {
-		int ret = unwind_frame(&frame);
+	  if (frame.fp < (stack_top + 4) || frame.fp >= (stack_bottom - 4)) {
+	    /* remove stack dump debug info
+	    show_data(task_thread_info(p), THREAD_SIZE, "Stack");
+	    aee_kernel_warning("Kernel", "Stack corruption");
+	    */
+	    return 0;
+	  }
+		ret = unwind_frame(&frame);
 		if (ret < 0)
 			return 0;
 		if (!in_sched_functions(frame.pc))

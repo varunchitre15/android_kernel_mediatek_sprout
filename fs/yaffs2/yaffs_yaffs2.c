@@ -938,21 +938,65 @@ int yaffs2_handle_hole(struct yaffs_obj *obj, loff_t new_size)
 }
 
 struct yaffs_block_index {
-	int seq;
+	unsigned int seq;
 	int block;
 };
 
 static int yaffs2_ybicmp(const void *a, const void *b)
 {
-	int aseq = ((struct yaffs_block_index *)a)->seq;
-	int bseq = ((struct yaffs_block_index *)b)->seq;
+	unsigned int aseq = ((struct yaffs_block_index *)a)->seq;
+	unsigned int bseq = ((struct yaffs_block_index *)b)->seq;
 	int ablock = ((struct yaffs_block_index *)a)->block;
 	int bblock = ((struct yaffs_block_index *)b)->block;
 	if (aseq == bseq)
 		return ablock - bblock;
+	else{
+		if(aseq > bseq)
+			return 1;
+		else
+			return -1;	
+	}
+
+	/*
 	else
-		return aseq - bseq;
+		return aseq - bseq;*/
 }
+
+void mtk_dump_byte(void *p, long count, unsigned long offset);
+void mtk_dump_word(void *p, long count, unsigned long offset,int notskipseq) ;
+void mtk_dump_hword(void *p, long count, unsigned long offset,int notskipseq) ;
+
+#ifdef YAFFS_MVG_TEST_ERASECHEKFF
+static int yaffs_ScanCheckEraseClean(struct yaffs_dev*dev,
+				int chunkInNAND,int page)
+{
+	int retval = YAFFS_OK;
+	u8 *data = yaffs_get_temp_buffer(dev, __LINE__);
+	struct yaffs_ext_tags tags;
+	int result;
+
+	result = yaffs_rd_chunk_tags_nand(dev, chunkInNAND, data, &tags);
+
+	if (tags.ecc_result > YAFFS_ECC_RESULT_NO_ERROR)
+		retval = YAFFS_FAIL;
+
+	if (!yaffs_check_ff(data, dev->data_bytes_per_chunk) || tags.chunk_used) {
+		printk("Chunk %d not erased",chunkInNAND);
+		
+		retval = YAFFS_FAIL;
+//add debug by jinling.ke
+		printk(KERN_ERR"yaffsdebug Scan CheckChunk chunk:%d addr:0x%x chunkUsed:%d page:%d\n",chunkInNAND,chunkInNAND*dev->data_bytes_per_chunk,tags.chunk_used,page);
+
+		mtk_dump_byte(&tags,sizeof(struct yaffs_ext_tags),0);
+	}
+
+	yaffs_release_temp_buffer(dev, data, __LINE__);
+
+	return retval;
+
+}
+#endif
+
 
 int yaffs2_scan_backwards(struct yaffs_dev *dev)
 {
@@ -978,11 +1022,19 @@ int yaffs2_scan_backwards(struct yaffs_dev *dev)
 	int is_unlinked;
 	u8 *chunk_data;
 
-	int file_size;
+	u32 file_size;
 	int is_shrink;
 	int found_chunks;
 	int equiv_id;
 	int alloc_failed = 0;
+
+/*power loss*/
+	int check_on=0;
+	int i;
+	int retv=0;
+
+	int check_block = 20;
+/*power loss*/
 
 	struct yaffs_block_index *block_index = NULL;
 	int alt_block_index = 0;
@@ -1042,6 +1094,18 @@ int yaffs2_scan_backwards(struct yaffs_dev *dev)
 			yaffs_trace(YAFFS_TRACE_BAD_BLOCKS,
 				"block %d is bad", blk);
 		} else if (state == YAFFS_BLOCK_STATE_EMPTY) {
+#ifdef YAFFS_MVG_TEST_ERASECHEKFF
+		for(c=0;c<dev->param.chunks_per_block;c++){
+				yaffs_ScanCheckEraseClean(dev,blk*dev->param.chunks_per_block+c,c);
+				}
+#endif	
+			/*erase all empty block when scan*/
+			if (!yaffs_erase_block(dev, blk)) {
+				dev->n_erase_failures++;
+				yaffs_trace(YAFFS_TRACE_ERROR | YAFFS_TRACE_BAD_BLOCKS,
+				  "**>> Erasure failed %d", blk);
+				continue;
+			}
 			yaffs_trace(YAFFS_TRACE_SCAN_DEBUG, "Block empty ");
 			dev->n_erased_blocks++;
 			dev->n_free_chunks += dev->param.chunks_per_block;
@@ -1085,6 +1149,33 @@ int yaffs2_scan_backwards(struct yaffs_dev *dev)
 	start_iter = 0;
 	end_iter = n_to_scan - 1;
 	yaffs_trace(YAFFS_TRACE_SCAN_DEBUG, "%d blocks to scan", n_to_scan);
+#ifdef YAFFS_MVG_TEST_DUMP_SCAN_SEQ
+	
+		printk(KERN_ERR"yaffsdebug scandumpblockseq devn:%s scann:%d s:%d e:%d\n",dev->param.name,n_to_scan,\
+		dev->internal_start_block,dev->internal_end_block);
+		if(!strcmp(dev->param.name,"userdata")) //only dump userdata partition seq num.
+		{
+			unsigned int *buf = kmalloc(n_to_scan * 4,GFP_NOFS);
+			unsigned int *p = buf;
+			unsigned short int *sp;
+	
+			for (block_iter = end_iter; block_iter  >= start_iter;block_iter--) 
+			{
+				*p++ = block_index[block_iter].seq;
+			}
+	
+			mtk_dump_word(buf,n_to_scan * 4,0,1);
+			sp = (unsigned short int *)buf;
+			for (block_iter = end_iter; block_iter  >= start_iter;block_iter--) 
+			{
+				*sp++ = block_index[block_iter].block;
+			}
+			printk(KERN_ERR"yaffsdebug scandumpblocknum:\n");
+			mtk_dump_hword(buf,n_to_scan * 2,0,1);
+			
+			kfree(buf);
+		}
+#endif
 
 	/* For each block.... backwards */
 	for (block_iter = end_iter; !alloc_failed && block_iter >= start_iter;
@@ -1092,6 +1183,7 @@ int yaffs2_scan_backwards(struct yaffs_dev *dev)
 		/* Cooperative multitasking! This loop can run for so
 		   long that watchdog timers expire. */
 		cond_resched();
+		check_on = 1;
 
 		/* get the block to scan in the correct order */
 		blk = block_index[block_iter].block;
@@ -1114,7 +1206,7 @@ int yaffs2_scan_backwards(struct yaffs_dev *dev)
 
 			chunk = blk * dev->param.chunks_per_block + c;
 
-			result = yaffs_rd_chunk_tags_nand(dev, chunk, NULL,
+			result = yaffs_rd_chunk_tags_nand(dev, chunk, chunk_data,
 							  &tags);
 
 			/* Let's have a good look at this chunk... */
@@ -1188,7 +1280,67 @@ int yaffs2_scan_backwards(struct yaffs_dev *dev)
 
 				dev->n_free_chunks++;
 
-			} else if (tags.chunk_id > 0) {
+			} else{
+
+					/*add by jiequn*/
+					if(check_on&&(check_block>0)){					
+						struct yaffs_ext_tags tempTags;
+						u8 *buffer = yaffs_get_temp_buffer(dev,__LINE__);
+						retv = 0;
+						for(i=0;i<8;i++)
+						{
+	
+							int result;
+	
+							result = yaffs_rd_chunk_tags_nand(dev,chunk,buffer,&tempTags);
+							if(YAFFS_ECC_RESULT_UNFIXED == tempTags.ecc_result)
+							{
+								retv = -1;
+								break;
+							}
+							else if(memcmp(buffer,chunk_data,dev->data_bytes_per_chunk) ||
+							tempTags.obj_id != tags.obj_id ||
+							tempTags.chunk_id  != tags.chunk_id ||
+							tempTags.n_bytes!= tags.n_bytes)
+							{
+								retv = -2;
+								break;
+							}
+						}
+	
+						if(retv<0){
+							dev->n_free_chunks++; 					
+							printk(KERN_ERR"yaffsdebug re-check page fail!retv:%d i:%d eccr:%d chunk:%d addr:0x%x cb:%d sn:%d\n",\
+								retv,i,tags.ecc_result,chunk,chunk*dev->data_bytes_per_chunk,check_block,bi->seq_number);
+					
+							check_on=0;
+							check_block--;
+#ifdef YAFFS_MVG_TEST_DEBUG_LOG
+							//if(-2 == retv)
+							{
+								printk(KERN_ERR"dump data cant fixed ecc!chunk:%d addr:0x%x\n",chunk,chunk*dev->data_bytes_per_chunk);
+								mtk_dump_byte(chunk_data,dev->data_bytes_per_chunk,0); 	
+								printk(KERN_ERR"dump tag\n");
+								mtk_dump_byte(&tags , sizeof(struct yaffs_ext_tags),0);
+								
+								printk(KERN_ERR"dump tmpdata cant fixed ecc!chunk:%d addr:0x%x\n",chunk,chunk*dev->data_bytes_per_chunk);
+								mtk_dump_byte(buffer,dev->data_bytes_per_chunk,0);		
+								printk(KERN_ERR"dump tmptag\n");
+								mtk_dump_byte(&tempTags,sizeof(struct yaffs_ext_tags),0);
+							}
+#endif					
+							yaffs_release_temp_buffer(dev, buffer, __LINE__);
+							continue;
+						}
+						
+						yaffs_release_temp_buffer(dev, buffer, __LINE__);
+						check_on=0;
+						check_block--;
+					}
+				/*add by jiequn*/
+
+
+				if (tags.chunk_id > 0) {
 				/* chunk_id > 0 so it is a data chunk... */
 				unsigned int endpos;
 				u32 chunk_base =
@@ -1554,7 +1706,7 @@ int yaffs2_scan_backwards(struct yaffs_dev *dev)
 				}
 
 			}
-
+		     	}
 		}		/* End of scanning for each chunk */
 
 		if (state == YAFFS_BLOCK_STATE_NEEDS_SCANNING) {

@@ -40,6 +40,14 @@
 
 #define MTD_FAIL_ADDR_UNKNOWN -1LL
 
+#ifdef CONFIG_MTK_MTD_NAND
+#ifndef CONFIG_MTD_DEBUG
+#define CONFIG_MTD_DEBUG 1
+#endif
+#ifndef CONFIG_MTD_DEBUG_VERBOSE
+#define CONFIG_MTD_DEBUG_VERBOSE 0
+#endif
+#endif
 /*
  * If the erase fails, fail_addr might indicate exactly which block failed. If
  * fail_addr = MTD_FAIL_ADDR_UNKNOWN, the failure was not at the device level

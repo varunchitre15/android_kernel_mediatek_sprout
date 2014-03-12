@@ -45,7 +45,7 @@ static ssize_t power_supply_show_property(struct device *dev,
 					  char *buf) {
 	static char *type_text[] = {
 		"Unknown", "Battery", "UPS", "Mains", "USB",
-		"USB_DCP", "USB_CDP", "USB_ACA"
+		"USB_DCP", "USB_CDP", "USB_ACA", "Wireless"
 	};
 	static char *status_text[] = {
 		"Unknown", "Charging", "Discharging", "Not charging", "Full"
@@ -103,6 +103,8 @@ static ssize_t power_supply_show_property(struct device *dev,
 		return sprintf(buf, "%s\n", scope_text[value.intval]);
 	else if (off >= POWER_SUPPLY_PROP_MODEL_NAME)
 		return sprintf(buf, "%s\n", value.strval);
+        else if (off == POWER_SUPPLY_PROP_status_2nd)
+		return sprintf(buf, "%s\n", status_text[value.intval]);
 
 	return sprintf(buf, "%d\n", value.intval);
 }
@@ -178,6 +180,21 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(usb_hc),
 	POWER_SUPPLY_ATTR(usb_otg),
 	POWER_SUPPLY_ATTR(charge_enabled),
+	/* 20100723 James Lo */
+	POWER_SUPPLY_ATTR(batt_vol),
+	POWER_SUPPLY_ATTR(batt_temp),
+	/* 20100405 Add for EM */
+	POWER_SUPPLY_ATTR(TemperatureR),
+	POWER_SUPPLY_ATTR(TempBattVoltage),
+	POWER_SUPPLY_ATTR(InstatVolt),
+	POWER_SUPPLY_ATTR(BatteryAverageCurrent),
+	POWER_SUPPLY_ATTR(BatterySenseVoltage),
+	POWER_SUPPLY_ATTR(ISenseVoltage),
+	POWER_SUPPLY_ATTR(ChargerVoltage),
+	/* Dual battery */
+	POWER_SUPPLY_ATTR(status_2nd),
+	POWER_SUPPLY_ATTR(capacity_2nd),
+	POWER_SUPPLY_ATTR(present_2nd),
 	/* Properties of type `const char *' */
 	POWER_SUPPLY_ATTR(model_name),
 	POWER_SUPPLY_ATTR(manufacturer),

@@ -31,6 +31,12 @@
 
 #include "usb.h"
 
+#ifdef CONFIG_USB_DEBUG
+#ifndef DEBUG
+#define DEBUG
+#endif
+#endif
+
 /* if we are in debug mode, always announce new devices */
 #ifdef DEBUG
 #ifndef CONFIG_USB_ANNOUNCE_NEW_DEVICES
@@ -1798,10 +1804,10 @@ static void show_string(struct usb_device *udev, char *id, char *string)
 
 static void announce_device(struct usb_device *udev)
 {
-	dev_info(&udev->dev, "New USB device found, idVendor=%04x, idProduct=%04x\n",
+	dev_notice(&udev->dev, "New USB device found, idVendor=%04x, idProduct=%04x\n",
 		le16_to_cpu(udev->descriptor.idVendor),
 		le16_to_cpu(udev->descriptor.idProduct));
-	dev_info(&udev->dev,
+	dev_notice(&udev->dev,
 		"New USB device strings: Mfr=%d, Product=%d, SerialNumber=%d\n",
 		udev->descriptor.iManufacturer,
 		udev->descriptor.iProduct,
@@ -2623,6 +2629,7 @@ int usb_port_suspend(struct usb_device *udev, pm_message_t msg)
 				(PMSG_IS_AUTO(msg) ? "auto-" : ""),
 				udev->do_remote_wakeup);
 		usb_set_device_state(udev, USB_STATE_SUSPENDED);
+		udev->port_is_suspended = 1;
 		msleep(10);
 	}
 	usb_mark_last_busy(hub->hdev);
@@ -2803,6 +2810,7 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
 
  SuspendCleared:
 	if (status == 0) {
+		udev->port_is_suspended = 0;
 		if (hub_is_superspeed(hub->hdev)) {
 			if (portchange & USB_PORT_STAT_C_LINK_STATE)
 				clear_port_feature(hub->hdev, port1,
@@ -4375,3 +4383,26 @@ void usb_queue_reset_device(struct usb_interface *iface)
 	schedule_work(&iface->reset_ws);
 }
 EXPORT_SYMBOL_GPL(usb_queue_reset_device);
+
+/**
+ * usb_hub_find_child - Get the pointer of child device
+ * attached to the port which is specified by @port1.
+ * @hdev: USB device belonging to the usb hub
+ * @port1: port num to indicate which port the child device
+ *	is attached to.
+ *
+ * USB drivers call this function to get hub's child device
+ * pointer.
+ *
+ * Return NULL if input param is invalid and
+ * child's usb_device pointer if non-NULL.
+ */
+struct usb_device *usb_hub_find_child(struct usb_device *hdev,
+		int port1)
+{
+	if (port1 < 1 || port1 > hdev->maxchild)
+		return NULL;
+
+	return hdev->children[port1-1];
+}
+EXPORT_SYMBOL_GPL(usb_hub_find_child);

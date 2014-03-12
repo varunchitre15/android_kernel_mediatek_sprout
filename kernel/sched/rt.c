@@ -6,6 +6,7 @@
 #include "sched.h"
 
 #include <linux/slab.h>
+#include "mtlbprof/mtlbprof.h"
 
 static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun);
 
@@ -57,10 +58,19 @@ static void start_rt_bandwidth(struct rt_bandwidth *rt_b)
 	raw_spin_unlock(&rt_b->rt_runtime_lock);
 }
 
+#ifdef CONFIG_PROVE_LOCKING 
+DEFINE_RAW_SPINLOCK(rt_rq_runtime_spinlock);
+#define MAX_SPIN_KEY 10
+DEFINE_PER_CPU(struct lock_class_key, spin_key[MAX_SPIN_KEY]);
+DEFINE_PER_CPU(int, spin_key_idx);
+#endif
 void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq)
 {
 	struct rt_prio_array *array;
 	int i;
+#ifdef CONFIG_PROVE_LOCKING 
+	int cpu, idx;
+#endif
 
 	array = &rt_rq->active;
 	for (i = 0; i < MAX_RT_PRIO; i++) {
@@ -81,7 +91,20 @@ void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq)
 	rt_rq->rt_time = 0;
 	rt_rq->rt_throttled = 0;
 	rt_rq->rt_runtime = 0;
+	/* MTK patch: prevent to continue borrow RT runtime after restore the default value*/
+	rt_rq->rt_disable_borrow = 0;
+#ifdef CONFIG_PROVE_LOCKING 
+	raw_spin_lock(&rt_rq_runtime_spinlock);
+	cpu = rq->cpu;
+	idx = per_cpu(spin_key_idx, cpu);
+#endif
 	raw_spin_lock_init(&rt_rq->rt_runtime_lock);
+#ifdef CONFIG_PROVE_LOCKING 
+	lockdep_set_class(&rt_rq->rt_runtime_lock, &per_cpu(spin_key[idx], cpu));
+	per_cpu(spin_key_idx, cpu)++;
+	BUG_ON(per_cpu(spin_key_idx, cpu) >= MAX_SPIN_KEY);
+	raw_spin_unlock(&rt_rq_runtime_spinlock);
+#endif
 }
 
 #ifdef CONFIG_RT_GROUP_SCHED
@@ -484,6 +507,21 @@ static inline struct rt_bandwidth *sched_rt_bandwidth(struct rt_rq *rt_rq)
 	return &rt_rq->tg->rt_bandwidth;
 }
 
+void unthrottle_offline_rt_rqs(struct rq *rq) {
+	struct rt_rq *rt_rq;
+
+	for_each_leaf_rt_rq(rt_rq, rq) {
+		/*
+		 * clock_task is not advancing so we just need to make sure
+		 * there's some valid quota amount
+		 */
+		if (rt_rq_throttled(rt_rq)){
+			rt_rq->rt_throttled = 0;
+			printk(KERN_ERR "sched: RT throttling inactivated\n");
+		}
+	}
+}
+
 #else /* !CONFIG_RT_GROUP_SCHED */
 
 static inline u64 sched_rt_runtime(struct rt_rq *rt_rq)
@@ -551,12 +589,15 @@ static inline struct rt_bandwidth *sched_rt_bandwidth(struct rt_rq *rt_rq)
 	return &def_rt_bandwidth;
 }
 
+void unthrottle_offline_rt_rqs(struct rq *rq) { }
+
 #endif /* CONFIG_RT_GROUP_SCHED */
 
 #ifdef CONFIG_SMP
 /*
  * We ran out of runtime, see if we can borrow some from our neighbours.
  */
+//#define MTK_DEBUG_CGROUP
 static int do_balance_runtime(struct rt_rq *rt_rq)
 {
 	struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
@@ -567,7 +608,19 @@ static int do_balance_runtime(struct rt_rq *rt_rq)
 	weight = cpumask_weight(rd->span);
 
 	raw_spin_lock(&rt_b->rt_runtime_lock);
+	raw_spin_lock(&rt_rq->rt_runtime_lock);
+	
+	if (rt_rq->rt_disable_borrow ==1){
+		raw_spin_unlock(&rt_rq->rt_runtime_lock);
+		raw_spin_unlock(&rt_b->rt_runtime_lock);
+		return 0;
+	}
 	rt_period = ktime_to_ns(rt_b->rt_period);
+
+#ifdef MTK_DEBUG_CGROUP
+	printk(KERN_EMERG " do_balance_runtime curr_cpu=%d, dst_cpu=%d, span=%lu\n",
+		smp_processor_id(), rt_rq->rq->cpu, rd->span->bits[0]);
+#endif
 	for_each_cpu(i, rd->span) {
 		struct rt_rq *iter = sched_rt_period_rt_rq(rt_b, i);
 		s64 diff;
@@ -575,12 +628,24 @@ static int do_balance_runtime(struct rt_rq *rt_rq)
 		if (iter == rt_rq)
 			continue;
 
-		raw_spin_lock(&iter->rt_runtime_lock);
+		/* MTK Patch: use try lock to prevent deadlock */
+		// raw_spin_lock(&iter->rt_runtime_lock); 
+#ifdef MTK_DEBUG_CGROUP
+		printk(KERN_EMERG " do_balance_runtime get lock cpu=%d\n", i);
+#endif
+		if(!raw_spin_trylock(&iter->rt_runtime_lock)){
+#ifdef MTK_DEBUG_CGROUP
+			printk(KERN_EMERG " do_balance_runtime try lock fail cpu=%d\n", i);
+#endif
+			continue;
+		}
 		/*
 		 * Either all rqs have inf runtime and there's nothing to steal
 		 * or __disable_runtime() below sets a specific rq to inf to
 		 * indicate its been disabled and disalow stealing.
 		 */
+		if (iter->rt_disable_borrow ==1)
+			goto next;	
 		if (iter->rt_runtime == RUNTIME_INF)
 			goto next;
 
@@ -589,6 +654,12 @@ static int do_balance_runtime(struct rt_rq *rt_rq)
 		 * spare time, but no more than our period.
 		 */
 		diff = iter->rt_runtime - iter->rt_time;
+
+#ifdef MTK_DEBUG_CGROUP
+		printk(KERN_EMERG "borrow, dst_cpu=%d, src_cpu=%d, src_cpu2=%d, src_addr=%x, dst_addr=%x,dst->rt_runtime=%llu, src->rt_runtime=%llu, diff=%lld, span=%lu\n",
+			rt_rq->rq->cpu, i, iter->rq->cpu, iter, 
+			rt_rq, rt_rq->rt_runtime, iter->rt_runtime, diff, rd->span->bits[0]);
+#endif
 		if (diff > 0) {
 			diff = div_u64((u64)diff, weight);
 			if (rt_rq->rt_runtime + diff > rt_period)
@@ -596,6 +667,11 @@ static int do_balance_runtime(struct rt_rq *rt_rq)
 			iter->rt_runtime -= diff;
 			rt_rq->rt_runtime += diff;
 			more = 1;
+#ifdef MTK_DEBUG_CGROUP
+			printk(KERN_EMERG "borrow successfully, dst_cpu=%d, src_cpu=%d, src_cpu2=%d, src_addr=%x, dst_addr=%x,dst->rt_runtime=%llu, src->rt_runtime=%llu, diff=%lld, span=%lu\n",
+				rt_rq->rq->cpu, i, iter->rq->cpu, iter, 
+				rt_rq, rt_rq->rt_runtime, iter->rt_runtime, diff, rd->span->bits[0]);
+#endif
 			if (rt_rq->rt_runtime == rt_period) {
 				raw_spin_unlock(&iter->rt_runtime_lock);
 				break;
@@ -604,6 +680,7 @@ static int do_balance_runtime(struct rt_rq *rt_rq)
 next:
 		raw_spin_unlock(&iter->rt_runtime_lock);
 	}
+	raw_spin_unlock(&rt_rq->rt_runtime_lock);
 	raw_spin_unlock(&rt_b->rt_runtime_lock);
 
 	return more;
@@ -628,11 +705,18 @@ static void __disable_runtime(struct rq *rq)
 
 		raw_spin_lock(&rt_b->rt_runtime_lock);
 		raw_spin_lock(&rt_rq->rt_runtime_lock);
+		/* MTK Patch: prevent race condition */
+		rt_rq->rt_disable_borrow = 1;
 		/*
 		 * Either we're all inf and nobody needs to borrow, or we're
 		 * already disabled and thus have nothing to do, or we have
 		 * exactly the right amount of runtime to take out.
 		 */
+#ifdef MTK_DEBUG_CGROUP
+		printk(KERN_EMERG "0. disable_runtime, cpu=%d, rd->span=%lu, rt_rq_addr=%x, rt_rq->rt_runtime=%llu, rt_b->rt_runtime=%llu\n",
+			rt_rq->rq->cpu, rd->span->bits[0], 
+			rt_rq, rt_rq->rt_runtime, rt_b->rt_runtime);
+#endif
 		if (rt_rq->rt_runtime == RUNTIME_INF ||
 				rt_rq->rt_runtime == rt_b->rt_runtime)
 			goto balanced;
@@ -652,20 +736,41 @@ static void __disable_runtime(struct rq *rq)
 			struct rt_rq *iter = sched_rt_period_rt_rq(rt_b, i);
 			s64 diff;
 
+#ifdef MTK_DEBUG_CGROUP
+			printk(KERN_EMERG "0. disable_runtime, cpu=%d,rt_b->rt_runtime=%llu, rt_rq->rt_runtime=%llu, want=%lld, rd->span=%lu\n",  
+				rt_rq->rq->cpu, rt_b->rt_runtime, rt_rq->rt_runtime, want, rd->span->bits[0]);
+#endif
+
 			/*
 			 * Can't reclaim from ourselves or disabled runqueues.
 			 */
-			if (iter == rt_rq || iter->rt_runtime == RUNTIME_INF)
+			if (iter == rt_rq || iter->rt_runtime == RUNTIME_INF || iter->rt_disable_borrow){
+#ifdef MTK_DEBUG_CGROUP
+				printk(KERN_EMERG "1. disable_runtime, cpu=%d, %llu\n",
+					i, iter->rt_runtime);
+#endif
 				continue;
+			}
 
 			raw_spin_lock(&iter->rt_runtime_lock);
+#ifdef MTK_DEBUG_CGROUP
+			printk(KERN_EMERG "2-1. disable_runtime cpu=%d, want=%lld, iter->rt_runtime=%llu\n",
+				i, want, iter->rt_runtime);
+#endif
 			if (want > 0) {
 				diff = min_t(s64, iter->rt_runtime, want);
 				iter->rt_runtime -= diff;
 				want -= diff;
+#ifdef MTK_DEBUG_CGROUP
+				printk(KERN_EMERG "2. disable_runtime, rt_runtime=%llu, diff=%lld, want=%lld\n",
+					iter->rt_runtime, diff, want);
+#endif
 			} else {
 				iter->rt_runtime -= want;
 				want -= want;
+#ifdef MTK_DEBUG_CGROUP
+				printk(KERN_EMERG "3. disable_runtime, rt_runtime=%llu, want=%lld\n", iter->rt_runtime, want);
+#endif
 			}
 			raw_spin_unlock(&iter->rt_runtime_lock);
 
@@ -678,16 +783,56 @@ static void __disable_runtime(struct rq *rq)
 		 * We cannot be left wanting - that would mean some runtime
 		 * leaked out of the system.
 		 */
-		BUG_ON(want);
+		if(want){
+#ifdef MTK_DEBUG_CGROUP
+			printk(KERN_EMERG "4. disable_runtime, want=%lld, rt_rq->rt_runtime=%llu\n",
+				want, rt_rq->rt_runtime);
+			{
+			struct rt_rq *iter = sched_rt_period_rt_rq(rt_b, 0);
+			printk(KERN_EMERG "4-0. disable_runtime %llu\n", iter->rt_runtime);
+			iter = sched_rt_period_rt_rq(rt_b, 1);
+			printk(KERN_EMERG "4-1. disable_runtime %llu\n", iter->rt_runtime);
+			iter = sched_rt_period_rt_rq(rt_b, 2);
+			printk(KERN_EMERG "4-2. disable_runtime %llu\n", iter->rt_runtime);
+			iter = sched_rt_period_rt_rq(rt_b, 3);
+			printk(KERN_EMERG "4-3. disable_runtime %llu\n", iter->rt_runtime);
+			}
+#endif
+			
+			BUG_ON(want);
+		}
 balanced:
 		/*
 		 * Disable all the borrow logic by pretending we have inf
 		 * runtime - in which case borrowing doesn't make sense.
 		 */
-		rt_rq->rt_runtime = RUNTIME_INF;
+		// MTK patch:  prevent normal task could run anymore, use rt_disable_borrow 
+		//rt_rq->rt_runtime = RUNTIME_INF;
+		rt_rq->rt_runtime = rt_b->rt_runtime;
+		rt_rq->rt_throttled = 0;
+#ifdef MTK_DEBUG_CGROUP
+		{
+		struct rt_rq *iter = sched_rt_period_rt_rq(rt_b, 0);
+		printk(KERN_EMERG "5-0. disable_runtime %llu\n", iter->rt_runtime);
+		iter = sched_rt_period_rt_rq(rt_b, 1);
+		printk(KERN_EMERG "5-1. disable_runtime %llu\n", iter->rt_runtime);
+		iter = sched_rt_period_rt_rq(rt_b, 2);
+		printk(KERN_EMERG "5-2. disable_runtime %llu\n", iter->rt_runtime);
+		iter = sched_rt_period_rt_rq(rt_b, 3);
+		printk(KERN_EMERG "5-3. disable_runtime %llu\n", iter->rt_runtime);
+		}
+#endif
 		raw_spin_unlock(&rt_rq->rt_runtime_lock);
 		raw_spin_unlock(&rt_b->rt_runtime_lock);
+#ifdef MTK_DEBUG_CGROUP
+		printk(KERN_ERR "disable_runtime after: rt_rq->rt_runtime=%llu rq_rt->rt_throttled=%d\n",
+			rt_rq->rt_runtime, rt_rq->rt_throttled);
+#endif
 	}
+
+#ifdef CONFIG_MT_RT_SCHED_CRIT
+	trace_sched_rt_crit(rq->cpu, rq->rt.rt_throttled);
+#endif
 }
 
 static void disable_runtime(struct rq *rq)
@@ -712,15 +857,24 @@ static void __enable_runtime(struct rq *rq)
 	 */
 	for_each_rt_rq(rt_rq, iter, rq) {
 		struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
-
 		raw_spin_lock(&rt_b->rt_runtime_lock);
 		raw_spin_lock(&rt_rq->rt_runtime_lock);
-		rt_rq->rt_runtime = rt_b->rt_runtime;
-		rt_rq->rt_time = 0;
-		rt_rq->rt_throttled = 0;
+		if (rt_rq->rt_disable_borrow ){
+			#ifdef MTK_DEBUG_CGROUP
+			printk(KERN_EMERG "enable_runtime %d \n", rq->cpu);
+			#endif
+			rt_rq->rt_runtime = rt_b->rt_runtime;
+			rt_rq->rt_time = 0;
+			rt_rq->rt_throttled = 0;
+			rt_rq->rt_disable_borrow = 0;
+		}
 		raw_spin_unlock(&rt_rq->rt_runtime_lock);
 		raw_spin_unlock(&rt_b->rt_runtime_lock);
 	}
+
+#ifdef CONFIG_MT_RT_SCHED_CRIT
+	trace_sched_rt_crit(rq->cpu, rq->rt.rt_throttled);
+#endif
 }
 
 static void enable_runtime(struct rq *rq)
@@ -782,6 +936,9 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
 	const struct cpumask *span;
 
 	span = sched_rt_period_mask();
+#ifdef MTK_DEBUG_CGROUP
+	printk(KERN_EMERG " do_sched_rt_period_timer curr_cpu=%d \n", smp_processor_id());
+#endif
 	for_each_cpu(i, span) {
 		int enqueue = 0;
 		struct rt_rq *rt_rq = sched_rt_period_rt_rq(rt_b, i);
@@ -790,14 +947,31 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
 		raw_spin_lock(&rq->lock);
 		if (rt_rq->rt_time) {
 			u64 runtime;
+			u64 runtime_pre, rt_time_pre;
 
 			raw_spin_lock(&rt_rq->rt_runtime_lock);
-			if (rt_rq->rt_throttled)
+			if (rt_rq->rt_throttled) {
+				runtime_pre = rt_rq->rt_runtime;
 				balance_runtime(rt_rq);
+				rt_time_pre = rt_rq->rt_time;
+			}
 			runtime = rt_rq->rt_runtime;
 			rt_rq->rt_time -= min(rt_rq->rt_time, overrun*runtime);
+			if (rt_rq->rt_throttled) {
+				printk_sched("sched: cpu=%d, [%llu -> %llu]"
+					     " -= min(%llu, %d*[%llu -> %llu])"
+					     "\n", i, rt_time_pre,
+					     rt_rq->rt_time, rt_time_pre,
+					     overrun, runtime_pre, runtime);
+			}
 			if (rt_rq->rt_throttled && rt_rq->rt_time < runtime) {
+				printk_sched("sched: RT throttling inactivated"
+					     " cpu=%d\n", i);
 				rt_rq->rt_throttled = 0;
+#ifdef CONFIG_MT_RT_SCHED_CRIT
+				trace_sched_rt_crit(rq_cpu(rq), rq->rt.rt_throttled);
+#endif
+
 				enqueue = 1;
 
 				/*
@@ -840,10 +1014,13 @@ static inline int rt_se_prio(struct sched_rt_entity *rt_se)
 
 	return rt_task_of(rt_se)->prio;
 }
-
+DEFINE_PER_CPU(u64, exec_delta_time);
+DEFINE_PER_CPU(u64, clock_task);
+DEFINE_PER_CPU(u64, exec_start);
 static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 {
 	u64 runtime = sched_rt_runtime(rt_rq);
+	u64 runtime_pre;
 
 	if (rt_rq->rt_throttled)
 		return rt_rq_throttled(rt_rq);
@@ -851,6 +1028,7 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 	if (runtime >= sched_rt_period(rt_rq))
 		return 0;
 
+	runtime_pre = runtime;
 	balance_runtime(rt_rq);
 	runtime = sched_rt_runtime(rt_rq);
 	if (runtime == RUNTIME_INF)
@@ -858,20 +1036,34 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 
 	if (rt_rq->rt_time > runtime) {
 		struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
+		int cpu = rq_cpu(rt_rq->rq);
 
+		printk_sched("sched: cpu=%d rt_time %llu <-> runtime"
+			     " [%llu -> %llu], exec_delta_time[%llu]"
+			     ", clock_task[%llu], exec_start[%llu]\n",
+			     cpu, rt_rq->rt_time, runtime_pre, runtime,
+			     per_cpu(exec_delta_time, cpu),
+			     per_cpu(clock_task, cpu),
+			     per_cpu(exec_start, cpu));
 		/*
 		 * Don't actually throttle groups that have no runtime assigned
 		 * but accrue some time due to boosting.
 		 */
+		/* MTK patch: print rt throttle everytime*/
 		if (likely(rt_b->rt_runtime)) {
-			static bool once = false;
+		//	static bool once = false;
 
 			rt_rq->rt_throttled = 1;
 
-			if (!once) {
-				once = true;
-				printk_sched("sched: RT throttling activated\n");
-			}
+		//	if (!once) {
+		//		once = true;
+				printk_sched("sched: RT throttling activated cpu=%d\n",
+					cpu);
+		//	}
+#ifdef CONFIG_MT_RT_SCHED_CRIT
+			trace_sched_rt_crit(cpu, rt_rq->rt_throttled);
+#endif
+
 		} else {
 			/*
 			 * In case we did anyway, make it go away,
@@ -900,6 +1092,7 @@ static void update_curr_rt(struct rq *rq)
 	struct sched_rt_entity *rt_se = &curr->rt;
 	struct rt_rq *rt_rq = rt_rq_of_se(rt_se);
 	u64 delta_exec;
+	int cpu = rq_cpu(rq);
 
 	if (curr->sched_class != &rt_sched_class)
 		return;
@@ -910,7 +1103,9 @@ static void update_curr_rt(struct rq *rq)
 
 	schedstat_set(curr->se.statistics.exec_max,
 		      max(curr->se.statistics.exec_max, delta_exec));
-
+	per_cpu(exec_delta_time, cpu) = delta_exec;
+	per_cpu(clock_task, cpu) = rq->clock_task;
+	per_cpu(exec_start, cpu) = curr->se.exec_start;
 	curr->se.sum_exec_runtime += delta_exec;
 	account_group_exec_runtime(curr, delta_exec);
 
@@ -1081,7 +1276,8 @@ static void __enqueue_rt_entity(struct sched_rt_entity *rt_se, bool head)
 	 * get throttled and the current group doesn't have any other
 	 * active members.
 	 */
-	if (group_rq && (rt_rq_throttled(group_rq) || !group_rq->rt_nr_running))
+//	if (group_rq && (rt_rq_throttled(group_rq) || !group_rq->rt_nr_running))
+	if (group_rq && ( !group_rq->rt_nr_running))
 		return;
 
 	if (!rt_rq->rt_nr_running)
@@ -1353,8 +1549,23 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
 	if (!rt_rq->rt_nr_running)
 		return NULL;
 
-	if (rt_rq_throttled(rt_rq))
+	if (rt_rq_throttled(rt_rq)){
+		/* prevent wdt from RT throttle */
+		struct rt_prio_array *array = &rt_rq->active;
+		int idx = 0, prio = MAX_RT_PRIO- 1 - idx;  //WDT priority
+
+		if( test_bit(idx, array->bitmap)){
+			list_for_each_entry(rt_se, array->queue + idx, run_list){
+				p = rt_task_of(rt_se);
+				if( (p->rt_priority == prio) && (0 == strncmp(p->comm, "wdtk", 4)) ){
+					p->se.exec_start = rq->clock_task;
+					printk(KERN_WARNING "sched: unthrottle %s\n", p->comm);
+					return p;
+				}
+			}
+		}
 		return NULL;
+	}
 
 	do {
 		rt_se = pick_next_rt_entity(rq, rt_rq);
@@ -1754,7 +1965,7 @@ static int pull_rt_task(struct rq *this_rq)
 				goto skip;
 
 			ret = 1;
-
+			
 			deactivate_task(src_rq, p, 0);
 			set_task_cpu(p, this_cpu);
 			activate_task(this_rq, p, 0);

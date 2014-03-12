@@ -1235,6 +1235,11 @@ static ssize_t subbuf_splice_actor(struct file *in,
 	struct splice_pipe_desc spd = {
 		.pages = pages,
 		.nr_pages = 0,
+                /*
+                 * kernel patch
+                 * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+                 * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+                 */
 		.nr_pages_max = PIPE_DEF_BUFFERS,
 		.partial = partial,
 		.flags = flags,
@@ -1303,6 +1308,13 @@ static ssize_t subbuf_splice_actor(struct file *in,
                 ret += padding;
 
 out:
+        /*
+         * kernel patch
+         * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+         * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+         */
+	//splice_shrink_spd(pipe, &spd);
+        //return ret;
 	splice_shrink_spd(&spd);
 	return ret;
 }

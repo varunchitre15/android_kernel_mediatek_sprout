@@ -347,7 +347,10 @@ found:
 			driver->unbind(udc->gadget);
 			goto err1;
 		}
+		/* Don't do enumeration until init.usb.rc has been done */
+#ifndef CONFIG_USB_G_ANDROID
 		usb_gadget_connect(udc->gadget);
+#endif
 	} else {
 
 		ret = usb_gadget_start(udc->gadget, driver, bind);

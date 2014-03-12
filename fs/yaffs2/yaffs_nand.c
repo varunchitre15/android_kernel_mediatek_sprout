@@ -10,6 +10,7 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
+#include "yaffs_trace.h"
 
 #include "yaffs_nand.h"
 #include "yaffs_tagscompat.h"
@@ -105,7 +106,57 @@ int yaffs_query_init_block_state(struct yaffs_dev *dev,
 		return yaffs_tags_compat_query_block(dev, block_no,
 						     state, seq_number);
 }
+void mtk_dump_byte(void *p, long count, unsigned long offset); 
 
+#ifdef YAFFS_MVG_TEST_ERASECHEKFF
+static int yaffs_ScanCheckEraseClean(struct yaffs_dev*dev,
+				int chunkInNAND,int page)
+{
+	int retval = YAFFS_OK;
+	u8 *data = yaffs_get_temp_buffer(dev, __LINE__);
+	struct yaffs_ext_tags tags;
+	int result;
+
+	result = yaffs_rd_chunk_tags_nand(dev, chunkInNAND, data, &tags);
+
+	if (tags.ecc_result > YAFFS_ECC_RESULT_NO_ERROR)
+		retval = YAFFS_FAIL;
+
+	if (!yaffs_check_ff(data, dev->data_bytes_per_chunk) || tags.chunk_used) {
+		printk("Chunk %d not erased",chunkInNAND);
+		
+		retval = YAFFS_FAIL;
+//add debug by jinling.ke
+		printk(KERN_ERR"yaffsdebug Scan CheckChunk chunk:%d addr:0x%x chunkUsed:%d page:%d\n",chunkInNAND,chunkInNAND*dev->data_bytes_per_chunk,tags.chunk_used,page);
+
+		mtk_dump_byte(&tags,sizeof(struct yaffs_ext_tags),0);
+	}
+
+	yaffs_release_temp_buffer(dev, data, __LINE__);
+
+	return retval;
+
+}
+#endif
+int yaffs_erase_block(struct yaffs_dev *dev, int flash_block)
+{
+	int result;
+
+	flash_block -= dev->block_offset;
+
+	dev->n_erasures++;
+
+	result = dev->param.erase_fn(dev, flash_block);
+	
+#ifdef YAFFS_MVG_TEST_ERASECHEKFF
+	for(c=0;c<dev->param.chunks_per_block;c++)
+	{
+		yaffs_ScanCheckEraseClean(dev,(flash_block+dev->block_offset)*dev->param.chunks_per_block+c,c);
+	}
+#endif
+	return result;
+}
+#if 0
 int yaffs_erase_block(struct yaffs_dev *dev, int flash_block)
 {
 	int result;
@@ -118,7 +169,7 @@ int yaffs_erase_block(struct yaffs_dev *dev, int flash_block)
 
 	return result;
 }
-
+#endif
 int yaffs_init_nand(struct yaffs_dev *dev)
 {
 	if (dev->param.initialise_flash_fn)

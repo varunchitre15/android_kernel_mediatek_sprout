@@ -363,6 +363,14 @@ config KEYBOARD_MPR121
 	  To compile this driver as a module, choose M here: the
 	  module will be called mpr121_touchkey.
 
+config MTK_KEYPAD # KEYBOARD_MT6516 KEYBOARD_MT6573
+        tristate "MediaTek Keypad Support"
+        help
+          Say Y here if you want to use the keypad.
+          To compile this driver as a module, choose M here: the
+          module will be called mt6516_kpd.
+
+
 config KEYBOARD_IMX
 	tristate "IMX keypad support"
 	depends on ARCH_MXC

@@ -19,7 +19,9 @@
 #include <linux/math64.h>
 #include <linux/writeback.h>
 #include <linux/compaction.h>
-
+/// M: LCA @{
+#include <linux/export.h>
+/// @}
 #ifdef CONFIG_VM_EVENT_COUNTERS
 DEFINE_PER_CPU(struct vm_event_state, vm_event_states) = {{0}};
 EXPORT_PER_CPU_SYMBOL(vm_event_states);
@@ -736,6 +738,7 @@ const char * const vmstat_text[] = {
 
 	"pgfault",
 	"pgmajfault",
+	"pgfmfault",
 
 	TEXTS_FOR_ZONES("pgrefill")
 	TEXTS_FOR_ZONES("pgsteal_kswapd")
@@ -1136,6 +1139,46 @@ static const struct file_operations proc_vmstat_file_operations = {
 	.llseek		= seq_lseek,
 	.release	= seq_release,
 };
+
+/// M: LCA @{
+void extra_log_vm_stat_lite(void)
+{
+#if defined(CONFIG_VM_EVENT_COUNTERS) && defined(CONFIG_ZRAM)
+	unsigned long v[NR_VM_EVENT_ITEMS];
+	sum_vm_events(v);
+	v[PGPGIN] = v[PGPGIN] >> 1;		/* sectors -> kbytes */
+	v[PGPGOUT] = v[PGPGOUT] >> 1;
+	printk(KERN_INFO "[MTK_MSR]vmstat"\
+		"(%lu"		// (pgin, pgout, swpin, swpout)
+		",%lu"
+		",%lu"
+		",%lu)"
+		"(%lu"		// (fault, maj, fm)
+		",%lu"
+		",%lu)"
+		"(%lu"		// (refill, steal_kswapd, steal_direct, scan_kswapd, scan_direct)
+		",%lu"
+		",%lu"
+		",%lu"
+		",%lu)\n"
+		,
+		v[PGPGIN],
+		v[PGPGOUT],
+		v[PSWPIN],
+		v[PSWPOUT],
+		v[PGFAULT],
+		v[PGMAJFAULT],
+		v[PGFMFAULT],
+		v[PGREFILL_NORMAL],
+		v[PGSTEAL_KSWAPD_NORMAL],
+		v[PGSTEAL_DIRECT_NORMAL],
+		v[PGSCAN_KSWAPD_NORMAL],
+		v[PGSCAN_DIRECT_NORMAL]
+		);
+#endif
+}
+EXPORT_SYMBOL(extra_log_vm_stat_lite);
+/// @}
 #endif /* CONFIG_PROC_FS */
 
 #ifdef CONFIG_SMP

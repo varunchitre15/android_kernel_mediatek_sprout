@@ -1269,6 +1269,16 @@ out:
 	 */
 	kfree(sshdr);
 	retval = sdp->changed ? DISK_EVENT_MEDIA_CHANGE : 0;
+#ifdef CONFIG_MTK_MULTI_PARTITION_MOUNT_ONLY_SUPPORT
+ 	//add for sdcard hotplug start
+	if(1 == retval){
+		if(sdkp->old_media_present != sdkp->media_present){
+			retval  |=  sdkp->media_present ? 0 : DISK_EVENT_MEDIA_DISAPPEAR;
+			sdkp->old_media_present = sdkp->media_present;
+		}
+	}
+	//add for sdcard hotplug end	
+#endif
 	sdp->changed = 0;
 	return retval;
 }
@@ -1583,16 +1593,28 @@ sd_spinup_disk(struct scsi_disk *sdkp)
 			 * doesn't have any media in it, don't bother
 			 * with any more polling.
 			 */
+			/*
 			if (media_not_present(sdkp, &sshdr))
 				return;
+			 */
 
 			if (the_result)
 				sense_valid = scsi_sense_valid(&sshdr);
 			retries++;
-		} while (retries < 3 && 
-			 (!scsi_status_is_good(the_result) ||
+
+			if(!scsi_status_is_good(the_result) ||
 			  ((driver_byte(the_result) & DRIVER_SENSE) &&
-			  sense_valid && sshdr.sense_key == UNIT_ATTENTION)));
+			  sense_valid && sshdr.sense_key == UNIT_ATTENTION)) {
+				msleep(100);
+			} else {
+				break;
+			}
+		} while (retries < 5);
+
+		if (media_not_present(sdkp, &sshdr)) {
+			sd_printk(KERN_NOTICE, sdkp, "Media Not Present\n");
+			return;
+		}
 
 		if ((driver_byte(the_result) & DRIVER_SENSE) == 0) {
 			/* no sense, TUR either succeeded or failed
@@ -2456,9 +2478,14 @@ static int sd_try_extended_inquiry(struct scsi_device *sdp)
 static int sd_revalidate_disk(struct gendisk *disk)
 {
 	struct scsi_disk *sdkp = scsi_disk(disk);
-	struct scsi_device *sdp = sdkp->device;
+	struct scsi_device *sdp;
 	unsigned char *buffer;
 	unsigned flush = 0;
+	if(!sdkp) {
+		printk("Error: sdkp is null\n");
+		goto out;
+	}
+	sdp = sdkp->device;
 
 	SCSI_LOG_HLQUEUE(3, sd_printk(KERN_INFO, sdkp,
 				      "sd_revalidate_disk\n"));
@@ -2621,6 +2648,9 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
 	sdkp->max_medium_access_timeouts = SD_MAX_MEDIUM_TIMEOUTS;
 
 	sd_revalidate_disk(gd);
+#ifdef CONFIG_MTK_MULTI_PARTITION_MOUNT_ONLY_SUPPORT	
+	sdkp->old_media_present = sdkp->media_present; //add for sdcard hotplug
+#endif
 
 	blk_queue_prep_rq(sdp->request_queue, sd_prep_fn);
 	blk_queue_unprep_rq(sdp->request_queue, sd_unprep_fn);
@@ -2629,7 +2659,11 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
 	gd->flags = GENHD_FL_EXT_DEVT;
 	if (sdp->removable) {
 		gd->flags |= GENHD_FL_REMOVABLE;
+#ifdef CONFIG_MTK_MULTI_PARTITION_MOUNT_ONLY_SUPPORT		
+		gd->events |= DISK_EVENT_MEDIA_CHANGE|DISK_EVENT_MEDIA_DISAPPEAR; //add for sdcard hotplug
+#else
 		gd->events |= DISK_EVENT_MEDIA_CHANGE;
+#endif		
 	}
 
 	add_disk(gd);

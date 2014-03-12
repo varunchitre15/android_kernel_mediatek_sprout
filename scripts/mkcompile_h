@@ -89,8 +89,8 @@ UTS_TRUNCATE="cut -b -$UTS_LEN"
 # first line.
 
 if [ -r $TARGET ] && \
-      grep -v 'UTS_VERSION' $TARGET > .tmpver.1 && \
-      grep -v 'UTS_VERSION' .tmpcompile > .tmpver.2 && \
+      grep -v 'UTS_VERSION' $TARGET  | grep -v 'LINUX_COMPILE_HOST' > .tmpver.1 && \
+      grep -v 'UTS_VERSION' .tmpcompile  | grep -v 'LINUX_COMPILE_HOST' > .tmpver.2 && \
       cmp -s .tmpver.1 .tmpver.2; then
    rm -f .tmpcompile
 else

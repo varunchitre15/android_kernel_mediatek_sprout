@@ -728,6 +728,18 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
 	current->mm->cached_hole_size = 0;
 	retval = setup_arg_pages(bprm, randomize_stack_top(STACK_TOP),
 				 executable_stack);
+    /* exec mt_debug*/
+    {
+        int *stack_p1 = (int *)bprm->p;
+        int *stack_p2 = (int *)bprm->p + 1;
+        if(*stack_p1 == 0 && *stack_p2 == 0){
+            printk("[exec warning] got NULL stack! Try again\n");
+            printk("[exec warning] stack_p1 [0x%x]=0x%x\n", (unsigned int)stack_p1, (unsigned int)*stack_p1);
+            printk("[exec warning] stack_p2 [0x%x]=0x%x\n", (unsigned int)stack_p2, (unsigned int)*stack_p2);
+            retval = -999;
+            goto out;
+        }
+    }
 	if (retval < 0) {
 		send_sig(SIGKILL, current, 0);
 		goto out_free_dentry;
@@ -1082,6 +1094,11 @@ out:
  * Jeremy Fitzhardinge <jeremy@sw.oz.au>
  */
 
+#ifdef CONFIG_MTK_EXTMEM
+extern bool extmem_in_mspace(struct vm_area_struct *vma);
+extern void * get_virt_from_mspace(void * pa);
+#endif
+
 /*
  * The purpose of always_dump_vma() is to make sure that special kernel mappings
  * that are useful for post-mortem analysis are included in every core dump.
@@ -1102,6 +1119,10 @@ static bool always_dump_vma(struct vm_area_struct *vma)
 	if (arch_vma_name(vma))
 		return true;
 
+#ifdef CONFIG_MTK_EXTMEM
+	if (extmem_in_mspace(vma))
+		return true;
+#endif
 	return false;
 }
 
@@ -2049,6 +2070,21 @@ static int elf_core_dump(struct coredump_params *cprm)
 		unsigned long end;
 
 		end = vma->vm_start + vma_dump_size(vma, cprm->mm_flags);
+
+#ifdef CONFIG_MTK_EXTMEM
+		if (extmem_in_mspace(vma)) {
+			void *extmem_va = get_virt_from_mspace(vma->vm_pgoff << PAGE_SHIFT);
+			for (addr = vma->vm_start; addr < end; addr += PAGE_SIZE, extmem_va += PAGE_SIZE) {
+				int stop;
+				stop = ((size += PAGE_SIZE) > cprm->limit) ||
+					!dump_write(cprm->file, extmem_va,
+						    PAGE_SIZE);
+				if (stop)
+					goto end_coredump;
+			}
+			continue;
+		}
+#endif
 
 		for (addr = vma->vm_start; addr < end; addr += PAGE_SIZE) {
 			struct page *page;

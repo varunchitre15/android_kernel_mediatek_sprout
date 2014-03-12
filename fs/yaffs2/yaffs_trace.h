@@ -54,4 +54,11 @@ extern unsigned int yaffs_wr_attempts;
 #define YAFFS_TRACE_BUG			0x80000000
 #define YAFFS_TRACE_ALWAYS		0xF0000000
 
+//#define YAFFS_MVG_TEST_DEBUG_LOG
+//#define YAFFS_MVG_TEST_DUMP_SCAN_SEQ //dump seq num in yaffs2_ScanBackwards
+//#define YAFFS_MVG_TEST_ERASECHEKFF  //when erase block,check if or not the block becomes 0xff
+//#define YAFFS_MVG_TEST_DEBUG_WRITECHECK //check 0xff ,before write every chunk .
+
+//#define YAFFS_MVG_TEST_DEBUG_WRITEHECK_FIXERROR  //fixerror when chunk is not  ,before write every chunk .
+
 #endif

@@ -44,6 +44,11 @@
 #include "sd_ops.h"
 #include "sdio_ops.h"
 
+/* If the device is not responding */
+#define MMC_CORE_TIMEOUT_MS	(10 * 60 * 1000) /* 10 minute timeout */
+
+#define DAT_TIMEOUT         (HZ    * 5)
+
 static struct workqueue_struct *workqueue;
 
 /*
@@ -269,22 +274,70 @@ static int __mmc_start_req(struct mmc_host *host, struct mmc_request *mrq)
 static void mmc_wait_for_req_done(struct mmc_host *host,
 				  struct mmc_request *mrq)
 {
+#if 0
+    struct scatterlist *sg;
+    unsigned int  num;
+    unsigned int  left;
+    unsigned int  *ptr;
+    unsigned int  i;
+#endif
+
 	struct mmc_command *cmd;
 
 	while (1) {
-		wait_for_completion(&mrq->completion);
+		if(!wait_for_completion_timeout(&mrq->completion,DAT_TIMEOUT)){
+			printk(KERN_ERR "MSDC wait request timeout CMD<%d>ARG<0x%x>\n",mrq->cmd->opcode,mrq->cmd->arg);
+			if(mrq->data){
+				host->ops->dma_error_reset(host);
+				}
 
-		cmd = mrq->cmd;
-		if (!cmd->error || !cmd->retries ||
-		    mmc_card_removed(host->card))
-			break;
+            if(mrq->data)
+                mrq->data->error = (unsigned int)-ETIMEDOUT;
 
-		pr_debug("%s: req failed (CMD%u): %d, retrying...\n",
-			 mmc_hostname(host), cmd->opcode, cmd->error);
-		cmd->retries--;
-		cmd->error = 0;
-		host->ops->request(host, mrq);
-	}
+
+            printk(KERN_ERR "MSDC wait request timeout DAT<%d>\n",(mrq->data->blocks) * (mrq->data->blksz));
+        }
+
+#if 0
+    if ((mrq->cmd->arg == 0) && (mrq->data) && 
+            ((mrq->cmd->opcode == 17)||(mrq->cmd->opcode == 18))){ 
+        printk("read MBR  cmd%d: blocks %d arg %08x, sg_len = %d\n", mrq->cmd->opcode, mrq->data->blocks, mrq->cmd->arg, mrq->data->sg_len);
+            sg = mrq->data->sg;
+            num = mrq->data->sg_len;
+
+            while (num) {
+                left = sg_dma_len(sg);
+                ptr = sg_virt(sg);
+
+                printk("====left: %d\n===\n", left);
+                for (i = 0; i <= left/4; i++){
+                    printk("0x%x ", *(ptr + i));
+                    if (0 == (i + 1)%16)
+                        printk("\n");
+                }
+
+                //page = sg_to_page(sg);
+
+                /* physic addr */
+                //paddr = page_to_phys(page);
+
+                sg = sg_next(sg); 
+                num--;
+            }; 
+    }
+#endif
+
+        cmd = mrq->cmd;
+        if (!cmd->error || !cmd->retries ||
+                mmc_card_removed(host->card))
+            break;
+
+        pr_debug("%s: req failed (CMD%u): %d, retrying...\n",
+                mmc_hostname(host), cmd->opcode, cmd->error);
+        cmd->retries--;
+        cmd->error = 0;
+        host->ops->request(host, mrq);
+    }
 }
 
 /**
@@ -299,13 +352,13 @@ static void mmc_wait_for_req_done(struct mmc_host *host,
  *	performed while another request is running on the host.
  */
 static void mmc_pre_req(struct mmc_host *host, struct mmc_request *mrq,
-		 bool is_first_req)
+        bool is_first_req)
 {
-	if (host->ops->pre_req) {
-		mmc_host_clk_hold(host);
-		host->ops->pre_req(host, mrq, is_first_req);
-		mmc_host_clk_release(host);
-	}
+    if (host->ops->pre_req) {
+        mmc_host_clk_hold(host);
+        host->ops->pre_req(host, mrq, is_first_req);
+        mmc_host_clk_release(host);
+    }
 }
 
 /**
@@ -351,23 +404,111 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
 	struct mmc_async_req *data = host->areq;
 
 	/* Prepare a new request */
-	if (areq)
-		mmc_pre_req(host, areq->mrq, !host->areq);
+    if (areq){
+#ifdef MTK_IO_PERFORMANCE_DEBUG
+        if ((1 == g_mtk_mmc_perf_dbg) && (2 == g_mtk_mmc_dbg_range)){
+            if ((areq->mrq->cmd->arg >= g_dbg_range_start) && (areq->mrq->cmd->arg <= g_dbg_range_end) && (areq->mrq->data) && (areq->mrq->cmd->opcode == g_check_read_write)){ 
+                g_mmcqd_buf[g_dbg_req_count][2] = sched_clock();   /* request DMA map start */ 
+           	}
+        }
+#endif
+        mmc_pre_req(host, areq->mrq, !host->areq);
+
+#ifdef MTK_IO_PERFORMANCE_DEBUG
+        if ((1 == g_mtk_mmc_perf_dbg) && (2 == g_mtk_mmc_dbg_range)){
+            if ((areq->mrq->cmd->arg >= g_dbg_range_start) && (areq->mrq->cmd->arg <= g_dbg_range_end) && (areq->mrq->data) && (areq->mrq->cmd->opcode == g_check_read_write)){ 
+                g_mmcqd_buf[g_dbg_req_count][3] = sched_clock();   /* request DMA map end */
+            }
+        }
+#endif
+    }
 
 	if (host->areq) {
 		mmc_wait_for_req_done(host, host->areq->mrq);
+		host->ops->send_stop(host,host->areq->mrq); //add for MTK msdc host <Yuchi Xu>
+		do{
+			host->ops->tuning(host, host->areq->mrq);	//add for MTK msdc host <Yuchi Xu>
+		}while(host->ops->check_written_data(host,host->areq->mrq));
+#ifdef MTK_IO_PERFORMANCE_DEBUG
+        if ((1 == g_mtk_mmc_perf_dbg) && (2 == g_mtk_mmc_dbg_range)){
+            if ((host->areq->mrq->cmd->arg >= g_dbg_range_start) && (host->areq->mrq->cmd->arg <= g_dbg_range_end) && (host->areq->mrq->data) && (host->areq->mrq->cmd->opcode == g_check_read_write)){ 
+				if(areq)
+					g_mmcqd_buf[g_dbg_req_count - 1][6] = sched_clock(); 
+				else
+                	g_mmcqd_buf[g_dbg_req_count][6] = sched_clock(); 
+                
+                g_mtk_mmc_dbg_flag = 0; /* notify high level after send next cmd */
+            }
+        }
+#endif
 		err = host->areq->err_check(host->card, host->areq);
 	}
+
 
 	if (!err && areq) {
 		trace_mmc_blk_rw_start(areq->mrq->cmd->opcode,
 				       areq->mrq->cmd->arg,
 				       areq->mrq->data);
-		start_err = __mmc_start_req(host, areq->mrq);
-	}
+#ifdef MTK_IO_PERFORMANCE_DEBUG
+        if (1 == g_mtk_mmc_perf_dbg){
+            if (2 == g_mtk_mmc_dbg_range){
+                if ((areq->mrq->cmd->arg >= g_dbg_range_start) && (areq->mrq->cmd->arg <= g_dbg_range_end) && (areq->mrq->data) && (areq->mrq->cmd->opcode == g_check_read_write)){ 
+                    g_mmcqd_buf[g_dbg_req_count][4] = sched_clock();   /* request start time */
 
-	if (host->areq)
+                    /* record the max page index in this request */
+                    //if (g_dbg_req_count > 0)
+                    g_mmcqd_buf[g_dbg_req_count][296] = (unsigned long long)(g_dbg_raw_count - g_dbg_raw_count_old); 
+
+                    /* record the page ahead index with this request */
+                    g_mmcqd_buf[g_dbg_req_count][297] = (unsigned long long)g_dbg_raw_count; 
+                    g_mmcqd_buf[g_dbg_req_count][298] = (unsigned long long)areq->mrq->cmd->arg;
+                    g_mmcqd_buf[g_dbg_req_count][299] = (unsigned long long)areq->mrq->data->blocks;
+                    g_mtk_mmc_dbg_flag = 1;
+                    g_dbg_raw_count_old = g_dbg_raw_count;
+                }
+            } else {
+                if (areq->mrq->data) {
+                    printk("cmd%d: blocks %d arg %08x\n", areq->mrq->cmd->opcode, areq->mrq->data->blocks, areq->mrq->cmd->arg);
+                }
+            }
+        }
+#endif
+
+		start_err = __mmc_start_req(host, areq->mrq);
+
+#ifdef MTK_IO_PERFORMANCE_DEBUG
+			if ((1 == g_mtk_mmc_perf_dbg) && (2 == g_mtk_mmc_dbg_range)){
+				if ((areq->mrq->cmd->arg >= g_dbg_range_start) && (areq->mrq->cmd->arg <= g_dbg_range_end) && (areq->mrq->data) && (areq->mrq->cmd->opcode == g_check_read_write)){ 
+					g_mmcqd_buf[g_dbg_req_count][5] = sched_clock(); 
+					
+				}
+			}
+#endif
+
+    }
+	if (host->areq){
+		#ifdef MTK_IO_PERFORMANCE_DEBUG
+        if ((1 == g_mtk_mmc_perf_dbg) && (2 == g_mtk_mmc_dbg_range)){
+            if ((host->areq->mrq->cmd->arg >= g_dbg_range_start) && (host->areq->mrq->cmd->arg <= g_dbg_range_end) && (host->areq->mrq->data) && (host->areq->mrq->cmd->opcode == g_check_read_write)){
+				if(areq)
+					g_mmcqd_buf[g_dbg_req_count - 1][7] = sched_clock();   /* request DMA unmap start */                             
+				else
+                    g_mmcqd_buf[g_dbg_req_count][7] = sched_clock();   
+                }
+        	}
+#endif
 		mmc_post_req(host, host->areq->mrq, 0);
+#ifdef MTK_IO_PERFORMANCE_DEBUG
+				if ((1 == g_mtk_mmc_perf_dbg) && (2 == g_mtk_mmc_dbg_range)){
+					if ((host->areq->mrq->cmd->arg >= g_dbg_range_start) && (host->areq->mrq->cmd->arg <= g_dbg_range_end) && (host->areq->mrq->data) && (host->areq->mrq->cmd->opcode == g_check_read_write)){
+						if(areq)
+							g_mmcqd_buf[g_dbg_req_count - 1][8] = sched_clock();	/* request DMA unmap end if exist */
+						else
+							g_mmcqd_buf[g_dbg_req_count][8] = sched_clock();
+					}
+				}
+#endif	
+		}
 
 	 /* Cancel a prepared request if it was not started. */
 	if ((err || start_err) && areq)
@@ -395,6 +536,17 @@ EXPORT_SYMBOL(mmc_start_req);
  */
 void mmc_wait_for_req(struct mmc_host *host, struct mmc_request *mrq)
 {
+#ifdef MTK_IO_PERFORMANCE_DEBUG
+        if (1 == g_mtk_mmc_perf_dbg){
+            if (2 == g_mtk_mmc_dbg_range){
+            } else {
+                if (mrq->data) {
+                    printk("cmd%d: blocks %d arg %08x\n", mrq->cmd->opcode, mrq->data->blocks, mrq->cmd->arg);
+                }
+            }
+        }
+#endif
+
 	__mmc_start_req(host, mrq);
 	mmc_wait_for_req_done(host, mrq);
 }
@@ -1381,6 +1533,7 @@ void mmc_detach_bus(struct mmc_host *host)
  */
 void mmc_detect_change(struct mmc_host *host, unsigned long delay)
 {
+	int ret;
 #ifdef CONFIG_MMC_DEBUG
 	unsigned long flags;
 	spin_lock_irqsave(&host->lock, flags);
@@ -1390,7 +1543,8 @@ void mmc_detect_change(struct mmc_host *host, unsigned long delay)
 	host->detect_change = 1;
 
 	wake_lock(&host->detect_wake_lock);
-	mmc_schedule_delayed_work(&host->detect, delay);
+	ret = mmc_schedule_delayed_work(&host->detect, delay);
+	printk(KERN_INFO"msdc: %d,mmc_schedule_delayed_work ret= %d\n",host->index,ret);
 }
 
 EXPORT_SYMBOL(mmc_detect_change);
@@ -1548,6 +1702,7 @@ static int mmc_do_erase(struct mmc_card *card, unsigned int from,
 {
 	struct mmc_command cmd = {0};
 	unsigned int qty = 0;
+    unsigned long timeout;
 	unsigned int fr, nr;
 	int err;
 
@@ -1630,6 +1785,7 @@ static int mmc_do_erase(struct mmc_card *card, unsigned int from,
 	if (mmc_host_is_spi(card->host))
 		goto out;
 
+    timeout = jiffies + msecs_to_jiffies(MMC_CORE_TIMEOUT_MS);
 	do {
 		memset(&cmd, 0, sizeof(struct mmc_command));
 		cmd.opcode = MMC_SEND_STATUS;
@@ -1643,8 +1799,20 @@ static int mmc_do_erase(struct mmc_card *card, unsigned int from,
 			err = -EIO;
 			goto out;
 		}
+
+        /* Timeout if the device never becomes ready for data and
+		 * never leaves the program state.
+		 */
+		if (time_after(jiffies, timeout)) {
+			pr_err("%s: Card stuck in programming state! %s\n",
+				mmc_hostname(card->host), __func__);
+			err =  -EIO;
+			goto out;
+		}
+
 	} while (!(cmd.resp[0] & R1_READY_FOR_DATA) ||
 		 R1_CURRENT_STATE(cmd.resp[0]) == R1_STATE_PRG);
+
 out:
 
 	trace_mmc_blk_erase_end(arg, fr, nr);
@@ -1729,7 +1897,7 @@ EXPORT_SYMBOL(mmc_can_erase);
 
 int mmc_can_trim(struct mmc_card *card)
 {
-	if (card->ext_csd.sec_feature_support & EXT_CSD_SEC_GB_CL_EN)
+    if ((card->ext_csd.sec_feature_support & EXT_CSD_SEC_GB_CL_EN) && !(card->quirks & MMC_QUIRK_TRIM_UNSTABLE))
 		return 1;
 	return 0;
 }

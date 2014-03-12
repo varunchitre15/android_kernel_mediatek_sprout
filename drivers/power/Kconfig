@@ -36,6 +36,29 @@ config MAX8925_POWER
 	  Say Y here to enable support for the battery charger in the Maxim
 	  MAX8925 PMIC.
 
+config MTK_SMART_BATTERY # 
+        tristate "MediaTek Smart Battery Driver"
+        default n
+
+config MTK_BQ24196_SUPPORT # 
+        tristate "MediaTek Battery driver for TI BQ24196"
+        default y
+        
+config MTK_BQ24158_SUPPORT
+	bool "MTK_BQ24158_SUPPORT"
+	help
+	   add MTK_BQ24158_SUPPORT to ProjectConfig.mk default off
+
+config MTK_BQ24297_SUPPORT
+	bool "MTK_BQ24297_SUPPORT"
+	help
+	   add MTK_BQ24297_SUPPORT to ProjectConfig.mk default off
+
+config MTK_BQ27541_SUPPORT
+	bool "MTK_BQ27541_SUPPORT"
+	help
+	   yes : support TI bq27541 external gauge IC
+
 config WM831X_BACKUP
 	tristate "WM831X backup battery charger support"
 	depends on MFD_WM831X

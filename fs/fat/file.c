@@ -99,10 +99,23 @@ static int fat_ioctl_set_attributes(struct file *file, u32 __user *user_attr)
 
 	fsnotify_change(file->f_path.dentry, ia.ia_valid);
 	if (sbi->options.sys_immutable) {
-		if (attr & ATTR_SYS)
+		if (attr & ATTR_SYS) {
+			fat_printk(ANDROID_LOG_INFO, FAT_TAG, 
+				"%s() : inode->i_flags |= S_IMMUTABLE, current process is \"(PID=%d)%s\"\n", 
+				__func__,
+				current->pid,
+				current->comm
+			) ;
 			inode->i_flags |= S_IMMUTABLE;
-		else
+		} else {
+			fat_printk(ANDROID_LOG_INFO, FAT_TAG, 
+				"%s() : inode->i_flags &= ~S_IMMUTABLE, current process is \"(PID=%d)%s\"\n", 
+				__func__,
+				current->pid,
+				current->comm
+			) ;
 			inode->i_flags &= ~S_IMMUTABLE;
+		}
 	}
 
 	fat_save_attrs(inode, attr);

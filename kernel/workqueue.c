@@ -262,6 +262,11 @@ EXPORT_SYMBOL_GPL(system_unbound_wq);
 EXPORT_SYMBOL_GPL(system_freezable_wq);
 EXPORT_SYMBOL_GPL(system_nrt_freezable_wq);
 
+/* When this boolean is true, it means something wrong in cpu on/off callbacks. 
+ * From this moment, we don't handle any cpu on/off events.
+ */
+static bool wq_cpuonoff_chaos = false;
+
 #define CREATE_TRACE_POINTS
 #include <trace/events/workqueue.h>
 
@@ -433,6 +438,13 @@ EXPORT_SYMBOL_GPL(destroy_work_on_stack);
 static inline void debug_work_activate(struct work_struct *work) { }
 static inline void debug_work_deactivate(struct work_struct *work) { }
 #endif
+
+#ifdef CONFIG_MTK_WQ_DEBUG
+extern void mttrace_workqueue_execute_work(struct work_struct *work);
+extern void mttrace_workqueue_activate_work(struct work_struct *work);
+extern void mttrace_workqueue_queue_work(unsigned int req_cpu, struct work_struct *work);
+extern void mttrace_workqueue_execute_end(struct work_struct *work);
+#endif //CONFIG_MTK_WQ_DEBUG
 
 /* Serializes the accesses to the list of workqueues. */
 static DEFINE_SPINLOCK(workqueue_lock);
@@ -1051,6 +1063,9 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
 	/* gcwq determined, get cwq and queue */
 	cwq = get_cwq(gcwq->cpu, wq);
 	trace_workqueue_queue_work(cpu, cwq, work);
+#ifdef CONFIG_MTK_WQ_DEBUG
+	mttrace_workqueue_queue_work(cpu, work);
+#endif //CONFIG_MTK_WQ_DEBUG
 
 	BUG_ON(!list_empty(&work->entry));
 
@@ -1059,6 +1074,9 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
 
 	if (likely(cwq->nr_active < cwq->max_active)) {
 		trace_workqueue_activate_work(work);
+#ifdef CONFIG_MTK_WQ_DEBUG
+		mttrace_workqueue_activate_work(work);
+#endif //CONFIG_MTK_WQ_DEBUG
 		cwq->nr_active++;
 		worklist = gcwq_determine_ins_pos(gcwq, cwq);
 	} else {
@@ -1747,6 +1765,9 @@ static void cwq_activate_delayed_work(struct work_struct *work)
 	struct list_head *pos = gcwq_determine_ins_pos(cwq->gcwq, cwq);
 
 	trace_workqueue_activate_work(work);
+#ifdef CONFIG_MTK_WQ_DEBUG
+	mttrace_workqueue_activate_work(work);
+#endif //CONFIG_MTK_WQ_DEBUG
 	move_linked_works(work, pos, NULL);
 	__clear_bit(WORK_STRUCT_DELAYED_BIT, work_data_bits(work));
 	cwq->nr_active++;
@@ -1897,12 +1918,19 @@ __acquires(&gcwq->lock)
 	lock_map_acquire_read(&cwq->wq->lockdep_map);
 	lock_map_acquire(&lockdep_map);
 	trace_workqueue_execute_start(work);
+#ifdef CONFIG_MTK_WQ_DEBUG
+	mttrace_workqueue_execute_work(work);
+#endif //CONFIG_MTK_WQ_DEBUG
 	worker->current_func(work);
 	/*
 	 * While we must be careful to not use "work" after this, the trace
 	 * point will only record its address.
 	 */
+
 	trace_workqueue_execute_end(work);
+#ifdef CONFIG_MTK_WQ_DEBUG
+	mttrace_workqueue_execute_end(work);
+#endif //CONFIG_MTK_WQ_DEBUG
 	lock_map_release(&lockdep_map);
 	lock_map_release(&cwq->wq->lockdep_map);
 
@@ -3547,12 +3575,17 @@ static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
 
 	action &= ~CPU_TASKS_FROZEN;
 
+	if (unlikely(wq_cpuonoff_chaos))
+		printk(KERN_INFO "workqueue_cpu_callback - in chaos dump\n");
+	
 	switch (action) {
 	case CPU_DOWN_PREPARE:
 		new_trustee = kthread_create(trustee_thread, gcwq,
 					     "workqueue_trustee/%d\n", cpu);
-		if (IS_ERR(new_trustee))
+		if (IS_ERR(new_trustee)) {
+			wq_cpuonoff_chaos = true;
 			return notifier_from_errno(PTR_ERR(new_trustee));
+		}
 		kthread_bind(new_trustee, cpu);
 		/* fall through */
 	case CPU_UP_PREPARE:
@@ -3561,8 +3594,15 @@ static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
 		if (!new_worker) {
 			if (new_trustee)
 				kthread_stop(new_trustee);
+			wq_cpuonoff_chaos = true;
 			return NOTIFY_BAD;
 		}
+		wq_cpuonoff_chaos = false;
+	}
+
+	if (wq_cpuonoff_chaos) {
+		printk(KERN_INFO "workqueue_cpu_callback - in chaos\n");  //suppose not to go here.
+		return NOTIFY_BAD;
 	}
 
 	/* some are called w/ irq disabled, don't disturb irq status */
@@ -3636,6 +3676,16 @@ static int __devinit workqueue_cpu_up_callback(struct notifier_block *nfb,
 					       unsigned long action,
 					       void *hcpu)
 {
+	if (wq_cpuonoff_chaos) {
+		/* suppose here only runs once when CPU_DOWN_PREPARE failed in DOWN callback, and 
+		 * then reverse notifier to UP callback with CPU_DOWN_FAILED action. */
+		switch (action & ~CPU_TASKS_FROZEN) {
+			case CPU_DOWN_FAILED:
+				printk(KERN_INFO "workqueue_cpu_up_callback: reverse in chaos\n");
+				return NOTIFY_OK;
+		}
+	}
+
 	switch (action & ~CPU_TASKS_FROZEN) {
 	case CPU_UP_PREPARE:
 	case CPU_UP_CANCELED:

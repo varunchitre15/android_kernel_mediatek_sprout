@@ -70,19 +70,21 @@ int nandmtd2_write_chunk_tags(struct yaffs_dev *dev, int nand_chunk,
 		yaffs_pack_tags2(&pt, tags, !dev->param.no_tags_ecc);
         }
 
-	ops.mode = MTD_OOB_AUTO;
+	ops.mode = MTD_OPS_AUTO_OOB;
 	ops.ooblen = (dev->param.inband_tags) ? 0 : packed_tags_size;
 	ops.len = dev->param.total_bytes_per_chunk;
 	ops.ooboffs = 0;
 	ops.datbuf = (u8 *) data;
 	ops.oobbuf = (dev->param.inband_tags) ? NULL : packed_tags_ptr;
-	retval = mtd->write_oob(mtd, addr, &ops);
+	retval = mtd_write_oob(mtd, addr, &ops);
 
 	if (retval == 0)
 		return YAFFS_OK;
 	else
 		return YAFFS_FAIL;
 }
+
+void mtk_dump_byte(void *p, long count, unsigned long offset);
 
 int nandmtd2_read_chunk_tags(struct yaffs_dev *dev, int nand_chunk,
 			     u8 * data, struct yaffs_ext_tags *tags)
@@ -117,9 +119,40 @@ int nandmtd2_read_chunk_tags(struct yaffs_dev *dev, int nand_chunk,
 	}
 
 	if (dev->param.inband_tags || (data && !tags))
-		retval = mtd->read(mtd, addr, dev->param.total_bytes_per_chunk,
+		retval = mtd_read(mtd, addr, dev->param.total_bytes_per_chunk,
 				   &dummy, data);
 	else if (tags) {
+
+#if 1
+    	if(!data )
+    	{
+			local_data = 1;
+			data = yaffs_get_temp_buffer(dev, __LINE__);
+
+    	}
+		ops.mode = MTD_OPS_AUTO_OOB;
+		ops.ooblen = packed_tags_size;
+		ops.ooboffs = 0;
+		ops.len = dev->data_bytes_per_chunk;
+		ops.datbuf = data;
+		ops.oobbuf = yaffs_dev_to_lc(dev)->spare_buffer;
+		retval = mtd_read_oob(mtd, addr, &ops);
+		if(retval)
+		{
+			printk(KERN_ERR"yaffsdebug mtdiferror %s retval:%d unfixed:%d fixed:%d chunk:%d addr:0x%llx\n",\
+				(retval == -EUCLEAN)?"fix ecc":"unfix ecc",retval,dev->n_ecc_unfixed,dev->n_ecc_fixed,nand_chunk,addr);
+#ifdef YAFFS_MVG_TEST_DEBUG_LOG
+			if(retval != -EUCLEAN)
+			{
+				printk(KERN_ERR"dump checksum_BCH chunk:%d addr:0x%x\n",nand_chunk,addr);
+				mtk_dump_byte(ops.datbuf,ops.len,0);		
+				printk(KERN_ERR"dump BCH oob\n");
+				mtk_dump_byte(ops.oobbuf,ops.ooblen,0);			
+			}
+#endif	
+		}
+
+#else
 		ops.mode = MTD_OOB_AUTO;
 		ops.ooblen = packed_tags_size;
 		ops.len = data ? dev->data_bytes_per_chunk : packed_tags_size;
@@ -127,6 +160,7 @@ int nandmtd2_read_chunk_tags(struct yaffs_dev *dev, int nand_chunk,
 		ops.datbuf = data;
 		ops.oobbuf = yaffs_dev_to_lc(dev)->spare_buffer;
 		retval = mtd->read_oob(mtd, addr, &ops);
+#endif	
 	}
 
 	if (dev->param.inband_tags) {
@@ -173,7 +207,7 @@ int nandmtd2_mark_block_bad(struct yaffs_dev *dev, int block_no)
 		"nandmtd2_mark_block_bad %d", block_no);
 
 	retval =
-	    mtd->block_markbad(mtd,
+	    mtd_block_markbad(mtd,
 			       block_no * dev->param.chunks_per_block *
 			       dev->param.total_bytes_per_chunk);
 
@@ -192,7 +226,7 @@ int nandmtd2_query_block(struct yaffs_dev *dev, int block_no,
 
 	yaffs_trace(YAFFS_TRACE_MTD, "nandmtd2_query_block %d", block_no);
 	retval =
-	    mtd->block_isbad(mtd,
+	    mtd_block_isbad(mtd,
 			     block_no * dev->param.chunks_per_block *
 			     dev->param.total_bytes_per_chunk);
 
@@ -210,6 +244,13 @@ int nandmtd2_query_block(struct yaffs_dev *dev, int block_no,
 			*seq_number = t.seq_number;
 			*state = YAFFS_BLOCK_STATE_NEEDS_SCANNING;
 		} else {
+			*seq_number = 0;
+			*state = YAFFS_BLOCK_STATE_EMPTY;
+		}
+				/*if ecc unfixed, set the block empty. This block will be erased when allocate.*/
+		if(t.ecc_result == YAFFS_ECC_RESULT_UNFIXED)
+		{
+			printk("yaffsdebug : unfixed ecc error when scan block, seqnum:0x%x\n",t.seq_number);
 			*seq_number = 0;
 			*state = YAFFS_BLOCK_STATE_EMPTY;
 		}

@@ -16,6 +16,10 @@ static int write_mmp_block(struct buffer_head *bh)
 	lock_buffer(bh);
 	bh->b_end_io = end_buffer_write_sync;
 	get_bh(bh);
+#ifdef FEATURE_STORAGE_META_LOG
+	if( bh && bh->b_bdev && bh->b_bdev->bd_disk)
+		set_metadata_rw_status(bh->b_bdev->bd_disk->first_minor, WAIT_WRITE_CNT);
+#endif
 	submit_bh(WRITE_SYNC, bh);
 	wait_on_buffer(bh);
 	if (unlikely(!buffer_uptodate(bh)))
@@ -45,6 +49,10 @@ static int read_mmp_block(struct super_block *sb, struct buffer_head **bh,
 		get_bh(*bh);
 		lock_buffer(*bh);
 		(*bh)->b_end_io = end_buffer_read_sync;
+#ifdef FEATURE_STORAGE_META_LOG
+		if( (*bh) && (*bh)->b_bdev && (*bh)->b_bdev->bd_disk)
+			set_metadata_rw_status((*bh)->b_bdev->bd_disk->first_minor, WAIT_READ_CNT);
+#endif
 		submit_bh(READ_SYNC, *bh);
 		wait_on_buffer(*bh);
 		if (!buffer_uptodate(*bh)) {

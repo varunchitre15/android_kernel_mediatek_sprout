@@ -766,17 +766,23 @@ EXPORT_SYMBOL(pagevec_lookup_tag);
  */
 void __init swap_setup(void)
 {
+#ifndef CONFIG_ZRAM
 	unsigned long megs = totalram_pages >> (20 - PAGE_SHIFT);
+#endif
 
 #ifdef CONFIG_SWAP
 	bdi_init(swapper_space.backing_dev_info);
 #endif
 
 	/* Use a smaller cluster for small-memory machines */
+#ifdef CONFIG_ZRAM
+	page_cluster = 0; // disable swap read-ahead
+#else
 	if (megs < 16)
 		page_cluster = 2;
 	else
 		page_cluster = 3;
+#endif
 	/*
 	 * Right now other parts of the system means that we
 	 * _really_ don't want to cluster much more

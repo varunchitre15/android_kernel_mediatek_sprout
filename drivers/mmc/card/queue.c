@@ -19,7 +19,7 @@
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
 #include "queue.h"
-
+#include <linux/mmc/mmc.h>
 #define MMC_QUEUE_BOUNCESZ	65536
 
 #define MMC_QUEUE_SUSPENDED	(1 << 0)
@@ -58,10 +58,29 @@ static int mmc_queue_thread(void *d)
 	do {
 		struct request *req = NULL;
 		struct mmc_queue_req *tmp;
+#ifdef MTK_IO_PERFORMANCE_DEBUG
+		int dir = 0;
+		unsigned long long check_point = 0;
+#endif
 
 		spin_lock_irq(q->queue_lock);
 		set_current_state(TASK_INTERRUPTIBLE);
+#ifdef MTK_IO_PERFORMANCE_DEBUG
+		if ((1 == g_mtk_mmc_perf_dbg) && (2 == g_mtk_mmc_dbg_range)){
+			check_point = sched_clock();
+		}
+#endif
 		req = blk_fetch_request(q);
+#ifdef MTK_IO_PERFORMANCE_DEBUG
+			if (req && (1 == g_mtk_mmc_perf_dbg) && (2 == g_mtk_mmc_dbg_range)){
+					dir = (blk_rq_sectors(req)>1 ? (rq_data_dir(req) == READ ? 18 : 25) : 0);
+					if ((blk_rq_pos(req) >= g_dbg_range_start) && ((blk_rq_pos(req) <= g_dbg_range_end) && (dir == g_check_read_write))){
+						g_dbg_req_count++;
+						g_mmcqd_buf[g_dbg_req_count][1] = sched_clock();
+						g_mmcqd_buf[g_dbg_req_count][0] = check_point;
+					}
+				}
+#endif	
 		mq->mqrq_cur->req = req;
 		spin_unlock_irq(q->queue_lock);
 
@@ -162,7 +181,7 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
 		   spinlock_t *lock, const char *subname)
 {
 	struct mmc_host *host = card->host;
-	u64 limit = BLK_BOUNCE_HIGH;
+	u64 limit = BLK_BOUNCE_ANY;
 	int ret;
 	struct mmc_queue_req *mqrq_cur = &mq->mqrq[0];
 	struct mmc_queue_req *mqrq_prev = &mq->mqrq[1];
@@ -177,6 +196,12 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
 
 	memset(&mq->mqrq_cur, 0, sizeof(mq->mqrq_cur));
 	memset(&mq->mqrq_prev, 0, sizeof(mq->mqrq_prev));
+#ifdef CONFIG_ZRAM    
+    if (mmc_card_mmc(card) &&
+        (totalram_pages << (PAGE_SHIFT - 10)) <= (256 * 1024))
+        mq->queue->backing_dev_info.ra_pages =
+    		(VM_MIN_READAHEAD * 1024) / PAGE_CACHE_SIZE;
+#endif // CONFIG_ZRAM
 	mq->mqrq_cur = mqrq_cur;
 	mq->mqrq_prev = mqrq_prev;
 	mq->queue->queuedata = mq;

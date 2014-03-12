@@ -148,7 +148,8 @@ else
 	echo "Error: kernelrelease not valid - run 'make prepare' to update it"
 	exit 1
 fi
-
+# clear LOCALVERSION variable explicitly to break vcs info. brought in
+LOCALVERSION=
 # localversion* files in the build and source directory
 res="$(collect_files localversion*)"
 if test ! "$srctree" -ef .; then

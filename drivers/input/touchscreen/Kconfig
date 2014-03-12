@@ -387,6 +387,35 @@ config TOUCHSCREEN_MK712
 	  To compile this driver as a module, choose M here: the
 	  module will be called mk712.
 
+config MTK_TOUCHPANEL # TOUCHSCREEN_MT6516 TOUCHSCREEN_MT6573
+        tristate "MediaTek Touch Panel Driver"
+        help
+          Say Y here if you have MediaTek MT6516 touch panel.
+          If unsure, say N.
+	
+# Touch panel
+config MTK_GT9XX
+        bool "GT9XX for Mediatek package"
+        default n
+config MTK_FT5406
+        bool "FT5406 for Mediatek package"
+        default n
+
+config MTK_MMS134
+        bool "MMS134 for Mediatek package"
+        default n
+
+config MTK_MSG2133
+        bool "MSG2133 for Mediatek package"
+        default n
+
+config MTK_CTP_RESET_CONFIG
+	bool "MTK_CTP_RESET_CONFIG"
+	help
+	   Reset TP IC for avoiding issue of DL wrong load.
+
+
+
 config TOUCHSCREEN_HP600
 	tristate "HP Jornada 6xx touchscreen"
 	depends on SH_HP6XX && SH_ADC
@@ -851,4 +880,9 @@ config TOUCHSCREEN_TPS6507X
 	  To compile this driver as a module, choose M here: the
 	  module will be called tps6507x_ts.
 
+config TOUCHSCREEN_SYNAPTICS_S2202
+	tristate "Synaptics i2c touchscreen"
+	depends on I2C
+	help
+	  This enables support for Synaptics RMI over I2C based touchscreens.
 endif

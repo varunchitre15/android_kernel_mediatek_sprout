@@ -19,6 +19,7 @@
 #include <linux/sched.h>
 #include <linux/highmem.h>
 #include <linux/perf_event.h>
+#include <linux/aee.h>
 
 #include <asm/exception.h>
 #include <asm/pgtable.h>
@@ -523,7 +524,7 @@ struct fsr_info {
 #include "fsr-2level.c"
 #endif
 
-void __init
+void 
 hook_fault_code(int nr, int (*fn)(unsigned long, unsigned int, struct pt_regs *),
 		int sig, int code, const char *name)
 {
@@ -535,6 +536,7 @@ hook_fault_code(int nr, int (*fn)(unsigned long, unsigned int, struct pt_regs *)
 	fsr_info[nr].code = code;
 	fsr_info[nr].name = name;
 }
+EXPORT_SYMBOL(hook_fault_code);
 
 /*
  * Dispatch a data abort to the relevant handler.
@@ -542,11 +544,36 @@ hook_fault_code(int nr, int (*fn)(unsigned long, unsigned int, struct pt_regs *)
 asmlinkage void __exception
 do_DataAbort(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
 {
+	struct thread_info *thread = current_thread_info();
 	const struct fsr_info *inf = fsr_info + fsr_fs(fsr);
+	int ret;
 	struct siginfo info;
 
-	if (!inf->fn(addr, fsr & ~FSR_LNX_PF, regs))
+	if (!user_mode(regs)) {
+		thread->cpu_excp++;
+		if (thread->cpu_excp == 1) {
+			thread->regs_on_excp = (void *)regs;
+		}
+		/*
+		 * NoteXXX: The data abort exception may happen twice
+		 *          when calling probe_kernel_address() in which.
+		 *          __copy_from_user_inatomic() is used and the
+		 *          fixup table lookup may be performed.
+		 *          Check if the nested panic happens via 
+		 *          (cpu_excp >= 3).
+		 */
+		if (thread->cpu_excp >= 3) {
+			aee_stop_nested_panic(regs);
+		}
+	}
+
+	ret = inf->fn(addr, fsr & ~FSR_LNX_PF, regs);
+	if (!ret) {
+		if (!user_mode(regs)) {
+			thread->cpu_excp--;
+		}
 		return;
+	}
 
 	printk(KERN_ALERT "Unhandled fault: %s (0x%03x) at 0x%08lx\n",
 		inf->name, fsr, addr);
@@ -574,11 +601,36 @@ hook_ifault_code(int nr, int (*fn)(unsigned long, unsigned int, struct pt_regs *
 asmlinkage void __exception
 do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
 {
+	struct thread_info *thread = current_thread_info();
 	const struct fsr_info *inf = ifsr_info + fsr_fs(ifsr);
+	int ret;
 	struct siginfo info;
 
-	if (!inf->fn(addr, ifsr | FSR_LNX_PF, regs))
+	if (!user_mode(regs)) {
+		thread->cpu_excp++;
+		if (thread->cpu_excp == 1) {
+			thread->regs_on_excp = (void *)regs;
+		}
+		/*
+		 * NoteXXX: The data abort exception may happen twice
+		 *          when calling probe_kernel_address() in which.
+		 *          __copy_from_user_inatomic() is used and the
+		 *          fixup table lookup may be performed.
+		 *          Check if the nested panic happens via 
+		 *          (cpu_excp >= 3).
+		 */
+		if (thread->cpu_excp >= 3) {
+			aee_stop_nested_panic(regs);
+		}
+	}
+
+	ret = inf->fn(addr, ifsr | FSR_LNX_PF, regs);
+	if (!ret) {
+		if (!user_mode(regs)) {
+			thread->cpu_excp--;
+		}
 		return;
+	}
 
 	printk(KERN_ALERT "Unhandled prefetch abort: %s (0x%03x) at 0x%08lx\n",
 		inf->name, ifsr, addr);

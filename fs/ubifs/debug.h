@@ -16,7 +16,7 @@
  * this program; if not, write to the Free Software Foundation, Inc., 51
  * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
- * Authors: Artem Bityutskiy (Битюцкий Артём)
+ * Authors: Artem Bityutskiy (?и???кий ????м)
  *          Adrian Hunter
  */
 
@@ -124,6 +124,8 @@ struct ubifs_debug_info {
 	struct dentry *dfs_chk_lprops;
 	struct dentry *dfs_chk_fs;
 	struct dentry *dfs_tst_rcvry;
+	struct dentry *dfs_lca_debug;
+        struct dentry *dfs_lca_show_tnc;
 };
 
 /**
@@ -143,6 +145,18 @@ struct ubifs_global_debug_info {
 	unsigned int chk_lprops:1;
 	unsigned int chk_fs:1;
 	unsigned int tst_rcvry:1;
+};
+
+/**
+ * ubifs_global_debug_tnc - global (not per-FS) UBIFS debugging tnc information.
+ *
+ */
+struct ubifs_global_debug_tnc {
+    unsigned int total_ubifs_volume;
+    uint32_t total_znode;
+    uint32_t total_tnc_leaf_lens;
+    uint32_t total_clean_znode;
+    uint32_t total_clean_tnc_leaf_lens;
 };
 
 #define ubifs_assert(expr) do {                                                \
@@ -170,7 +184,7 @@ struct ubifs_global_debug_info {
 #define ubifs_dbg_msg(type, fmt, ...) \
 	pr_debug("UBIFS DBG " type ": " fmt "\n", ##__VA_ARGS__)
 
-#define DBG_KEY_BUF_LEN 48
+#define DBG_KEY_BUF_LEN 32
 #define ubifs_dbg_msg_key(type, key, fmt, ...) do {                            \
 	char __tmp_key_buf[DBG_KEY_BUF_LEN];                                   \
 	pr_debug("UBIFS DBG " type ": " fmt "%s\n", ##__VA_ARGS__,             \

@@ -465,7 +465,7 @@ static int try_read_node(const struct ubifs_info *c, void *buf, int type,
 	if (err) {
 		ubifs_err("cannot read node type %d from LEB %d:%d, error %d",
 			  type, lnum, offs, err);
-		return err;
+		//return err;
 	}
 
 	if (le32_to_cpu(ch->magic) != UBIFS_NODE_MAGIC)

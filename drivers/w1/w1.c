@@ -977,6 +977,7 @@ int w1_process(void *data)
 	 * time can be calculated in jiffies once.
 	 */
 	const unsigned long jtime = msecs_to_jiffies(w1_timeout * 1000);
+	set_freezable();
 
 	while (!kthread_should_stop()) {
 		if (dev->search_count) {

@@ -146,6 +146,228 @@ int arch_update_cpu_topology(void);
 
 /* Common values for CPUs */
 #ifndef SD_CPU_INIT
+#ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
+#ifdef CONFIG_MTK_SCHED_CMP_PACK_SMALL_TASK
+#ifdef CONFIG_MTK_SCHED_CMP_TGS
+#define SD_CPU_INIT (struct sched_domain) {				\
+	.min_interval		= 1,					\
+	.max_interval		= 4,					\
+	.busy_factor		= 64,					\
+	.imbalance_pct		= 125,					\
+	.cache_nice_tries	= 1,					\
+	.busy_idx		= 2,					\
+	.idle_idx		= 1,					\
+	.newidle_idx		= 0,					\
+	.wake_idx		= 0,					\
+	.forkexec_idx		= 0,					\
+									\
+	.flags			= 1*SD_LOAD_BALANCE			\
+				| 1*SD_BALANCE_NEWIDLE			\
+				| 1*SD_BALANCE_EXEC			\
+				| 1*SD_BALANCE_FORK			\
+				| 1*SD_BALANCE_WAKE			\
+				| 0*SD_WAKE_AFFINE			\
+				| 0*SD_PREFER_LOCAL			\
+				| 0*SD_SHARE_CPUPOWER			\
+				| 0*SD_SHARE_PKG_RESOURCES		\
+				| 0*SD_SERIALIZE			\
+				| sd_balance_for_package_power()	\
+				| sd_power_saving_flags()		\
+				| arch_sd_share_power_line()	\
+				| 1*SD_BALANCE_TG	\
+				,					\
+	.last_balance		= jiffies,				\
+	.balance_interval	= 1,					\
+}
+#else  //CONFIG_MTK_SCHED_CMP_TGS
+#define SD_CPU_INIT (struct sched_domain) {				\
+	.min_interval		= 1,					\
+	.max_interval		= 4,					\
+	.busy_factor		= 64,					\
+	.imbalance_pct		= 125,					\
+	.cache_nice_tries	= 1,					\
+	.busy_idx		= 2,					\
+	.idle_idx		= 1,					\
+	.newidle_idx		= 0,					\
+	.wake_idx		= 0,					\
+	.forkexec_idx		= 0,					\
+									\
+	.flags			= 1*SD_LOAD_BALANCE			\
+				| 1*SD_BALANCE_NEWIDLE			\
+				| 1*SD_BALANCE_EXEC			\
+				| 1*SD_BALANCE_FORK			\
+				| 1*SD_BALANCE_WAKE			\
+				| 0*SD_WAKE_AFFINE			\
+				| 0*SD_PREFER_LOCAL			\
+				| 0*SD_SHARE_CPUPOWER			\
+				| 0*SD_SHARE_PKG_RESOURCES		\
+				| 0*SD_SERIALIZE			\
+				| sd_balance_for_package_power()	\
+				| sd_power_saving_flags()		\
+				| arch_sd_share_power_line()	\
+				,					\
+	.last_balance		= jiffies,				\
+	.balance_interval	= 1,					\
+}
+#endif // CONFIG_MTK_SCHED_CMP_TGS
+#else  // CONFIG_MTK_SCHED_CMP_PACK_SMALL_TASK
+#ifdef CONFIG_MTK_SCHED_CMP_TGS
+#define SD_CPU_INIT (struct sched_domain) {				\
+	.min_interval		= 1,					\
+	.max_interval		= 4,					\
+	.busy_factor		= 64,					\
+	.imbalance_pct		= 125,					\
+	.cache_nice_tries	= 1,					\
+	.busy_idx		= 2,					\
+	.idle_idx		= 1,					\
+	.newidle_idx		= 0,					\
+	.wake_idx		= 0,					\
+	.forkexec_idx		= 0,					\
+									\
+	.flags			= 1*SD_LOAD_BALANCE			\
+				| 1*SD_BALANCE_NEWIDLE			\
+				| 1*SD_BALANCE_EXEC			\
+				| 1*SD_BALANCE_FORK			\
+				| 1*SD_BALANCE_WAKE			\
+				| 0*SD_WAKE_AFFINE			\
+				| 0*SD_PREFER_LOCAL			\
+				| 0*SD_SHARE_CPUPOWER			\
+				| 0*SD_SHARE_PKG_RESOURCES		\
+				| 0*SD_SERIALIZE			\
+				| sd_balance_for_package_power()	\
+				| sd_power_saving_flags()		\
+				| 1*SD_BALANCE_TG	\
+				,					\
+	.last_balance		= jiffies,				\
+	.balance_interval	= 1,					\
+}
+#else  //CONFIG_MTK_SCHED_CMP_TGS
+#define SD_CPU_INIT (struct sched_domain) {				\
+	.min_interval		= 1,					\
+	.max_interval		= 4,					\
+	.busy_factor		= 64,					\
+	.imbalance_pct		= 125,					\
+	.cache_nice_tries	= 1,					\
+	.busy_idx		= 2,					\
+	.idle_idx		= 1,					\
+	.newidle_idx		= 0,					\
+	.wake_idx		= 0,					\
+	.forkexec_idx		= 0,					\
+									\
+	.flags			= 1*SD_LOAD_BALANCE			\
+				| 1*SD_BALANCE_NEWIDLE			\
+				| 1*SD_BALANCE_EXEC			\
+				| 1*SD_BALANCE_FORK			\
+				| 1*SD_BALANCE_WAKE			\
+				| 0*SD_WAKE_AFFINE			\
+				| 0*SD_PREFER_LOCAL			\
+				| 0*SD_SHARE_CPUPOWER			\
+				| 0*SD_SHARE_PKG_RESOURCES		\
+				| 0*SD_SERIALIZE			\
+				| sd_balance_for_package_power()	\
+				| sd_power_saving_flags()		\
+				,					\
+	.last_balance		= jiffies,				\
+	.balance_interval	= 1,					\
+}
+#endif // CONFIG_MTK_SCHED_CMP_TGS
+#endif // CONFIG_MTK_SCHED_CMP_PACK_SMALL_TASK
+#else
+#ifdef CONFIG_MTK_SCHED_CMP_PACK_SMALL_TASK
+#ifdef CONFIG_MTK_SCHED_CMP_TGS
+#define SD_CPU_INIT (struct sched_domain) {				\
+	.min_interval		= 1,					\
+	.max_interval		= 4,					\
+	.busy_factor		= 64,					\
+	.imbalance_pct		= 125,					\
+	.cache_nice_tries	= 1,					\
+	.busy_idx		= 2,					\
+	.idle_idx		= 1,					\
+	.newidle_idx		= 0,					\
+	.wake_idx		= 0,					\
+	.forkexec_idx		= 0,					\
+									\
+	.flags			= 1*SD_LOAD_BALANCE			\
+				| 1*SD_BALANCE_NEWIDLE			\
+				| 1*SD_BALANCE_EXEC			\
+				| 1*SD_BALANCE_FORK			\
+				| 0*SD_BALANCE_WAKE			\
+				| 1*SD_WAKE_AFFINE			\
+				| 0*SD_PREFER_LOCAL			\
+				| 0*SD_SHARE_CPUPOWER			\
+				| 0*SD_SHARE_PKG_RESOURCES		\
+				| 0*SD_SERIALIZE			\
+				| sd_balance_for_package_power()	\
+				| sd_power_saving_flags()		\
+				| arch_sd_share_power_line() \
+				| 1*SD_BALANCE_TG	\
+				,					\
+	.last_balance		= jiffies,				\
+	.balance_interval	= 1,					\
+}
+#else //CONFIG_MTK_SCHED_CMP_TGS
+#define SD_CPU_INIT (struct sched_domain) {				\
+	.min_interval		= 1,					\
+	.max_interval		= 4,					\
+	.busy_factor		= 64,					\
+	.imbalance_pct		= 125,					\
+	.cache_nice_tries	= 1,					\
+	.busy_idx		= 2,					\
+	.idle_idx		= 1,					\
+	.newidle_idx		= 0,					\
+	.wake_idx		= 0,					\
+	.forkexec_idx		= 0,					\
+									\
+	.flags			= 1*SD_LOAD_BALANCE			\
+				| 1*SD_BALANCE_NEWIDLE			\
+				| 1*SD_BALANCE_EXEC			\
+				| 1*SD_BALANCE_FORK			\
+				| 0*SD_BALANCE_WAKE			\
+				| 1*SD_WAKE_AFFINE			\
+				| 0*SD_PREFER_LOCAL			\
+				| 0*SD_SHARE_CPUPOWER			\
+				| 0*SD_SHARE_PKG_RESOURCES		\
+				| 0*SD_SERIALIZE			\
+				| sd_balance_for_package_power()	\
+				| sd_power_saving_flags()		\
+				| arch_sd_share_power_line()	\
+				,					\
+	.last_balance		= jiffies,				\
+	.balance_interval	= 1,					\
+}
+#endif // CONFIG_MTK_SCHED_CMP_TGS
+#else  // CONFIG_MTK_SCHED_CMP_PACK_SMALL_TASK  
+#ifdef CONFIG_MTK_SCHED_CMP_TGS
+#define SD_CPU_INIT (struct sched_domain) {				\
+	.min_interval		= 1,					\
+	.max_interval		= 4,					\
+	.busy_factor		= 64,					\
+	.imbalance_pct		= 125,					\
+	.cache_nice_tries	= 1,					\
+	.busy_idx		= 2,					\
+	.idle_idx		= 1,					\
+	.newidle_idx		= 0,					\
+	.wake_idx		= 0,					\
+	.forkexec_idx		= 0,					\
+									\
+	.flags			= 1*SD_LOAD_BALANCE			\
+				| 1*SD_BALANCE_NEWIDLE			\
+				| 1*SD_BALANCE_EXEC			\
+				| 1*SD_BALANCE_FORK			\
+				| 0*SD_BALANCE_WAKE			\
+				| 1*SD_WAKE_AFFINE			\
+				| 0*SD_PREFER_LOCAL			\
+				| 0*SD_SHARE_CPUPOWER			\
+				| 0*SD_SHARE_PKG_RESOURCES		\
+				| 0*SD_SERIALIZE			\
+				| sd_balance_for_package_power()	\
+				| sd_power_saving_flags()		\
+				| 1*SD_BALANCE_TG	\
+				,					\
+	.last_balance		= jiffies,				\
+	.balance_interval	= 1,					\
+}
+#else //CONFIG_MTK_SCHED_CMP_TGS
 #define SD_CPU_INIT (struct sched_domain) {				\
 	.min_interval		= 1,					\
 	.max_interval		= 4,					\
@@ -174,6 +396,9 @@ int arch_update_cpu_topology(void);
 	.last_balance		= jiffies,				\
 	.balance_interval	= 1,					\
 }
+#endif // CONFIG_MTK_SCHED_CMP_TGS
+#endif // CONFIG_MTK_SCHED_CMP_PACK_SMALL_TASK
+#endif
 #endif
 
 /* sched_domains SD_ALLNODES_INIT for NUMA machines */

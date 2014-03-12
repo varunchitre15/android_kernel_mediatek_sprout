@@ -632,14 +632,22 @@ static ssize_t proc_info_read(struct file * file, char __user * buf,
 		count = PROC_BLOCK_SIZE;
 
 	length = -ENOMEM;
+#ifndef CONFIG_MTK_PAGERECORDER
 	if (!(page = __get_free_page(GFP_TEMPORARY)))
 		goto out;
-
+#else
+	if (!(page = __get_free_page_nopagedebug(GFP_TEMPORARY)))
+		goto out;
+#endif
 	length = PROC_I(inode)->op.proc_read(task, (char*)page);
 
 	if (length >= 0)
 		length = simple_read_from_buffer(buf, count, ppos, (char *)page, length);
+#ifndef CONFIG_MTK_PAGERECORDER
 	free_page(page);
+#else
+	free_page_nopagedebug(page);
+#endif
 out:
 	put_task_struct(task);
 out_no_task:
@@ -3008,6 +3016,7 @@ static const struct pid_entry tgid_base_stuff[] = {
 	INF("cmdline",    S_IRUGO, proc_pid_cmdline),
 	ONE("stat",       S_IRUGO, proc_tgid_stat),
 	ONE("statm",      S_IRUGO, proc_pid_statm),
+        REG("mtk_maps",       S_IRUGO, proc_pid_mtk_maps_operations),
 	REG("maps",       S_IRUGO, proc_pid_maps_operations),
 #ifdef CONFIG_NUMA
 	REG("numa_maps",  S_IRUGO, proc_pid_numa_maps_operations),

@@ -1471,10 +1471,12 @@ void ubifs_lpt_free(struct ubifs_info *c, int wr_only)
 
 	free_obsolete_cnodes(c); /* Leftover from a failed commit */
 
-	vfree(c->ltab_cmt);
+	kfree(c->ltab_cmt);
 	c->ltab_cmt = NULL;
-	vfree(c->lpt_buf);
+#if 0
+	kfree(c->lpt_buf);
 	c->lpt_buf = NULL;
+#endif
 	kfree(c->lsave);
 	c->lsave = NULL;
 
@@ -1493,7 +1495,7 @@ void ubifs_lpt_free(struct ubifs_info *c, int wr_only)
 		kfree(c->lpt_heap[i].arr);
 	kfree(c->dirty_idx.arr);
 	kfree(c->nroot);
-	vfree(c->ltab);
+	kfree(c->ltab);
 	kfree(c->lpt_nod_buf);
 }
 
@@ -1644,7 +1646,7 @@ static int dbg_check_ltab_lnum(struct ubifs_info *c, int lnum)
 	if (!dbg_is_chk_lprops(c))
 		return 0;
 
-	buf = p = __vmalloc(c->leb_size, GFP_NOFS, PAGE_KERNEL);
+	buf = p = kmalloc(c->leb_size, GFP_KERNEL);
 	if (!buf) {
 		ubifs_err("cannot allocate memory for ltab checking");
 		return 0;
@@ -1698,7 +1700,7 @@ static int dbg_check_ltab_lnum(struct ubifs_info *c, int lnum)
 
 	err = 0;
 out:
-	vfree(buf);
+	kfree(buf);
 	return err;
 }
 
@@ -1896,7 +1898,7 @@ static void dump_lpt_leb(const struct ubifs_info *c, int lnum)
 
 	printk(KERN_DEBUG "(pid %d) start dumping LEB %d\n",
 	       current->pid, lnum);
-	buf = p = __vmalloc(c->leb_size, GFP_NOFS, PAGE_KERNEL);
+	buf = p = kmalloc(c->leb_size, GFP_KERNEL);
 	if (!buf) {
 		ubifs_err("cannot allocate memory to dump LPT");
 		return;
@@ -1981,7 +1983,7 @@ static void dump_lpt_leb(const struct ubifs_info *c, int lnum)
 	printk(KERN_DEBUG "(pid %d) finish dumping LEB %d\n",
 	       current->pid, lnum);
 out:
-	vfree(buf);
+	kfree(buf);
 	return;
 }
 

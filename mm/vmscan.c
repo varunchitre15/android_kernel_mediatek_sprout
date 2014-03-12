@@ -43,6 +43,8 @@
 #include <linux/sysctl.h>
 #include <linux/oom.h>
 #include <linux/prefetch.h>
+//Google Patch
+//https://android.googlesource.com/kernel/common/+/29b8a347fcba8a7df5478f746f1d2a422e294190%5E%21/#F0
 #include <linux/debugfs.h>
 
 #include <asm/tlbflush.h>
@@ -156,6 +158,7 @@ struct mem_cgroup_zone {
  * From 0 .. 100.  Higher means more swappy.
  */
 int vm_swappiness = 60;
+EXPORT_SYMBOL(vm_swappiness);
 long vm_total_pages;	/* The total number of pages which the VM controls */
 
 static LIST_HEAD(shrinker_list);
@@ -202,6 +205,8 @@ static unsigned long zone_nr_lru_pages(struct mem_cgroup_zone *mz,
 
 	return zone_page_state(mz->zone, NR_LRU_BASE + lru);
 }
+//Google Patch
+//https://android.googlesource.com/kernel/common/+/29b8a347fcba8a7df5478f746f1d2a422e294190%5E%21/#F0
 
 struct dentry *debug_file;
 
@@ -215,7 +220,6 @@ static int debug_shrinker_show(struct seq_file *s, void *unused)
 
 	down_read(&shrinker_rwsem);
 	list_for_each_entry(shrinker, &shrinker_list, list) {
-		char name[64];
 		int num_objs;
 
 		num_objs = shrinker->shrink(shrinker, &sc);
@@ -237,6 +241,8 @@ static const struct file_operations debug_shrinker_fops = {
         .release = single_release,
 };
 
+
+
 /*
  * Add a shrinker callback to be called from the vm
  */
@@ -249,6 +255,9 @@ void register_shrinker(struct shrinker *shrinker)
 }
 EXPORT_SYMBOL(register_shrinker);
 
+//Google Patch
+//https://android.googlesource.com/kernel/common/+/29b8a347fcba8a7df5478f746f1d2a422e294190%5E%21/#F0
+
 static int __init add_shrinker_debug(void)
 {
 	debugfs_create_file("shrinker", 0644, NULL, NULL,
@@ -257,6 +266,7 @@ static int __init add_shrinker_debug(void)
 }
 
 late_initcall(add_shrinker_debug);
+
 
 /*
  * Remove one
@@ -1383,7 +1393,7 @@ static int too_many_isolated(struct zone *zone, int file,
 {
 	unsigned long inactive, isolated;
 
-	if (current_is_kswapd())
+	if (current_is_kswapd() || sc->hibernation_mode)
 		return 0;
 
 	if (!global_reclaim(sc))
@@ -2043,7 +2053,9 @@ out:
 		unsigned long scan;
 
 		scan = zone_nr_lru_pages(mz, lru);
-		if (priority || noswap || !vmscan_swappiness(mz, sc)) {
+		if (sc->hibernation_mode)
+			scan = SWAP_CLUSTER_MAX;
+		else if ((priority || noswap || !vmscan_swappiness(mz, sc))) {
 			scan >>= priority;
 			if (!scan && force_scan)
 				scan = SWAP_CLUSTER_MAX;
@@ -2067,6 +2079,9 @@ static inline bool should_continue_reclaim(struct mem_cgroup_zone *mz,
 {
 	unsigned long pages_for_compaction;
 	unsigned long inactive_lru_pages;
+
+	if (nr_reclaimed && nr_scanned && sc->nr_to_reclaim >= sc->nr_reclaimed)
+		return true;
 
 	/* If not in reclaim/compaction mode, stop */
 	if (!(sc->reclaim_mode & RECLAIM_MODE_COMPACTION))
@@ -2166,7 +2181,7 @@ restart:
 	 * Even if we did not try to evict anon pages at all, we want to
 	 * rebalance the anon lru active/inactive ratio.
 	 */
-	if (inactive_anon_is_low(mz))
+	if (sc->hibernation_mode || inactive_anon_is_low(mz))
 		shrink_active_list(SWAP_CLUSTER_MAX, mz, sc, priority, 0);
 
 	/* reclaim/compaction might need reclaim to continue */
@@ -2308,7 +2323,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
 				continue;
 			if (zone->all_unreclaimable && priority != DEF_PRIORITY)
 				continue;	/* Let kswapd poll it */
-			if (COMPACTION_BUILD) {
+			if (COMPACTION_BUILD && !sc->hibernation_mode) {
 				/*
 				 * If we already have plenty of memory free for
 				 * compaction in this zone, don't free any more.
@@ -2396,6 +2411,11 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
 	struct zone *zone;
 	unsigned long writeback_threshold;
 	bool aborted_reclaim;
+
+#ifdef CONFIG_FREEZER
+	if (unlikely(pm_freezing && !sc->hibernation_mode))
+		return 0;
+#endif
 
 	delayacct_freepages_start();
 
@@ -3196,6 +3216,11 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
 	if (!populated_zone(zone))
 		return;
 
+#ifdef CONFIG_FREEZER
+	if (pm_freezing)
+		return;
+#endif
+
 	if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
 		return;
 	pgdat = zone->zone_pgdat;
@@ -3256,11 +3281,11 @@ unsigned long zone_reclaimable_pages(struct zone *zone)
  * LRU order by reclaiming preferentially
  * inactive > active > active referenced > active mapped
  */
-unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+unsigned long shrink_memory_mask(unsigned long nr_to_reclaim, gfp_t mask)
 {
 	struct reclaim_state reclaim_state;
 	struct scan_control sc = {
-		.gfp_mask = GFP_HIGHUSER_MOVABLE,
+		.gfp_mask = mask,
 		.may_swap = 1,
 		.may_unmap = 1,
 		.may_writepage = 1,
@@ -3288,6 +3313,13 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
 
 	return nr_reclaimed;
 }
+EXPORT_SYMBOL_GPL(shrink_memory_mask);
+
+unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+{
+	return shrink_memory_mask(nr_to_reclaim, GFP_HIGHUSER_MOVABLE);
+}
+EXPORT_SYMBOL_GPL(shrink_all_memory);
 #endif /* CONFIG_HIBERNATION */
 
 /* It's optimal to keep kswapds on the same CPUs as their memory, but
@@ -3336,6 +3368,11 @@ int kswapd_run(int nid)
 	return ret;
 }
 
+        /*
+         * kernel patch
+         * commit: 0e343dbe08acb440f7914d989bcc32c1d1576735
+         * https://android.googlesource.com/kernel/common/+/0e343dbe08acb440f7914d989bcc32c1d1576735%5E!/#F0
+         */
 /*
  * Called by memory hotplug when all memory in a node is offlined.  Caller must
  * hold lock_memory_hotplug().
@@ -3344,6 +3381,8 @@ void kswapd_stop(int nid)
 {
 	struct task_struct *kswapd = NODE_DATA(nid)->kswapd;
 
+	//if (kswapd)
+	//	kthread_stop(kswapd);
 	if (kswapd) {
 		kthread_stop(kswapd);
 		NODE_DATA(nid)->kswapd = NULL;

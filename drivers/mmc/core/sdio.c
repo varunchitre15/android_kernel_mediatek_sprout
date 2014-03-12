@@ -526,7 +526,10 @@ static int sdio_set_bus_speed_mode(struct mmc_card *card)
 
 	if (bus_speed) {
 		mmc_set_timing(card->host, timing);
-		mmc_set_clock(card->host, card->sw_caps.uhs_max_dtr);
+		//mmc_set_clock(card->host, card->sw_caps.uhs_max_dtr);
+		//Before Auto-K of MT6290m is turn-on, 
+		//use 100M for safety when connect to MT6290m SDIO 3.0 device 
+		mmc_set_clock(card->host, 100*1000*1000);
 	}
 
 	return 0;
@@ -968,7 +971,7 @@ static int mmc_sdio_resume(struct mmc_host *host)
 	}
 
 	if (!err && host->sdio_irqs)
-		wake_up_process(host->sdio_irq_thread);
+        mmc_signal_sdio_irq(host);
 	mmc_release_host(host);
 
 	/*
@@ -1066,6 +1069,7 @@ static const struct mmc_bus_ops mmc_sdio_ops = {
 /*
  * Starting point for SDIO card init.
  */
+extern int sdio_cd_result;
 int mmc_attach_sdio(struct mmc_host *host)
 {
 	int err, i, funcs;
@@ -1198,7 +1202,9 @@ int mmc_attach_sdio(struct mmc_host *host)
 		if (err)
 			goto remove_added;
 	}
-
+#ifndef CONFIG_EARLY_LINUX_PORTING
+	sdio_cd_result = 0;
+#endif
 	mmc_claim_host(host);
 	return 0;
 
@@ -1246,8 +1252,8 @@ int sdio_reset_comm(struct mmc_card *card)
 	}
 
 	err = mmc_sdio_init_card(host, host->ocr, card, 0);
-	if (err)
-		goto err;
+    if (err)
+        goto err;
 
 	mmc_release_host(host);
 	return 0;

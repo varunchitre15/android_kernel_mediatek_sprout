@@ -44,6 +44,7 @@
 #include "truncate.h"
 
 #include <trace/events/ext4.h>
+#include <linux/blkdev.h>
 
 #define MPAGE_DA_EXTENT_TAIL 0x01
 
@@ -813,6 +814,13 @@ static int ext4_write_begin(struct file *file, struct address_space *mapping,
 	struct page *page;
 	pgoff_t index;
 	unsigned from, to;
+#if defined(FEATURE_STORAGE_PID_LOGGER)
+		extern unsigned char *page_logger;
+		struct page_pid_logger *tmp_logger;
+		unsigned long page_index;
+		extern spinlock_t g_locker;
+		unsigned long g_flags;
+#endif
 
 	trace_ext4_write_begin(inode, pos, len, flags);
 	/*
@@ -842,6 +850,20 @@ retry:
 		goto out;
 	}
 	*pagep = page;
+#if defined(FEATURE_STORAGE_PID_LOGGER)
+		if( page_logger && (*pagep)) {
+			page_index = (unsigned long)((*pagep) - mem_map) ;
+			tmp_logger =((struct page_pid_logger *)page_logger) + page_index;
+			spin_lock_irqsave(&g_locker, g_flags);
+			if( page_index < num_physpages) {
+				if( tmp_logger->pid1 == 0XFFFF)
+					tmp_logger->pid1 = current->pid;
+				else if( tmp_logger->pid1 != current->pid)
+					tmp_logger->pid2 = current->pid;
+			}
+			spin_unlock_irqrestore(&g_locker, g_flags);
+		}
+#endif
 
 	if (ext4_should_dioread_nolock(inode))
 		ret = __block_write_begin(page, pos, len, ext4_get_block_write);
@@ -2693,6 +2715,28 @@ static sector_t ext4_bmap(struct address_space *mapping, sector_t block)
 
 static int ext4_readpage(struct file *file, struct page *page)
 {
+	
+#if 0
+		struct page_pid_logger *tmp_logger;
+		extern unsigned char *page_logger;
+		extern spinlock_t g_locker;
+		if( page_logger && page) {
+			int page_index;
+			//printk(KERN_INFO"fat read hank logger count:%d init %x currentpid:%d page:%x mem_map:%x pfn:%d\n", num_physpages, page_logger, current->pid, page, mem_map, (unsigned)((page) - mem_map));
+	
+			page_index = (unsigned long)((page) - mem_map) ;
+			tmp_logger =((struct page_pid_logger *)page_logger) + page_index;
+			spin_lock(&g_locker);
+			if( page_index < num_physpages) {
+				if( tmp_logger->pid1 == 0XFFFF)
+					tmp_logger->pid1 = current->pid;
+				else if( tmp_logger->pid1 != current->pid )
+					tmp_logger->pid2 = current->pid;
+			}
+			spin_unlock(&g_locker);
+			//printk(KERN_INFO"tmp logger pid1:%u pid2:%u pfn:%d \n", tmp_logger->pid1, tmp_logger->pid2, (unsigned long)((page) - mem_map) );
+		}
+#endif
 	trace_ext4_readpage(page);
 	return mpage_readpage(page, ext4_get_block);
 }
@@ -3560,6 +3604,10 @@ make_io:
 		trace_ext4_load_inode(inode);
 		get_bh(bh);
 		bh->b_end_io = end_buffer_read_sync;
+#ifdef FEATURE_STORAGE_META_LOG
+		if( bh && bh->b_bdev && bh->b_bdev->bd_disk)
+			set_metadata_rw_status(bh->b_bdev->bd_disk->first_minor, WAIT_READ_CNT);
+#endif
 		submit_bh(READ | REQ_META | REQ_PRIO, bh);
 		wait_on_buffer(bh);
 		if (!buffer_uptodate(bh)) {
@@ -3661,6 +3709,7 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
 		return ERR_PTR(-ENOMEM);
 	if (!(inode->i_state & I_NEW))
 		return inode;
+
 
 	ei = EXT4_I(inode);
 	iloc.bh = NULL;

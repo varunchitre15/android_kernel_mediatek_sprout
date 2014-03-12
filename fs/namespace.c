@@ -20,8 +20,14 @@
 #include <linux/fs_struct.h>	/* get_fs_root et.al. */
 #include <linux/fsnotify.h>	/* fsnotify_vfsmount_delete */
 #include <linux/uaccess.h>
+//#define UMOUNT_LOG  //enable kernel layer unmount log when unmount fail
+#ifdef UMOUNT_LOG
+#include <linux/types.h>
+#endif
 #include "pnode.h"
 #include "internal.h"
+
+#include <linux/xlog.h>
 
 #define HASH_SHIFT ilog2(PAGE_SIZE / sizeof(struct list_head))
 #define HASH_SIZE (1UL << HASH_SHIFT)
@@ -128,10 +134,130 @@ void mnt_release_group_id(struct mount *mnt)
 /*
  * vfsmount lock must be held for read
  */
+#ifdef UMOUNT_LOG
+#define UMOUNT_Partition "/emmc@usrdata"
+struct  record_ref_count{ 
+  pid_t pid;
+  char name[TASK_COMM_LEN];
+  int count;
+  struct record_ref_count *next;
+};
+
+struct record_ref_count *ref_head    = NULL;
+struct record_ref_count *ref_current = NULL;
+struct record_ref_count *ref_prev    = NULL;
+int s_total_count = 0;
+#endif
 static inline void mnt_add_count(struct mount *mnt, int n)
 {
+#ifdef UMOUNT_LOG
+int print_link_list=0;
+#ifndef CONFIG_SMP
+	preempt_disable();
+#endif
+
+		if (strcmp(UMOUNT_Partition,mnt->mnt_devname)==0)
+			{
+				//if (strcmp("mobile_log_d",current->comm)!=0) 
+					{
+					//if (current->pid < 100)	//((current->pid < 70) && (current->pid > 60))	
+					{
+						//printk("Ahsin n=%d  current->pid=%d name=%s \n",n,current->pid,current->comm);
+						spin_lock(&mnt_id_lock);
+						if (ref_head == NULL) //linked list head (start)
+						{
+							printk("Ahsin link list init mnt_get_count=%d \n",mnt_get_count(mnt));
+							
+							ref_current = kmalloc(sizeof(struct record_ref_count), GFP_KERNEL);
+		     				if (ref_current == NULL)
+							    printk("Ahsin can't allocate memory for ref_current /n");
+
+			 				ref_current->next = NULL;
+							ref_current->pid = current->pid;
+							strncpy(ref_current->name, current->comm, TASK_COMM_LEN -1);					
+							ref_current->name[TASK_COMM_LEN -1] = '\0';
+							ref_current->count = n;
+							s_total_count = s_total_count + n;
+							ref_head = ref_current;
+							
+							printk("Ahsin ref_head == NULL pid=%d name=%s counter=%d n=%d \n",ref_current->pid,ref_current->name,ref_current->count,n);
+						}
+						else //check exist first and then add linked list or modify counter
+						{
+							ref_prev = ref_head;
+							while(ref_prev != NULL) 
+							{
+								//printk("Ahsin PID= %d, Name= %s, Count= %d n=%d  current->pid=%d \n", ref_prev->pid, ref_prev->name, ref_prev->count,n,current->pid);
+								if (strcmp(ref_prev->name,current->comm)==0) //(ref_prev->pid==current->pid)//exist and find, modify counter
+								{
+									ref_prev->count = ref_prev->count + n;
+									s_total_count = s_total_count + n;
+									//printk("Ahsin (ref_prev->name,current->comm) pid=%d name=%s counter=%d n=%d \n",ref_prev->pid,ref_prev->name,ref_prev->count,n);
+									break;
+								}
+								else 
+								{
+									if (ref_prev->next != NULL) 
+										ref_prev = ref_prev->next;
+									else 
+									{	// end of link list
+										ref_current = kmalloc(sizeof(struct record_ref_count), GFP_KERNEL);
+										if (ref_current == NULL)
+										    printk("Ahsin can't allocate memory for ref_prev /n");
+
+						 				ref_current->next = NULL;
+										ref_current->pid = current->pid;
+										strncpy(ref_current->name, current->comm, TASK_COMM_LEN -1);					
+										ref_current->name[TASK_COMM_LEN -1] = '\0';
+										ref_current->count = n;
+										s_total_count = s_total_count + n;
+										ref_prev->next = ref_current;
+										//printk("Ahsin new node(end of link list) pid=%d name=%s counter=%d n=%d \n",ref_current->pid,ref_current->name,ref_current->count,n);
+										break;
+										
+									}
+								}
+							}
+						}
+						spin_unlock(&mnt_id_lock);
+					}
+					}
+			}
+
+#ifndef CONFIG_SMP
+	preempt_enable();
+#endif
+#endif
 #ifdef CONFIG_SMP
 	this_cpu_add(mnt->mnt_pcp->mnt_count, n);
+#ifdef UMOUNT_LOG
+#if 0
+	if (strcmp(UMOUNT_Partition,mnt->mnt_devname)==0)
+	{
+		if (strcmp("mobile_log_d",current->comm)!=0) 
+			{
+				printk("Ahsin s_total_count=%d mnt_get_count=%d n=%d  current->pid=%d \n",s_total_count,mnt_get_count(mnt),n,current->pid);
+			//if (current->pid < 100)
+				{	
+					// print linked list
+					spin_lock(&mnt_id_lock);
+					ref_current = ref_head;
+					while(ref_current != NULL) 
+					{
+						if (ref_current->count)
+							{
+								print_link_list = print_link_list + ref_current->count;
+								//printk("Ahsin PID= %d, Name = %s, Count= %d \n", ref_current->pid, ref_current->name, ref_current->count);
+							}
+						ref_current = ref_current->next;
+					}
+					spin_unlock(&mnt_id_lock);
+					printk("Ahsin print_link_list=%d \n",print_link_list);
+				}
+			}
+	}
+#endif	
+#endif
 #else
 	preempt_disable();
 	mnt->mnt_count += n;
@@ -179,6 +305,12 @@ static struct mount *alloc_vfsmnt(const char *name)
 		if (!mnt->mnt_pcp)
 			goto out_free_devname;
 
+#ifdef UMOUNT_LOG
+		if (strcmp(UMOUNT_Partition,mnt->mnt_devname)==0)
+		{
+			printk("Ahsin alloc_vfsmnt current->pid=%d name=%s \n",current->pid,current->comm);	
+		}
+#endif		
 		this_cpu_add(mnt->mnt_pcp->mnt_count, 1);
 #else
 		mnt->mnt_count = 1;
@@ -695,17 +827,24 @@ vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void 
 	struct dentry *root;
 
 	if (!type)
+		{
+		xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_kern_mount, vfs_kern_mount, ENODEV\n"); 
 		return ERR_PTR(-ENODEV);
+		}
 
 	mnt = alloc_vfsmnt(name);
 	if (!mnt)
+		{
+		xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_kern_mount, vfs_kern_mount,alloc_vfsmnt,  ENOMEM\n"); 
 		return ERR_PTR(-ENOMEM);
+		}
 
 	if (flags & MS_KERNMOUNT)
 		mnt->mnt.mnt_flags = MNT_INTERNAL;
 
 	root = mount_fs(type, flags, name, data);
 	if (IS_ERR(root)) {
+		xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_kern_mount, vfs_kern_mount, mount_fs error\n"); 
 		free_vfsmnt(mnt);
 		return ERR_CAST(root);
 	}
@@ -1192,7 +1331,9 @@ SYSCALL_DEFINE2(umount, char __user *, name, int, flags)
 	struct mount *mnt;
 	int retval;
 	int lookup_flags = 0;
-
+#ifdef UMOUNT_LOG	
+	int total_value =0;
+#endif
 	if (flags & ~(MNT_FORCE | MNT_DETACH | MNT_EXPIRE | UMOUNT_NOFOLLOW))
 		return -EINVAL;
 
@@ -1214,6 +1355,32 @@ SYSCALL_DEFINE2(umount, char __user *, name, int, flags)
 		goto dput_and_out;
 
 	retval = do_umount(mnt, flags);
+#ifdef UMOUNT_LOG
+	{
+		printk("Ahsin do_umount retval=%d \n",retval);
+		//do_umount success: 0, do_umount busy: -16
+		//if do_umount fail, need to dump the link list here
+	
+		if(retval)
+			printk("Ahsin do_umount fail;  mnt_get_count=%d   mnt->mnt_devname=%s\n",mnt_get_count(mnt),mnt->mnt_devname);		
+		else
+			printk("Ahsin do_umount success;  mnt_get_count=%d   mnt->mnt_devname=%s\n",mnt_get_count(mnt),mnt->mnt_devname);		
+		
+		// print linked list
+		spin_lock(&mnt_id_lock);
+		ref_current = ref_head;
+		while(ref_current != NULL) 
+		{
+			total_value = total_value + ref_current->count;
+			
+			if (ref_current->count)
+				printk("Ahsin PID= %d, Name = %s, Count= %d \n", ref_current->pid, ref_current->name, ref_current->count);
+			ref_current = ref_current->next;
+		}
+		spin_unlock(&mnt_id_lock);
+		printk("Ahsin total_value=%d \n",total_value);
+	}
+#endif
 dput_and_out:
 	/* we mustn't call path_put() as that would clear mnt_expiry_mark */
 	dput(path.dentry);
@@ -1801,11 +1968,17 @@ do_kern_mount(const char *fstype, int flags, const char *name, void *data)
 	struct file_system_type *type = get_fs_type(fstype);
 	struct vfsmount *mnt;
 	if (!type)
+		{
+		xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_kern_mount, invalid type\n"); 
 		return ERR_PTR(-ENODEV);
+		}
 	mnt = vfs_kern_mount(type, flags, name, data);
 	if (!IS_ERR(mnt) && (type->fs_flags & FS_HAS_SUBTYPE) &&
 	    !mnt->mnt_sb->s_subtype)
+		{
+		xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_kern_mount, fs_set_subtype\n"); 
 		mnt = fs_set_subtype(mnt, fstype);
+		}
 	put_filesystem(type);
 	return mnt;
 }
@@ -1821,21 +1994,33 @@ static int do_add_mount(struct mount *newmnt, struct path *path, int mnt_flags)
 
 	err = lock_mount(path);
 	if (err)
+		{
+		xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_add_mount, lock_mount error, ret\n"); 
 		return err;
+		}
 
 	err = -EINVAL;
 	if (!(mnt_flags & MNT_SHRINKABLE) && !check_mnt(real_mount(path->mnt)))
+		{
+		xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_add_mount, err = -EINVAL (MNT_SHRINKABLE)\n"); 
 		goto unlock;
+		}
 
 	/* Refuse the same filesystem on the same mount point */
 	err = -EBUSY;
 	if (path->mnt->mnt_sb == newmnt->mnt.mnt_sb &&
 	    path->mnt->mnt_root == path->dentry)
+		{
+		xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_add_mount, err = -EBUSY\n"); 
 		goto unlock;
+		}
 
 	err = -EINVAL;
 	if (S_ISLNK(newmnt->mnt.mnt_root->d_inode->i_mode))
+		{
+		xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_add_mount, err = -EINVAL(S_ISLNK)\n"); 
 		goto unlock;
+		}
 
 	newmnt->mnt.mnt_flags = mnt_flags;
 	err = graft_tree(newmnt, path);
@@ -1856,19 +2041,31 @@ static int do_new_mount(struct path *path, char *type, int flags,
 	int err;
 
 	if (!type)
+		{
+		xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_new_mount, invalid type\n"); 
 		return -EINVAL;
+		}
 
 	/* we need capabilities... */
 	if (!capable(CAP_SYS_ADMIN))
+		{
+		xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_new_mount, capability error\n"); 
 		return -EPERM;
+		}
 
 	mnt = do_kern_mount(type, flags, name, data);
 	if (IS_ERR(mnt))
+		{
+		xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_new_mount, do_kern_mount error\n"); 
 		return PTR_ERR(mnt);
+		}
 
 	err = do_add_mount(real_mount(mnt), path, mnt_flags);
 	if (err)
+		{
+		xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_new_mount, do_add_mount error\n"); 
 		mntput(mnt);
+		}
 	return err;
 }
 
@@ -2137,7 +2334,10 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
 	/* Basic sanity checks */
 
 	if (!dir_name || !*dir_name || !memchr(dir_name, 0, PAGE_SIZE))
+		{
+		xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_mount, invalid argument \n"); 
 		return -EINVAL;
+		}
 
 	if (data_page)
 		((char *)data_page)[PAGE_SIZE - 1] = 0;
@@ -2145,12 +2345,18 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
 	/* ... and get the mountpoint */
 	retval = kern_path(dir_name, LOOKUP_FOLLOW, &path);
 	if (retval)
+		{
+		xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_mount, kern_path ret err \n"); 
 		return retval;
+		}
 
 	retval = security_sb_mount(dev_name, &path,
 				   type_page, flags, data_page);
 	if (retval)
+		{
+		xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_mount, security_sb_mount ret err \n"); 
 		goto dput_out;
+		}
 
 	/* Default to relatime unless overriden */
 	if (!(flags & MS_NOATIME))
@@ -2177,17 +2383,37 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
 		   MS_STRICTATIME);
 
 	if (flags & MS_REMOUNT)
+		{		
 		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
 				    data_page);
+		if(retval)
+			xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_mount, do_remount: %d\n", retval); 		
+		}
 	else if (flags & MS_BIND)
+		{
 		retval = do_loopback(&path, dev_name, flags & MS_REC);
+		if(retval)
+			xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_mount, do_loopback: %d\n", retval); 
+		}
 	else if (flags & (MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
+		{
 		retval = do_change_type(&path, flags);
+		if(retval)
+			xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_mount, do_change_type: %d\n", retval); 
+		}
 	else if (flags & MS_MOVE)
+		{
 		retval = do_move_mount(&path, dev_name);
+		if(retval)
+			xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_mount, do_move_mount: %d\n", retval); 
+		}
 	else
+		{
 		retval = do_new_mount(&path, type_page, flags, mnt_flags,
 				      dev_name, data_page);
+		if(retval)
+			xlog_printk(ANDROID_LOG_DEBUG, "MNT_TAG", "do_mount, do_new_mount: %d\n", retval); 
+		}
 dput_out:
 	path_put(&path);
 	return retval;

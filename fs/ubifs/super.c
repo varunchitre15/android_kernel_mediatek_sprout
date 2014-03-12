@@ -44,6 +44,10 @@
  */
 #define UBIFS_KMALLOC_OK (128*1024)
 
+/*sync() when free size less than*/
+#define UFIFS_FREE_SIZE_SYNC_TH (10*1024*1024)
+static int ubifs_sync_fs(struct super_block *sb, int wait);
+/**/
 /* Slab cache for UBIFS inodes */
 struct kmem_cache *ubifs_inode_slab;
 
@@ -397,11 +401,17 @@ static int ubifs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	struct ubifs_info *c = dentry->d_sb->s_fs_info;
 	unsigned long long free;
 	__le32 *uuid = (__le32 *)c->uuid;
+	unsigned long long free_size_th = UFIFS_FREE_SIZE_SYNC_TH;	
 
 	free = ubifs_get_free_space(c);
 	dbg_gen("free space %lld bytes (%lld blocks)",
 		free, free >> UBIFS_BLOCK_SHIFT);
-
+	if(free <= free_size_th && c->ro_mount == 0){
+		ubifs_sync_fs(dentry->d_sb,1);
+		free = ubifs_get_free_space(c);
+		//printk("[ubifs_statfs]free space %lld B after sync\n",free);
+	}	
+	
 	buf->f_type = UBIFS_SUPER_MAGIC;
 	buf->f_bsize = UBIFS_BLOCK_SIZE;
 	buf->f_blocks = c->block_cnt;
@@ -866,7 +876,7 @@ static void free_orphans(struct ubifs_info *c)
 		dbg_err("orphan list not empty at unmount");
 	}
 
-	vfree(c->orph_buf);
+	kfree(c->orph_buf);
 	c->orph_buf = NULL;
 }
 
@@ -1210,12 +1220,12 @@ static int mount_ubifs(struct ubifs_info *c)
 	if (!c->bottom_up_buf)
 		goto out_free;
 
-	c->sbuf = vmalloc(c->leb_size);
+	c->sbuf = kmalloc(c->leb_size, GFP_KERNEL);
 	if (!c->sbuf)
 		goto out_free;
 
 	if (!c->ro_mount) {
-		c->ileb_buf = vmalloc(c->leb_size);
+		c->ileb_buf = kmalloc(c->leb_size, GFP_KERNEL);
 		if (!c->ileb_buf)
 			goto out_free;
 	}
@@ -1431,7 +1441,8 @@ static int mount_ubifs(struct ubifs_info *c)
 		  c->fmt_version, c->ro_compat_version,
 		  UBIFS_FORMAT_VERSION, UBIFS_RO_COMPAT_VERSION);
 	ubifs_msg("default compressor: %s", ubifs_compr_name(c->default_compr));
-	ubifs_msg("reserved for root:  %llu bytes (%llu KiB)",
+	ubifs_msg("reserved for uid:%d gid:%d:  %llu bytes (%llu KiB)",
+		c->rp_uid, c->rp_gid,
 		c->report_rp_size, c->report_rp_size >> 10);
 
 	dbg_msg("compiled on:         " __DATE__ " at " __TIME__);
@@ -1511,8 +1522,8 @@ out_cbuf:
 out_free:
 	kfree(c->write_reserve_buf);
 	kfree(c->bu.buf);
-	vfree(c->ileb_buf);
-	vfree(c->sbuf);
+	kfree(c->ileb_buf);
+	kfree(c->sbuf);
 	kfree(c->bottom_up_buf);
 	ubifs_debugging_exit(c);
 	return err;
@@ -1550,8 +1561,8 @@ static void ubifs_umount(struct ubifs_info *c)
 	kfree(c->mst_node);
 	kfree(c->write_reserve_buf);
 	kfree(c->bu.buf);
-	vfree(c->ileb_buf);
-	vfree(c->sbuf);
+	kfree(c->ileb_buf);
+	kfree(c->sbuf);
 	kfree(c->bottom_up_buf);
 	ubifs_debugging_exit(c);
 }
@@ -1636,13 +1647,17 @@ static int ubifs_remount_rw(struct ubifs_info *c)
 			goto out;
 	}
 
-	c->ileb_buf = vmalloc(c->leb_size);
+	if(c->ileb_buf == NULL) {
+		c->ileb_buf = kmalloc(c->leb_size, GFP_KERNEL);
+	}
 	if (!c->ileb_buf) {
 		err = -ENOMEM;
 		goto out;
 	}
 
-	c->write_reserve_buf = kmalloc(COMPRESSED_DATA_NODE_BUF_SZ, GFP_KERNEL);
+	if(c->write_reserve_buf == NULL) {
+		c->write_reserve_buf = kmalloc(COMPRESSED_DATA_NODE_BUF_SZ, GFP_KERNEL);
+	}
 	if (!c->write_reserve_buf)
 		goto out;
 
@@ -1661,7 +1676,9 @@ static int ubifs_remount_rw(struct ubifs_info *c)
 	}
 	wake_up_process(c->bgt);
 
-	c->orph_buf = vmalloc(c->leb_size);
+	if(c->orph_buf == NULL) {
+		c->orph_buf = kmalloc(c->leb_size, GFP_KERNEL);
+	}
 	if (!c->orph_buf) {
 		err = -ENOMEM;
 		goto out;
@@ -1709,7 +1726,7 @@ static int ubifs_remount_rw(struct ubifs_info *c)
 
 out:
 	c->ro_mount = 1;
-	vfree(c->orph_buf);
+	kfree(c->orph_buf);
 	c->orph_buf = NULL;
 	if (c->bgt) {
 		kthread_stop(c->bgt);
@@ -1718,7 +1735,7 @@ out:
 	free_wbufs(c);
 	kfree(c->write_reserve_buf);
 	c->write_reserve_buf = NULL;
-	vfree(c->ileb_buf);
+	kfree(c->ileb_buf);
 	c->ileb_buf = NULL;
 	ubifs_lpt_free(c, 1);
 	c->remounting_rw = 0;
@@ -1758,12 +1775,14 @@ static void ubifs_remount_ro(struct ubifs_info *c)
 	if (err)
 		ubifs_ro_mode(c, err);
 
-	vfree(c->orph_buf);
+#if 0
+	kfree(c->orph_buf);
 	c->orph_buf = NULL;
 	kfree(c->write_reserve_buf);
 	c->write_reserve_buf = NULL;
-	vfree(c->ileb_buf);
+	kfree(c->ileb_buf);
 	c->ileb_buf = NULL;
+#endif
 	ubifs_lpt_free(c, 1);
 	c->ro_mount = 1;
 	err = dbg_check_space_info(c);
@@ -2061,6 +2080,9 @@ static int ubifs_fill_super(struct super_block *sb, void *data, int silent)
 	if (c->max_inode_sz > MAX_LFS_FILESIZE)
 		sb->s_maxbytes = c->max_inode_sz = MAX_LFS_FILESIZE;
 	sb->s_op = &ubifs_super_operations;
+#ifdef CONFIG_UBIFS_FS_XATTR
+	sb->s_xattr = ubifs_xattr_handlers;
+#endif
 
 	mutex_lock(&c->umount_mutex);
 	err = mount_ubifs(c);

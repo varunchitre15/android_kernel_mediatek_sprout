@@ -856,6 +856,8 @@ int gfs2_logd(void *data)
 	DEFINE_WAIT(wait);
 	unsigned preflush;
 
+	set_freezable();
+
 	while (!kthread_should_stop()) {
 
 		preflush = atomic_read(&sdp->sd_log_pinned);

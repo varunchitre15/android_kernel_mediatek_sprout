@@ -87,6 +87,7 @@ void mlock_vma_page(struct page *page)
 			putback_lru_page(page);
 	}
 }
+EXPORT_SYMBOL(mlock_vma_page);
 
 /**
  * munlock_vma_page - munlock a vma page
@@ -142,7 +143,7 @@ void munlock_vma_page(struct page *page)
 		}
 	}
 }
-
+EXPORT_SYMBOL(munlock_vma_page);
 /**
  * __mlock_vma_pages_range() -  mlock a range of pages in the vma.
  * @vma:   target vma

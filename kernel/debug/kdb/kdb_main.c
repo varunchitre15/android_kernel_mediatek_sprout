@@ -1093,6 +1093,11 @@ void kdb_set_current_task(struct task_struct *p)
 	kdb_current_regs = NULL;
 }
 
+/* Check timeout and force kernel panic if no user input for KE_TIMEOUT_SEC */
+int check_timeout;
+int force_panic;
+unsigned long long enter_time;
+
 /*
  * kdb_local - The main code for kdb.  This routine is invoked on a
  *	specific processor, it is not global.  The main kdb() routine
@@ -1121,6 +1126,12 @@ static int kdb_local(kdb_reason_t reason, int error, struct pt_regs *regs,
 	struct task_struct *kdb_current =
 		kdb_curr_task(raw_smp_processor_id());
 
+	check_timeout = 1;
+	force_panic = 0;
+	enter_time = sched_clock();
+
+	get_cpu_var(kdb_in_use) = 1;
+	put_cpu_var(kdb_in_use);
 	KDB_DEBUG_STATE("kdb_local 1", reason);
 	kdb_go_count = 0;
 	if (reason == KDB_REASON_DEBUG) {
@@ -1300,6 +1311,9 @@ do_full_getstr:
 			kdb_cmderror(diag);
 	}
 	KDB_DEBUG_STATE("kdb_local 9", diag);
+	get_cpu_var(kdb_in_use) = 0;
+	put_cpu_var(kdb_in_use);
+	
 	return diag;
 }
 
@@ -2917,6 +2931,9 @@ static void __init kdb_cmd_init(void)
 	}
 }
 
+#ifdef CONFIG_MTK_EXTMEM
+extern void init_debug_alloc_pool_aligned(void);
+#endif
 /* Initialize kdb_printf, breakpoint tables and kdb state */
 void __init kdb_init(int lvl)
 {
@@ -2925,6 +2942,11 @@ void __init kdb_init(int lvl)
 
 	if (kdb_init_lvl == KDB_INIT_FULL || lvl <= kdb_init_lvl)
 		return;
+
+#ifdef CONFIG_MTK_EXTMEM
+	init_debug_alloc_pool_aligned();
+#endif
+
 	for (i = kdb_init_lvl; i < lvl; i++) {
 		switch (i) {
 		case KDB_NOT_INITIALIZED:

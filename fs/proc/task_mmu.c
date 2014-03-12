@@ -274,6 +274,12 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
 	int len;
 	const char *name = NULL;
 
+        if (file && (unsigned long)file < (unsigned long)TASK_SIZE) {
+            printk(KERN_ALERT"Error: invalid file pointer: 0x%p, vma: 0x%p\n", 
+                    (void *)file, (void *)vma);
+            print_hex_dump(KERN_ERR, "vma ", DUMP_PREFIX_ADDRESS, 16, 4, (void *)vma - (PAGE_SIZE / 2),
+                    PAGE_SIZE, 1);
+        }
 	if (file) {
 		struct inode *inode = vma->vm_file->f_path.dentry->d_inode;
 		dev = inode->i_sb->s_dev;
@@ -403,7 +409,156 @@ static int tid_maps_open(struct inode *inode, struct file *file)
 {
 	return do_maps_open(inode, file, &proc_tid_maps_op);
 }
+///////////////////////////////////////////////////////
+//mtk_maps
+static void show_mtk_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
+{
+        struct mm_struct *mm = vma->vm_mm;
+        struct file *file = vma->vm_file;
+        struct proc_maps_private *priv = m->private;
+        struct task_struct *task = priv->task;
+        vm_flags_t flags = vma->vm_flags;
+        unsigned long ino = 0;
+        unsigned long long pgoff = 0;
+        unsigned long start, end;
+        dev_t dev = 0;
+        int len;
+        const char *name = NULL;
 
+        if (file && (unsigned long)file < (unsigned long)TASK_SIZE) {
+            printk(KERN_ALERT"Error: invalid file pointer: 0x%p, vma: 0x%p\n",
+                    (void *)file, (void *)vma);
+            print_hex_dump(KERN_ERR, "vma ", DUMP_PREFIX_ADDRESS, 16, 4, (void *)vma - (PAGE_SIZE / 2),
+                    PAGE_SIZE, 1);
+        }
+        if (file) {
+                struct inode *inode = vma->vm_file->f_path.dentry->d_inode;
+                dev = inode->i_sb->s_dev;
+                ino = inode->i_ino;
+                pgoff = ((loff_t)vma->vm_pgoff) << PAGE_SHIFT;
+        }
+
+        /* We don't show the stack guard page in /proc/maps */
+        start = vma->vm_start;
+        if (stack_guard_page_start(vma, start))
+                start += PAGE_SIZE;
+        end = vma->vm_end;
+        if (stack_guard_page_end(vma, end))
+                end -= PAGE_SIZE;
+	if(flags & VM_NOHUGEPAGE ) //from MMAP PATH
+	{
+        seq_printf(m, "%08lx-%08lx %c%c%c%c_%s %08llx %02x:%02x %lu %n",
+                        start,
+                        end,
+                        flags & VM_READ ? 'r' : '-',
+                        flags & VM_WRITE ? 'w' : '-',
+                        flags & VM_EXEC ? 'x' : '-',
+                        flags & VM_MAYSHARE ? 's' : 'p',
+			flags & VM_MERGEABLE ? "dlmalloc" : "mmap    ",
+                        pgoff,
+                        MAJOR(dev), MINOR(dev), ino, &len);
+	}
+	else //Not from MMAP PATH
+	{
+	seq_printf(m, "%08lx-%08lx %c%c%c%c_%s %08llx %02x:%02x %lu %n",
+                        start,
+                        end,
+                        flags & VM_READ ? 'r' : '-',
+                        flags & VM_WRITE ? 'w' : '-',
+                        flags & VM_EXEC ? 'x' : '-',
+                        flags & VM_MAYSHARE ? 's' : 'p',
+                        "other   ",
+                        pgoff,
+                        MAJOR(dev), MINOR(dev), ino, &len);
+	}
+        /*
+         * Print the dentry name for named mappings, and a
+         * special [heap] marker for the heap:
+         */
+        if (file) {
+                pad_len_spaces(m, len);
+                seq_path(m, &file->f_path, "\n");
+                goto done;
+        }
+
+        name = arch_vma_name(vma);
+        if (!name) {
+                pid_t tid;
+
+                if (!mm) {
+                        name = "[vdso]";
+                        goto done;
+                }
+
+                if (vma->vm_start <= mm->brk &&
+                    vma->vm_end >= mm->start_brk) {
+                        name = "[heap]";
+                        goto done;
+                }
+
+                tid = vm_is_stack(task, vma, is_pid);
+
+                if (tid != 0) {
+                        /*
+                         * Thread stack in /proc/PID/task/TID/maps or
+                         * the main process stack.
+                         */
+                        if (!is_pid || (vma->vm_start <= mm->start_stack &&
+                            vma->vm_end >= mm->start_stack)) {
+                                name = "[stack]";
+                        } else {
+                                /* Thread stack in /proc/PID/maps */
+                                pad_len_spaces(m, len);
+                                seq_printf(m, "[stack:%d]", tid);
+                        }
+                }
+        }
+
+done:
+        if (name) {
+                pad_len_spaces(m, len);
+                seq_puts(m, name);
+        }
+        seq_putc(m, '\n');
+}
+
+static int show_mtk_map(struct seq_file *m, void *v, int is_pid)
+{
+        struct vm_area_struct *vma = v;
+        struct proc_maps_private *priv = m->private;
+        struct task_struct *task = priv->task;
+
+        show_mtk_map_vma(m, vma, is_pid);
+
+        if (m->count < m->size)  /* vma is copied successfully */
+                m->version = (vma != get_gate_vma(task->mm))
+                        ? vma->vm_start : 0;
+        return 0;
+}
+
+static int show_pid_mtk_map(struct seq_file *m, void *v)
+{
+        return show_mtk_map(m, v, 1);
+}
+
+static const struct seq_operations proc_pid_mtk_maps_op = {
+        .start  = m_start,
+        .next   = m_next,
+        .stop   = m_stop,
+        .show   = show_pid_mtk_map
+};
+static int pid_mtk_maps_open(struct inode *inode, struct file *file)
+{
+        return do_maps_open(inode, file, &proc_pid_mtk_maps_op);
+}
+const struct file_operations proc_pid_mtk_maps_operations = {
+        .open           = pid_mtk_maps_open,
+        .read           = seq_read,
+        .llseek         = seq_lseek,
+        .release        = seq_release_private,
+};
+
+////////////////////////////////////////////////////////////////////
 const struct file_operations proc_pid_maps_operations = {
 	.open		= pid_maps_open,
 	.read		= seq_read,
@@ -450,8 +605,17 @@ struct mem_size_stats {
 	unsigned long anonymous_thp;
 	unsigned long swap;
 	u64 pss;
+        u64 pswap;
 };
 
+
+extern struct swap_info_struct *swap_info_get(swp_entry_t entry);
+extern void swap_info_unlock(void);
+
+static inline unsigned char swap_count(unsigned char ent)
+{
+	return ent & ~SWAP_HAS_CACHE;	/* may include SWAP_HAS_CONT flag */
+}
 
 static void smaps_pte_entry(pte_t ptent, unsigned long addr,
 		unsigned long ptent_size, struct mm_walk *walk)
@@ -462,7 +626,23 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
 	int mapcount;
 
 	if (is_swap_pte(ptent)) {
+                swp_entry_t entry;
+	        struct swap_info_struct *p;
+
 		mss->swap += ptent_size;
+
+                entry = pte_to_swp_entry(ptent);
+                if (non_swap_entry(entry))
+                    return;
+	        p = swap_info_get(entry);
+                if (p) {
+                    int swapcount = swap_count(p->swap_map[swp_offset(entry)]);
+                    if (swapcount == 0) {
+                        swapcount = 1;
+                    }
+                    mss->pswap += (ptent_size << PSS_SHIFT) / swapcount;
+                    swap_info_unlock();
+                }
 		return;
 	}
 
@@ -558,6 +738,7 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 		   "Anonymous:      %8lu kB\n"
 		   "AnonHugePages:  %8lu kB\n"
 		   "Swap:           %8lu kB\n"
+		   "PSwap:          %8lu kB\n"
 		   "KernelPageSize: %8lu kB\n"
 		   "MMUPageSize:    %8lu kB\n"
 		   "Locked:         %8lu kB\n",
@@ -572,6 +753,7 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 		   mss.anonymous >> 10,
 		   mss.anonymous_thp >> 10,
 		   mss.swap >> 10,
+		   (unsigned long)(mss.pswap >> (10 + PSS_SHIFT)),
 		   vma_kernel_pagesize(vma) >> 10,
 		   vma_mmu_pagesize(vma) >> 10,
 		   (vma->vm_flags & VM_LOCKED) ?

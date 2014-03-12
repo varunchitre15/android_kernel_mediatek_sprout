@@ -394,6 +394,14 @@ config LEDS_MAX8997
 	  This option enables support for on-chip LED drivers on
 	  MAXIM MAX8997 PMIC.
 
+config MTK_LEDS # LEDS_MT65XX
+        tristate "MediaTek LED Support"
+        depends on LEDS_CLASS
+        ---help---
+          This selects the MediaTek(R) LEDs connected to MediaTek chips.
+          If you want to use MediaTek(R) LEDs support, say Y or M here.
+          If unsure, say N.
+
 config LEDS_OT200
 	tristate "LED support for the Bachmann OT200"
 	depends on LEDS_CLASS && HAS_IOMEM

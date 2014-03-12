@@ -1183,8 +1183,12 @@ void __init vmalloc_init(void)
 	}
 
 	/* Import existing vmlist entries. */
+        /*
+         * apply a kernel patch: dbda591d920b4c7692725b13e3f68ecb251e9080
+         */
 	for (tmp = vmlist; tmp; tmp = tmp->next) {
 		va = kzalloc(sizeof(struct vmap_area), GFP_NOWAIT);
+		//va->flags = tmp->flags | VM_VM_AREA;
 		va->flags = VM_VM_AREA;
 		va->va_start = (unsigned long)tmp->addr;
 		va->va_end = va->va_start + tmp->size;
@@ -1482,7 +1486,11 @@ static void __vunmap(const void *addr, int deallocate_pages)
 			struct page *page = area->pages[i];
 
 			BUG_ON(!page);
+#ifndef CONFIG_MTK_PAGERECORDER
 			__free_page(page);
+#else
+			__free_page_nopagedebug(page);
+#endif
 		}
 
 		if (area->flags & VM_VPAGES)
@@ -1602,7 +1610,13 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
 		gfp_t tmp_mask = gfp_mask | __GFP_NOWARN;
 
 		if (node < 0)
+		{
+#ifndef CONFIG_MTK_PAGERECORDER
 			page = alloc_page(tmp_mask);
+#else
+			page = alloc_page_nopagedebug(tmp_mask);
+#endif
+		}
 		else
 			page = alloc_pages_node(node, tmp_mask, order);
 

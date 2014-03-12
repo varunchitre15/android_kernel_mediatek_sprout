@@ -1,6 +1,8 @@
 #
 # USB peripheral controller drivers
 #
+include $(srctree)/drivers/misc/mediatek/Makefile.custom
+
 ccflags-$(CONFIG_USB_GADGET_DEBUG) := -DDEBUG
 
 obj-$(CONFIG_USB_GADGET)	+= udc-core.o

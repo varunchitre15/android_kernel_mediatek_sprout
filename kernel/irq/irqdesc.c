@@ -15,6 +15,10 @@
 #include <linux/radix-tree.h>
 #include <linux/bitmap.h>
 
+#ifdef CONFIG_MTK_SCHED_TRACERS
+#include <trace/events/mtk_events.h>
+#endif
+
 #include "internals.h"
 
 /*
@@ -309,8 +313,12 @@ int generic_handle_irq(unsigned int irq)
 {
 	struct irq_desc *desc = irq_to_desc(irq);
 
-	if (!desc)
+	if (!desc){
+#ifdef CONFIG_MTK_SCHED_TRACERS
+        trace_unnamed_irq(irq);
+#endif
 		return -EINVAL;
+    }
 	generic_handle_irq_desc(irq, desc);
 	return 0;
 }

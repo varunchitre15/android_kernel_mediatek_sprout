@@ -18,11 +18,20 @@
 
 #include "power.h"
 
+int wakelock_debug_mask = 0;
+#define _TAG "Power/Kernel"
+#define wl_info(fmt, ...) \
+	do { \
+		if (wakelock_debug_mask) { \
+			printk("[%s]"fmt, _TAG, ##__VA_ARGS__); \
+		} \
+	} while (0)
 /*
  * If set, the suspend/hibernate code will abort transitions to a sleep state
  * if wakeup events are registered during or immediately before the transition.
  */
 bool events_check_enabled __read_mostly;
+EXPORT_SYMBOL_GPL(events_check_enabled);
 
 /*
  * Combined counters of registered wakeup events and wakeup events in progress.
@@ -385,8 +394,10 @@ static void wakeup_source_activate(struct wakeup_source *ws)
 	ws->active = true;
 	ws->active_count++;
 	ws->last_time = ktime_get();
-	if (ws->autosleep_enabled)
+	if (ws->autosleep_enabled) {
+		//pr_info("[%s]:ws activate->\t%s\n", _TAG, ws->name);
 		ws->start_prevent_time = ws->last_time;
+	}
 
 	/* Increment the counter of events in progress. */
 	cec = atomic_inc_return(&combined_event_count);
@@ -421,6 +432,8 @@ void __pm_stay_awake(struct wakeup_source *ws)
 
 	if (!ws)
 		return;
+
+	wl_info("[wake_lock] %s\n", ws->name);
 
 	spin_lock_irqsave(&ws->lock, flags);
 
@@ -508,17 +521,22 @@ static void wakeup_source_deactivate(struct wakeup_source *ws)
 	del_timer(&ws->timer);
 	ws->timer_expires = 0;
 
-	if (ws->autosleep_enabled)
+	if (ws->autosleep_enabled) {
 		update_prevent_sleep_time(ws, now);
+		//printk("[%s]:ws deactivate->\t%s\n", _TAG, ws->name);
+	}
 
 	/*
 	 * Increment the counter of registered wakeup events and decrement the
 	 * couter of wakeup events in progress simultaneously.
 	 */
+    // FIXME: CHECK BUG here ??? if combined_event_count = 0x????0000, then atomic_add_return(...) --> 0x????ffff
+    //        , which is not the expected result !!!
 	cec = atomic_add_return(MAX_IN_PROGRESS, &combined_event_count);
 	trace_wakeup_source_deactivate(ws->name, cec);
 
 	split_counters(&cnt, &inpr);
+	//if (ws->autosleep_enabled && inpr > 0) dump_active_ws();
 	if (!inpr && waitqueue_active(&wakeup_count_wait_queue))
 		wake_up(&wakeup_count_wait_queue);
 }
@@ -538,6 +556,8 @@ void __pm_relax(struct wakeup_source *ws)
 
 	if (!ws)
 		return;
+
+	wl_info("[wake_unlock] %s\n", ws->name);
 
 	spin_lock_irqsave(&ws->lock, flags);
 	if (ws->active)
@@ -608,6 +628,8 @@ void __pm_wakeup_event(struct wakeup_source *ws, unsigned int msec)
 
 	if (!ws)
 		return;
+
+	wl_info("[wake_lock_timeout] %s,%dms\n", ws->name, msec);
 
 	spin_lock_irqsave(&ws->lock, flags);
 
@@ -690,22 +712,24 @@ bool pm_wakeup_pending(void)
 {
 	unsigned long flags;
 	bool ret = false;
+	unsigned int cnt, inpr;
 
 	spin_lock_irqsave(&events_lock, flags);
 	if (events_check_enabled) {
-		unsigned int cnt, inpr;
-
 		split_counters(&cnt, &inpr);
 		ret = (cnt != saved_count || inpr > 0);
 		events_check_enabled = !ret;
 	}
 	spin_unlock_irqrestore(&events_lock, flags);
-
-	if (ret)
-		print_active_wakeup_sources();
+	
+	if (ret) {
+			pr_warn("[%s][%s]:cnt=%d,saved_count=%d,inpr=%d\n",_TAG, __func__,cnt,saved_count,inpr);
+			print_active_wakeup_sources();
+	}
 
 	return ret;
 }
+EXPORT_SYMBOL_GPL(pm_wakeup_pending);
 
 /**
  * pm_get_wakeup_count - Read the number of registered wakeup events.
@@ -732,7 +756,7 @@ bool pm_get_wakeup_count(unsigned int *count, bool block)
 			split_counters(&cnt, &inpr);
 			if (inpr == 0 || signal_pending(current))
 				break;
-
+			print_active_wakeup_sources();
 			schedule();
 		}
 		finish_wait(&wakeup_count_wait_queue, &wait);

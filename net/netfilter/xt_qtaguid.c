@@ -58,6 +58,16 @@ static struct proc_dir_entry *xt_qtaguid_ctrl_file;
 /* Everybody can write. But proc_ctrl_write_limited is true by default which
  * limits what can be controlled. See the can_*() functions.
  */
+
+#ifdef CONFIG_ANDROID_PARANOID_NETWORK
+#include <linux/android_aid.h>
+static gid_t proc_stats_readall_gid = AID_NET_BW_STATS;
+static gid_t proc_ctrl_write_gid = AID_NET_BW_ACCT;
+#endif
+
+/* Everybody can write. But proc_ctrl_write_limited is true by default which
+ * limits what can be controlled. See the can_*() functions.
+ */
 static unsigned int proc_ctrl_perms = S_IRUGO | S_IWUGO;
 module_param_named(ctrl_perms, proc_ctrl_perms, uint, S_IRUGO | S_IWUSR);
 
@@ -241,6 +251,9 @@ static bool can_manipulate_uids(void)
 {
 	/* root pwnd */
 	return in_egroup_p(xt_qtaguid_ctrl_file->gid)
+#ifdef CONFIG_ANDROID_PARANOID_NETWORK
+		|| in_egroup_p(proc_ctrl_write_gid)
+#endif		
 		|| unlikely(!current_fsuid()) || unlikely(!proc_ctrl_write_limited)
 		|| unlikely(current_fsuid() == xt_qtaguid_ctrl_file->uid);
 }
@@ -254,6 +267,9 @@ static bool can_read_other_uid_stats(uid_t uid)
 {
 	/* root pwnd */
 	return in_egroup_p(xt_qtaguid_stats_file->gid)
+#ifdef CONFIG_ANDROID_PARANOID_NETWORK
+		|| in_egroup_p(proc_stats_readall_gid)
+#endif
 		|| unlikely(!current_fsuid()) || uid == current_fsuid()
 		|| unlikely(!proc_stats_readall_limited)
 		|| unlikely(current_fsuid() == xt_qtaguid_ctrl_file->uid);
@@ -1843,6 +1859,8 @@ static bool qtaguid_mt(const struct sk_buff *skb, struct xt_action_param *par)
 		account_for_uid(skb, sk, 0, par);
 		res = ((info->match ^ info->invert) &
 			(XT_QTAGUID_UID | XT_QTAGUID_GID)) == 0;
+		/*mtk_net: patch for duplicated account for uid 0*/
+		res = true;
 		atomic64_inc(&qtu_events.match_no_sk_file);
 		goto put_sock_ret_res;
 	}
@@ -2601,9 +2619,11 @@ static int pp_stats_line(struct proc_print_info *ppi, int cnt_set)
 	} else {
 		tag_t tag = ppi->ts_entry->tn.tag;
 		uid_t stat_uid = get_uid_from_tag(tag);
+		//if (!can_read_other_uid_stats(stat_uid)) {
 		/* Detailed tags are not available to everybody */
 		if (get_atag_from_tag(tag)
 		    && !can_read_other_uid_stats(stat_uid)) {
+
 			CT_DEBUG("qtaguid: stats line: "
 				 "%s 0x%llx %u: insufficient priv "
 				 "from pid=%u tgid=%u uid=%u stats.gid=%u\n",
@@ -2810,6 +2830,7 @@ err_unlock_free_utd:
 	}
 err_unlock:
 	spin_unlock_bh(&uid_tag_data_tree_lock);
+
 	return res;
 }
 

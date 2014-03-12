@@ -1575,6 +1575,12 @@ const struct inode_operations ubifs_symlink_inode_operations = {
 	.follow_link = ubifs_follow_link,
 	.setattr     = ubifs_setattr,
 	.getattr     = ubifs_getattr,
+#ifdef CONFIG_UBIFS_FS_XATTR
+	.setxattr    = ubifs_symlink_setxattr,
+	.getxattr    = ubifs_symlink_getxattr,
+	.listxattr   = ubifs_listxattr,
+	.removexattr = ubifs_removexattr,
+#endif
 };
 
 const struct file_operations ubifs_file_operations = {

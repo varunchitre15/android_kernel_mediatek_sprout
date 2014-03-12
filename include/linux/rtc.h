@@ -75,6 +75,8 @@ struct rtc_pll_info {
 #define RTC_PIE_OFF	_IO('p', 0x06)	/* ... off			*/
 #define RTC_WIE_ON	_IO('p', 0x0f)  /* Watchdog int. enable on	*/
 #define RTC_WIE_OFF	_IO('p', 0x10)  /* ... off			*/
+#define RTC_AUTOBOOT_ON		_IO('p', 0x20)  /* RTC drop power auto reboot on	*/
+#define RTC_AUTOBOOT_OFF	_IO('p', 0x21)  /* ... off				*/
 
 #define RTC_ALM_SET	_IOW('p', 0x07, struct rtc_time) /* Set alarm time  */
 #define RTC_ALM_READ	_IOR('p', 0x08, struct rtc_time) /* Read alarm time */
@@ -232,6 +234,13 @@ extern int rtc_read_alarm(struct rtc_device *rtc,
 			struct rtc_wkalrm *alrm);
 extern int rtc_set_alarm(struct rtc_device *rtc,
 				struct rtc_wkalrm *alrm);
+
+extern int rtc_set_alarm_poweron(struct rtc_device *rtc,
+				struct rtc_wkalrm *alrm);
+//extern void Set_IPO_flag(void);
+//extern void Clr_IPO_flag(void);
+
+				
 extern int rtc_initialize_alarm(struct rtc_device *rtc,
 				struct rtc_wkalrm *alrm);
 extern void rtc_update_irq(struct rtc_device *rtc,

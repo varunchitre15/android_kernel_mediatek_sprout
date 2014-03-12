@@ -1032,7 +1032,7 @@ static void ppp_setup(struct net_device *dev)
 	dev->hard_header_len = PPP_HDRLEN;
 	dev->mtu = PPP_MRU;
 	dev->addr_len = 0;
-	dev->tx_queue_len = 3;
+	dev->tx_queue_len = 1000;
 	dev->type = ARPHRD_PPP;
 	dev->flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
 	dev->features |= NETIF_F_NETNS_LOCAL;

@@ -205,7 +205,11 @@ extern struct page *__page_cache_alloc(gfp_t gfp);
 #else
 static inline struct page *__page_cache_alloc(gfp_t gfp)
 {
+#ifndef CONFIG_MTK_PAGERECORDER
 	return alloc_pages(gfp, 0);
+#else
+	return alloc_pages_nopagedebug(gfp, 0);
+#endif
 }
 #endif
 

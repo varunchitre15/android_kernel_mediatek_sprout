@@ -16,7 +16,20 @@
 #include <linux/mutex.h>
 #include <linux/gfp.h>
 #include <linux/suspend.h>
+#ifdef MTK_CPU_HOTPLUG_DEBUG_0
+#include <linux/kallsyms.h>
+#endif //MTK_CPU_HOTPLUG_DEBUG_0
+#ifdef CONFIG_MT_LOAD_BALANCE_PROFILER
+#include <mtlbprof/mtlbprof.h>
+#endif
 
+/*******************************************************************************
+* 20121113 marc.huang                                                          *
+* CPU Hotplug and idle integration                                             *
+*******************************************************************************/
+atomic_t is_in_hotplug = ATOMIC_INIT(0);
+/******************************************************************************/
+ 
 #ifdef CONFIG_SMP
 /* Serializes the updates to cpu_online_mask, cpu_present_mask */
 static DEFINE_MUTEX(cpu_add_remove_lock);
@@ -35,7 +48,11 @@ void cpu_maps_update_done(void)
 	mutex_unlock(&cpu_add_remove_lock);
 }
 
+#if defined(MTK_CPU_HOTPLUG_DEBUG_1) || defined(MTK_CPU_HOTPLUG_DEBUG_2)
+RAW_NOTIFIER_HEAD(cpu_chain);
+#else
 static RAW_NOTIFIER_HEAD(cpu_chain);
+#endif
 
 /* If set, cpu_up and cpu_down will return -EBUSY and do nothing.
  * Should always be manipulated under cpu_add_remove_lock
@@ -63,10 +80,10 @@ void get_online_cpus(void)
 	might_sleep();
 	if (cpu_hotplug.active_writer == current)
 		return;
+
 	mutex_lock(&cpu_hotplug.lock);
 	cpu_hotplug.refcount++;
 	mutex_unlock(&cpu_hotplug.lock);
-
 }
 EXPORT_SYMBOL_GPL(get_online_cpus);
 
@@ -74,11 +91,11 @@ void put_online_cpus(void)
 {
 	if (cpu_hotplug.active_writer == current)
 		return;
+
 	mutex_lock(&cpu_hotplug.lock);
 	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
 		wake_up_process(cpu_hotplug.active_writer);
 	mutex_unlock(&cpu_hotplug.lock);
-
 }
 EXPORT_SYMBOL_GPL(put_online_cpus);
 
@@ -116,10 +133,28 @@ static void cpu_hotplug_begin(void)
 		mutex_unlock(&cpu_hotplug.lock);
 		schedule();
 	}
+	
+/*******************************************************************************
+* 20121113 marc.huang                                                          *
+* CPU Hotplug and idle integration                                             *
+*******************************************************************************/
+    atomic_inc(&is_in_hotplug);
+#ifdef SPM_MCDI_FUNC
+    //smp_call_function(empty_function, NULL, 1);
+    //spm_mcdi_wakeup_all_cores();    
+#endif
+/******************************************************************************/
 }
 
 static void cpu_hotplug_done(void)
 {
+/*******************************************************************************
+* 20121113 marc.huang                                                          *
+* CPU Hotplug and MCDI integration                                             *
+*******************************************************************************/
+    atomic_dec(&is_in_hotplug);
+/******************************************************************************/
+
 	cpu_hotplug.active_writer = NULL;
 	mutex_unlock(&cpu_hotplug.lock);
 }
@@ -154,6 +189,23 @@ static void cpu_hotplug_done(void) {}
 int __ref register_cpu_notifier(struct notifier_block *nb)
 {
 	int ret;
+
+#ifdef MTK_CPU_HOTPLUG_DEBUG_0
+	static int index = 0;
+ #ifdef CONFIG_KALLSYMS
+	char namebuf[128] = {0};
+	const char *symname;
+	
+	symname = kallsyms_lookup((unsigned long)nb->notifier_call, NULL, NULL, NULL, namebuf);
+	if (symname) 
+		printk("[cpu_ntf] <%02d>%08lx (%s)\n", index++, (unsigned long)nb->notifier_call, symname);
+	else
+		printk("[cpu_ntf] <%02d>%08lx\n", index++, (unsigned long)nb->notifier_call);
+ #else //#ifdef CONFIG_KALLSYMS
+	printk("[cpu_ntf] <%02d>%08lx\n", index++, (unsigned long)nb->notifier_call);
+ #endif //#ifdef CONFIG_KALLSYMS
+#endif //#ifdef MTK_CPU_HOTPLUG_DEBUG_0
+
 	cpu_maps_update_begin();
 	ret = raw_notifier_chain_register(&cpu_chain, nb);
 	cpu_maps_update_done();
@@ -274,6 +326,10 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
 	 */
 	while (!idle_cpu(cpu))
 		cpu_relax();
+
+#ifdef CONFIG_MT_LOAD_BALANCE_PROFILER
+	mt_lbprof_update_state(cpu, MT_LBPROF_HOTPLUG_STATE);
+#endif
 
 	/* This actually kills the CPU. */
 	__cpu_die(cpu);
@@ -452,6 +508,7 @@ int disable_nonboot_cpus(void)
 	cpu_maps_update_done();
 	return error;
 }
+EXPORT_SYMBOL_GPL(disable_nonboot_cpus);
 
 void __weak arch_enable_nonboot_cpus_begin(void)
 {
@@ -490,6 +547,7 @@ void __ref enable_nonboot_cpus(void)
 out:
 	cpu_maps_update_done();
 }
+EXPORT_SYMBOL_GPL(enable_nonboot_cpus);
 
 static int __init alloc_frozen_cpus(void)
 {

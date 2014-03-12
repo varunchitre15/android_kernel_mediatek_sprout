@@ -2,6 +2,8 @@
 # Makefile for the FUSE filesystem.
 #
 
+include $(srctree)/drivers/misc/mediatek/Makefile.custom
+
 obj-$(CONFIG_FUSE_FS) += fuse.o
 obj-$(CONFIG_CUSE) += cuse.o
 

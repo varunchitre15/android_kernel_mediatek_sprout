@@ -58,7 +58,7 @@
 #define DEFAULT_RP_PERCENT 5
 
 /* The default maximum size of reserved pool in bytes */
-#define DEFAULT_MAX_RP_SIZE (5*1024*1024)
+#define DEFAULT_MAX_RP_SIZE (1*1024*1024)
 
 /* Default time granularity in nanoseconds */
 #define DEFAULT_TIME_GRAN 1000000000
@@ -194,6 +194,7 @@ static int create_default_filesystem(struct ubifs_info *c)
 	if (tmp64 > DEFAULT_MAX_RP_SIZE)
 		tmp64 = DEFAULT_MAX_RP_SIZE;
 	sup->rp_size = cpu_to_le64(tmp64);
+	sup->rp_uid = 9996; //VID_CCCI
 	sup->ro_compat_version = cpu_to_le32(UBIFS_RO_COMPAT_VERSION);
 
 	err = ubifs_write_node(c, sup, UBIFS_SB_NODE_SZ, 0, 0, UBI_LONGTERM);

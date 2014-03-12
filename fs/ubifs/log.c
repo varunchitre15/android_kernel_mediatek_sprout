@@ -654,7 +654,7 @@ int ubifs_consolidate_log(struct ubifs_info *c)
 
 	dbg_rcvry("log tail LEB %d, log head LEB %d", c->ltail_lnum,
 		  c->lhead_lnum);
-	buf = vmalloc(c->leb_size);
+	buf = kmalloc(c->leb_size, GFP_KERNEL);
 	if (!buf)
 		return -ENOMEM;
 	lnum = c->ltail_lnum;
@@ -708,7 +708,7 @@ int ubifs_consolidate_log(struct ubifs_info *c)
 		offs = ALIGN(offs, c->min_io_size);
 	}
 	destroy_done_tree(&done_tree);
-	vfree(buf);
+	kfree(buf);
 	if (write_lnum == c->lhead_lnum) {
 		ubifs_err("log is too full");
 		return -EINVAL;
@@ -730,7 +730,7 @@ out_scan:
 	ubifs_scan_destroy(sleb);
 out_free:
 	destroy_done_tree(&done_tree);
-	vfree(buf);
+	kfree(buf);
 	return err;
 }
 

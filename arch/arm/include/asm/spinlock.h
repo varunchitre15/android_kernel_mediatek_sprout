@@ -7,6 +7,8 @@
 
 #include <asm/processor.h>
 
+#include <asm/atomic.h>
+
 /*
  * sev and wfe are ARMv6K extensions.  Uniprocessor ARMv6 may not have the K
  * extensions, so when running on UP, we have to patch these instructions away.
@@ -80,6 +82,8 @@ static inline void arch_spin_lock(arch_spinlock_t *lock)
 {
 	unsigned long tmp;
 
+	force_clock((u32)lock);
+
 	__asm__ __volatile__(
 "1:	ldrex	%0, [%1]\n"
 "	teq	%0, #0\n"
@@ -97,6 +101,8 @@ static inline void arch_spin_lock(arch_spinlock_t *lock)
 static inline int arch_spin_trylock(arch_spinlock_t *lock)
 {
 	unsigned long tmp;
+
+	force_clock((u32)lock);
 
 	__asm__ __volatile__(
 "	ldrex	%0, [%1]\n"
@@ -139,6 +145,8 @@ static inline void arch_write_lock(arch_rwlock_t *rw)
 {
 	unsigned long tmp;
 
+	force_clock((u32)rw);
+
 	__asm__ __volatile__(
 "1:	ldrex	%0, [%1]\n"
 "	teq	%0, #0\n"
@@ -156,6 +164,8 @@ static inline void arch_write_lock(arch_rwlock_t *rw)
 static inline int arch_write_trylock(arch_rwlock_t *rw)
 {
 	unsigned long tmp;
+
+	force_clock((u32)rw);
 
 	__asm__ __volatile__(
 "1:	ldrex	%0, [%1]\n"
@@ -205,6 +215,8 @@ static inline void arch_read_lock(arch_rwlock_t *rw)
 {
 	unsigned long tmp, tmp2;
 
+	force_clock((u32)rw);
+
 	__asm__ __volatile__(
 "1:	ldrex	%0, [%2]\n"
 "	adds	%0, %0, #1\n"
@@ -222,6 +234,8 @@ static inline void arch_read_lock(arch_rwlock_t *rw)
 static inline void arch_read_unlock(arch_rwlock_t *rw)
 {
 	unsigned long tmp, tmp2;
+
+	force_clock((u32)rw);
 
 	smp_mb();
 
@@ -242,6 +256,8 @@ static inline void arch_read_unlock(arch_rwlock_t *rw)
 static inline int arch_read_trylock(arch_rwlock_t *rw)
 {
 	unsigned long tmp, tmp2 = 1;
+
+	force_clock((u32)rw);
 
 	__asm__ __volatile__(
 "1:	ldrex	%0, [%2]\n"

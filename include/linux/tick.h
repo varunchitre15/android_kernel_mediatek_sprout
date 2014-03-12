@@ -59,15 +59,25 @@ struct tick_sched {
 	unsigned long			idle_sleeps;
 	int				idle_active;
 	ktime_t				idle_entrytime;
+	#ifdef CONFIG_MTK_IDLE_TIME_FIX
+	ktime_t				idle_entrytime_wo_cpuoffline;
+	#endif
 	ktime_t				idle_waketime;
 	ktime_t				idle_exittime;
 	ktime_t				idle_sleeptime;
 	ktime_t				iowait_sleeptime;
+	#ifdef CONFIG_MTK_IDLE_TIME_FIX
+	ktime_t				idle_sleeptime_wo_cpuoffline;
+	ktime_t				iowait_sleeptime_wo_cpuoffline;
+	#endif
 	ktime_t				sleep_length;
 	unsigned long			last_jiffies;
 	unsigned long			next_jiffies;
 	ktime_t				idle_expires;
 	int				do_timer_last;
+	#ifdef CONFIG_MTK_IDLE_TIME_FIX
+	int             cpu_plug_off_flag;
+	#endif
 };
 
 extern void __init tick_init(void);
@@ -128,6 +138,12 @@ extern void tick_nohz_irq_exit(void);
 extern ktime_t tick_nohz_get_sleep_length(void);
 extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
 extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+#ifdef CONFIG_MTK_IDLE_TIME_FIX
+extern void tick_set_cpu_plugoff_flag(int flag);
+extern u64 get_cpu_idle_time_us_wo_cpuoffline(int cpu, u64 *last_update_time);
+extern u64 get_cpu_iowait_time_us_wo_cpuoffline(int cpu, u64 *last_update_time);
+#endif
+
 # else
 static inline void tick_nohz_idle_enter(void) { }
 static inline void tick_nohz_idle_exit(void) { }

@@ -321,7 +321,9 @@ struct yaffs_obj *yaffs_lost_n_found(struct yaffs_dev *dev)
  *  Erased NAND checking functions
  */
 
+#if 0
 int yaffs_check_ff(u8 * buffer, int n_bytes)
+
 {
 	/* Horrible, slow implementation */
 	while (n_bytes--) {
@@ -331,6 +333,187 @@ int yaffs_check_ff(u8 * buffer, int n_bytes)
 	}
 	return 1;
 }
+#endif
+int yaffs_check_ff(u8 * buffer, int n_bytes)
+{
+	int ret = 1;
+	if((((unsigned int)buffer)&0x3) || (n_bytes&0x3))
+	{
+	
+		u32 *tmp = (u32 *)buffer;
+		
+		/* Horrible, slow implementation */
+		while (n_bytes--) {
+			if (*buffer != 0xFF)
+			{				
+				if(ret)
+					printk("yaffsdebug checkFF %.4x:%.2x\n",(int)(buffer - (u8 *)tmp),*buffer);
+				else					
+					printk("%.4x:%.2x\n",(int)(buffer - (u8 *)tmp),*buffer);
+				ret = 0;
+
+			}
+			buffer++;
+		}
+	}
+	else
+	{
+		u32 *tmp = (u32 *)buffer;
+		
+		n_bytes /= 4;
+		while (n_bytes--) {
+			if (*tmp != 0xFFFFFFFF)
+			{	
+				if(ret)
+					printk("yaffsdebug checkFF - %.4x:%.8x\n",(int)((u8 *)tmp - (u8 *)buffer),*tmp);
+				else					
+					printk("%.4x:%.8x\n",(int)((u8 *)tmp - (u8 *)buffer),*tmp);
+				ret = 0;
+		
+			}
+			tmp++;
+	}
+
+	}
+	return ret;
+
+}
+static char dbgstr[8192];
+#define MTK_STRING_MODULE " %.2x"
+void mtk_dump_byte(void *p, long count, unsigned int offset) 
+{ 
+	unsigned char *d = p;
+	int i,steplen;
+	char *str;
+	char teskstr[16];
+	
+	sprintf(teskstr,MTK_STRING_MODULE, 0xFF);
+	steplen = strlen(teskstr);
+	
+	while (count > 0) 
+	{
+		sprintf(dbgstr,"%.4x:", offset);
+		str = dbgstr+strlen(dbgstr);
+		for (i = 0; i < 16 && count--; i++)
+		{ 
+			sprintf(str,MTK_STRING_MODULE, *d++);
+			str += steplen;			
+		}
+		//str = dbgstr+strlen(dbgstr);
+		sprintf(str,"\n");
+		
+		printk(KERN_ERR"%s",dbgstr);
+		
+		offset += 16;
+	}
+}
+
+#define MTK_STRING_MODULE_WORD " %.8x"
+//notskipseq : 0 ,all display;
+//notskipseq : 1 , not display when discrease seq;
+//notskipseq : 2 , not display when increase seq;
+
+enum
+{
+	ALLWAY_DISPLAY,
+	ORDER_DISCREASE_SEQ,
+	ORDER_INCREASE_SEQ,	
+};
+void mtk_dump_word(void *p, int count, unsigned int offset,int notskipseq) 
+{ 
+	unsigned int *d = p;
+	int i,steplen;
+	char *str;
+	char teskstr[16];
+	unsigned int b,f;
+
+	if(((unsigned int)p%4)||(count%4))
+	{
+		printk(KERN_ERR"mtk_dump_word error p:%p count:%d\n",p,count);
+		return;
+	}
+		
+	sprintf(teskstr,MTK_STRING_MODULE_WORD, 0xFFFFFFFF);
+	steplen = strlen(teskstr);
+	
+	b = 0xFFFFFFFF;
+	f = 1;//first line alway display.
+	while (count > 0) 
+	{
+		sprintf(dbgstr,"%.4x:", offset);
+		str = dbgstr+strlen(dbgstr);
+		if(count<=16*4)
+			f = 1;//last line alway display.
+		for (i = 0; i < 16 && (count -= 4); i++)
+		{
+			if(((ORDER_DISCREASE_SEQ == notskipseq)&&((*d+1) != b)) || \
+				((ORDER_INCREASE_SEQ == notskipseq)&&(b+1 != *d)))
+				f = 1;		
+			sprintf(str,MTK_STRING_MODULE_WORD, *d);
+			str += steplen;
+			b = *d;
+			d++;	
+		}
+		sprintf(str,"\n");
+		if(notskipseq && !f)
+		{		
+			sprintf(dbgstr,"%.4x:\n", offset);
+		}		
+		printk(KERN_ERR"%s",dbgstr);
+		offset += 16*4;		
+		f = 0;
+	}
+}
+
+#define MTK_STRING_MODULE_HWORD " %.4x"
+
+void mtk_dump_hword(void *p, int count, unsigned int offset,int notskipseq) 
+{ 
+	unsigned short int *d = p;
+	int i,steplen;
+	char *str;
+	char teskstr[16];
+	unsigned short int b,f;
+
+	if(((unsigned int)p%2)||(count%2))
+	{
+		printk(KERN_ERR"mtk_dump_word error p:%p count:%d\n",p,count);
+		return;
+	}
+		
+	sprintf(teskstr,MTK_STRING_MODULE_HWORD, 0xFFFF);
+	steplen = strlen(teskstr);
+	
+	b = 0xFFFF;
+	f = 1;//first line alway display.
+	while (count > 0) 
+	{
+		sprintf(dbgstr,"%.4x:", offset);
+		str = dbgstr+strlen(dbgstr);
+		if(count<=16*2)
+			f = 1;//last line alway display.
+		for (i = 0; i < 16 && (count -= 2); i++)
+		{
+			if(((ORDER_DISCREASE_SEQ == notskipseq)&&((*d+1) != b)) || \
+				((ORDER_INCREASE_SEQ == notskipseq)&&(b+1 != *d)))
+				f = 1;
+			sprintf(str,MTK_STRING_MODULE_HWORD, *d);
+			str += steplen;	
+			b = *d;
+			d++;
+		}
+	
+		sprintf(str,"\n");		
+		if(notskipseq && !f)
+		{		
+			sprintf(dbgstr,"%.4x:\n", offset);
+		}		
+		printk(KERN_ERR"%s",dbgstr);		
+		offset += 16*2;		
+		f = 0;
+	}
+}
+
 
 static int yaffs_check_chunk_erased(struct yaffs_dev *dev, int nand_chunk)
 {
@@ -348,6 +531,10 @@ static int yaffs_check_chunk_erased(struct yaffs_dev *dev, int nand_chunk)
 		tags.chunk_used) {
 		yaffs_trace(YAFFS_TRACE_NANDACCESS, "Chunk %d not erased", nand_chunk);
 		retval = YAFFS_FAIL;
+/*power loss log*/
+		printk(KERN_ERR"yaffsdebug write CheckChunk chunk:%d addr:0x%x chunkUsed:%d\n",nand_chunk,nand_chunk*dev->data_bytes_per_chunk,tags.chunk_used);
+
+		mtk_dump_byte(&tags,sizeof(struct yaffs_ext_tags),0);
 	}
 
 	yaffs_release_temp_buffer(dev, data, __LINE__);
@@ -566,13 +753,17 @@ static int yaffs_write_new_chunk(struct yaffs_dev *dev,
 
 		/* let's give it a try */
 		attempts++;
+#ifdef YAFFS_MVG_TEST_DEBUG_WRITECHECK
+				bi->skip_erased_check = 0;
+#else
 
 		if (dev->param.always_check_erased)
 			bi->skip_erased_check = 0;
-
+#endif
 		if (!bi->skip_erased_check) {
 			erased_ok = yaffs_check_chunk_erased(dev, chunk);
 			if (erased_ok != YAFFS_OK) {
+				printk(KERN_ERR"yaffsdebug write chunknotclean chunk:%d addr:0x%x\n",chunk,chunk*dev->data_bytes_per_chunk);
 				yaffs_trace(YAFFS_TRACE_ERROR,
 				  "**>> yaffs chunk %d was not erased",
 				  chunk);
@@ -580,17 +771,41 @@ static int yaffs_write_new_chunk(struct yaffs_dev *dev,
 				/* If not erased, delete this one,
 				 * skip rest of block and
 				 * try another chunk */
+#if defined(YAFFS_MVG_TEST_DEBUG_WRITECHECK)
+	#if defined(YAFFS_MVG_TEST_DEBUG_WRITEHECK_FIXERROR)
+				yaffs_chunk_del(dev,chunk,1,__LINE__);
+				yaffs_skip_rest_of_block(dev);
+				continue;
+	#endif
+#else 
+
 				yaffs_chunk_del(dev, chunk, 1, __LINE__);
 				yaffs_skip_rest_of_block(dev);
 				continue;
+#endif
 			}
 		}
 
 		write_ok = yaffs_wr_chunk_tags_nand(dev, chunk, data, tags);
+		if(write_ok != YAFFS_OK)
+		{
+			printk(KERN_ERR"yaffsdebug write writechunk error chunk:%d\n",chunk);
+			goto writeerror;
+		}
 
 		if (!bi->skip_erased_check)
-			write_ok =
-			    yaffs_verify_chunk_written(dev, chunk, data, tags);
+			{
+			write_ok = yaffs_verify_chunk_written(dev, chunk, data, tags);
+			if(write_ok != YAFFS_OK)
+				printk(KERN_ERR"yaffsdebug write verifychunk error chunk:%d\n",chunk);
+#if defined(YAFFS_MVG_TEST_DEBUG_WRITECHECK)
+	#ifndef YAFFS_MVG_TEST_DEBUG_WRITEHECK_FIXERROR
+			write_ok = YAFFS_OK;
+	#endif
+#endif
+			}
+
+writeerror:
 
 		if (write_ok != YAFFS_OK) {
 			/* Clean up aborted write, skip to next block and
@@ -3882,7 +4097,7 @@ void yaffs_resize_file_down(struct yaffs_obj *obj, loff_t new_size)
 int yaffs_resize_file(struct yaffs_obj *in, loff_t new_size)
 {
 	struct yaffs_dev *dev = in->my_dev;
-	int old_size = in->variant.file_variant.file_size;
+	loff_t old_size = in->variant.file_variant.file_size;
 
 	yaffs_flush_file_cache(in);
 	yaffs_invalidate_whole_cache(in);
@@ -4618,7 +4833,7 @@ int yaffs_get_obj_name(struct yaffs_obj *obj, YCHAR * name, int buffer_size)
 	return strnlen(name, YAFFS_MAX_NAME_LENGTH);
 }
 
-int yaffs_get_obj_length(struct yaffs_obj *obj)
+u32 yaffs_get_obj_length(struct yaffs_obj *obj)
 {
 	/* Dereference any hard linking */
 	obj = yaffs_get_equivalent_obj(obj);

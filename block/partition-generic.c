@@ -336,8 +336,10 @@ struct hd_struct *add_partition(struct gendisk *disk, int partno,
 	pdev->parent = ddev;
 
 	err = blk_alloc_devt(p, &devt);
-	if (err)
+	if (err){
+		printk(KERN_ERR "MKDEV failed %s %d errno 0x%x",dname,partno,err);
 		goto out_free_info;
+    }
 	pdev->devt = devt;
 
 	/* delay uevent until 'holders' subdir is created */
@@ -521,6 +523,8 @@ rescan:
 
 		if (state->parts[p].has_info)
 			info = &state->parts[p].info;
+
+        printk("add_partition==[%s:p%d]==start = %llu,size = %llu\n", disk->disk_name, p, (unsigned long long)from, (unsigned long long)size);
 		part = add_partition(disk, p, from, size,
 				     state->parts[p].flags,
 				     &state->parts[p].info);

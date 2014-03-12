@@ -273,14 +273,33 @@ void spd_release_page(struct splice_pipe_desc *spd, unsigned int i)
  * Check if we need to grow the arrays holding pages and partial page
  * descriptions.
  */
+/*
+ * kernel patch
+ * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+ * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+ */
+//int splice_grow_spd(struct pipe_inode_info *pipe, struct splice_pipe_desc *spd)
 int splice_grow_spd(const struct pipe_inode_info *pipe, struct splice_pipe_desc *spd)
 {
+        /*
+         * kernel patch
+         * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+         * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+         */
+	//if (pipe->buffers <= PIPE_DEF_BUFFERS)
 	unsigned int buffers = ACCESS_ONCE(pipe->buffers);
 
 	spd->nr_pages_max = buffers;
 	if (buffers <= PIPE_DEF_BUFFERS)
 		return 0;
 
+        /*
+         * kernel patch
+         * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+         * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+         */
+	//spd->pages = kmalloc(pipe->buffers * sizeof(struct page *), GFP_KERNEL);
+	//spd->partial = kmalloc(pipe->buffers * sizeof(struct partial_page), GFP_KERNEL);
 	spd->pages = kmalloc(buffers * sizeof(struct page *), GFP_KERNEL);
 	spd->partial = kmalloc(buffers * sizeof(struct partial_page), GFP_KERNEL);
 
@@ -292,8 +311,21 @@ int splice_grow_spd(const struct pipe_inode_info *pipe, struct splice_pipe_desc 
 	return -ENOMEM;
 }
 
+/*
+ * kernel patch
+ * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+ * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+ */
+//void splice_shrink_spd(struct pipe_inode_info *pipe,
+//		       struct splice_pipe_desc *spd)
 void splice_shrink_spd(struct splice_pipe_desc *spd)
 {
+        /*
+         * kernel patch
+         * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+         * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+         */
+	//if (pipe->buffers <= PIPE_DEF_BUFFERS)
 	if (spd->nr_pages_max <= PIPE_DEF_BUFFERS)
 		return;
 
@@ -317,6 +349,11 @@ __generic_file_splice_read(struct file *in, loff_t *ppos,
 	struct splice_pipe_desc spd = {
 		.pages = pages,
 		.partial = partial,
+                /*
+                 * kernel patch
+                 * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+                 * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+                 */
 		.nr_pages_max = PIPE_DEF_BUFFERS,
 		.flags = flags,
 		.ops = &page_cache_pipe_buf_ops,
@@ -329,6 +366,12 @@ __generic_file_splice_read(struct file *in, loff_t *ppos,
 	index = *ppos >> PAGE_CACHE_SHIFT;
 	loff = *ppos & ~PAGE_CACHE_MASK;
 	req_pages = (len + loff + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
+        /*
+         * kernel patch
+         * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+         * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+         */
+	//nr_pages = min(req_pages, pipe->buffers);
 	nr_pages = min(req_pages, spd.nr_pages_max);
 
 	/*
@@ -500,6 +543,12 @@ fill_it:
 	if (spd.nr_pages)
 		error = splice_to_pipe(pipe, &spd);
 
+        /*
+         * kernel patch
+         * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+         * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+         */
+	//splice_shrink_spd(pipe, &spd);
 	splice_shrink_spd(&spd);
 	return error;
 }
@@ -601,6 +650,11 @@ ssize_t default_file_splice_read(struct file *in, loff_t *ppos,
 	struct splice_pipe_desc spd = {
 		.pages = pages,
 		.partial = partial,
+                /*
+                 * kernel patch
+                 * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+                 * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+                 */
 		.nr_pages_max = PIPE_DEF_BUFFERS,
 		.flags = flags,
 		.ops = &default_pipe_buf_ops,
@@ -612,6 +666,13 @@ ssize_t default_file_splice_read(struct file *in, loff_t *ppos,
 
 	res = -ENOMEM;
 	vec = __vec;
+        /*
+         * kernel patch
+         * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+         * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+         */
+	//if (pipe->buffers > PIPE_DEF_BUFFERS) {
+	//	vec = kmalloc(pipe->buffers * sizeof(struct iovec), GFP_KERNEL);
 	if (spd.nr_pages_max > PIPE_DEF_BUFFERS) {
 		vec = kmalloc(spd.nr_pages_max * sizeof(struct iovec), GFP_KERNEL);
 		if (!vec)
@@ -621,6 +682,12 @@ ssize_t default_file_splice_read(struct file *in, loff_t *ppos,
 	offset = *ppos & ~PAGE_CACHE_MASK;
 	nr_pages = (len + offset + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
 
+        /*
+         * kernel patch
+         * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+         * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+         */
+	//for (i = 0; i < nr_pages && i < pipe->buffers && len; i++) {
 	for (i = 0; i < nr_pages && i < spd.nr_pages_max && len; i++) {
 		struct page *page;
 
@@ -669,6 +736,12 @@ ssize_t default_file_splice_read(struct file *in, loff_t *ppos,
 shrink_ret:
 	if (vec != __vec)
 		kfree(vec);
+        /*
+         * kernel patch
+         * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+         * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+         */
+	//splice_shrink_spd(pipe, &spd);
 	splice_shrink_spd(&spd);
 	return res;
 
@@ -1618,6 +1691,11 @@ static long vmsplice_to_pipe(struct file *file, const struct iovec __user *iov,
 	struct splice_pipe_desc spd = {
 		.pages = pages,
 		.partial = partial,
+                /*
+                 * kernel patch
+                 * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+                 * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+                 */
 		.nr_pages_max = PIPE_DEF_BUFFERS,
 		.flags = flags,
 		.ops = &user_page_pipe_buf_ops,
@@ -1632,6 +1710,14 @@ static long vmsplice_to_pipe(struct file *file, const struct iovec __user *iov,
 	if (splice_grow_spd(pipe, &spd))
 		return -ENOMEM;
 
+        /*
+         * kernel patch
+         * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+         * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+         */
+	//spd.nr_pages = get_iovec_page_array(iov, nr_segs, spd.pages,
+	//				    spd.partial, flags & SPLICE_F_GIFT,
+	//				    pipe->buffers);
 	spd.nr_pages = get_iovec_page_array(iov, nr_segs, spd.pages,
 					    spd.partial, flags & SPLICE_F_GIFT,
 					    spd.nr_pages_max);
@@ -1640,6 +1726,12 @@ static long vmsplice_to_pipe(struct file *file, const struct iovec __user *iov,
 	else
 		ret = splice_to_pipe(pipe, &spd);
 
+        /*
+         * kernel patch
+         * commit: 2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064
+         * https://android.googlesource.com/kernel/common/+/2c07f25ea7800adb36cd8da9b58c4ecd3fc3d064%5E!/#F0
+         */
+	//splice_shrink_spd(pipe, &spd);
 	splice_shrink_spd(&spd);
 	return ret;
 }

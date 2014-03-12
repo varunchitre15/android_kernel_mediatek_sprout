@@ -93,8 +93,20 @@ static struct nand_ecclayout nand_oob_128 = {
 		 .length = 78} }
 };
 
+#ifdef CONFIG_MTK_MTD_NAND
+extern void nand_enable_clock(void);
+extern void nand_disable_clock(void);
+#endif
+
+#define PMT_POOL_SIZE (2)
+
+#ifdef CONFIG_MTK_MTD_NAND
+int nand_get_device(struct nand_chip *chip, struct mtd_info *mtd,
+			   int new_state);
+#else
 static int nand_get_device(struct nand_chip *chip, struct mtd_info *mtd,
 			   int new_state);
+#endif
 
 static int nand_do_write_oob(struct mtd_info *mtd, loff_t to,
 			     struct mtd_oob_ops *ops);
@@ -122,7 +134,13 @@ static int check_offs_len(struct mtd_info *mtd,
 		pr_debug("%s: length not block aligned\n", __func__);
 		ret = -EINVAL;
 	}
-
+#ifdef CONFIG_MTK_MTD_NAND
+	/* Do not allow past end of device */
+	if (ofs + len > (mtd->size+PMT_POOL_SIZE*mtd->erasesize)) {
+		pr_debug("%s: Past end of device\n",__func__);
+		ret = -EINVAL;
+	}
+#endif
 	return ret;
 }
 
@@ -132,7 +150,11 @@ static int check_offs_len(struct mtd_info *mtd,
  *
  * Deselect, release chip lock and wake up anyone waiting on the device.
  */
+#ifdef CONFIG_MTK_MTD_NAND
+void nand_release_device(struct mtd_info *mtd)
+#else
 static void nand_release_device(struct mtd_info *mtd)
+#endif
 {
 	struct nand_chip *chip = mtd->priv;
 
@@ -142,6 +164,12 @@ static void nand_release_device(struct mtd_info *mtd)
 	/* Release the controller and the chip */
 	spin_lock(&chip->controller->lock);
 	chip->controller->active = NULL;
+#ifdef CONFIG_MTK_MTD_NAND
+      if(chip->state!=FL_READY&&chip->state!= FL_PM_SUSPENDED)
+      {
+        nand_disable_clock();
+      }
+#endif
 	chip->state = FL_READY;
 	wake_up(&chip->controller->wq);
 	spin_unlock(&chip->controller->lock);
@@ -797,7 +825,11 @@ static void panic_nand_get_device(struct nand_chip *chip,
  *
  * Get the device and lock it for exclusive access
  */
+#ifdef CONFIG_MTK_MTD_NAND
+int
+#else
 static int
+#endif
 nand_get_device(struct nand_chip *chip, struct mtd_info *mtd, int new_state)
 {
 	spinlock_t *lock = &chip->controller->lock;
@@ -811,6 +843,12 @@ retry:
 		chip->controller->active = chip;
 
 	if (chip->controller->active == chip && chip->state == FL_READY) {
+#ifdef CONFIG_MTK_MTD_NAND
+       if(new_state!=FL_READY&&new_state!= FL_PM_SUSPENDED)
+       {
+           nand_enable_clock();
+       }
+#endif
 		chip->state = new_state;
 		spin_unlock(lock);
 		return 0;
@@ -1493,6 +1531,9 @@ static int nand_do_read_ops(struct mtd_info *mtd, loff_t from,
 		if (realpage != chip->pagebuf || oob) {
 			bufpoi = aligned ? buf : chip->buffers->databuf;
 
+#ifdef  CONFIG_MTK_MTD_NAND
+            ret = chip->read_page(mtd, chip, bufpoi, page);
+#else
 			if (likely(sndcmd)) {
 				chip->cmdfunc(mtd, NAND_CMD_READ0, 0x00, page);
 				sndcmd = 0;
@@ -1508,6 +1549,7 @@ static int nand_do_read_ops(struct mtd_info *mtd, loff_t from,
 			else
 				ret = chip->ecc.read_page(mtd, chip, bufpoi,
 							  page);
+#endif
 			if (ret < 0) {
 				if (!aligned)
 					/* Invalidate page cache */
@@ -1782,6 +1824,13 @@ static int nand_do_read_oob(struct mtd_info *mtd, loff_t from,
 	int readlen = ops->ooblen;
 	int len;
 	uint8_t *buf = ops->oobbuf;
+#ifdef CONFIG_MTK_MTD_NAND
+	// variable we need for checksum
+	u8 oob_checksum = 0;
+	u8 i, j;
+	bool empty = true;
+	struct nand_oobfree *free_entry;
+#endif
 
 	pr_debug("%s: from = 0x%08Lx, len = %i\n",
 			__func__, (unsigned long long)from, readlen);
@@ -1820,6 +1869,25 @@ static int nand_do_read_oob(struct mtd_info *mtd, loff_t from,
 			sndcmd = chip->ecc.read_oob_raw(mtd, chip, page, sndcmd);
 		else
 			sndcmd = chip->ecc.read_oob(mtd, chip, page, sndcmd);
+
+#ifdef CONFIG_MTK_MTD_NAND
+        oob_checksum = 0;
+        for (i = 0;
+                i < MTD_MAX_OOBFREE_ENTRIES && chip->ecc.layout->oobfree[i].length;
+                i++)
+        {
+            free_entry = (struct nand_oobfree*)(chip->ecc.layout->oobfree) + i;
+            for (j = 0; j < free_entry->length; j++)
+            {
+                oob_checksum ^= chip->oob_poi[free_entry->offset + j];
+                if (chip->oob_poi[free_entry->offset + j] != 0xFF)
+                    empty = false;
+            }
+        }
+
+        if (!empty && (oob_checksum != chip->oob_poi[free_entry->offset + free_entry->length]))
+            return -EIO;
+#endif
 
 		len = min(len, readlen);
 		buf = nand_transfer_oob(chip, buf, ops, len);
@@ -1885,7 +1953,12 @@ static int nand_read_oob(struct mtd_info *mtd, loff_t from,
 	ops->retlen = 0;
 
 	/* Do not allow reads past end of device */
-	if (ops->datbuf && (from + ops->len) > mtd->size) {
+#ifdef CONFIG_MTK_MTD_NAND
+	if (ops->datbuf && (from + ops->len) > (mtd->size+PMT_POOL_SIZE*mtd->erasesize))
+#else
+	if (ops->datbuf && (from + ops->len) > mtd->size)
+#endif
+	{
 		pr_debug("%s: attempt to read beyond end of device\n",
 				__func__);
 		return -EINVAL;
@@ -2310,6 +2383,10 @@ static int panic_nand_write(struct mtd_info *mtd, loff_t to, size_t len,
 	struct mtd_oob_ops ops;
 	int ret;
 
+#ifdef CONFIG_MTK_MTD_NAND
+	nand_enable_clock();
+#endif
+
 	/* Wait for the device to get ready */
 	panic_nand_wait(mtd, chip, 400);
 
@@ -2324,6 +2401,10 @@ static int panic_nand_write(struct mtd_info *mtd, loff_t to, size_t len,
 	ret = nand_do_write_ops(mtd, to, &ops);
 
 	*retlen = ops.retlen;
+
+#ifdef CONFIG_MTK_MTD_NAND
+    nand_disable_clock();
+#endif
 	return ret;
 }
 
@@ -2452,7 +2533,7 @@ static int nand_write_oob(struct mtd_info *mtd, loff_t to,
 	ops->retlen = 0;
 
 	/* Do not allow writes past end of device */
-	if (ops->datbuf && (to + ops->len) > mtd->size) {
+	if (ops->datbuf && (to + ops->len) > (mtd->size +  PMT_POOL_SIZE*mtd->erasesize)) {
 		pr_debug("%s: attempt to write beyond end of device\n",
 				__func__);
 		return -EINVAL;
@@ -2603,10 +2684,13 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 		    (page + pages_per_block))
 			chip->pagebuf = -1;
 
+#ifdef CONFIG_MTK_MTD_NAND
+        	status = chip->erase(mtd, page & chip->pagemask);
+#else
 		chip->erase_cmd(mtd, page & chip->pagemask);
 
 		status = chip->waitfunc(mtd, chip);
-
+#endif
 		/*
 		 * See if operation failed and additional status checks are
 		 * available
@@ -3031,8 +3115,10 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 			mtd->writesize = 1024 << (extid & 0x03);
 			extid >>= 2;
 			/* Calc oobsize */
-			mtd->oobsize = (8 << (extid & 0x01)) *
-				(mtd->writesize >> 9);
+			if(!mtd->oobsize){
+				mtd->oobsize = (8 << (extid & 0x01)) *
+					(mtd->writesize >> 9);
+			}
 			extid >>= 2;
 			/* Calc blocksize. Blocksize is multiples of 64KiB */
 			mtd->erasesize = (64 * 1024) << (extid & 0x03);

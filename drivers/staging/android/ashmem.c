@@ -34,6 +34,9 @@
 #define ASHMEM_NAME_PREFIX_LEN (sizeof(ASHMEM_NAME_PREFIX) - 1)
 #define ASHMEM_FULL_NAME_LEN (ASHMEM_NAME_LEN + ASHMEM_NAME_PREFIX_LEN)
 
+#define ASHMEM_RETRY_COUNT (500000)
+#define ASHMEM_RETRY_RESCHED (100)
+
 /*
  * ashmem_area - anonymous shared memory area
  * Lifecycle: From our parent file's open() until its release()
@@ -171,6 +174,65 @@ static inline void range_shrink(struct ashmem_range *range,
 
 	if (range_on_lru(range))
 		lru_count -= pre - range_size(range);
+}
+
+/*
+ * dump a block of kernel memory from around the given address
+ */
+static void show_data(unsigned long addr, int nbytes, const char *name)
+{
+	int	i, j;
+	int	nlines;
+	u32	*p;
+
+	/*
+	 * don't attempt to dump non-kernel addresses or
+	 * values that are probably just small negative numbers
+	 */
+	if (addr < PAGE_OFFSET || addr > -256UL)
+		return;
+
+	printk("\n%s: %#lx:\n", name, addr);
+
+	/*
+	 * round address down to a 32 bit boundary
+	 * and always dump a multiple of 32 bytes
+	 */
+	p = (u32 *)(addr & ~(sizeof(u32) - 1));
+	nbytes += (addr & (sizeof(u32) - 1));
+	nlines = (nbytes + 31) / 32;
+
+
+	for (i = 0; i < nlines; i++) {
+		/*
+		 * just display low 16 bits of address to keep
+		 * each line of the dump < 80 characters
+		 */
+		printk("%04lx ", (unsigned long)p & 0xffff);
+		for (j = 0; j < 8; j++) {
+			u32	data;
+			if (probe_kernel_address(p, data)) {
+				printk(" ********");
+			} else {
+				printk(" %08x", data);
+			}
+			++p;
+		}
+		printk("\n");
+	}
+}
+
+/*
+ * dump the page where the addr is in, and the page ahead.
+ */
+ #define PAGE_ALIGN_MASK 0xFFFFF000
+static void dump_region(unsigned long addr){
+	unsigned long page_in = addr & PAGE_ALIGN_MASK;
+	unsigned long page_ahead = (page_in - 1) & PAGE_ALIGN_MASK;
+	
+	printk(KERN_ERR "addr: %lx, page in: %lx, page ahead: %lx\n", addr, page_in, page_ahead);
+	show_data(page_in, PAGE_SIZE, "page addr in");
+	show_data(page_ahead, PAGE_SIZE, "page ahead");
 }
 
 static int ashmem_open(struct inode *inode, struct file *file)
@@ -313,7 +375,7 @@ static int ashmem_mmap(struct file *file, struct vm_area_struct *vma)
 			name = asma->name;
 
 		/* ... and allocate the backing shmem file */
-		vmfile = shmem_file_setup(name, asma->size, vma->vm_flags);
+		vmfile = shmem_file_setup(name, asma->size, vma->vm_flags, 0);
 		if (unlikely(IS_ERR(vmfile))) {
 			ret = PTR_ERR(vmfile);
 			goto out;
@@ -361,7 +423,10 @@ static int ashmem_shrink(struct shrinker *s, struct shrink_control *sc)
 	if (!sc->nr_to_scan)
 		return lru_count;
 
-	mutex_lock(&ashmem_mutex);
+	//To avoid deadlock when memory is shortage
+        if (!mutex_trylock(&ashmem_mutex))
+		return -1;
+
 	list_for_each_entry_safe(range, next, &ashmem_lru_list, lru) {
 		struct inode *inode = range->asma->file->f_dentry->d_inode;
 		loff_t start = range->pgstart * PAGE_SIZE;
@@ -385,6 +450,15 @@ static struct shrinker ashmem_shrinker = {
 	.seeks = DEFAULT_SEEKS * 4,
 };
 
+static inline void dump_asma_info(struct ashmem_area *asma) {
+	if (asma) {
+		printk(KERN_INFO "asma: %x, name: %s, size: %d, file: %x, prot_mask: %ld\n", 
+			(int)asma, asma->name, asma->size, (int)(asma->file), asma->prot_mask);
+	}
+}
+
+
+
 static int set_prot_mask(struct ashmem_area *asma, unsigned long prot)
 {
 	int ret = 0;
@@ -394,6 +468,10 @@ static int set_prot_mask(struct ashmem_area *asma, unsigned long prot)
 	/* the user can only remove, not add, protection bits */
 	if (unlikely((asma->prot_mask & prot) != prot)) {
 		ret = -EINVAL;
+		printk(KERN_ERR "ashmem: %s[line: %d], try to set prot %ld, but fails\n",
+			__FILE__, __LINE__, prot);
+		dump_asma_info(asma);
+		dump_region((unsigned long)asma);
 		goto out;
 	}
 
@@ -412,47 +490,48 @@ static int set_name(struct ashmem_area *asma, void __user *name)
 {
 	char lname[ASHMEM_NAME_LEN];
 	int len;
-	int ret = 0;
-
+ 	int ret = 0;
+ 
 	len = strncpy_from_user(lname, name, ASHMEM_NAME_LEN);
 	if (len < 0)
 		return len;
 	if (len == ASHMEM_NAME_LEN)
 		lname[ASHMEM_NAME_LEN - 1] = '\0';
+
 	mutex_lock(&ashmem_mutex);
 
-	/* cannot change an existing mapping's name */
+ 	/* cannot change an existing mapping's name */
 	if (unlikely(asma->file))
-		ret = -EINVAL;
+ 		ret = -EINVAL;
 	else
 		strcpy(asma->name + ASHMEM_NAME_PREFIX_LEN, lname);
-
-	mutex_unlock(&ashmem_mutex);
-	return ret;
+ 
+ 	mutex_unlock(&ashmem_mutex);
+ 	return ret;
 }
 
 static int get_name(struct ashmem_area *asma, void __user *name)
 {
-	int ret = 0;
+ 	int ret = 0;
 	char lname[ASHMEM_NAME_LEN];
 	size_t len;
-
-	mutex_lock(&ashmem_mutex);
-	if (asma->name[ASHMEM_NAME_PREFIX_LEN] != '\0') {
-		/*
-		 * Copying only `len', instead of ASHMEM_NAME_LEN, bytes
-		 * prevents us from revealing one user's stack to another.
-		 */
-		len = strlen(asma->name + ASHMEM_NAME_PREFIX_LEN) + 1;
+ 
+ 	mutex_lock(&ashmem_mutex);
+ 	if (asma->name[ASHMEM_NAME_PREFIX_LEN] != '\0') {
+ 		/*
+ 		 * Copying only `len', instead of ASHMEM_NAME_LEN, bytes
+ 		 * prevents us from revealing one user's stack to another.
+ 		 */
+ 		len = strlen(asma->name + ASHMEM_NAME_PREFIX_LEN) + 1;
 		memcpy(lname, asma->name + ASHMEM_NAME_PREFIX_LEN, len);
-	} else {
+ 	} else {
 		len = strlen(ASHMEM_NAME_DEF) + 1;
 		memcpy(lname, ASHMEM_NAME_DEF, len);
-	}
-	mutex_unlock(&ashmem_mutex);
+ 	}
+ 	mutex_unlock(&ashmem_mutex);
 	if (unlikely(copy_to_user(name, lname, len)))
 		ret = -EFAULT;
-	return ret;
+ 	return ret;
 }
 
 /*
@@ -649,6 +728,10 @@ static long ashmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	case ASHMEM_GET_SIZE:
 		ret = asma->size;
+#if 1
+		if (unlikely(ret < 0))
+			printk(KERN_ERR "ashmem: size is %ld\n", ret);
+#endif
 		break;
 	case ASHMEM_SET_PROT_MASK:
 		ret = set_prot_mask(asma, arg);

@@ -15,6 +15,7 @@
 #include <linux/device.h>
 #include <linux/genhd.h>
 #include <linux/mm.h>
+#include <linux/kernel.h>
 
 #include "zram_drv.h"
 
@@ -54,23 +55,44 @@ static ssize_t disksize_show(struct device *dev,
 static ssize_t disksize_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t len)
 {
-	int ret;
 	u64 disksize;
+	struct zram_meta *meta;
 	struct zram *zram = dev_to_zram(dev);
 
-	ret = kstrtoull(buf, 10, &disksize);
-	if (ret)
-		return ret;
+#if 0
+	disksize = memparse(buf, NULL);
+	/*
+	if (!disksize)
+		return -EINVAL;
+	*/
+#else	/* Fix disksize */
+	disksize = default_disksize_perc_ram * ((totalram_pages << PAGE_SHIFT) / 100);
+	/* Expand its disksize if we have little system ram! */
+	if (totalram_pages < SUPPOSED_TOTALRAM) {
+		disksize += (disksize >> 1) ;
+	}
+	/* Align it! */
+	disksize = round_up(disksize, DISKSIZE_ALIGNMENT);
+#endif
 
+	disksize = PAGE_ALIGN(disksize);
+	meta = zram_meta_alloc(disksize);
+	/* Check whether meta is null */
+	if (!meta) {
+		printk(KERN_ALERT"Failed to allocate memory for meta!\n");
+		return len;
+	}
 	down_write(&zram->init_lock);
 	if (zram->init_done) {
 		up_write(&zram->init_lock);
+		zram_meta_free(meta);
 		pr_info("Cannot change disksize for initialized device\n");
 		return -EBUSY;
 	}
 
-	zram->disksize = PAGE_ALIGN(disksize);
+	zram->disksize = disksize;
 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+	zram_init_device(zram, meta);
 	up_write(&zram->init_lock);
 
 	return len;
@@ -110,11 +132,7 @@ static ssize_t reset_store(struct device *dev,
 	if (bdev)
 		fsync_bdev(bdev);
 
-	down_write(&zram->init_lock);
-	if (zram->init_done)
-		__zram_reset_device(zram);
-	up_write(&zram->init_lock);
-
+	zram_reset_device(zram);
 	return len;
 }
 
@@ -162,6 +180,22 @@ static ssize_t zero_pages_show(struct device *dev,
 	return sprintf(buf, "%u\n", zram->stats.pages_zero);
 }
 
+static ssize_t good_compr_pages_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct zram *zram = dev_to_zram(dev);
+
+	return sprintf(buf, "%u\n", zram->stats.good_compress);
+}
+
+static ssize_t bad_compr_pages_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct zram *zram = dev_to_zram(dev);
+
+	return sprintf(buf, "%u\n", zram->stats.bad_compress);
+}
+
 static ssize_t orig_data_size_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -185,11 +219,10 @@ static ssize_t mem_used_total_show(struct device *dev,
 {
 	u64 val = 0;
 	struct zram *zram = dev_to_zram(dev);
+	struct zram_meta *meta = zram->meta;
 
-	if (zram->init_done) {
-		val = zs_get_total_size_bytes(zram->mem_pool) +
-			((u64)(zram->stats.pages_expand) << PAGE_SHIFT);
-	}
+	if (zram->init_done)
+		val = zs_get_total_size_bytes(meta->mem_pool);
 
 	return sprintf(buf, "%llu\n", val);
 }
@@ -203,6 +236,8 @@ static DEVICE_ATTR(num_writes, S_IRUGO, num_writes_show, NULL);
 static DEVICE_ATTR(invalid_io, S_IRUGO, invalid_io_show, NULL);
 static DEVICE_ATTR(notify_free, S_IRUGO, notify_free_show, NULL);
 static DEVICE_ATTR(zero_pages, S_IRUGO, zero_pages_show, NULL);
+static DEVICE_ATTR(good_compr_pages, S_IRUGO, good_compr_pages_show, NULL);
+static DEVICE_ATTR(bad_compr_pages, S_IRUGO, bad_compr_pages_show, NULL);
 static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
 static DEVICE_ATTR(compr_data_size, S_IRUGO, compr_data_size_show, NULL);
 static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
@@ -216,6 +251,8 @@ static struct attribute *zram_disk_attrs[] = {
 	&dev_attr_invalid_io.attr,
 	&dev_attr_notify_free.attr,
 	&dev_attr_zero_pages.attr,
+	&dev_attr_good_compr_pages.attr,
+	&dev_attr_bad_compr_pages.attr,
 	&dev_attr_orig_data_size.attr,
 	&dev_attr_compr_data_size.attr,
 	&dev_attr_mem_used_total.attr,

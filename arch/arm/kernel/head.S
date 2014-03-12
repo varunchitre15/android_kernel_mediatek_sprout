@@ -22,6 +22,7 @@
 #include <asm/memory.h>
 #include <asm/thread_info.h>
 #include <asm/pgtable.h>
+#include <asm/vfpmacros.h>
 
 #ifdef CONFIG_DEBUG_LL
 #include <mach/debug-macro.S>
@@ -339,6 +340,16 @@ __turn_mmu_on_loc:
 #if defined(CONFIG_SMP)
 	__CPUINIT
 ENTRY(secondary_startup)
+#ifdef CONFIG_VFP_OPT
+	ldr r10, =(0xF << 20)
+	mcr p15, 0, r10, c1, c0, 2
+	VFPFMRX r10, FPEXC		@ Is the VFP enabled?
+	orr r10, r10, #FPEXC_EN		@ user FPEXC has the enable bit set
+	bic r10, r10, #FPEXC_EX		@ make sure exceptions are disabled
+	VFPFMXR FPEXC, r10		@ enable VFP, disable any pending
+					@ exceptions, so we can get at the
+					@ rest of it
+#endif
 	/*
 	 * Common entry point for secondary CPUs.
 	 *

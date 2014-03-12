@@ -617,7 +617,10 @@ int vmtruncate_range(struct inode *inode, loff_t lstart, loff_t lend)
 	if (!inode->i_op->truncate_range)
 		return -ENOSYS;
 
-	mutex_lock(&inode->i_mutex);
+	//mutex_lock(&inode->i_mutex);
+	if (!mutex_trylock(&inode->i_mutex))
+		return -1;
+
 	inode_dio_wait(inode);
 	unmap_mapping_range(mapping, holebegin, holelen, 1);
 	inode->i_op->truncate_range(inode, lstart, lend);

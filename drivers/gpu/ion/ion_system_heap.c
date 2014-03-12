@@ -166,6 +166,7 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 		goto err;
 
 	ret = sg_alloc_table(table, i, GFP_KERNEL);
+
 	if (ret)
 		goto err1;
 
@@ -237,46 +238,45 @@ static struct ion_heap_ops system_heap_ops = {
 };
 
 static int ion_system_heap_shrink(struct shrinker *shrinker,
-				  struct shrink_control *sc) {
+                                  struct shrink_control *sc) {
+        struct ion_heap *heap = container_of(shrinker, struct ion_heap,
+                                             shrinker);
+        struct ion_system_heap *sys_heap = container_of(heap,
+                                                        struct ion_system_heap,
+                                                        heap);
+        int nr_total = 0;
+        int nr_freed = 0;
+        int i;
 
-	struct ion_heap *heap = container_of(shrinker, struct ion_heap,
-					     shrinker);
-	struct ion_system_heap *sys_heap = container_of(heap,
-							struct ion_system_heap,
-							heap);
-	int nr_total = 0;
-	int nr_freed = 0;
-	int i;
+        if (sc->nr_to_scan == 0)
+                goto end;
 
-	if (sc->nr_to_scan == 0)
-		goto end;
+        /* shrink the free list first, no point in zeroing the memory if
+           we're just going to reclaim it */
+        nr_freed += ion_heap_freelist_drain(heap, sc->nr_to_scan * PAGE_SIZE) /
+                PAGE_SIZE;
 
-	/* shrink the free list first, no point in zeroing the memory if
-	   we're just going to reclaim it */
-	nr_freed += ion_heap_freelist_drain(heap, sc->nr_to_scan * PAGE_SIZE) /
-		PAGE_SIZE;
+        if (nr_freed >= sc->nr_to_scan)
+                goto end;
 
-	if (nr_freed >= sc->nr_to_scan)
-		goto end;
+        for (i = 0; i < num_orders; i++) {
+                struct ion_page_pool *pool = sys_heap->pools[i];
 
-	for (i = 0; i < num_orders; i++) {
-		struct ion_page_pool *pool = sys_heap->pools[i];
-
-		nr_freed += ion_page_pool_shrink(pool, sc->gfp_mask,
-						 sc->nr_to_scan);
-		if (nr_freed >= sc->nr_to_scan)
-			break;
-	}
+                nr_freed += ion_page_pool_shrink(pool, sc->gfp_mask,
+                                                 sc->nr_to_scan);
+                if (nr_freed >= sc->nr_to_scan)
+                        break;
+        }
 
 end:
-	/* total number of items is whatever the page pools are holding
-	   plus whatever's in the freelist */
-	for (i = 0; i < num_orders; i++) {
-		struct ion_page_pool *pool = sys_heap->pools[i];
-		nr_total += ion_page_pool_shrink(pool, sc->gfp_mask, 0);
-	}
-	nr_total += ion_heap_freelist_size(heap) / PAGE_SIZE;
-	return nr_total;
+        /* total number of items is whatever the page pools are holding
+           plus whatever's in the freelist */
+        for (i = 0; i < num_orders; i++) {
+                struct ion_page_pool *pool = sys_heap->pools[i];
+                nr_total += ion_page_pool_shrink(pool, sc->gfp_mask, 0);
+        }
+        nr_total += ion_heap_freelist_size(heap) / PAGE_SIZE;
+        return nr_total;
 
 }
 
@@ -310,7 +310,7 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
 		return ERR_PTR(-ENOMEM);
 	heap->heap.ops = &system_heap_ops;
 	heap->heap.type = ION_HEAP_TYPE_SYSTEM;
-	heap->heap.flags = ION_HEAP_FLAG_DEFER_FREE;
+ 	heap->heap.flags = ION_HEAP_FLAG_DEFER_FREE;
 	heap->pools = kzalloc(sizeof(struct ion_page_pool *) * num_orders,
 			      GFP_KERNEL);
 	if (!heap->pools)
@@ -327,10 +327,10 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
 		heap->pools[i] = pool;
 	}
 
-	heap->heap.shrinker.shrink = ion_system_heap_shrink;
-	heap->heap.shrinker.seeks = DEFAULT_SEEKS;
-	heap->heap.shrinker.batch = 0;
-	register_shrinker(&heap->heap.shrinker);
+        heap->heap.shrinker.shrink = ion_system_heap_shrink;
+        heap->heap.shrinker.seeks = DEFAULT_SEEKS;
+        heap->heap.shrinker.batch = 0;
+        register_shrinker(&heap->heap.shrinker);
 	heap->heap.debug_show = ion_system_heap_debug_show;
 	return &heap->heap;
 err_create_pool:

@@ -345,6 +345,11 @@ static int do_budget_space(struct ubifs_info *c)
 		dbg_budg("out of indexing space: min_idx_lebs %d (old %d), "
 			 "rsvd_idx_lebs %d", min_idx_lebs, c->bi.min_idx_lebs,
 			 rsvd_idx_lebs);
+		printk(KERN_ERR "out of indexing space: lebs %d, lst.empty_lebs %d, idx_gc_cnt %d, lst.taken_empty_lebs %d",
+			 lebs, c->lst.empty_lebs, c->idx_gc_cnt, c->lst.taken_empty_lebs);
+		printk(KERN_ERR "out of indexing space: min_idx_lebs %d (old %d), "
+			 "rsvd_idx_lebs %d", min_idx_lebs, c->bi.min_idx_lebs,
+			 rsvd_idx_lebs);
 		return -ENOSPC;
 	}
 
@@ -354,11 +359,15 @@ static int do_budget_space(struct ubifs_info *c)
 	if (unlikely(available < outstanding)) {
 		dbg_budg("out of data space: available %lld, outstanding %lld",
 			 available, outstanding);
+		printk(KERN_ERR "out of data space: available %lld, outstanding %lld",
+			 available, outstanding);
 		return -ENOSPC;
 	}
 
-	if (available - outstanding <= c->rp_size && !can_use_rp(c))
+	if (available - outstanding <= c->rp_size && !can_use_rp(c)) {
+		printk(KERN_ERR "available %d, outstanding %d, rp_size %d\n", available, outstanding, c->rp_size);
 		return -ENOSPC;
+	}
 
 	c->bi.min_idx_lebs = min_idx_lebs;
 	return 0;

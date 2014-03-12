@@ -33,6 +33,7 @@ config ARM
 	select GENERIC_IRQ_SHOW
 	select CPU_PM if (SUSPEND || CPU_IDLE)
 	select GENERIC_PCI_IOMAP
+	select ARM_HAS_SG_CHAIN if (ARCH_MT6589 || ARCH_MT6582 || ARCH_MT6572 || ARCH_MT8127)
 	select HAVE_BPF_JIT if NET
 	help
 	  The ARM series is a line of low-power-consumption RISC chip designs
@@ -740,6 +741,37 @@ config ARCH_MSM
 	  stack and controls some vital subsystems
 	  (clock and power control, etc).
 
+config ARCH_MT6572
+	bool "MediaTek MT6572"
+	select MEDIATEK_SOLUTION
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select ARM_GIC
+	help
+	  This enable support for MediaTek MT6572
+
+config ARCH_MT6582
+	bool "MediaTek MT6582"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select ARM_GIC
+	select L1C_OPT
+	select VFP_OPT
+	select HAVE_TRUSTONIC_TEE_SUPPORT
+	select ARCH_REQUIRE_GPIOLIB
+	help
+	  This enable support for MediaTek MT6582.
+
 config ARCH_SHMOBILE
 	bool "Renesas SH-Mobile / R-Mobile"
 	select HAVE_CLK
@@ -1056,6 +1088,14 @@ source "arch/arm/mach-kirkwood/Kconfig"
 source "arch/arm/mach-ks8695/Kconfig"
 
 source "arch/arm/mach-lpc32xx/Kconfig"
+
+if ARCH_MT6572
+#source "arch/arm/mach-mt6572/Kconfig"
+endif
+
+if ARCH_MT6582
+source "arch/arm/mach-mt6582/Kconfig"
+endif
 
 source "arch/arm/mach-msm/Kconfig"
 
@@ -1610,7 +1650,7 @@ config LOCAL_TIMERS
 	bool "Use local timer interrupts"
 	depends on SMP
 	default y
-	select HAVE_ARM_TWD if (!ARCH_MSM_SCORPIONMP && !EXYNOS4_MCT)
+	select HAVE_ARM_TWD if (!ARCH_MSM_SCORPIONMP && !EXYNOS4_MCT && !ARCH_MT6589 && !ARCH_MT6582 && !ARCH_MT6572 && !ARCH_MT8127)
 	help
 	  Enable support for local timers on SMP platforms, rather then the
 	  legacy IPI broadcast method.  Local timers allows the system
@@ -2340,3 +2380,4 @@ source "security/Kconfig"
 source "crypto/Kconfig"
 
 source "lib/Kconfig"
+

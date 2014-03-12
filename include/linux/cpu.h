@@ -18,6 +18,21 @@
 #include <linux/compiler.h>
 #include <linux/cpumask.h>
 
+/*******************************************************************************
+* 20121113 marc.huang                                                          *
+* CPU Hotplug and MCDI integration                                             *
+*******************************************************************************/
+#define MTK_MCDI
+
+#ifdef MTK_MCDI
+
+#include <mach/mt_spm_idle.h>
+
+extern atomic_t is_in_hotplug;
+
+#endif //#ifdef MTK_MCDI
+/******************************************************************************/
+
 struct device;
 
 struct cpu {

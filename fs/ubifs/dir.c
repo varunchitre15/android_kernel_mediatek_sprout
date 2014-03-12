@@ -288,6 +288,13 @@ static int ubifs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 	err = ubifs_jnl_update(c, dir, &dentry->d_name, inode, 0, 0);
 	if (err)
 		goto out_cancel;
+	err = ubifs_init_security(dir, inode, &dentry->d_name);
+	if (err) {
+		ubifs_err("cannot initialize extended attribute, error %d",
+			  err);
+		goto out_cancel;
+	}
+
 	mutex_unlock(&dir_ui->ui_mutex);
 
 	ubifs_release_budget(c, &req);
@@ -774,6 +781,13 @@ static int ubifs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 		ubifs_err("cannot create directory, error %d", err);
 		goto out_cancel;
 	}
+	err = ubifs_init_security(dir, inode, &dentry->d_name);
+	if (err) {
+		ubifs_err("cannot initialize extended attribute, error %d",
+			  err);
+		goto out_cancel;
+	}
+
 	mutex_unlock(&dir_ui->ui_mutex);
 
 	ubifs_release_budget(c, &req);
@@ -850,6 +864,13 @@ static int ubifs_mknod(struct inode *dir, struct dentry *dentry,
 	err = ubifs_jnl_update(c, dir, &dentry->d_name, inode, 0, 0);
 	if (err)
 		goto out_cancel;
+	err = ubifs_init_security(dir, inode, &dentry->d_name);
+	if (err) {
+		ubifs_err("cannot initialize extended attribute, error %d",
+			  err);
+		goto out_cancel;
+	}
+
 	mutex_unlock(&dir_ui->ui_mutex);
 
 	ubifs_release_budget(c, &req);
@@ -926,6 +947,13 @@ static int ubifs_symlink(struct inode *dir, struct dentry *dentry,
 	err = ubifs_jnl_update(c, dir, &dentry->d_name, inode, 0, 0);
 	if (err)
 		goto out_cancel;
+	err = ubifs_init_security(dir, inode, &dentry->d_name);
+	if (err) {
+		ubifs_err("cannot initialize extended attribute, error %d",
+			  err);
+		goto out_cancel;
+	}
+
 	mutex_unlock(&dir_ui->ui_mutex);
 
 	ubifs_release_budget(c, &req);
@@ -1001,7 +1029,7 @@ static int ubifs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	struct ubifs_budget_req ino_req = { .dirtied_ino = 1,
 			.dirtied_ino_d = ALIGN(old_inode_ui->data_len, 8) };
 	struct timespec time;
-	unsigned int uninitialized_var(saved_nlink);
+	unsigned int saved_nlink;
 
 	/*
 	 * Budget request settings: deletion direntry, new direntry, removing

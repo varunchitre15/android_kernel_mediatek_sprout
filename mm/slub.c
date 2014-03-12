@@ -30,8 +30,10 @@
 #include <linux/fault-inject.h>
 #include <linux/stacktrace.h>
 #include <linux/prefetch.h>
+#include <linux/aee.h>
 
 #include <trace/events/kmem.h>
+#include <mach/mtk_memcfg.h>
 
 /*
  * Lock order:
@@ -207,7 +209,7 @@ struct track {
 	unsigned long when;	/* When did the operation occur */
 };
 
-enum track_item { TRACK_ALLOC, TRACK_FREE };
+enum track_item { TRACK_FREE, TRACK_ALLOC };
 
 #ifdef CONFIG_SYSFS
 static int sysfs_slab_add(struct kmem_cache *);
@@ -635,6 +637,7 @@ static void object_err(struct kmem_cache *s, struct page *page,
 {
 	slab_bug(s, "%s", reason);
 	print_trailer(s, page, object);
+        aee_kernel_warning("[SLUB_DEBUG]", __FUNCTION__);
 }
 
 static void slab_err(struct kmem_cache *s, struct page *page, char *fmt, ...)
@@ -648,6 +651,7 @@ static void slab_err(struct kmem_cache *s, struct page *page, char *fmt, ...)
 	slab_bug(s, "%s", buf);
 	print_page_info(page);
 	dump_stack();
+        aee_kernel_warning("[SLUB_DEBUG]", __FUNCTION__);
 }
 
 static void init_object(struct kmem_cache *s, void *object, u8 val)
@@ -691,6 +695,10 @@ static int check_bytes_and_report(struct kmem_cache *s, struct page *page,
 	print_trailer(s, page, object);
 
 	restore_bytes(s, what, value, fault, end);
+        printk(KERN_ERR "dump 4k covering bytes of the error object\n");
+	print_section("memdump ", (object - 0xc00), PAGE_SIZE);
+        
+        aee_kernel_warning("[SLUB_DEBUG]", __FUNCTION__);
 	return 0;
 }
 
@@ -760,6 +768,11 @@ static int slab_pad_check(struct kmem_cache *s, struct page *page)
 	int length;
 	int remainder;
 
+#ifdef CONFIG_MTK_MEMCFG
+        if (unlikely(mtk_memcfg_get_bypass_slub_debug_flag())) {
+            return 1;
+        }
+#endif 
 	if (!(s->flags & SLAB_POISON))
 		return 1;
 
@@ -789,6 +802,11 @@ static int check_object(struct kmem_cache *s, struct page *page,
 	u8 *p = object;
 	u8 *endobject = object + s->objsize;
 
+#ifdef CONFIG_MTK_MEMCFG
+        if (unlikely(mtk_memcfg_get_bypass_slub_debug_flag())) {
+            return 1;
+        }
+#endif 
 	if (s->flags & SLAB_RED_ZONE) {
 		if (!check_bytes_and_report(s, page, object, "Redzone",
 			endobject, val, s->inuse - s->objsize))
@@ -1050,6 +1068,11 @@ static void setup_object_debug(struct kmem_cache *s, struct page *page,
 static noinline int alloc_debug_processing(struct kmem_cache *s, struct page *page,
 					void *object, unsigned long addr)
 {
+#ifdef CONFIG_MTK_MEMCFG
+        if (unlikely(mtk_memcfg_get_bypass_slub_debug_flag())) {
+            return 1;
+        }
+#endif 
 	if (!check_slab(s, page))
 		goto bad;
 
@@ -1088,6 +1111,11 @@ static noinline int free_debug_processing(struct kmem_cache *s,
 	unsigned long flags;
 	int rc = 0;
 
+#ifdef CONFIG_MTK_MEMCFG
+        if (unlikely(mtk_memcfg_get_bypass_slub_debug_flag())) {
+            return 1;
+        }
+#endif 
 	local_irq_save(flags);
 	slab_lock(page);
 
@@ -1214,6 +1242,10 @@ static unsigned long kmem_cache_flags(unsigned long objsize,
 	/*
 	 * Enable debugging if selected on the kernel commandline.
 	 */
+	if(flags & SLAB_NO_DEBUG) {
+		return flags;
+	}
+
 	if (slub_debug && (!slub_debug_slabs ||
 		!strncmp(slub_debug_slabs, name, strlen(slub_debug_slabs))))
 		flags |= slub_debug;
@@ -1277,7 +1309,11 @@ static inline struct page *alloc_slab_page(gfp_t flags, int node,
 	flags |= __GFP_NOTRACK;
 
 	if (node == NUMA_NO_NODE)
+#ifndef CONFIG_MTK_PAGERECORDER
 		return alloc_pages(flags, order);
+#else
+		return alloc_pages_nopagedebug(flags, order);
+#endif
 	else
 		return alloc_pages_exact_node(node, flags, order);
 }
@@ -1417,7 +1453,11 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
 	reset_page_mapcount(page);
 	if (current->reclaim_state)
 		current->reclaim_state->reclaimed_slab += pages;
+#ifndef CONFIG_MTK_PAGERECORDER
 	__free_pages(page, order);
+#else
+	__free_pages_nopagedebug(page, order);
+#endif
 }
 
 #define need_reserve_slab_rcu						\
@@ -5509,6 +5549,118 @@ static const struct file_operations proc_slabinfo_operations = {
 	.llseek		= seq_lseek,
 	.release	= seq_release,
 };
+
+#ifdef CONFIG_MTK_MEMCFG
+static void mtk_memcfg_print_track(struct seq_file *m, const char *s, struct track *t)
+{
+	if (!t->addr)
+		return;
+
+	seq_printf(m, ">> %s in %pS age=%lu cpu=%u pid=%d: ",
+		s, (void *)t->addr, jiffies - t->when, t->cpu, t->pid);
+#ifdef CONFIG_STACKTRACE
+	{
+		int i;
+		for (i = 0; i < TRACK_ADDRS_COUNT; i++)
+			if (t->addrs[i])
+				seq_printf(m, "%s%p", i? " ": "",(void *)t->addrs[i]);
+			else
+				break;
+		seq_printf(m, "\n");
+	}
+#endif
+}
+
+static void mtk_memcfg_print_tracking(struct seq_file *m, struct kmem_cache *s, void *object)
+{
+	if (!(s->flags & SLAB_STORE_USER))
+		return;
+
+	seq_printf(m, "obj: 0x%08lx\n", (unsigned long)object);
+	mtk_memcfg_print_track(m, "Allocated", get_track(s, object, TRACK_ALLOC));
+	mtk_memcfg_print_track(m, "Freed", get_track(s, object, TRACK_FREE));
+}
+
+static void mtk_memcfg_print_page_info(struct seq_file *m, struct page *page)
+{
+	seq_printf(m, "INFO: Slab 0x%p objects=%u used=%u fp=0x%p flags=0x%04lx\n",
+		page, page->objects, page->inuse, page->freelist, page->flags);
+
+}
+
+static void mtk_memcfg_process_slab(struct seq_file *m, struct kmem_cache *s,
+		struct page *page, unsigned long *map)
+{
+	void *addr = page_address(page);
+	void *p;
+
+	bitmap_zero(map, page->objects);
+	get_map(s, page, map);
+
+	mtk_memcfg_print_page_info(m, page);
+	for_each_object(p, s, addr, page->objects)
+		if (!test_bit(slab_index(p, s, addr), map)) {
+			mtk_memcfg_print_tracking(m, s, p);
+		}
+}
+
+static int mtk_memcfg_list_locations(struct seq_file *m, struct kmem_cache *s)
+{
+	int node;
+	unsigned long *map = kmalloc(BITS_TO_LONGS(oo_objects(s->max)) *
+				     sizeof(unsigned long), GFP_KERNEL);
+
+	if (!map) {
+		return seq_printf(m, "%s Out of memory\n", __FUNCTION__);
+	}
+
+	/* Push back cpu slabs */
+	flush_all(s);
+
+	for_each_node_state(node, N_NORMAL_MEMORY) {
+		struct kmem_cache_node *n = get_node(s, node);
+		unsigned long flags;
+		struct page *page;
+
+		if (!atomic_long_read(&n->nr_slabs))
+			continue;
+
+		/*
+		 * Do not hold any lock to avoid from deadlock while 
+		 * copy_to_user. It's ok since we do not need a precise result
+		 */
+		spin_lock_irqsave(&n->list_lock, flags);
+		list_for_each_entry(page, &n->partial, lru)
+			mtk_memcfg_process_slab(m, s, page, map);
+		list_for_each_entry(page, &n->full, lru)
+			mtk_memcfg_process_slab(m, s, page, map);
+		spin_unlock_irqrestore(&n->list_lock, flags);
+	}
+	return 0;
+}
+
+static int mtk_memcfg_slabtrace_show(struct seq_file *m, void *p)
+{
+	struct kmem_cache *s;
+	down_read(&slub_lock);
+	list_for_each_entry(s, &slab_caches, list) {
+		seq_printf(m, "========== kmem_cache: %s ==========\n", s->name);
+		if (!(s->flags & SLAB_STORE_USER)) {
+			continue;
+		} else {
+			mtk_memcfg_list_locations(m, s);
+		}
+	}
+	up_read(&slub_lock);
+	return 0;
+}
+
+int slabtrace_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mtk_memcfg_slabtrace_show, NULL);
+}
+
+#endif 
 
 static int __init slab_proc_init(void)
 {

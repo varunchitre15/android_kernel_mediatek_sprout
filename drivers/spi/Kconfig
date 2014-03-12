@@ -424,6 +424,15 @@ config SPI_DW_MMIO
 	tristate "Memory-mapped io interface driver for DW SPI core"
 	depends on SPI_DESIGNWARE && HAVE_CLK
 
+config MTK_SPI
+        tristate "MediaTek SPI controller"
+        depends on SPI
+        default n
+        ---help---
+          This selects the MediaTek(R) SPI bus driver.
+          If you want to use MediaTek(R) SPI interface, say Y or M here.  If unsure, say N.
+
+
 #
 # There are lots of SPI device types, with sensors and memory
 # being probably the most widely used ones.

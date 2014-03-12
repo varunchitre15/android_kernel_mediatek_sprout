@@ -5,7 +5,7 @@
  *
  * Based on code from Linus
  *
- * Teemu Rantanen's Microsoft Busmouse support and Derrick Cole's
+ * Teemu Rantanen's MS Busmouse support and Derrick Cole's
  *   changes incorporated into 0.97pl4
  *   by Peter Cervasio (pete%q106fm.uucp@wupost.wustl.edu) (08SEP92)
  *   See busmouse.c for particulars.
@@ -144,7 +144,14 @@ static int misc_open(struct inode * inode, struct file * file)
 	old_fops = file->f_op;
 	file->f_op = new_fops;
 	if (file->f_op->open) {
-		file->private_data = c;
+		/*
+		 * FIXME: this is a workaround for pmem
+		 * PMEM need private_data to be NULL for an unmapped file.
+		 * The private_data is used to store PMEM internal data strucutre.
+		 * Leakage may happen if we just override this field in pmem_open function
+		 */
+		if (strcmp(c->name, "pmem_multimedia") != 0 && strcmp(c->name, "vmem_multimedia") != 0)
+			file->private_data = c;
 		err=file->f_op->open(inode,file);
 		if (err) {
 			fops_put(file->f_op);

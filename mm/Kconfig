@@ -349,6 +349,11 @@ choice
 	  benefit.
 endchoice
 
+config ZEROPAGE
+	bool "Enable zero-page madvise for anonymous areas"
+	depends on MMU
+	default n
+
 #
 # UP and nommu archs use km based percpu allocator
 #

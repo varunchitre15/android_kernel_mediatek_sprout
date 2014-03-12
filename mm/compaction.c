@@ -594,6 +594,11 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
 		if (err) {
 			putback_lru_pages(&cc->migratepages);
 			cc->nr_migratepages = 0;
+                        /*
+                         * kernel patch
+                         * commit: 7a08b440fa93e036968102597c8a2ab809a9bdc4 
+                         * https://android.googlesource.com/kernel/common/+/7a08b440fa93e036968102597c8a2ab809a9bdc4%5E!/#F0
+                         */
 			if (err == -ENOMEM) {
 				ret = COMPACT_PARTIAL;
 				goto out;

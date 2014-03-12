@@ -728,6 +728,10 @@ config RTC_DRV_NUC900
 
 comment "on-CPU RTC drivers"
 
+config MTK_RTC # RTC_DRV_MT6516 RTC_DRV_MT6573
+        bool "MediaTek Real Time Clock Support"
+        default n
+
 config RTC_DRV_DAVINCI
 	tristate "TI DaVinci RTC"
 	depends on ARCH_DAVINCI_DM365

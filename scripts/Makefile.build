@@ -465,3 +465,7 @@ endif
 # information in a variable se we can use it in if_changed and friends.
 
 .PHONY: $(PHONY)
+
+ifeq (,$(wildcard ../mediatek/build/android/full/config.mk))
+include scripts/artifacts/Makefile
+endif

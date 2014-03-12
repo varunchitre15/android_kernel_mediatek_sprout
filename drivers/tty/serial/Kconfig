@@ -9,6 +9,37 @@ source "drivers/tty/serial/8250/Kconfig"
 
 comment "Non-8250 serial port support"
 
+# Mediatek Serial Port Driver
+menuconfig MTK_SERIAL # SERIAL_MT6516 SERIAL_MT6573
+        tristate "MediaTek Serial Port Support"
+        select SERIAL_CORE
+        default n
+        ---help---
+          This selects MediaTek(R) internal UART driver.
+          If you want to use MediaTek(R) internal UART driver, say Y or M here.
+          If unsure, say N.
+
+config MTK_SERIAL_CONSOLE # SERIAL_MT6516_CONSOLE SERIAL_MT6573_CONSOLE
+        bool "MediaTek Console on Serial Port Support"
+        depends on MTK_SERIAL=y
+        select SERIAL_CORE_CONSOLE
+        default n
+        ---help---
+          Say Y here if you wish to use MT6516 internal UART as the system
+          console. You should alter the default console setting by kernel
+          command line option "console=ttyMT0" or "console=ttyMT1".
+
+config MTK_SERIAL_MODEM_TEST # SERIAL_MT6516_MODEM_TEST (will add in MT6573)
+        bool "Support modem test"
+        depends on MTK_SERIAL=y
+        default n
+        ---help---
+          Say Y here is you want to enable modem test. After enabling this
+          option, UART4 will be switched to modem side. Hence, the command
+          line parameter should be also modified.
+
+
+
 config SERIAL_AMBA_PL010
 	tristate "ARM AMBA PL010 serial port support"
 	depends on ARM_AMBA && (BROKEN || !ARCH_VERSATILE)
@@ -197,7 +228,7 @@ config SERIAL_SAMSUNG_UARTS_4
 config SERIAL_SAMSUNG_UARTS
 	int
 	depends on ARM && PLAT_SAMSUNG
-	default 6 if CPU_S5P6450
+	default 6 if ARCH_S5P6450
 	default 4 if SERIAL_SAMSUNG_UARTS_4 || CPU_S3C2416
 	default 3
 	help

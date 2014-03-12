@@ -45,6 +45,9 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include "ubi.h"
+#ifdef CONFIG_MTK_COMBO_NAND_SUPPORT
+#include "combo_nand.h"
+#endif
 
 /* Maximum length of the 'mtd=' parameter */
 #define MTD_PARAM_LEN_MAX 64
@@ -615,7 +618,7 @@ out_wl:
 	ubi_wl_close(ubi);
 out_vtbl:
 	free_internal_volumes(ubi);
-	vfree(ubi->vtbl);
+	kfree(ubi->vtbl);
 out_si:
 	ubi_scan_destroy_si(si);
 	return err;
@@ -660,8 +663,13 @@ static int io_init(struct ubi_device *ubi)
 	 * physical eraseblocks maximum.
 	 */
 
+#ifdef CONFIG_MTK_COMBO_NAND_SUPPORT
+	ubi->peb_size   = COMBO_NAND_BLOCK_SIZE;
+	ubi->peb_count  = (int)div_u64(ubi->mtd->size, ubi->peb_size);
+#else
 	ubi->peb_size   = ubi->mtd->erasesize;
 	ubi->peb_count  = mtd_div_by_eb(ubi->mtd->size, ubi->mtd);
+#endif
 	ubi->flash_size = ubi->mtd->size;
 
 	if (mtd_can_have_bb(ubi->mtd))
@@ -672,8 +680,13 @@ static int io_init(struct ubi_device *ubi)
 		ubi->nor_flash = 1;
 	}
 
+#ifdef CONFIG_MTK_COMBO_NAND_SUPPORT
+	ubi->min_io_size = COMBO_NAND_PAGE_SIZE;
+	ubi->hdrs_min_io_size = ubi->min_io_size >> ubi->mtd->subpage_sft;
+#else
 	ubi->min_io_size = ubi->mtd->writesize;
 	ubi->hdrs_min_io_size = ubi->mtd->writesize >> ubi->mtd->subpage_sft;
+#endif
 
 	/*
 	 * Make sure minimal I/O unit is power of 2. Note, there is no
@@ -690,7 +703,11 @@ static int io_init(struct ubi_device *ubi)
 	ubi_assert(ubi->hdrs_min_io_size <= ubi->min_io_size);
 	ubi_assert(ubi->min_io_size % ubi->hdrs_min_io_size == 0);
 
+#ifdef CONFIG_MTK_COMBO_NAND_SUPPORT
+	ubi->max_write_size = COMBO_NAND_PAGE_SIZE;
+#else
 	ubi->max_write_size = ubi->mtd->writebufsize;
+#endif
 	/*
 	 * Maximum write size has to be greater or equivalent to min. I/O
 	 * size, and be multiple of min. I/O size.
@@ -950,7 +967,7 @@ int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num, int vid_hdr_offset)
 		goto out_free;
 
 	err = -ENOMEM;
-	ubi->peb_buf = vmalloc(ubi->peb_size);
+	ubi->peb_buf = kmalloc(ubi->peb_size, GFP_KERNEL);
 	if (!ubi->peb_buf)
 		goto out_free;
 
@@ -1026,11 +1043,11 @@ out_uif:
 out_detach:
 	ubi_wl_close(ubi);
 	free_internal_volumes(ubi);
-	vfree(ubi->vtbl);
+	kfree(ubi->vtbl);
 out_debugging:
 	ubi_debugging_exit_dev(ubi);
 out_free:
-	vfree(ubi->peb_buf);
+	kfree(ubi->peb_buf);
 	if (ref)
 		put_device(&ubi->dev);
 	else
@@ -1098,10 +1115,10 @@ int ubi_detach_mtd_dev(int ubi_num, int anyway)
 	uif_close(ubi);
 	ubi_wl_close(ubi);
 	free_internal_volumes(ubi);
-	vfree(ubi->vtbl);
+	kfree(ubi->vtbl);
 	put_mtd_device(ubi->mtd);
 	ubi_debugging_exit_dev(ubi);
-	vfree(ubi->peb_buf);
+	kfree(ubi->peb_buf);
 	ubi_msg("mtd%d is detached from ubi%d", ubi->mtd->index, ubi->ubi_num);
 	put_device(&ubi->dev);
 	return 0;

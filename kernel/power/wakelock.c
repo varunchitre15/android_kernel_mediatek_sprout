@@ -17,6 +17,14 @@
 #include <linux/rbtree.h>
 #include <linux/slab.h>
 
+int userwakelock_debug_mask;
+#define wl_usr_info(fmt, ...) \
+	do { \
+		if (userwakelock_debug_mask) { \
+			printk(fmt, ##__VA_ARGS__); \
+		} \
+	} while (0)
+
 static DEFINE_MUTEX(wakelocks_lock);
 
 struct wakelock {
@@ -202,6 +210,8 @@ int pm_wake_lock(const char *buf)
 			return -EINVAL;
 	}
 
+	wl_usr_info("[user_wake_lock] %s\n",buf);
+
 	mutex_lock(&wakelocks_lock);
 
 	wl = wakelock_lookup_add(buf, len, true);
@@ -240,6 +250,8 @@ int pm_wake_unlock(const char *buf)
 
 	if (!len)
 		return -EINVAL;
+
+	wl_usr_info("[user_wake_unlock] %s\n",buf);
 
 	mutex_lock(&wakelocks_lock);
 

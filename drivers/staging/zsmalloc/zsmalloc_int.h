@@ -109,11 +109,12 @@ enum fullness_group {
  */
 static const int fullness_threshold_frac = 4;
 
-struct mapping_area {
-	struct vm_struct *vm;
-	pte_t *vm_ptes[2];
-	char *vm_addr;
-};
+/*
+ * https://git.kernel.org/
+ * f553646a67cb215577402cb702b67c8cf8fdb46f
+ * move definition of mapping_area to zsmalloc-main.c
+ */
+
 
 struct size_class {
 	/*
@@ -124,7 +125,7 @@ struct size_class {
 	unsigned int index;
 
 	/* Number of PAGE_SIZE sized pages to combine to form a 'zspage' */
-	int zspage_order;
+	int pages_per_zspage;
 
 	spinlock_t lock;
 

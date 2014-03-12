@@ -49,7 +49,7 @@
 #define YAFFS_MIN_YAFFS2_CHUNK_SIZE 	1024
 #define YAFFS_MIN_YAFFS2_SPARE_SIZE	32
 
-#define YAFFS_MAX_CHUNK_ID		0x000FFFFF
+#define YAFFS_MAX_CHUNK_ID		0x001FFFFF
 
 #define YAFFS_ALLOCATION_NOBJECTS	100
 #define YAFFS_ALLOCATION_NTNODES	100
@@ -67,7 +67,7 @@
 #define YAFFS_MAX_ALIAS_LENGTH		79
 #else
 #define YAFFS_MAX_NAME_LENGTH		255
-#define YAFFS_MAX_ALIAS_LENGTH		159
+#define YAFFS_MAX_ALIAS_LENGTH		1200
 #endif
 
 #define YAFFS_SHORT_NAME_LENGTH		15
@@ -793,7 +793,7 @@ int yaffs_unlinker(struct yaffs_obj *dir, const YCHAR * name);
 int yaffs_del_obj(struct yaffs_obj *obj);
 
 int yaffs_get_obj_name(struct yaffs_obj *obj, YCHAR * name, int buffer_size);
-int yaffs_get_obj_length(struct yaffs_obj *obj);
+u32 yaffs_get_obj_length(struct yaffs_obj *obj);
 int yaffs_get_obj_inode(struct yaffs_obj *obj);
 unsigned yaffs_get_obj_type(struct yaffs_obj *obj);
 int yaffs_get_obj_link_count(struct yaffs_obj *obj);

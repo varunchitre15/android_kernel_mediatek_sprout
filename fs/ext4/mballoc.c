@@ -2585,7 +2585,20 @@ static inline int ext4_issue_discard(struct super_block *sb,
 	count = EXT4_C2B(EXT4_SB(sb), count);
 	trace_ext4_discard_blocks(sb,
 			(unsigned long long) discard_block, count);
-	return sb_issue_discard(sb, discard_block, count, GFP_NOFS, 0);
+	
+	if(count >= 16*1024/512){
+		//printk("issue discard request to block, count block=%d \n", count);
+		return sb_issue_discard(sb, discard_block, count, GFP_NOFS, 0);
+	}else{
+		if(!strcmp(current->comm,"vold")){
+			//printk("vold trigger fstrim \n");
+			return sb_issue_discard(sb, discard_block, count, GFP_NOFS, 0);
+		}else{
+			//printk("ignore discard request from ext4, count block=%d \n", count);
+			return 0;
+		}
+	}
+
 }
 
 /*

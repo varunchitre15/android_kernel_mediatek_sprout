@@ -213,7 +213,7 @@ void ubi_dbg_dump_flash(struct ubi_device *ubi, int pnum, int offset, int len)
 	void *buf;
 	loff_t addr = (loff_t)pnum * ubi->peb_size + offset;
 
-	buf = vmalloc(len);
+	buf = kmalloc(len, GFP_KERNEL);
 	if (!buf)
 		return;
 	err = mtd_read(ubi->mtd, addr, len, &read, buf);
@@ -227,7 +227,7 @@ void ubi_dbg_dump_flash(struct ubi_device *ubi, int pnum, int offset, int len)
 		len, pnum, offset);
 	print_hex_dump(KERN_DEBUG, "", DUMP_PREFIX_OFFSET, 32, 1, buf, len, 1);
 out:
-	vfree(buf);
+	kfree(buf);
 	return;
 }
 

@@ -840,7 +840,7 @@ static int acc_ctrlrequest(struct usb_composite_dev *cdev,
 			*((u16 *)cdev->req->buf) = PROTOCOL_VERSION;
 			value = sizeof(u16);
 
-			/* clear any string left over from a previous session */
+			/* clear strings left over from a previous session */
 			memset(dev->manufacturer, 0, sizeof(dev->manufacturer));
 			memset(dev->model, 0, sizeof(dev->model));
 			memset(dev->description, 0, sizeof(dev->description));
@@ -1060,19 +1060,11 @@ static int acc_function_set_alt(struct usb_function *f,
 	int ret;
 
 	DBG(cdev, "acc_function_set_alt intf: %d alt: %d\n", intf, alt);
-
-	ret = config_ep_by_speed(cdev->gadget, f, dev->ep_in);
-	if (ret)
-		return ret;
-
+	config_ep_by_speed(cdev->gadget, f, dev->ep_in);
 	ret = usb_ep_enable(dev->ep_in);
 	if (ret)
 		return ret;
-
-	ret = config_ep_by_speed(cdev->gadget, f, dev->ep_out);
-	if (ret)
-		return ret;
-
+	config_ep_by_speed(cdev->gadget, f, dev->ep_out);
 	ret = usb_ep_enable(dev->ep_out);
 	if (ret) {
 		usb_ep_disable(dev->ep_in);

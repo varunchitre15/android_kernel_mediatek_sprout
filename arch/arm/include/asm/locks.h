@@ -14,8 +14,11 @@
 
 #if __LINUX_ARM_ARCH__ >= 6
 
+#include <asm/atomic.h>
+
 #define __down_op(ptr,fail)			\
 	({					\
+	force_clock((u32)ptr);			\
 	__asm__ __volatile__(			\
 	"@ down_op\n"				\
 "1:	ldrex	lr, [%0]\n"			\
@@ -35,6 +38,7 @@
 #define __down_op_ret(ptr,fail)			\
 	({					\
 		unsigned int ret;		\
+	force_clock((u32)ptr);			\
 	__asm__ __volatile__(			\
 	"@ down_op_ret\n"			\
 "1:	ldrex	lr, [%1]\n"			\
@@ -56,6 +60,7 @@
 
 #define __up_op(ptr,wake)			\
 	({					\
+	force_clock((u32)ptr);			\
 	smp_mb();				\
 	__asm__ __volatile__(			\
 	"@ up_op\n"				\
@@ -83,6 +88,7 @@
 
 #define __down_op_write(ptr,fail)		\
 	({					\
+	force_clock((u32)ptr);			\
 	__asm__ __volatile__(			\
 	"@ down_op_write\n"			\
 "1:	ldrex	lr, [%0]\n"			\
@@ -101,6 +107,7 @@
 
 #define __up_op_write(ptr,wake)			\
 	({					\
+	force_clock((u32)ptr);			\
 	smp_mb();				\
 	__asm__ __volatile__(			\
 	"@ up_op_write\n"			\
@@ -121,6 +128,7 @@
 
 #define __up_op_read(ptr,wake)			\
 	({					\
+	force_clock((u32)ptr);			\
 	smp_mb();				\
 	__asm__ __volatile__(			\
 	"@ up_op_read\n"			\

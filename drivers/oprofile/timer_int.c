@@ -107,9 +107,48 @@ static void oprofile_hrtimer_shutdown(void)
 	unregister_hotcpu_notifier(&oprofile_cpu_notifier);
 }
 
+#ifndef OP_COUNTER_H
+#define OP_COUNTER_H
+
+/*
+ * Per performance monitor configuration as set via oprofilefs.
+ */
+struct op_counter_config {
+    unsigned long count;
+    unsigned long enabled;
+    unsigned long event;
+    unsigned long unit_mask;
+    unsigned long kernel;
+    unsigned long user;
+};
+
+#endif /* OP_COUNTER_H */
+
+struct op_counter_config dummy_config = { .count = 4 };
+
+static int op_create_files(struct super_block *sb, struct dentry *root)
+{
+    unsigned int i;
+
+    for (i = 0; i < 1; i++) {
+        struct dentry *dir;
+        char buf[4];
+
+        snprintf(buf, sizeof buf, "%d", i);
+        dir = oprofilefs_mkdir(sb, root, buf);
+        oprofilefs_create_ulong(sb, dir, "enabled", &dummy_config.enabled);
+        oprofilefs_create_ulong(sb, dir, "event", &dummy_config.event);
+        oprofilefs_create_ulong(sb, dir, "count", &dummy_config.count);
+        oprofilefs_create_ulong(sb, dir, "unit_mask", &dummy_config.unit_mask);
+        oprofilefs_create_ulong(sb, dir, "kernel", &dummy_config.kernel);
+        oprofilefs_create_ulong(sb, dir, "user", &dummy_config.user);
+    }
+    return 0;
+}
+
 int oprofile_timer_init(struct oprofile_operations *ops)
 {
-	ops->create_files	= NULL;
+	ops->create_files	= op_create_files;
 	ops->setup		= oprofile_hrtimer_setup;
 	ops->shutdown		= oprofile_hrtimer_shutdown;
 	ops->start		= oprofile_hrtimer_start;

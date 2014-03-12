@@ -5,6 +5,25 @@
 # Core internal switch. Selected by NO_HZ / HIGH_RES_TIMERS. This is
 # only related to the tick functionality. Oneshot clockevent devices
 # are supported independ of this.
+
+config ANDROID	
+  bool "Android Drivers"
+	default N
+	---help---
+	  Enable support for various drivers needed on the Android platform
+
+if ANDROID
+config ANDROID_INTF_ALARM_DEV
+	bool "Android alarm driver"
+	depends on RTC_CLASS
+	default n
+	help
+	  Provides non-wakeup and rtc backed wakeup alarms based on rtc or
+	  elapsed realtime, and a non-wakeup alarm on the monotonic clock.
+	  Also exports the alarm interface to user-space.
+
+endif # if ANDROID
+
 config TICK_ONESHOT
 	bool
 

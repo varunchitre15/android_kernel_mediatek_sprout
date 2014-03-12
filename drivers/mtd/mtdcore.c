@@ -1047,6 +1047,13 @@ EXPORT_SYMBOL_GPL(mtd_kmalloc_up_to);
 
 static struct proc_dir_entry *proc_mtd;
 
+#define DYNAMIC_CHANGE_MTD_WRITEABLE
+#ifdef DYNAMIC_CHANGE_MTD_WRITEABLE //wschen 2011-11-23
+static struct proc_dir_entry *entry;
+extern int mtd_writeable_proc_write(struct file *file, const char *buffer, unsigned long count, void *data);
+extern int mtd_change_proc_write(struct file *file, const char *buffer, unsigned long count, void *data);
+#endif
+
 static int mtd_proc_show(struct seq_file *m, void *v)
 {
 	struct mtd_info *mtd;
@@ -1114,6 +1121,18 @@ static int __init init_mtd(void)
 
 #ifdef CONFIG_PROC_FS
 	proc_mtd = proc_create("mtd", 0, NULL, &mtd_proc_ops);
+
+#ifdef DYNAMIC_CHANGE_MTD_WRITEABLE //wschen 2011-11-23
+            entry = create_proc_entry("driver/mtd_writeable", 0600, NULL);
+            if (entry != NULL) {
+                entry->write_proc = mtd_writeable_proc_write;
+            }
+
+            entry = create_proc_entry("driver/mtd_change", 0600, NULL);
+            if (entry != NULL) {
+                entry->write_proc = mtd_change_proc_write;
+            }
+#endif
 #endif /* CONFIG_PROC_FS */
 	return 0;
 
@@ -1133,6 +1152,13 @@ static void __exit cleanup_mtd(void)
 #ifdef CONFIG_PROC_FS
 	if (proc_mtd)
 		remove_proc_entry( "mtd", NULL);
+
+#ifdef DYNAMIC_CHANGE_MTD_WRITEABLE //wschen 2011-11-23
+        if (entry) {
+            remove_proc_entry("driver/mtd_writeable", NULL);
+            remove_proc_entry("driver/mtd_change", NULL);
+        }
+#endif
 #endif /* CONFIG_PROC_FS */
 	class_unregister(&mtd_class);
 	bdi_destroy(&mtd_bdi_unmappable);
