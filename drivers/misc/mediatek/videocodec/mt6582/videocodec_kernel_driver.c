@@ -1,3 +1,17 @@
+/*
+* Copyright (C) 2011-2014 MediaTek Inc.
+* 
+* This program is free software: you can redistribute it and/or modify it under the terms of the 
+* GNU General Public License version 2 as published by the Free Software Foundation.
+* 
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -51,6 +65,9 @@
 
 static dev_t vcodec_devno = MKDEV(MT6582_VCODEC_DEV_MAJOR_NUMBER,0);
 static struct cdev *vcodec_cdev;
+static struct class *vcodec_class = NULL;
+static struct device *vcodec_device = NULL;
+
 
 static DEFINE_MUTEX(IsOpenedLock);
 static DEFINE_MUTEX(PWRLock);
@@ -1473,7 +1490,7 @@ static int vcodec_probe(struct platform_device *dev)
 
     ret = register_chrdev_region(vcodec_devno, 1, VCODEC_DEVNAME);
     if (ret) {
-        MFV_LOGD("[VCODEC_DEBUG][ERROR] Can't Get Major number for VCodec Device\n");
+        MFV_LOGE("[VCODEC_DEBUG][ERROR] Can't Get Major number for VCodec Device\n");
     }
 
     vcodec_cdev = cdev_alloc();
@@ -1481,6 +1498,18 @@ static int vcodec_probe(struct platform_device *dev)
     vcodec_cdev->ops = &vcodec_fops;
 
     ret = cdev_add(vcodec_cdev, vcodec_devno, 1);
+    if (ret) {
+        MFV_LOGE("[VCODEC_DEBUG][ERROR] Can't add Vcodec Device\n");        
+    }
+    
+    vcodec_class = class_create(THIS_MODULE, VCODEC_DEVNAME);
+    if (IS_ERR(vcodec_class)) {
+        ret = PTR_ERR(vcodec_class);
+        MFV_LOGE("Unable to create class, err = %d", ret);
+        return ret;
+    }    
+
+    vcodec_device = device_create(vcodec_class, NULL, vcodec_devno, NULL, VCODEC_DEVNAME);
 
     if (request_irq(MT_VDEC_IRQ_ID , (irq_handler_t)video_intr_dlr, IRQF_TRIGGER_LOW, VCODEC_DEVNAME, NULL) < 0)
     {

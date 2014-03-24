@@ -1,3 +1,17 @@
+/*
+* Copyright (C) 2011-2014 MediaTek Inc.
+* 
+* This program is free software: you can redistribute it and/or modify it under the terms of the 
+* GNU General Public License version 2 as published by the Free Software Foundation.
+* 
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <generated/autoconf.h>
 #include <linux/device.h>
 #include <linux/dma-mapping.h>
@@ -29,6 +43,7 @@
 #include <mach/dfo_boot_default.h>
 #include <linux/aee.h>
 #include <linux/mrdump.h>
+#include <mach/i2c.h>
 
 #define SERIALNO_LEN 32
 static char serial_number[SERIALNO_LEN];
@@ -849,6 +864,27 @@ static struct platform_device AudDrv_device2 = {
 //#endif	//End of CONFIG_MT6582_FPGA
 //	{ I2C_BOARD_INFO("mt6329_pmic_bank1", 0x61), },
 //};
+
+struct mt_i2c_data mt_i2c_data_t[] = {
+	{
+		.pdn	= 0,
+		.speed	= 100,
+		.flags  = 0,
+	},
+	{
+		.pdn	= 1,
+		.speed	= 110,
+		.flags  = 0,
+	},
+	{
+		.pdn	= 2,
+		.speed	= 120,
+		.flags  = 0,
+	},
+
+};
+
+
 static struct resource mt_resource_i2c0[] = {
     {
         .start  = IO_VIRT_TO_PHYS(I2C0_BASE),
@@ -891,18 +927,27 @@ static struct platform_device mt_device_i2c[] = {
         .id             = 0,
         .num_resources  = ARRAY_SIZE(mt_resource_i2c0),
         .resource       = mt_resource_i2c0,
+        .dev = {
+			.platform_data = &mt_i2c_data_t[0],
+		},
     },
     {
         .name           = "mt-i2c",
         .id             = 1,
         .num_resources  = ARRAY_SIZE(mt_resource_i2c1),
         .resource       = mt_resource_i2c1,
+        .dev = {
+			.platform_data = &mt_i2c_data_t[1],
+		},
     },
     {
         .name           = "mt-i2c",
         .id             = 2,
         .num_resources  = ARRAY_SIZE(mt_resource_i2c2),
         .resource       = mt_resource_i2c2,
+        .dev = {
+			.platform_data = &mt_i2c_data_t[2],
+		},
     },
 
 };

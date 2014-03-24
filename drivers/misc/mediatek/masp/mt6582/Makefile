@@ -2,7 +2,6 @@
 # Sepcify source files
 #######################################
 #include $(MTK_ROOT_BUILD)/Makefile
-#MASP_CORE_DRIVER_DIR := $(MTK_PATH_PLATFORM)/drivers/masp
 
 MTK_PLATFORM := $(shell echo $(CONFIG_MTK_PLATFORM))
 MASP_CORE_DRIVER_DIR := $(srctree)/drivers/misc/mediatek/masp/$(MTK_PLATFORM)

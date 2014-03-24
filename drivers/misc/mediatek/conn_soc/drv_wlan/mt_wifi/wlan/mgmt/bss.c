@@ -1,4 +1,18 @@
 /*
+* Copyright (C) 2011-2014 MediaTek Inc.
+* 
+* This program is free software: you can redistribute it and/or modify it under the terms of the 
+* GNU General Public License version 2 as published by the Free Software Foundation.
+* 
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
 ** $Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/bss.c#3 $
 */
 
@@ -429,11 +443,11 @@ Add per station flow control when STA is in PS
  * Add Beacon Timeout Support and will send Null frame to diagnose connection
  *
  * 04 16 2010 wh.su
- * [BORA00000680][MT6620] Support the statistic for Microsoft os query
+ * [BORA00000680][MT6620] Support the statistic for Micxxsoft os query
  * adding the wpa-none for ibss beacon.
  *
  * 04 15 2010 wh.su
- * [BORA00000680][MT6620] Support the statistic for Microsoft os query
+ * [BORA00000680][MT6620] Support the statistic for Micxxsoft os query
  * fixed the protected bit at cap info for ad-hoc.
  *
  * 03 18 2010 kevin.huang

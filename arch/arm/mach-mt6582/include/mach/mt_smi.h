@@ -1,3 +1,17 @@
+/*
+* Copyright (C) 2011-2014 MediaTek Inc.
+* 
+* This program is free software: you can redistribute it and/or modify it under the terms of the 
+* GNU General Public License version 2 as published by the Free Software Foundation.
+* 
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef _MTK_MAU_H_
 #define _MTK_MAU_H_
 
@@ -44,6 +58,46 @@ typedef struct
     int                 b_on_off; //0 : exit this scenario , 1 : enter this scenario 
 } MTK_SMI_BWC_CONFIG;
 
+// GMP start
+typedef enum
+{
+    SMI_BWC_INFO_CON_PROFILE = 0,
+    SMI_BWC_INFO_SENSOR_SIZE,
+    SMI_BWC_INFO_VIDEO_RECORD_SIZE, 
+    SMI_BWC_INFO_DISP_SIZE,
+    SMI_BWC_INFO_TV_OUT_SIZE,
+    SMI_BWC_INFO_FPS,
+    SMI_BWC_INFO_VIDEO_ENCODE_CODEC,
+    SMI_BWC_INFO_VIDEO_DECODE_CODEC,
+    SMI_BWC_INFO_CNT
+} MTK_SMI_BWC_INFO_ID;
+
+typedef struct
+{
+    int       property;
+    long       value1;
+    long       value2;
+} MTK_SMI_BWC_INFO_SET;
+
+
+typedef struct
+{
+    unsigned int flag; // Reserved
+    int concurrent_profile;
+    long sensor_size[2];
+    long video_record_size[2];
+    long display_size[2];
+    long tv_out_size[2];
+    int fps;
+    int video_encode_codec;
+    int video_decode_codec;
+} MTK_SMI_BWC_MM_INFO;
+
+typedef struct
+{
+    unsigned int flag; // Reserved
+    unsigned long return_address;
+} MTK_SMI_BWC_INFO_GET;
 
 #define MTK_IOC_SPC_CONFIG          MTK_IOW(20, unsigned long)
 #define MTK_IOC_SPC_DUMP_REG        MTK_IOW(21, unsigned long)
@@ -51,6 +105,14 @@ typedef struct
 #define MTK_IOC_SPC_CMD             MTK_IOW(23, unsigned long)
 #define MTK_IOC_SMI_BWC_CONFIG      MTK_IOW(24, MTK_SMI_BWC_CONFIG)
 
+// For BWC.MM property setting
+#define MTK_IOC_SMI_BWC_INFO_SET    MTK_IOWR(28, MTK_SMI_BWC_INFO_SET)
+// For BWC.MM property get
+#define MTK_IOC_SMI_BWC_INFO_GET    MTK_IOWR(29, MTK_SMI_BWC_INFO_GET)
+
+
+
+// GMP end
 
 
 

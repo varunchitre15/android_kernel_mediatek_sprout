@@ -263,11 +263,11 @@ config SCSI_SCAN_ASYNC
 	  You can override this choice by specifying "scsi_mod.scan=sync"
 	  or async on the kernel's command line.
 
-config SCSI_WAIT_SCAN
-	tristate  # No prompt here, this is an invisible symbol.
-	default m
-	depends on SCSI
-	depends on MODULES
+#config SCSI_WAIT_SCAN
+#	tristate  # No prompt here, this is an invisible symbol.
+#	default m
+#	depends on SCSI
+#	depends on MODULES
 # scsi_wait_scan is a loadable module which waits until all the async scans are
 # complete.  The idea is to use it in initrd/ initramfs scripts.  You modprobe
 # it after all the modprobes of the root SCSI drivers and it will wait until

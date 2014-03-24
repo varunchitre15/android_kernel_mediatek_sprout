@@ -1,9 +1,6 @@
 # drivers/dispsys
 include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
-ccflags-y += -I$(MTK_PATH_SOURCE)/drivers/video/ \
-             -I$(MTK_PATH_PLATFORM)/drivers/video/
-	
 obj-y += ddp_drv.o
 obj-y += ddp_ovl.o
 obj-y += ddp_bls.o

@@ -1382,10 +1382,12 @@ int i2c_master_send(const struct i2c_client *client, const char *buf, int count)
 
 	msg.addr = client->addr;
 	msg.flags = client->flags & I2C_M_TEN;
-	msg.timing = client->timing;
 	msg.len = count;
 	msg.buf = (char *)buf;
+	#ifdef USE_I2C_MTK_EXT
+	msg.timing = client->timing;
 	msg.ext_flag = client->ext_flag;
+	#endif
 	ret = i2c_transfer(adap, &msg, 1);
 
 	/*
@@ -1413,10 +1415,12 @@ int i2c_master_recv(const struct i2c_client *client, char *buf, int count)
 	msg.addr = client->addr;
 	msg.flags = client->flags & I2C_M_TEN;
 	msg.flags |= I2C_M_RD;
-	msg.timing = client->timing;
 	msg.len = count;
 	msg.buf = buf;
+	#ifdef USE_I2C_MTK_EXT
 	msg.ext_flag = client->ext_flag;
+	msg.timing = client->timing;
+	#endif
 	ret = i2c_transfer(adap, &msg, 1);
 
 	/*
@@ -1426,6 +1430,8 @@ int i2c_master_recv(const struct i2c_client *client, char *buf, int count)
 	return (ret == 1) ? count : ret;
 }
 EXPORT_SYMBOL(i2c_master_recv);
+
+#ifdef USE_I2C_MTK_EXT
 
 /**
  * mt_i2c_master_send - issue a single I2C message in master transmit mode
@@ -1491,6 +1497,7 @@ int mt_i2c_master_recv(const struct i2c_client *client, char *buf, int count, u3
 	return (ret == 1) ? count : ret;
 }
 EXPORT_SYMBOL(mt_i2c_master_recv);
+#endif
 /* ----------------------------------------------------
  * the i2c address scanning function
  * Will not work for 10-bit addresses!

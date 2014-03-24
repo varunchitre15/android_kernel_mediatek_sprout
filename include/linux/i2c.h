@@ -37,6 +37,10 @@
 
 extern struct bus_type i2c_bus_type;
 extern struct device_type i2c_adapter_type;
+
+#define USE_I2C_MTK_EXT
+#ifdef USE_I2C_MTK_EXT
+
 #define I2C_A_FILTER_MSG	0x8000	/* filer out error messages	*/
 #define I2C_A_CHANGE_TIMING	0x4000	/* change timing paramters	*/
 #define I2C_MASK_FLAG	(0x00ff)
@@ -55,6 +59,7 @@ extern struct device_type i2c_adapter_type;
 //#define I2C_PUSHPULL_FLAG (0x00000002)
 #define I2C_3DCAMERA_FLAG (0x00000004)
 #define I2C_DIRECTION_FLAG (0x00000008)
+#endif
 /* --- General options ------------------------------------------------	*/
 
 struct i2c_msg;
@@ -77,12 +82,14 @@ extern int i2c_master_send(const struct i2c_client *client, const char *buf,
 			   int count);
 extern int i2c_master_recv(const struct i2c_client *client, char *buf,
 			   int count);
+#ifdef USE_I2C_MTK_EXT
 
 extern int mt_i2c_master_send(const struct i2c_client *client, const char *buf,
 			   int count, u32 ext_flag);
 
 extern int mt_i2c_master_recv(const struct i2c_client *client, char *buf,
 			   int count, u32 ext_flag);
+#endif
 /* Transfer num messages.
  */
 extern int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
@@ -230,9 +237,11 @@ struct i2c_client {
 	struct i2c_driver *driver;	/* and our access routines	*/
 	struct device dev;		/* the device structure		*/
 	int irq;			/* irq issued by device		*/
-	__u32 timing;			/* paramters of timings		*/
 	struct list_head detected;
+	#ifdef USE_I2C_MTK_EXT
+	__u32 timing;			/* paramters of timings		*/
 	__u32 ext_flag;
+	#endif
 };
 #define to_i2c_client(d) container_of(d, struct i2c_client, dev)
 
@@ -543,8 +552,10 @@ struct i2c_msg {
 #define I2C_M_RECV_LEN		0x0400	/* length will be first received byte */
 	__u16 len;		/* msg length				*/
 	__u8 *buf;		/* pointer to msg data			*/
+	#ifdef USE_I2C_MTK_EXT
 	__u32 timing;			/* paramters of timings		*/
 	__u32 ext_flag;
+	#endif
 };
 
 /* To determine what functionality is present */

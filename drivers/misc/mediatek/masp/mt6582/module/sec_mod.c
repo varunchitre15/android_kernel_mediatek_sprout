@@ -1,3 +1,17 @@
+/*
+* Copyright (C) 2011-2014 MediaTek Inc.
+* 
+* This program is free software: you can redistribute it and/or modify it under the terms of the 
+* GNU General Public License version 2 as published by the Free Software Foundation.
+* 
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 /******************************************************************************
  *  INCLUDE LINUX HEADER
  ******************************************************************************/
@@ -59,6 +73,8 @@ extern struct semaphore             hacc_sem;
  **************************************************************************/
 static struct sec_mod sec           = {0};
 static struct cdev                  sec_dev;
+static struct class                 *sec_class;
+static struct device                *sec_device;
 
 /**************************************************************************
  *  EXTERNAL FUNCTION
@@ -142,6 +158,8 @@ static int sec_init(void)
     int ret = 0;
     dev_t id;    
 
+    printk( "[%s] sec_init (%d)\n", SEC_DEV_NAME, ret);
+
     id = MKDEV(SEC_MAJOR, 0);    
     ret = register_chrdev_region(id, 1, SEC_DEV_NAME);
 
@@ -151,6 +169,14 @@ static int sec_init(void)
         return ret;
     }
 
+    sec_class = class_create(THIS_MODULE, SEC_DEV_NAME);
+    if (NULL == sec_class)
+    {
+	printk(KERN_ERR "[%s] Create class failed(0x%x)\n", SEC_DEV_NAME, ret);
+	ret = -1;
+	return ret;
+    }
+
     cdev_init(&sec_dev, &sec_fops);
     sec_dev.owner = THIS_MODULE;
 
@@ -158,6 +184,15 @@ static int sec_init(void)
     if (ret < 0)
     {
         goto exit;
+    }
+
+    sec_device = device_create(sec_class, NULL, id, NULL, SEC_DEV_NAME);
+    if (NULL == sec_class)
+    {
+	printk(KERN_ERR "[%s] Create device failed(0x%x)\n", SEC_DEV_NAME, ret);
+	class_destroy(sec_class);
+	ret = -1;
+	return ret;
     }
 
     sec.id   = id;
@@ -175,6 +210,8 @@ static int sec_init(void)
 exit:
     if (ret != 0) 
     {
+    	device_destroy(sec_class, id);
+    	class_destroy(sec_class);
         unregister_chrdev_region(id, 1);
         memset(&sec, 0, sizeof(sec));
     }

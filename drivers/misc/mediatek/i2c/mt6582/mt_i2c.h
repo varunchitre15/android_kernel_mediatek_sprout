@@ -1,3 +1,16 @@
+/*
+* Copyright (C) 2011-2014 MediaTek Inc.
+* 
+* This program is free software: you can redistribute it and/or modify it under the terms of the 
+* GNU General Public License version 2 as published by the Free Software Foundation.
+* 
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #ifndef __MT_I2C_H__
 #define __MT_I2C_H__
@@ -147,6 +160,10 @@ struct mt_trans_data {
   U16 trans_len;
   U16 trans_auxlen;
 };
+struct i2c_dma_buf {
+	u8 *vaddr;
+	dma_addr_t paddr;
+};
 
 typedef struct mt_i2c_t {
   #ifdef I2C_DRIVER_IN_KERNEL
@@ -193,6 +210,7 @@ typedef struct mt_i2c_t {
   U16      high_speed_reg;
   U16      control_reg;
   struct   mt_trans_data trans_data;
+  struct i2c_dma_buf dma_buf;
 }mt_i2c;
 //external API
 void _i2c_dump_info(mt_i2c *i2c);

@@ -3,7 +3,7 @@
 # kernel build system and can use its language.
 ifneq ($(KERNELRELEASE),)
 	#subdir-ccflags-y can be used in 2.6.34 in the future
-  ccflags-y += -I$(src)/inc -I$(src)/hal_inc #-I$(MTK_PATH_PLATFORM)/drivers/btif/inc
+  ccflags-y += -I$(src)/inc -I$(src)/hal_inc 
   obj-y += btif.o
   btif-y	:= mtk_btif.o mtk_btif_exp.o
   #btif-y	+= hal_btif/hal_btif.o hal_btif/hal_btif_dma.o 

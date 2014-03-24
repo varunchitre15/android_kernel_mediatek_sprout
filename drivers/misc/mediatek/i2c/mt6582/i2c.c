@@ -1,3 +1,17 @@
+/*
+* Copyright (C) 2011-2014 MediaTek Inc.
+* 
+* This program is free software: you can redistribute it and/or modify it under the terms of the 
+* GNU General Public License version 2 as published by the Free Software Foundation.
+* 
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/slab.h>
@@ -25,6 +39,10 @@
 #include <mach/sync_write.h>
 #include "mach/memory.h"
 #include "cust_gpio_usage.h"
+#include <mach/i2c.h>
+
+#define COMPATIBLE_WITH_AOSP
+static DEFINE_MUTEX(mutex_mt_i2c_stander_i2c);
 
 //define ONLY_KERNEL
 /******************************internal API********************************************************/
@@ -48,7 +66,7 @@ volatile U32 I2C_HIGHSP_REG_BACKUP[7]={0};
 /***********************************I2C Param only used in kernel*****************/
 /*this field is only for 3d camera*/
 #ifdef I2C_DRIVER_IN_KERNEL
-static struct i2c_msg g_msg[2];
+static struct mt_i2c_msg g_msg[2];
 static mt_i2c  *g_i2c[2];
 #define I2C_DRV_NAME        "mt-i2c"
 #endif
@@ -672,7 +690,7 @@ end:
     return ret;
 }
 /*=========API in kernel=====================================================================*/
-static void _i2c_translate_msg(mt_i2c *i2c,struct i2c_msg *msg)
+static void _i2c_translate_msg(mt_i2c *i2c,struct mt_i2c_msg *msg)
 {
   /*-------------compatible with 77/75 driver------*/
   if(msg->addr & 0xFF00){
@@ -739,7 +757,7 @@ static void _i2c_translate_msg(mt_i2c *i2c,struct i2c_msg *msg)
 
 }
 
-static S32 mt_i2c_start_xfer(mt_i2c *i2c, struct i2c_msg *msg)
+static S32 mt_i2c_start_xfer(mt_i2c *i2c, struct mt_i2c_msg *msg)
 {
   S32 return_value = 0;
   S32 ret = msg->len;
@@ -773,9 +791,9 @@ static S32 mt_i2c_start_xfer(mt_i2c *i2c, struct i2c_msg *msg)
     if (i2c->i2c_3dcamera_flag)
     {
       if (g_msg[0].buf == NULL)
-        memcpy((void *)&g_msg[0], msg, sizeof(struct i2c_msg));
+        memcpy((void *)&g_msg[0], msg, sizeof(struct mt_i2c_msg));
       else
-        memcpy((void *)&g_msg[1], msg, sizeof(struct i2c_msg));
+        memcpy((void *)&g_msg[1], msg, sizeof(struct mt_i2c_msg));
     }
   #endif
   //end=========================translate msg to mt_i2c===============================//
@@ -792,7 +810,7 @@ err:
   return ret;
 }
 
-static S32 mt_i2c_do_transfer(mt_i2c *i2c, struct i2c_msg *msgs, S32 num)
+static S32 mt_i2c_do_transfer(mt_i2c *i2c, struct mt_i2c_msg *msgs, S32 num)
 {
   S32 ret = 0;
   S32 left_num = num;
@@ -810,10 +828,141 @@ static S32 mt_i2c_do_transfer(mt_i2c *i2c, struct i2c_msg *msgs, S32 num)
   return num;
 }
 
-static S32 mt_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msgs[], S32 num)
+static S32 standard_i2c_start_xfer(mt_i2c *i2c, struct i2c_msg *msg)
+{
+  S32 return_value = 0;
+  S32 ret = msg->len;
+  u8 *temp_for_dma = 0;
+  bool dma_need_copy_back = false;
+  struct mt_i2c_msg msg_ext;
+  struct mt_i2c_data *pdata = dev_get_platdata(i2c->adap.dev.parent);
+  //start=========================Check param valid=====================================//
+  //I2CLOG(" mt_i2c_start_xfer.\n");
+  //merge mt_i2c_msg
+  
+  msg_ext.addr  = msg->addr;
+  msg_ext.flags = msg->flags;
+  msg_ext.len   = msg->len;
+  msg_ext.buf   = msg->buf;
+  #ifdef COMPATIBLE_WITH_AOSP
+  msg_ext.ext_flag = msg->ext_flag;
+  msg_ext.timing = msg->timing;
+  #else
+  msg_ext.ext_flag = 0;
+  msg_ext.timing = pdata->speed;
+  #endif
+  //check if need to use DMA
+  if(msg->len > I2C_FIFO_SIZE)
+  {
+  	//printk("fwq copy to dma(%d) len=0x%x......\n",i2c->id,msg_ext.len);
+  	//i2c->dma_en = TRUE;
+  	dma_need_copy_back = true;
+	msg_ext.ext_flag |= I2C_DMA_FLAG;
+	temp_for_dma = msg_ext.buf;
+	memcpy(i2c->dma_buf.vaddr, (msg_ext.buf), (msg_ext.len & 0x00FF));
+	msg_ext.buf = (u8 *) i2c->dma_buf.paddr;
+	//printk("fwq copy to dma done(%d)......\n",i2c->id);
+  }
+  //get the read/write flag
+  
+  i2c->read_flag=(msg_ext.flags & I2C_M_RD);
+  i2c->addr=msg_ext.addr;
+  
+  if(i2c->addr == 0){
+    I2CERR(" addr is invalid.\n");
+    I2C_BUG_ON(i2c->addr == NULL);
+    ret = -EINVAL_I2C;
+    goto err;
+  }
+  
+
+  if(msg->buf == NULL){
+    I2CERR(" data buffer is NULL.\n");
+    I2C_BUG_ON(msg->buf == NULL);
+    ret = -EINVAL_I2C;
+    goto err;
+  }
+ 
+  if (g_i2c[0] == i2c || g_i2c[1] == i2c) {
+    I2CERR("mt-i2c%d: Current I2C Adapter is busy.\n", i2c->id);
+    ret = -EINVAL_I2C;
+    goto err;
+  }
+  
+  //start=========================translate msg to mt_i2c===============================//
+  _i2c_translate_msg(i2c,&msg_ext);
+  //end=========================translate msg to mt_i2c===============================//
+  mt_i2c_clock_enable(i2c);
+  return_value =_i2c_transfer_interface(i2c);
+ 
+  if(true == dma_need_copy_back)
+  {
+  	//printk("fwq from to dma......\n");
+  	memcpy(temp_for_dma, i2c->dma_buf.vaddr, msg->len & 0xFF);
+	msg->buf = temp_for_dma;
+	//printk("fwq from to dma over......\n");
+  }
+  
+  if (!(msg_ext.ext_flag & I2C_3DCAMERA_FLAG))
+	mt_i2c_clock_disable(i2c);
+  if ( return_value < 0 )
+  {
+    ret =-EINVAL_I2C;
+    goto err;
+  }
+err:
+  return ret;
+}
+
+static S32 standard_i2c_do_transfer(mt_i2c *i2c, struct i2c_msg *msgs, S32 num)
+{
+  S32 ret = 0;
+  S32 left_num = num;
+
+  while (left_num--) {
+      ret = standard_i2c_start_xfer(i2c, msgs++);
+      if ( ret < 0 ){
+        if ( ret != -EINVAL_I2C ) /*We never try again when the param is invalid*/
+          return -EAGAIN;
+        else
+          return -EINVAL_I2C;
+      }
+  }
+  /*the return value is number of executed messages*/
+  return num;
+}
+
+static S32 standard_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msgs[], S32 num)
+{
+	S32 ret = 0;
+  	S32 retry;
+	
+	mutex_lock(&mutex_mt_i2c_stander_i2c);
+  	mt_i2c *i2c = i2c_get_adapdata(adap);
+
+  	for (retry = 0; retry < adap->retries; retry++)
+  	{
+    	ret = standard_i2c_do_transfer(i2c, msgs, num);
+    	if (ret != -EAGAIN) {
+      	break;
+    	}
+    if ( retry < adap->retries - 1 )
+      udelay(100);
+  	}
+	mutex_unlock(&mutex_mt_i2c_stander_i2c);
+	
+  	if (ret != -EAGAIN)
+    	return ret;
+  	else
+    	return -EREMOTEIO;
+}
+
+S32 mtk_i2c_transfer(struct i2c_adapter *adap, struct mt_i2c_msg msgs[], S32 num)
 {
   S32 ret = 0;
   S32 retry;
+  mutex_lock(&mutex_mt_i2c_stander_i2c);
+  
   mt_i2c *i2c = i2c_get_adapdata(adap);
 
   for (retry = 0; retry < adap->retries; retry++)
@@ -826,13 +975,80 @@ static S32 mt_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msgs[], S32 
       udelay(100);
   }
 
+  mutex_unlock(&mutex_mt_i2c_stander_i2c);
   if (ret != -EAGAIN)
     return ret;
   else
     return -EREMOTEIO;
 }
+
+/**
+ * mt_i2c_master_send - issue a single I2C message in master transmit mode
+ * @client: Handle to slave device
+ * @buf: Data that will be written to the slave
+ * @count: How many bytes to write, must be less than 64k since msg.len is u16
+ * @ext_flag: Controller special flags.
+ *
+ * Returns negative errno, or else the number of bytes written.
+ */
+int mtk_i2c_master_send(const struct i2c_client *client,
+	const char *buf, int count, u32 ext_flag,u32 timing)
+{
+	int ret;
+	struct i2c_adapter *adap = client->adapter;
+	struct mt_i2c_msg msg;
+
+	msg.addr = client->addr;
+	msg.flags = client->flags & I2C_M_TEN;
+	msg.len = count;
+	msg.timing = timing;
+	msg.buf = (char *)buf;
+	msg.ext_flag = ext_flag;
+	ret = mtk_i2c_transfer(adap, &msg, 1);
+
+	/*
+	 * If everything went ok (i.e. 1 msg transmitted), return #bytes
+	 * transmitted, else error code.
+	 */
+	return (ret == 1) ? count : ret;
+}
+EXPORT_SYMBOL(mt_i2c_master_send);
+
+/**
+ * i2c_master_recv - issue a single I2C message in master receive mode
+ * @client: Handle to slave device
+ * @buf: Where to store data read from slave
+ * @count: How many bytes to read, must be less than 64k since msg.len is u16
+ * @ext_flag: Controller special flags
+ *
+ * Returns negative errno, or else the number of bytes read.
+ */
+int mtk_i2c_master_recv(const struct i2c_client *client,
+	char *buf, int count, u32 ext_flag,u32 timing)
+{
+	struct i2c_adapter *adap = client->adapter;
+	struct mt_i2c_msg msg;
+	int ret;
+
+	msg.addr = client->addr;
+	msg.flags = client->flags & I2C_M_TEN;
+	msg.timing = timing;
+	msg.flags |= I2C_M_RD;
+	msg.len = count;
+	msg.buf = buf;
+	msg.ext_flag = ext_flag;
+	ret = mtk_i2c_transfer(adap, &msg, 1);
+
+	/*
+	 * If everything went ok (i.e. 1 msg received), return #bytes received,
+	 * else error code.
+	 */
+	return (ret == 1) ? count : ret;
+}
+EXPORT_SYMBOL(mt_i2c_master_recv);
+
 #ifdef I2C_DRIVER_IN_KERNEL
-static S32 _i2c_deal_result_3dcamera(mt_i2c *i2c, struct i2c_msg *msg)
+static S32 _i2c_deal_result_3dcamera(mt_i2c *i2c, struct mt_i2c_msg *msg)
 {
   U16 addr = msg->addr;
   U16 read = (msg->flags & I2C_M_RD);
@@ -950,7 +1166,15 @@ static U32 mt_i2c_functionality(struct i2c_adapter *adap)
   return I2C_FUNC_I2C | I2C_FUNC_10BIT_ADDR | I2C_FUNC_SMBUS_EMUL;
 }
 static struct i2c_algorithm mt_i2c_algorithm = {
-  .master_xfer   = mt_i2c_transfer,
+#ifdef USE_I2C_MTK_EXT
+	#ifdef COMPATIBLE_WITH_AOSP
+	.master_xfer   = standard_i2c_transfer,
+	#else
+  	.master_xfer   = mtk_i2c_transfer,
+  	#endif
+#else
+  .master_xfer   = standard_i2c_transfer,
+#endif
   .smbus_xfer    = NULL,
   .functionality = mt_i2c_functionality,
 };
@@ -975,7 +1199,8 @@ static S32 mt_i2c_probe(struct platform_device *pdev)
   S32 ret, irq;
   mt_i2c *i2c = NULL;
   struct resource *res;
-
+  struct mt_i2c_data *pdata=NULL;
+  printk("mtk i2c probe+++++\n");
   /* Request platform_device IO resource*/
   res   = platform_get_resource(pdev, IORESOURCE_MEM, 0);
   irq   = platform_get_irq(pdev, 0);
@@ -1024,7 +1249,17 @@ static S32 mt_i2c_probe(struct platform_device *pdev)
   i2c->adap.algo_data   = NULL;
   i2c->adap.timeout   = 2 * HZ; /*2s*/
   i2c->adap.retries   = 1; /*DO NOT TRY*/
+  i2c->dma_buf.vaddr =
+		dma_alloc_coherent(NULL, MAX_DMA_TRANS_NUM,
+			  &i2c->dma_buf.paddr, GFP_KERNEL);
 
+  
+  if(!i2c->dma_buf.vaddr)
+  {
+        printk("mt-i2c:[Error] Allocate DMA I2C Buffer failed!\n");
+  }
+  memset(i2c->dma_buf.vaddr, 0, MAX_DMA_TRANS_NUM);
+  
   snprintf(i2c->adap.name, sizeof(i2c->adap.name), I2C_DRV_NAME);
 
   i2c->pdmabase = AP_DMA_BASE + 0x200 + (0x80*(i2c->id));
@@ -1038,6 +1273,9 @@ static S32 mt_i2c_probe(struct platform_device *pdev)
     dev_err(&pdev->dev, "Can Not request I2C IRQ %d\n", irq);
     goto free;
   }
+
+  pdata= dev_get_platdata(i2c->adap.dev.parent);
+  printk("i2c-bus%d speed is %dKhz \n",i2c->id, pdata->speed);
 
   mt_i2c_init_hw(i2c);
   i2c_set_adapdata(&i2c->adap, i2c);
@@ -1054,11 +1292,13 @@ static S32 mt_i2c_probe(struct platform_device *pdev)
     /*Do nothing*/
   }
 #endif
+  printk("mtk i2c probe-----\n");
 
   return ret;
 
 free:
   mt_i2c_free(i2c);
+  printk("mtk i2c probe----- error\n");
   return ret;
 }
 

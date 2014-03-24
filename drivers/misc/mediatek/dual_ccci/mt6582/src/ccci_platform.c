@@ -1,3 +1,17 @@
+/*
+* Copyright (C) 2011-2014 MediaTek Inc.
+* 
+* This program is free software: you can redistribute it and/or modify it under the terms of the 
+* GNU General Public License version 2 as published by the Free Software Foundation.
+* 
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <linux/delay.h>
 #include <linux/sched.h>
 #include <linux/kernel.h>
@@ -68,6 +82,10 @@ char md_img_info_str[MAX_MD_NUM][256];
 static int	img_is_dbg_ver[MAX_MD_NUM];
 
 static char	md_image_post_fix[MAX_MD_NUM][12];
+
+#ifdef ENABLE_MD_IMG_SECURITY_FEATURE
+	static int	masp_inited = 0;
+#endif
 
 //===============================================
 // modem hardware control section
@@ -1723,6 +1741,25 @@ static int load_firmware_func(int md_id, struct image_info *img)
 	unsigned int	img_len=0;
 	#endif
 
+#ifdef ENABLE_MD_IMG_SECURITY_FEATURE
+	CCCI_MSG_INF(md_id, "ctl","load_firmware_func() masp_inited:%d\n", masp_inited);
+	if (!masp_inited) {
+		if ((ret = masp_boot_init()) !=0) {
+			CCCI_MSG("masp_boot_init fail: %d\n",ret);
+			ret= -EIO;
+			return ret;
+		}
+
+		if(sec_lib_version_check()!= 0) {
+			CCCI_MSG("sec lib version check error\n");
+			ret= -EIO;
+			return ret;
+		}
+		masp_inited = 1;
+	}
+	CCCI_MSG_INF(md_id, "ctl","load_firmware_func() hahaha masp_inited:%d\n", masp_inited);
+#endif
+
 	if(find_img_to_open(md_id, img->type, img->file_name)<0) {
 		ret = -CCCI_ERR_LOAD_IMG_FILE_OPEN;
 		filp = NULL;
@@ -2660,20 +2697,6 @@ int __init ccci_mach_init(void)
 		
 	#ifdef ENABLE_DRAM_API	
 	//CCCI_MSG("kernel base:0x%08X, kernel max addr:0x%08X\n", get_phys_offset(), get_max_phys_addr());
-	#endif
-
-	#ifdef ENABLE_MD_IMG_SECURITY_FEATURE
-	if ((ret = masp_boot_init()) !=0) {
-		CCCI_MSG("masp_boot_init fail: %d\n",ret);
-		ret= -EIO;
-		return ret;
-	}
-
-	if(sec_lib_version_check()!= 0) {
-		CCCI_MSG("sec lib version check error\n");
-		ret= -EIO;
-		return ret;
-	}
 	#endif
 	
 	ccci_get_platform_ver(ap_platform);

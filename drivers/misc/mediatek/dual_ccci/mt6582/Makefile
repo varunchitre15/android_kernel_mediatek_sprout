@@ -4,8 +4,6 @@ include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
 #include $(MTK_ROOT_BUILD)/Makefile
 #CCCI_CORE_DRIVER_DIR :=  $(wildcard $(obj)/$(call to-root,$(obj))mediatek/source/kernel/drivers/ccci)
-#CCCI_CORE_DRIVER_DIR := $(srctree)/mediatek/kernel/drivers/dual_ccci
-#MASP_CORE_DRIVER_DIR := $(MTK_PATH_PLATFORM)/drivers/masp
 CCCI_CORE_DRIVER_DIR := $(srctree)/drivers/misc/mediatek/dual_ccci/mt6582
 MASP_CORE_DRIVER_DIR := $(srctree)/drivers/misc/mediatek/masp/mt6582
 
@@ -23,10 +21,6 @@ include $(MASP_CORE_DRIVER_DIR)/asf/Makefile.core
 
 #ifeq ($(strip $(TRUSTONIC_TEE_SUPPORT)),y)
 ifeq ($(strip $(TRUSTONIC_TEE_SUPPORT)),temp_disable_1120)
-ccflags-y += -I$(MTK_PATH_PLATFORM)/drivers/gud/MobiCoreKernelApi/include \
-             -I$(MTK_PATH_PLATFORM)/drivers/gud/MobiCoreKernelApi/public \
-             -I$(MTK_PATH_SOURCE)/../protect-bsp/platform/$(call lc,$(MTK_PLATFORM))/external/trustzone/trustlets/sec/Drsec/Locals/Code/public \
-             -I$(MTK_PATH_SOURCE)/../protect-bsp/platform/$(call lc,$(MTK_PLATFORM))/external/trustzone/trustlets/sec/Tlsec/Locals/Code/public
 
 mach_obj += mach/hacc_tee_req.o
 mach_obj += mach/hacc_tee.o
@@ -36,16 +30,19 @@ else
 include $(MASP_CORE_DRIVER_DIR)/mach/Makefile.mach
 endif
 
-ccci_plat-y += $(core_obj) $(mach_obj)
-
 ifeq ($(CONFIG_CUSTOM_SEC_AUTH_SUPPORT),y)
 CCCI_CUSTOM_DRIVER_DIR := $(MTK_PATH_CUSTOM)/$(call lc,$(MTK_PROJECT))/kernel/ccci
 ccci_plat-y += $(CCCI_CUSTOM_DRIVER_DIR)/cust_auth.o
 else
 include $(MASP_CORE_DRIVER_DIR)/asf/Makefile.crypto
-ccci_plat-y += $(crypto_obj)
-ccci_plat-y += asf/auth/sec_wrapper.o
+sec_obj := $(crypto_obj)
+sec_obj += asf/auth/sec_wrapper.o
 endif
+
+ifeq ($(CONFIG_MTK_CCCI_DRIVER), m)
+ccci_plat-y += $(core_obj) $(mach_obj) $(sec_obj)
+endif
+
 endif
 
 #ldflags-y += --whole-archive $(ext-libs)  --no-whole-archive

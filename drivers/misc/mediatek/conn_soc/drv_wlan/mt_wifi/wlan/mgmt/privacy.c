@@ -1,4 +1,18 @@
 /*
+* Copyright (C) 2011-2014 MediaTek Inc.
+* 
+* This program is free software: you can redistribute it and/or modify it under the terms of the 
+* GNU General Public License version 2 as published by the Free Software Foundation.
+* 
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
 ** $Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/privacy.c#1 $
 */
 
@@ -109,11 +123,11 @@
  * Add Send Deauth for Class 3 Error and Leave Network Support
  *
  * 04 15 2010 wh.su
- * [BORA00000680][MT6620] Support the statistic for Microsoft os query
+ * [BORA00000680][MT6620] Support the statistic for Micxxsoft os query
  * remove the assert code for allow ad-hoc pkt.
  *
  * 04 13 2010 wh.su
- * [BORA00000680][MT6620] Support the statistic for Microsoft os query
+ * [BORA00000680][MT6620] Support the statistic for Micxxsoft os query
  * fixed the Klocwork error and refine the class error message.
  *
  * 03 04 2010 wh.su

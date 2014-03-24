@@ -2,8 +2,6 @@
 
 EXTRA_CFLAGS = -DSDEBUG_T
 
-#ccflags-y += -I$(MTK_PATH_SOURCE)/drivers/jpeg/
-
 #obj-$(CONFIG_MTK_JPEG) += jpeg_driver.o
 obj-y += jpeg_driver.o
 

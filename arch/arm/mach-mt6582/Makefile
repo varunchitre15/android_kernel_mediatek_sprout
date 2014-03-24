@@ -34,9 +34,6 @@ obj-y += camera_pipe_mgr.o
 obj-y += mt_pm_ldo.o
 obj-y += innercache.o mt_l2c.o
 obj-$(CONFIG_MTK_CIRQ) += mt_cirq.o
-ccflags-y += -I$(MTK_PATH_PLATFORM)/drivers/power \
-             -I$(MTK_PATH_PLATFORM)/drivers/gpu/mali/mali/include \
-             -I$(MTK_PATH_SOURCE)/drivers/wdk
 obj-y += mt_spm.o mt_spm_sleep.o mt_spm_idle.o mt_spm_mtcmos.o
 obj-y += mt_sleep.o
 #obj-y += mt_cpufreq.o mt_gpufreq.o mt_cpu_ss.o

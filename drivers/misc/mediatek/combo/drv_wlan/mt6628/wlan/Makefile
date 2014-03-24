@@ -1,7 +1,6 @@
 # ---------------------------------------------------
 # Compile Options
 # ---------------------------------------------------
-include $(MTK_PATH_BUILD)/Makefile
 
 WLAN_CHIP_LIST:=-UMT6620 -UMT6628 -UMT5931
 ccflags-y += $(WLAN_CHIP_LIST)

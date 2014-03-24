@@ -1,3 +1,17 @@
+/*
+* Copyright (C) 2011-2014 MediaTek Inc.
+* 
+* This program is free software: you can redistribute it and/or modify it under the terms of the 
+* GNU General Public License version 2 as published by the Free Software Foundation.
+* 
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 /* D:\Task\CMMB\Innofidei\FW\IF228\mskid\IF228_A0AA_MBBMS2.2\IF228_A0AA_MBBMS2.2_26M.bin (2012-1-29 11:36:00)
    StartOffset: 00000000, EndOffset: 00008A03, Length: 00008A04 */
 

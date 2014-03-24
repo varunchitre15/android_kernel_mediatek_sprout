@@ -1,4 +1,3 @@
-ccflags-y +=-I$(MTK_PATH_PLATFORM)/drivers/power/
 
 ifeq ($(CONFIG_MTK_BQ24196_SUPPORT),y) 
     obj-$(CONFIG_MTK_SMART_BATTERY) += mt_battery_bq24196.o mt6320_fuel_gauge_bq24196.o bq24196.o    

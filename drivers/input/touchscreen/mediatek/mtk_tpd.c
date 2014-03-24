@@ -1,22 +1,16 @@
-/******************************************************************************
- * mtk_tpd.c - MTK Android Linux Touch Panel Device Driver               *
- *                                                                            *
- * Copyright 2008-2009 MediaTek Co.,Ltd.                                      *
- *                                                                            *
- * DESCRIPTION:                                                               *
- *     this file provide basic touch panel event to input sub system          *
- *                                                                            *
- * AUTHOR:                                                                    *
- *     Kirby.Wu (mtk02247)                                                    *
- *                                                                            *
- * NOTE:                                                                      *
- * 1. Sensitivity for touch screen should be set to edge-sensitive.           *
- *    But in this driver it is assumed to be done by interrupt core,          *
- *    though not done yet. Interrupt core may provide interface to            *
- *    let drivers set the sensitivity in the future. In this case,            *
- *    this driver should set the sensitivity of the corresponding IRQ         *
- *    line itself.                                                            *
- ******************************************************************************/
+/*
+* Copyright (C) 2011-2014 MediaTek Inc.
+* 
+* This program is free software: you can redistribute it and/or modify it under the terms of the 
+* GNU General Public License version 2 as published by the Free Software Foundation.
+* 
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "tpd.h"
 

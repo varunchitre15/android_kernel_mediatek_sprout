@@ -31,3 +31,6 @@ ifeq ($(CONFIG_MTK_MSG2133),y)
 obj-y	+=  msg2133/
 endif
 
+ifeq ($(CONFIG_MTK_SYNAPTICS_3508),y)
+obj-y	+=  synaptics_3508/
+endif

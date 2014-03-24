@@ -4,7 +4,6 @@ ifeq ($(BUILD_MT6630_WLAN), yes)
 # ---------------------------------------------------
 # Compile Options
 # ---------------------------------------------------
-include $(MTK_PATH_BUILD)/Makefile
 ccflags-y += -DLINUX -DMT6630
 
 ifeq ($(CONFIG_MTK_WAPI_SUPPORT), y)
