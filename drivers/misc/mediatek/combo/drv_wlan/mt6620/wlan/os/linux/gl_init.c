@@ -3245,7 +3245,7 @@ wlanRemove(
 */
 /*----------------------------------------------------------------------------*/
 //1 Module Entry Point
-static int __init initWlan(void)
+static int initWlan(void)
 {
     int ret = 0;
 
@@ -3280,7 +3280,7 @@ static int __init initWlan(void)
 */
 /*----------------------------------------------------------------------------*/
 //1 Module Leave Point
-static VOID __exit exitWlan(void)
+static VOID exitWlan(void)
 {
     //printk("remove %p\n", wlanRemove);
 #if CFG_CHIP_RESET_SUPPORT
@@ -3297,124 +3297,21 @@ static VOID __exit exitWlan(void)
     return;
 } /* end of exitWlan() */
 
+
+#ifdef MTK_WCN_REMOVE_KERNEL_MODULE
+int mtk_wcn_wlan_6620_init(void)
+{
+    return initWlan();
+}
+
+void mtk_wcn_wlan_6620_exit(void)
+{
+    return exitWlan();
+}
+
+EXPORT_SYMBOL(mtk_wcn_wlan_6620_init);
+EXPORT_SYMBOL(mtk_wcn_wlan_6620_exit);
+#else
 module_init(initWlan);
 module_exit(exitWlan);
-#if 0
-/* export necessary symbol for p2p driver using */
-#if CFG_ENABLE_WIFI_DIRECT
-EXPORT_SYMBOL(wlanSubModRegisterInitExit);
-EXPORT_SYMBOL(wlanSubModExit);
-EXPORT_SYMBOL(wlanSubModInit);
-
-EXPORT_SYMBOL(nicPmIndicateBssCreated);
-EXPORT_SYMBOL(rlmProcessAssocRsp);
-EXPORT_SYMBOL(kalSetEvent);
-EXPORT_SYMBOL(rlmBssInitForAPandIbss);
-EXPORT_SYMBOL(kalEnqueueCommand);
-EXPORT_SYMBOL(nicIncreaseTxSeqNum);
-EXPORT_SYMBOL(nicCmdEventQueryAddress);
-EXPORT_SYMBOL(bssCreateStaRecFromBssDesc);
-EXPORT_SYMBOL(rlmBssAborted);
-EXPORT_SYMBOL(cnmStaRecResetStatus);
-EXPORT_SYMBOL(mqmProcessAssocRsp);
-EXPORT_SYMBOL(nicTxReturnMsduInfo);
-EXPORT_SYMBOL(nicTxEnqueueMsdu);
-EXPORT_SYMBOL(wlanProcessSecurityFrame);
-EXPORT_SYMBOL(nicChannelNum2Freq);
-EXPORT_SYMBOL(nicUpdateBss);
-EXPORT_SYMBOL(wlanSendSetQueryCmd);
-EXPORT_SYMBOL(cnmStaRecAlloc);
-EXPORT_SYMBOL(cnmTimerInitTimer);
-EXPORT_SYMBOL(rateGetRateSetFromIEs);
-EXPORT_SYMBOL(nicOidCmdTimeoutCommon);
-EXPORT_SYMBOL(cnmStaRecChangeState);
-EXPORT_SYMBOL(rateGetDataRatesFromRateSet);
-EXPORT_SYMBOL(cnmMgtPktAlloc);
-EXPORT_SYMBOL(cnmMgtPktFree);
-EXPORT_SYMBOL(wextSrchDesiredWPAIE);
-EXPORT_SYMBOL(nicRxReturnRFB);
-EXPORT_SYMBOL(cnmTimerStartTimer);
-EXPORT_SYMBOL(cmdBufAllocateCmdInfo);
-EXPORT_SYMBOL(cnmGetStaRecByAddress);
-EXPORT_SYMBOL(nicMediaStateChange);
-EXPORT_SYMBOL(bssUpdateBeaconContent);
-EXPORT_SYMBOL(kalIoctl);
-EXPORT_SYMBOL(nicActivateNetwork);
-EXPORT_SYMBOL(nicDeactivateNetwork);
-EXPORT_SYMBOL(kalRandomNumber);
-EXPORT_SYMBOL(nicCmdEventSetCommon);
-EXPORT_SYMBOL(cnmTimerStopTimer);
-EXPORT_SYMBOL(nicIncreaseCmdSeqNum);
-EXPORT_SYMBOL(authSendDeauthFrame);
-EXPORT_SYMBOL(cnmMemAlloc);
-EXPORT_SYMBOL(nicPmIndicateBssAbort);
-EXPORT_SYMBOL(nicCmdEventSetIpAddress);
-EXPORT_SYMBOL(mboxSendMsg);
-EXPORT_SYMBOL(scanSearchBssDescByBssid);
-EXPORT_SYMBOL(bssRemoveStaRecFromClientList);
-EXPORT_SYMBOL(assocProcessRxDisassocFrame);
-EXPORT_SYMBOL(authProcessRxDeauthFrame);
-EXPORT_SYMBOL(cnmStaRecFree);
-EXPORT_SYMBOL(rNonHTPhyAttributes);
-EXPORT_SYMBOL(rNonHTApModeAttributes);
-EXPORT_SYMBOL(cnmMemFree);
-EXPORT_SYMBOL(wlanExportGlueInfo);
-EXPORT_SYMBOL(bssInitForAP);
-EXPORT_SYMBOL(nicPmIndicateBssConnected);
-EXPORT_SYMBOL(rlmRspGenerateHtOpIE);
-EXPORT_SYMBOL(bssGenerateExtSuppRate_IE);
-EXPORT_SYMBOL(rlmRspGenerateErpIE);
-EXPORT_SYMBOL(rlmRspGenerateHtCapIE);
-EXPORT_SYMBOL(cnmGetStaRecByIndex);
-EXPORT_SYMBOL(rsnGenerateWpaNoneIE);
-EXPORT_SYMBOL(rlmRspGenerateExtCapIE);
-EXPORT_SYMBOL(rsnGenerateRSNIE);
-EXPORT_SYMBOL(rsnParseRsnIE);
-#if CFG_SUPPORT_WPS
-EXPORT_SYMBOL(wextSrchDesiredWPSIE);
-#endif
-EXPORT_SYMBOL(mboxDummy);
-EXPORT_SYMBOL(saaFsmRunEventStart);
-EXPORT_SYMBOL(saaFsmRunEventAbort);
-EXPORT_SYMBOL(cnmP2PIsPermitted);
-EXPORT_SYMBOL(cnmBss40mBwPermitted);
-EXPORT_SYMBOL(mqmGenerateWmmParamIE);
-EXPORT_SYMBOL(cnmPreferredChannel);
-EXPORT_SYMBOL(bssAddStaRecToClientList);
-EXPORT_SYMBOL(nicQmUpdateWmmParms);
-EXPORT_SYMBOL(qmFreeAllByNetType);
-EXPORT_SYMBOL(wlanQueryInformation);
-EXPORT_SYMBOL(nicConfigPowerSaveProfile);
-EXPORT_SYMBOL(scanSearchExistingBssDesc);
-EXPORT_SYMBOL(scanAllocateBssDesc);
-EXPORT_SYMBOL(wlanProcessCommandQueue);
-EXPORT_SYMBOL(wlanAcquirePowerControl);
-EXPORT_SYMBOL(wlanReleasePowerControl);
-EXPORT_SYMBOL(wlanReleasePendingCMDbyNetwork);
-#if DBG
-EXPORT_SYMBOL(aucDebugModule);
-EXPORT_SYMBOL(fgIsBusAccessFailed);
-EXPORT_SYMBOL(allocatedMemSize);
-EXPORT_SYMBOL(dumpMemory8);
-EXPORT_SYMBOL(dumpMemory32);
-#endif
-EXPORT_SYMBOL(rlmDomainIsLegalChannel);
-EXPORT_SYMBOL(scnQuerySparseChannel);
-EXPORT_SYMBOL(rlmDomainGetChnlList);
-EXPORT_SYMBOL(p2pSetMulticastListWorkQueueWrapper);
-EXPORT_SYMBOL(nicUpdateRSSI);
-EXPORT_SYMBOL(nicCmdEventQueryLinkQuality);
-EXPORT_SYMBOL(kalGetMediaStateIndicated);
-EXPORT_SYMBOL(nicFreq2ChannelNum);
-EXPORT_SYMBOL(assocSendDisAssocFrame);
-EXPORT_SYMBOL(nicUpdateBeaconIETemplate);
-EXPORT_SYMBOL(rsnParseCheckForWFAInfoElem);
-EXPORT_SYMBOL(kalClearMgmtFramesByNetType);
-EXPORT_SYMBOL(kalClearSecurityFramesByNetType);
-EXPORT_SYMBOL(nicFreePendingTxMsduInfoByNetwork);
-EXPORT_SYMBOL(bssComposeBeaconProbeRespFrameHeaderAndFF);
-EXPORT_SYMBOL(bssBuildBeaconProbeRespFrameCommonIEs);
-EXPORT_SYMBOL(wlanoidSetWapiAssocInfo);
-EXPORT_SYMBOL(wlanoidSetWSCAssocInfo);
-#endif
 #endif

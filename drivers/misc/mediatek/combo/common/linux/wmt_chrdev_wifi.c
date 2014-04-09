@@ -188,6 +188,21 @@ static void WIFI_exit(void)
     WIFI_INFO_FUNC("%s driver removed.\n", WIFI_DRIVER_NAME);
 }
 
+
+#ifdef MTK_WCN_REMOVE_KERNEL_MODULE
+int mtk_wcn_wmt_wifi_init(void)
+{
+    return WIFI_init();
+}
+
+void mtk_wcn_wmt_wifi_exit(void)
+{
+    return WIFI_exit();
+}
+
+EXPORT_SYMBOL(mtk_wcn_wmt_wifi_init);
+EXPORT_SYMBOL(mtk_wcn_wmt_wifi_exit);
+#else
 module_init(WIFI_init);
 module_exit(WIFI_exit);
-
+#endif
