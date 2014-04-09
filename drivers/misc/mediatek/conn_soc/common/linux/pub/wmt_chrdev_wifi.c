@@ -35,7 +35,7 @@
 MODULE_LICENSE("Dual BSD/GPL");
 
 #define WIFI_DRIVER_NAME "mtk_wmt_WIFI_chrdev"
-#define WIFI_DEV_MAJOR 153 // never used number
+#define WIFI_DEV_MAJOR 153
 
 #define PFX                         "[MTK-WIFI] "
 #define WIFI_LOG_DBG                  3
@@ -53,7 +53,6 @@ unsigned int gDbgLevel = WIFI_LOG_DBG;
 
 #define VERSION "1.0"
 
-/* mtk80707 rollback aosp hal */
 #define WLAN_IFACE_NAME "wlan0"
 
 enum {
@@ -74,7 +73,7 @@ typedef struct _PARAM_CUSTOM_P2P_SET_STRUC_T {
     unsigned int  u4Enable;
     unsigned int  u4Mode;
 } PARAM_CUSTOM_P2P_SET_STRUC_T, *P_PARAM_CUSTOM_P2P_SET_STRUC_T;
-typedef int (*set_p2p_mode)(struct net_device * netdev, PARAM_CUSTOM_P2P_SET_STRUC_T p2pmode);
+typedef int (*set_p2p_mode)(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUC_T p2pmode);
 
 set_p2p_mode pf_set_p2p_mode;
 void register_set_p2p_mode_handler(set_p2p_mode handler) {
@@ -138,10 +137,10 @@ void register_set_dbg_level_handler(set_dbg_level handler) {
     pf_set_dbg_level = handler;
 }
 EXPORT_SYMBOL(register_set_dbg_level_handler);
-/* endof mtk80707 */
 
-static int WIFI_devs = 1;        /* device count */
-static int WIFI_major = WIFI_DEV_MAJOR;       /* dynamic allocation */
+
+static int WIFI_devs = 1; /* device count */
+static int WIFI_major = WIFI_DEV_MAJOR; /* dynamic allocation */
 module_param(WIFI_major, uint, 0);
 static struct cdev WIFI_cdev;
 volatile int retflag = 0;
@@ -150,12 +149,10 @@ static struct semaphore wr_mtx;
 
 /*******************************************************************
  *  WHOLE CHIP RESET PROCEDURE:
- *                                
- *         WMTRSTMSG_RESET_START callback
- *                       |
- *                   wlanRemove
- *                       |
- *          WMTRSTMSG_RESET_END callback
+ *
+ *  WMTRSTMSG_RESET_START callback
+ *  -> wlanRemove
+ *  -> WMTRSTMSG_RESET_END callback
  *
  *******************************************************************
 */
@@ -616,6 +613,21 @@ static void WIFI_exit(void)
     WIFI_INFO_FUNC("%s driver removed.\n", WIFI_DRIVER_NAME);
 }
 
+
+#ifdef MTK_WCN_REMOVE_KERNEL_MODULE
+int mtk_wcn_wmt_wifi_soc_init(void)
+{
+    return WIFI_init();
+}
+
+void mtk_wcn_wmt_wifi_soc_exit(void)
+{
+    return WIFI_exit();
+}
+
+EXPORT_SYMBOL(mtk_wcn_wmt_wifi_soc_init);
+EXPORT_SYMBOL(mtk_wcn_wmt_wifi_soc_exit);
+#else
 module_init(WIFI_init);
 module_exit(WIFI_exit);
-
+#endif

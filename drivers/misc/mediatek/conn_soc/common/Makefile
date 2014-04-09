@@ -1,13 +1,18 @@
-include $(srctree)/drivers/misc/mediatek/Makefile.custom
 #ccflags-y += -I$(src)/core/include
-ccflags-y += -I$(src)/linux/include -I$(src)/linux/pri/include -I$(src)/core/include -I$(src)/include -I$(src)/ -I$(src)/../../btif/inc -I$(src)/../../common_detect
-ccflags-y += -DWMT_CREATE_NODE_DYNAMIC=1
+ccflags-y += -I$(src)/linux/include \
+						 -I$(src)/linux/pri/include \
+						 -I$(src)/core/include \
+						 -I$(src)/include \
+						 -I$(src)/ \
+						 -I$(src)/../../btif/inc \
+						 -I$(src)/../../common_detect
 
 #CONFIG_MTK_COMBO=y
 EXT_FLAG=_soc
 COMMON_SRC_PATH := $(src)
 COMMON_OBJ_PATH := $(src)
 
+ifeq ($(CONFIG_MTK_COMBO), m)
 # WMT DRIVER
 obj-$(CONFIG_MTK_COMBO) += mtk_stp_wmt$(EXT_FLAG).o
 # WMT DRIVER-core part
@@ -45,3 +50,10 @@ mtk_stp_gps$(EXT_FLAG)-objs	:= linux/pub/stp_chrdev_gps.o
 obj-$(CONFIG_MTK_COMBO_WIFI) += mtk_wmt_wifi$(EXT_FLAG).o
 mtk_wmt_wifi$(EXT_FLAG)-objs       := linux/pub/wmt_chrdev_wifi.o 
 
+endif
+
+ifeq ($(CONFIG_MTK_COMBO), y)
+subdir-ccflags-y += -D WMT_PLAT_ALPS
+obj-y += core/
+obj-y += linux/
+endif
