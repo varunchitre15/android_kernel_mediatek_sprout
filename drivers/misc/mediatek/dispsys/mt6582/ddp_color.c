@@ -23,6 +23,11 @@
 #include "ddp_color.h"
 
 
+unsigned int color_dbg_log = 0;
+#define COLOR_DBG(string, args...) if(color_dbg_log) printk("[COLOR]"string,##args)  // default off, use "adb shell "echo dbg_log:1 > sys/kernel/debug/dispsys" to enable
+#define COLOR_MSG(string, args...) printk("[COLOR]"string,##args)  // default on, important msg, not err
+#define COLOR_ERR(string, args...) printk("[COLOR]error:"string,##args)  //default on, err msg
+
 extern unsigned char pq_debug_flag;
 
 // initailize 
@@ -795,6 +800,7 @@ void disp_set_hist_readlock(unsigned long bLock)
 {
     unsigned long flag;
 
+    COLOR_DBG("get_gamma_index!\n");
     spin_lock_irqsave(&gHistLock , flag);
 
     gHistIndicator = bLock;
@@ -804,6 +810,7 @@ void disp_set_hist_readlock(unsigned long bLock)
 
 int disp_get_hist(unsigned int * pHist)
 {
+    COLOR_DBG("disp_get_hist!\n");
     disp_set_hist_readlock(1);
 
     memcpy(pHist , gHist.histogram  , (LUMA_HIST_BIN*sizeof(unsigned int)));
@@ -822,6 +829,7 @@ void disp_update_hist()
     int i = 0;
     unsigned long flag;
 
+    COLOR_DBG("disp_update_hist!\n");
     spin_lock_irqsave(&gHistLock , flag);
 
     if(~gHistIndicator)
@@ -848,6 +856,7 @@ void disp_update_hist()
 void disp_color_set_window(unsigned int sat_upper, unsigned int sat_lower,
                            unsigned int hue_upper, unsigned int hue_lower)
 {
+    COLOR_DBG("disp_color_set_window!\n");
     g_Color_Window = (sat_upper << 24) | (sat_lower << 16) | (hue_upper << 8) | (hue_lower);
 }
 
@@ -859,6 +868,7 @@ void disp_onConfig_luma(unsigned long * luma)
     unsigned long u4Index;
     unsigned long u4Val;
     
+    COLOR_DBG("disp_onConfig_luma!\n");
     for(u4Index = 0 ; u4Index < 8; u4Index += 1)
     {
         u4Val = luma[u4Index*2] | luma[u4Index*2+1] << 16;
@@ -903,6 +913,7 @@ void DpEngine_COLORonInit(void)
        //printk("===================init COLOR =======================\n");
 
 
+    COLOR_DBG("DpEngine_COLORonInit!\n");
        DISP_REG_SET(CFG_MAIN,(1<<29)); //color enable
 
        DISP_REG_SET((DISPSYS_COLOR_BASE + 0x420),0);
@@ -931,6 +942,7 @@ void DpEngine_COLORonConfig(unsigned int srcWidth,unsigned int srcHeight)
     unsigned int u4Temp = 0;
     unsigned char h_series[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
+    COLOR_DBG("DpEngine_COLORonConfig!\n");
     //printk("==========config COLOR g_Color_Param [%d %d %d %d %d %d %d %d %d]\n===============\n", g_Color_Param.u4SatGain, g_Color_Param.u4HueAdj[PURP_TONE], g_Color_Param.u4HueAdj[SKIN_TONE], g_Color_Param.u4HueAdj[GRASS_TONE], g_Color_Param.u4HueAdj[SKY_TONE], g_Color_Param.u4SatAdj[PURP_TONE], g_Color_Param.u4SatAdj[SKIN_TONE], g_Color_Param.u4SatAdj[GRASS_TONE], g_Color_Param.u4SatAdj[SKY_TONE]);
 
     DISP_REG_SET((DISPSYS_COLOR_BASE + 0xf50), srcWidth);  //wrapper width

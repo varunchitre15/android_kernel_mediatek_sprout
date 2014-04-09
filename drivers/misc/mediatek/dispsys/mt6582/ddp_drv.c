@@ -271,6 +271,9 @@ void disp_check_clock_tree(void) {
 			*(volatile unsigned int*)(0xf0000000),
 			*(volatile unsigned int*)(0xf0000050),
 			*(volatile unsigned int*)(0xf0000040));
+	DISP_MSG("0xf4000100=0x%x, 0xf4000110=0x%x\n",
+			*(volatile unsigned int*)(0xf4000100),
+			*(volatile unsigned int*)(0xf4000110));
 	// All need
 	if ((DISP_REG_GET(0xf0000040)&0xff) != 0x01) {
 		DISP_ERR("CLK_CFG_0 abnormal: hf_faxi_ck is off! 0xf0000040=0x%x \n", DISP_REG_GET(0xf0000040));
@@ -284,9 +287,11 @@ void disp_check_clock_tree(void) {
 	if ((DISP_REG_GET(0xf4000100)&(1<<1)) != 0) {
 		DISP_ERR("MMSYS_CG_CON0 abnormal: SMI_LARB0 is off!\n");
 	}
+#if 0
 	if ((DISP_REG_GET(0xf4000100)&(1<<3)) != 0) {
 		DISP_ERR("MMSYS_CG_CON0 abnormal: MUTEX is off!\n");
 	}
+#endif
 	for (mutexID = 0; mutexID < 4; mutexID++) {
 		mutex_mod = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(mutexID));
 		mutex_sof = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_SOF(mutexID));
@@ -310,10 +315,12 @@ void disp_check_clock_tree(void) {
 			if ((DISP_REG_GET(0xf4000100)&(1<<5)) != 0) {
 				DISP_ERR("MMSYS_CG_CON0 abnormal: DISP_BLS is off!\n");
 			}
+#if 0
 			//CLK_CFG_1
 			if ((DISP_REG_GET(0xf0000050)&0x0ff) == 0) {
 				DISP_ERR("CLK_CFG_1 abnormal: fpwm_ck is off!\n");
 			}
+#endif
 		}
 		if (mutex_mod&(1<<10)) {
 			if ((DISP_REG_GET(0xf4000100)&(1<<7)) != 0) {
@@ -323,7 +330,7 @@ void disp_check_clock_tree(void) {
 		// DSI CMD/VDO
 		if (mutex_sof&0x3) {
 			// MMSYS_CG_CON1
-			if ((DISP_REG_GET(0xf4000110)&0x07) != 0) {
+			if ((DISP_REG_GET(0xf4000110)&0x03) != 0) {
 				DISP_ERR("MMSYS_CG_CON1 abnormal: DSI is off!\n");
 			}
 			// CLK_CFG_1
@@ -621,8 +628,6 @@ static /*__tcmfunc*/ irqreturn_t disp_irq_handler(int irq, void *dev_id)
                         
                         ddp_dump_info(DISP_MODULE_OVL);
                         ddp_dump_info(DISP_MODULE_RDMA);
-                        ddp_dump_info(DISP_MODULE_COLOR);
-                        ddp_dump_info(DISP_MODULE_BLS);
                         ddp_dump_info(DISP_MODULE_CONFIG);
                         ddp_dump_info(DISP_MODULE_MUTEX); 
                         ddp_dump_info(DISP_MODULE_DSI_CMD);
@@ -763,17 +768,22 @@ static /*__tcmfunc*/ irqreturn_t disp_irq_handler(int irq, void *dev_id)
                         disp_irq_log_module |= (1<<DISP_MODULE_MUTEX);
                         disp_irq_log_module |= (1<<DISP_MODULE_OVL);
                         disp_irq_log_module |= (1<<DISP_MODULE_RDMA);
+                        disp_irq_log_module |= (1<<DISP_MODULE_COLOR);
+                        disp_irq_log_module |= (1<<DISP_MODULE_BLS);
                         
                         ddp_dump_info(DISP_MODULE_CONFIG);
                         ddp_dump_info(DISP_MODULE_MUTEX); 
                         ddp_dump_info(DISP_MODULE_OVL); 
                         ddp_dump_info(DISP_MODULE_RDMA);
+                        ddp_dump_info(DISP_MODULE_COLOR);
                         ddp_dump_info(DISP_MODULE_DSI_CMD); 
                         
                         disp_dump_reg(DISP_MODULE_CONFIG);
                         disp_dump_reg(DISP_MODULE_MUTEX);
                         disp_dump_reg(DISP_MODULE_OVL);
                         disp_dump_reg(DISP_MODULE_RDMA);
+                        disp_dump_reg(DISP_MODULE_COLOR);
+                        disp_dump_reg(DISP_MODULE_BLS);
                        
                 	    disp_irq_err |= DDP_IRQ_RDMA_ABNORMAL;
                     }
@@ -791,18 +801,23 @@ static /*__tcmfunc*/ irqreturn_t disp_irq_handler(int irq, void *dev_id)
                         disp_irq_log_module |= (1<<DISP_MODULE_CONFIG);
                         disp_irq_log_module |= (1<<DISP_MODULE_MUTEX);
                         disp_irq_log_module |= (1<<DISP_MODULE_OVL);
+                        disp_irq_log_module |= (1<<DISP_MODULE_COLOR);
+                        disp_irq_log_module |= (1<<DISP_MODULE_BLS);
                         
-                        ddp_dump_info(DISP_MODULE_RDMA);
                         ddp_dump_info(DISP_MODULE_CONFIG);
                         ddp_dump_info(DISP_MODULE_MUTEX);
                         ddp_dump_info(DISP_MODULE_OVL); 
+                        ddp_dump_info(DISP_MODULE_RDMA);
+                        ddp_dump_info(DISP_MODULE_COLOR);
                         ddp_dump_info(DISP_MODULE_DSI_CMD);
-                        
+
                         disp_dump_reg(DISP_MODULE_CONFIG);
                         disp_dump_reg(DISP_MODULE_MUTEX); 
                         disp_dump_reg(DISP_MODULE_OVL); 
                         disp_dump_reg(DISP_MODULE_RDMA);                                               
-                        
+                        disp_dump_reg(DISP_MODULE_COLOR);
+                        disp_dump_reg(DISP_MODULE_BLS);
+
                         disp_irq_err |= DDP_IRQ_RDMA_UNDERFLOW;
                 	}
                 	else
@@ -2581,7 +2596,7 @@ void disp_print_reg(DISP_MODULE_ENUM module)
 		DISP_MSG("(010)O_TRIG               =0x%x \n", g_reg_ovl[i++]);
 		DISP_MSG("(014)O_RST                =0x%x \n", g_reg_ovl[i++]);
 		DISP_MSG("(020)O_ROI_SIZE           =0x%x \n", g_reg_ovl[i++]);
-		DISP_MSG("(020)O_DATAPATH_CON       =0x%x \n", g_reg_ovl[i++]);
+		DISP_MSG("(024)O_DATAPATH_CON       =0x%x \n", g_reg_ovl[i++]);
 		DISP_MSG("(028)O_ROI_BGCLR          =0x%x \n", g_reg_ovl[i++]);
 		DISP_MSG("(02C)O_SRC_CON            =0x%x \n", g_reg_ovl[i++]);
 		DISP_MSG("(030)O_L0_CON             =0x%x \n", g_reg_ovl[i++]);
@@ -2628,11 +2643,11 @@ void disp_print_reg(DISP_MODULE_ENUM module)
 		DISP_MSG("(128)O_R3_MEM_GMC_SET     =0x%x \n", g_reg_ovl[i++]);
 		DISP_MSG("(12C)O_R3_MEM_SLOW_CON    =0x%x \n", g_reg_ovl[i++]);
 		DISP_MSG("(130)O_R3_FIFO_CTRL       =0x%x \n", g_reg_ovl[i++]);
-		DISP_MSG("(1C4)O_DEBUG_MON_SEL      =0x%x \n", g_reg_ovl[i++]);
-		DISP_MSG("(1C4)O_R0_MEM_GMC_SET2    =0x%x \n", g_reg_ovl[i++]);
-		DISP_MSG("(1C8)O_R1_MEM_GMC_SET2    =0x%x \n", g_reg_ovl[i++]);
-		DISP_MSG("(1CC)O_R2_MEM_GMC_SET2    =0x%x \n", g_reg_ovl[i++]);
-		DISP_MSG("(1D0)O_R3_MEM_GMC_SET2    =0x%x \n", g_reg_ovl[i++]);
+		DISP_MSG("(1D4)O_DEBUG_MON_SEL      =0x%x \n", g_reg_ovl[i++]);
+		DISP_MSG("(1E0)O_R0_MEM_GMC_SET2    =0x%x \n", g_reg_ovl[i++]);
+		DISP_MSG("(1E4)O_R1_MEM_GMC_SET2    =0x%x \n", g_reg_ovl[i++]);
+		DISP_MSG("(1E8)O_R2_MEM_GMC_SET2    =0x%x \n", g_reg_ovl[i++]);
+		DISP_MSG("(1EC)O_R3_MEM_GMC_SET2    =0x%x \n", g_reg_ovl[i++]);
 		DISP_MSG("(240)O_FLOW_CTRL_DBG      =0x%x \n", g_reg_ovl[i++]);
 		DISP_MSG("(244)O_ADDCON_DBG         =0x%x \n", g_reg_ovl[i++]);
 		DISP_MSG("(248)O_OUTMUX_DBG         =0x%x \n", g_reg_ovl[i++]);
@@ -2759,7 +2774,7 @@ void disp_print_reg(DISP_MODULE_ENUM module)
 		DISP_MSG("(02C)R_MEM_SRC_PITCH     =0x%x \n", g_reg_rdma[i++]);
 		DISP_MSG("(030)R_MEM_GMC_SET_0 =0x%x \n", g_reg_rdma[i++]);
 		DISP_MSG("(034)R_MEM_SLOW_CON      =0x%x \n", g_reg_rdma[i++]);
-		DISP_MSG("(030)R_MEM_GMC_SET_1 =0x%x \n", g_reg_rdma[i++]);
+		DISP_MSG("(038)R_MEM_GMC_SET_1 =0x%x \n", g_reg_rdma[i++]);
 		DISP_MSG("(040)R_FIFO_CON          =0x%x \n", g_reg_rdma[i++]);
 		DISP_MSG("(078)R_CF_PRE_ADD0       =0x%x \n", g_reg_rdma[i++]);
 		DISP_MSG("(07C)R_CF_PRE_ADD1       =0x%x \n", g_reg_rdma[i++]);

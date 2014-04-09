@@ -1032,7 +1032,6 @@ static char* ddp_get_mutex_module_name(unsigned int bit)
            case 7: return "color";
            case 9: return "bls";
            case 10: return "rdma0";
-           case 12: return "rdma1";
            default: 
              printk("error_bit=%d, ", bit);
              return "mutex-unknown";
@@ -1046,15 +1045,14 @@ static char* ddp_clock_0(int bit)
         case  0: return "smi common";
         case  1: return "smi larb0";
         case  2: return "mm cmdq";
-        case  3: return "mutex";
+        case  3: return "mm cmdq smi";
         case  4: return "disp_color"; 
         case  5: return "disp_bls";
         case  6: return "disp_wdma0";
         case  7: return "disp_rdma";
         case  8: return "disp_ovl";
-        case 17: return "fake_eng";
-        case 18: return "mutex_32k";
-        case 19: return "disp_rdma1";
+        case 20: return "fake_eng";
+        case 21: return "mutex_32k";
         default : return "";
     }
 }
@@ -1065,8 +1063,11 @@ static char* ddp_clock_1(int bit)
     {
         case 0: return "dsi_engine"; 
         case 1: return "dsi_digital"; 
-        case 2: return "dpi_digital_lane";
-        case 3: return "dpi_engine"; 
+        case 2: return "dpi_engine";
+        case 3: return "dpi_if"; 
+        case 4: return "dbi_engine"; 
+        case 5: return "dbi_smi"; 
+        case 6: return "dbi_if"; 
         default : return "";
     }
 }
@@ -1255,8 +1256,9 @@ int ddp_dump_info(DISP_MODULE_ENUM module)
               DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_1+DISP_INDEX_OFFSET*index)&0xfffff,
               DISP_REG_GET(DISP_REG_RDMA_MEM_SRC_PITCH+DISP_INDEX_OFFSET*index), 
               DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR+DISP_INDEX_OFFSET*index),
-              ((DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON+DISP_INDEX_OFFSET*index)&0x2)==0) ? "rgb888" : ddp_get_fmt_name(DISP_MODULE_RDMA, (DISP_REG_GET(DISP_REG_RDMA_MEM_CON+DISP_INDEX_OFFSET*index)>>4)&0x3f),
+              ((DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON+DISP_INDEX_OFFSET*index)&0x2)==0) ? "rgb888" : ddp_get_fmt_name(DISP_MODULE_RDMA, (DISP_REG_GET(DISP_REG_RDMA_MEM_CON+DISP_INDEX_OFFSET*index)>>4)&0x1f),
               DISP_REG_GET(DISP_REG_RDMA_FIFO_LOG+DISP_INDEX_OFFSET*index));
+#if 0
             DISP_MSG("rdma%d: ack=%d, req=%d, status=%s, output_x=%d, output_y=%d \n", 
               index, 
               (DISP_REG_GET(DISPSYS_RDMA1_BASE+0x400)>>10)&0x1,
@@ -1264,6 +1266,7 @@ int ddp_dump_info(DISP_MODULE_ENUM module)
               ddp_rdma_get_status((DISP_REG_GET(DISPSYS_RDMA1_BASE+0x408)>>8)&0x7ff),
               DISP_REG_GET(DISPSYS_RDMA1_BASE+0x4D0)&0x1fff,
               (DISP_REG_GET(DISPSYS_RDMA1_BASE+0x400)>>16)&0x1fff);
+#endif
             break;
 
         /* Dump OVL Reg */
@@ -1364,20 +1367,21 @@ int ddp_dump_info(DISP_MODULE_ENUM module)
                     if((reg&(1<<i))==0)
                        printk("%s, ", ddp_clock_0(i));
                 }
-                for(i=17;i<20;i++)
+                for(i=20;i<22;i++)
                 {
                     if((reg&(1<<i))==0)
                        printk("%s, ", ddp_clock_0(i));
                 }
                 printk("\n");
                 reg = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1);
-                for(i=0;i<4;i++)
+                for(i=0;i<7;i++)
                 {
                     if((reg&(1<<i))==0)
                        printk("%s, ", ddp_clock_1(i));
                 }
                 printk("\n");                
             }
+#if 0
             {
                 unsigned int clock = (DISP_REG_GET(DISP_REG_CONFIG_CLOCK_DUMMY)>>7)&0x7;
                 if(clock==3)
@@ -1389,14 +1393,14 @@ int ddp_dump_info(DISP_MODULE_ENUM module)
                 else if(clock==2)
                     DISP_MSG("clock 4886\n");
             }
-            
+#endif            
          break;
 
     case DISP_MODULE_MUTEX:
             DISP_MSG("mutex: \n");
             for(i=0;i<3;i++)
             {
-                DISP_DBG("i=%d, mod=0x%x, en=%d \n", 
+                DISP_MSG("i=%d, mod=0x%x, en=%d \n", 
                   i, 
                   DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(i)), 
                   DISP_REG_GET(DISP_REG_CONFIG_MUTEX_EN(i)));

@@ -254,8 +254,8 @@ static void initSetting(void)
     M4U_WriteReg32(REG_SMI_L1ARB3 , 0 , 0xA11FFF);// 4096/4096 maximum grant counts, soft limiter, 8 read 8 write outstanding limit
 //    M4U_WriteReg32(REG_SMI_L1ARB3 , 0 , 0xA11D00);// 4096/4096 maximum grant counts, soft limiter, 8 read 8 write outstanding limit
 
-    M4U_WriteReg32(LARB0_BASE , 0x200 , 0xC);//OVL
-    M4U_WriteReg32(LARB0_BASE , 0x204 , 0x1);//RDMA
+    M4U_WriteReg32(LARB0_BASE , 0x200 , 0x8);//OVL
+    M4U_WriteReg32(LARB0_BASE , 0x204 , 0x8);//RDMA
     M4U_WriteReg32(LARB0_BASE , 0x208 , 0x3);//WDMA
     M4U_WriteReg32(LARB0_BASE , 0x20C , 0x1);//CMDQ
     M4U_WriteReg32(LARB0_BASE , 0x210 , 0x2);//MDP_RDMA
@@ -396,8 +396,8 @@ static int smi_bwc_config( MTK_SMI_BWC_CONFIG* p_conf , unsigned long * pu4Local
         M4U_WriteReg32(REG_SMI_L1ARB2 , 0 , 0x961);//353/4096 maximum grant counts, soft limiter
         M4U_WriteReg32(REG_SMI_L1ARB3 , 0 , 0x885A25);//549/4096 maximum grant counts, hard limiter, 2 read 2 write outstanding limit
 
-        M4U_WriteReg32(LARB0_BASE , 0x200 , 0xC);//OVL
-        M4U_WriteReg32(LARB0_BASE , 0x204 , 0x1);//RDMA
+        M4U_WriteReg32(LARB0_BASE , 0x200 , 0x8);//OVL
+        M4U_WriteReg32(LARB0_BASE , 0x204 , 0x8);//RDMA
         M4U_WriteReg32(LARB0_BASE , 0x208 , 0x3);//WDMA
         M4U_WriteReg32(LARB0_BASE , 0x20C , 0x1);//CMDQ
         M4U_WriteReg32(LARB0_BASE , 0x210 , 0x2);//MDP_RDMA
@@ -447,8 +447,8 @@ static int smi_bwc_config( MTK_SMI_BWC_CONFIG* p_conf , unsigned long * pu4Local
         M4U_WriteReg32(REG_SMI_L1ARB2 , 0 , 0xD4F);//1359/4096 maximum grant counts, soft limiter
         M4U_WriteReg32(REG_SMI_L1ARB3 , 0 , 0x884912);// 274/4096 maximum grant counts, soft limiter, 2 read 2 write outstanding limit
 
-        M4U_WriteReg32(LARB0_BASE , 0x200 , 0xC);//OVL
-        M4U_WriteReg32(LARB0_BASE , 0x204 , 0x1);//RDMA
+        M4U_WriteReg32(LARB0_BASE , 0x200 , 0x8);//OVL
+        M4U_WriteReg32(LARB0_BASE , 0x204 , 0x8);//RDMA
         M4U_WriteReg32(LARB0_BASE , 0x208 , 0x1);//WDMA
         M4U_WriteReg32(LARB0_BASE , 0x20C , 0x1);//CMDQ
         M4U_WriteReg32(LARB0_BASE , 0x210 , 0x2);//MDP_RDMA
