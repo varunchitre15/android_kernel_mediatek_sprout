@@ -386,7 +386,7 @@ config MTK_COMBO_CHIP
 
 config MTK_COMBO_BT
 	tristate "MediaTek Combo Chip BT driver"
-        depends on MTK_COMBO
+	depends on MTK_COMBO
 	help
 	  MTK BT /dev/stpbt driver for Bluedroid (mtk_stp_bt.ko)
         
@@ -398,7 +398,7 @@ config MTK_COMBO_BT_HCI
 
 config MTK_COMBO_GPS
 	tristate "MediaTek Combo Chip GPS driver"
-        depends on MTK_COMBO
+	depends on MTK_COMBO
 	help
 	  MTK GPS /dev/stpgps driver (mtk_stp_gps.ko)
 
@@ -413,39 +413,30 @@ config MTK_COMBO_WIFI
 	select MTK_WLAN_SUPPORT
 	help
 	  This module adds support for wireless adapters based on
-	  MTK MT6620 chipset.
+	  MTK connectivity combo chip.
 
 	  This driver uses the kernel's wireless extensions subsystem.
-
-	  If you choose to build a module, it'll be called dhd. Say M if
-	  unsure.
 
 config MTK_WLAN_CHIP
 	string "MTK_WLAN_CHIP"
 	default "MT6620" if MTK_COMBO_CHIP_MT6620
 	default "MT6628" if MTK_COMBO_CHIP_MT6628
 	default "CONSYS_6572" if MTK_COMBO_CHIP_CONSYS_6572
+	default "CONSYS_6582" if MTK_COMBO_CHIP_CONSYS_6582
 	help
-	   Define the wlan chip type
+	  Define the WLAN chip type.
 
 config MTK_WLAN_SUPPORT
 	bool
 	help
-	   The Wlan switch for the wlan feature in the Android(app,
-	   framework, native, kernel).
+	  Switch for the WLAN function on Android.
 
 config MTK_WAPI_SUPPORT
 	bool "MTK_WAPI_SUPPORT"
+	depends on MTK_COMBO_WIFI
 	help
-	   if it is set to TRUE: Support WAPI (WLAN Authentication and
-	   Privacy Infrastructure) if it is set to FALSE: Does not Support
-	   WAPI (WLAN Authentication and Privacy Infrastructure)
-
-config MTK_WIFI
-        tristate "MediaTek SoC chip Wi-Fi support"
-        depends on !mt592x
-        select WIRELESS_EXT
-        select WEXT_PRIV
+	  Set TRUE to support WAPI (WLAN Authentication and Privacy Infrastructure)
+	  Set FALSE to not support WAPI (WLAN Authentication and Privacy Infrastructure)
 
 config MTK_COMBO_PSM_RX_TH
 	string "MTK_COMBO_PSM_RX_TH"

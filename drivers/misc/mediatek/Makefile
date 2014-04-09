@@ -5,7 +5,6 @@ include $(srctree)/drivers/misc/mediatek/Makefile.custom
 obj-y	+= kernel/
 obj-y	+= aee/
 obj-y	+= dual_ccci/
-obj-y	+= fmradio/
 obj-y	+= gps/
 obj-y	+= hwmon/
 obj-y	+= m4u/
@@ -43,7 +42,11 @@ obj-y	+= matv/
 #obj-y	+= cpu_stress/
 
 
-ifeq ($(CONFIG_MTK_COMBO),m)
+ifneq ($(CONFIG_MTK_COMBO),)
+	subdir-ccflags-y += -D MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
+	subdir-ccflags-y += -D MTK_WCN_REMOVE_KERNEL_MODULE
+	subdir-ccflags-y += -D MTK_CUSTOM_PATH:=$(srctree)/drivers/misc/mediatek/
+
 	ifneq ($(filter "MT6620E3",$(CONFIG_MTK_COMBO_CHIP)),)
 		obj-y   +=  combo/
 	endif
@@ -58,20 +61,16 @@ ifeq ($(CONFIG_MTK_COMBO),m)
 #		$(warning Haman compile 82 $(CONFIG_MTK_COMBO_CHIP))
 		obj-y   +=  conn_soc/
 	endif
+	obj-y += common_detect/
 endif
 
+#obj-y += conn_md/
 obj-$(CONFIG_MTK_BTIF)	+= btif/
 
 obj-y	+= ion_drv/
 ifeq ($(CONFIG_MTK_NFC_SUPPORT),y)
 obj-y	+= nfc/
 endif
-
-#ifeq ($(CONFIG_MTK_WIFI),m)
-#obj-y   +=  conn_soc/
-#endif
-
-obj-y	+= common_detect/
 
 obj-$(CONFIG_ZRAM)	+= mlog/
 obj-y	+= cam_cal/dummy_eeprom/
