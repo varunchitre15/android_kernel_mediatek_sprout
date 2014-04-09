@@ -41,7 +41,7 @@
 #include "cust_gpio_usage.h"
 #include <mach/i2c.h>
 
-#define COMPATIBLE_WITH_AOSP
+//#define COMPATIBLE_WITH_AOSP
 static DEFINE_MUTEX(mutex_mt_i2c_stander_i2c);
 
 //define ONLY_KERNEL
