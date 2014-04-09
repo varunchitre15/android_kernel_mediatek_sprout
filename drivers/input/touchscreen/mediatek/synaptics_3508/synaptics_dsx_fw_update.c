@@ -1,4 +1,8 @@
 /*
+*  Copyright (C) 2014 MediaTek Inc. 
+*  Based on code by
+*/
+/*
  * Synaptics DSX touchscreen driver
  *
  * Copyright (C) 2012 Synaptics Incorporated
