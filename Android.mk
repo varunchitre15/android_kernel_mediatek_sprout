@@ -8,6 +8,11 @@
 #      http://www.apache.org/licenses/LICENSE-2.0
 #
 
+ifneq ($(TARGET_BUILD_VARIANT), user)
+KERNEL_DEFCONFIG ?= $(strip $(TARGET_DEVICE))_debug_defconfig
+else
+KERNEL_DEFCONFIG ?= $(strip $(TARGET_DEVICE))_defconfig
+endif
 
 KERNEL_DIR := $(call my-dir)
 ROOTDIR := $(abspath $(TOP))
