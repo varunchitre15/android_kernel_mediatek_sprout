@@ -949,7 +949,6 @@ module_init(mt519x_init);
 module_exit(mt519x_exit);
    
 MODULE_LICENSE("GPL");
-//MODULE_LICENSE("Proprietary");
 MODULE_DESCRIPTION("MediaTek MATV mt519x Driver");
 MODULE_AUTHOR("Charlie Lu<charlie.lu@mediatek.com>");
 
