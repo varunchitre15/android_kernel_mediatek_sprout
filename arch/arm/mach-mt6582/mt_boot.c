@@ -316,6 +316,6 @@ static void __exit boot_mod_exit(void)
 module_init(boot_mod_init);
 module_exit(boot_mod_exit);
 MODULE_DESCRIPTION("MTK Boot Information Querying Driver");
-MODULE_LICENSE("Proprietary");
+MODULE_LICENSE("GPL");
 EXPORT_SYMBOL(mt_get_chip_id);
 EXPORT_SYMBOL(mt_get_chip_sw_ver);

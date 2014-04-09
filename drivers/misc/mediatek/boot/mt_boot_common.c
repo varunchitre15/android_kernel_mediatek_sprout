@@ -145,7 +145,7 @@ static void __exit boot_common_exit(void)
 module_init(boot_common_init);
 module_exit(boot_common_exit);
 MODULE_DESCRIPTION("MTK Boot Information Common Driver");
-MODULE_LICENSE("Proprietary");
+MODULE_LICENSE("GPL");
 EXPORT_SYMBOL(is_meta_mode);
 EXPORT_SYMBOL(is_advanced_meta_mode);
 EXPORT_SYMBOL(get_boot_mode);
