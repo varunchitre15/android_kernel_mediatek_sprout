@@ -46,7 +46,7 @@
 #ifndef __GC0329_SENSOR_H
 #define __GC0329_SENSOR_H
 
-
+ 
 #define VGA_PERIOD_PIXEL_NUMS						694
 #define VGA_PERIOD_LINE_NUMS						488
 
