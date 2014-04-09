@@ -141,10 +141,17 @@ mtk_wcn_wmt_func_ctrl (
     return bRet;
 }
 
+#if WMT_EXP_HID_API_EXPORT
+MTK_WCN_BOOL
+_mtk_wcn_wmt_func_off (
+    ENUM_WMTDRV_TYPE_T type
+    )
+#else
 MTK_WCN_BOOL
 mtk_wcn_wmt_func_off (
     ENUM_WMTDRV_TYPE_T type
     )
+#endif
 {
     MTK_WCN_BOOL ret;        
 
@@ -163,10 +170,17 @@ mtk_wcn_wmt_func_off (
     return ret;
 }
 
+#if WMT_EXP_HID_API_EXPORT
+MTK_WCN_BOOL
+_mtk_wcn_wmt_func_on (
+    ENUM_WMTDRV_TYPE_T type
+    )
+#else
 MTK_WCN_BOOL
 mtk_wcn_wmt_func_on (
     ENUM_WMTDRV_TYPE_T type
     )
+#endif
 {
     MTK_WCN_BOOL ret;    
 
@@ -203,10 +217,17 @@ enable/disable thermal sensor function: true(1)/false(0)
 read thermal sensor function:thermal value
 
 */
+#if WMT_EXP_HID_API_EXPORT
+INT8
+_mtk_wcn_wmt_therm_ctrl (
+    ENUM_WMTTHERM_TYPE_T eType
+    )	
+#else
 INT8
 mtk_wcn_wmt_therm_ctrl (
     ENUM_WMTTHERM_TYPE_T eType
     )
+#endif
 {
     P_OSAL_OP pOp;
     P_WMT_OP pOpData;
@@ -270,8 +291,13 @@ mtk_wcn_wmt_therm_ctrl (
     return (INT8)pOpData->au4OpData[1];
 }
 
+#if WMT_EXP_HID_API_EXPORT
+ENUM_WMTHWVER_TYPE_T
+_mtk_wcn_wmt_hwver_get (VOID)
+#else
 ENUM_WMTHWVER_TYPE_T
 mtk_wcn_wmt_hwver_get (VOID)
+#endif
 {
     // TODO: [ChangeFeature][GeorgeKuo] Reconsider usage of this type
     // TODO: how do we extend for new chip and newer revision?
@@ -279,10 +305,17 @@ mtk_wcn_wmt_hwver_get (VOID)
     return wmt_lib_get_icinfo(WMTCHIN_MAPPINGHWVER);
 }
 
+#if WMT_EXP_HID_API_EXPORT
+MTK_WCN_BOOL
+_mtk_wcn_wmt_dsns_ctrl (
+    ENUM_WMTDSNS_TYPE_T eType
+    )
+#else
 MTK_WCN_BOOL
 mtk_wcn_wmt_dsns_ctrl (
     ENUM_WMTDSNS_TYPE_T eType
     )
+#endif
 {
     P_OSAL_OP pOp;
     P_WMT_OP pOpData;
@@ -344,45 +377,82 @@ mtk_wcn_wmt_dsns_ctrl (
     return bRet;
 }
 
+#if WMT_EXP_HID_API_EXPORT
+INT32
+_mtk_wcn_wmt_msgcb_reg (
+    ENUM_WMTDRV_TYPE_T eType,
+    PF_WMT_CB pCb
+    )
+#else
 INT32
 mtk_wcn_wmt_msgcb_reg (
     ENUM_WMTDRV_TYPE_T eType,
     PF_WMT_CB pCb
     )
+#endif
 {
     return (INT32)wmt_lib_msgcb_reg(eType, pCb);
 }
 
+#if WMT_EXP_HID_API_EXPORT
+INT32
+_mtk_wcn_wmt_msgcb_unreg (
+    ENUM_WMTDRV_TYPE_T eType
+    )
+
+#else
 INT32
 mtk_wcn_wmt_msgcb_unreg (
     ENUM_WMTDRV_TYPE_T eType
     )
+#endif
 {
     return (INT32)wmt_lib_msgcb_unreg(eType);
 }
 
+#if WMT_EXP_HID_API_EXPORT
+INT32
+_mtk_wcn_stp_wmt_sdio_op_reg (
+    PF_WMT_SDIO_PSOP own_cb
+    )
+
+#else
 INT32
 mtk_wcn_stp_wmt_sdio_op_reg (
     PF_WMT_SDIO_PSOP own_cb
     )
+#endif
 {
     wmt_lib_ps_set_sdio_psop(own_cb);
     return 0;
 }
 
-
+#if WMT_EXP_HID_API_EXPORT
+INT32 
+_mtk_wcn_stp_wmt_sdio_host_awake(
+    VOID
+    )
+#else
 INT32 
 mtk_wcn_stp_wmt_sdio_host_awake(
     VOID
     )
+#endif
 {    
     wmt_lib_ps_irq_cb();
     return 0;
 }
 
+#if WMT_EXP_HID_API_EXPORT
+MTK_WCN_BOOL _mtk_wcn_wmt_assert (ENUM_WMTDRV_TYPE_T type,
+    UINT32 reason
+    )
+
+#else
 MTK_WCN_BOOL mtk_wcn_wmt_assert (ENUM_WMTDRV_TYPE_T type,
     UINT32 reason
     )
+#endif
 {
     P_OSAL_OP pOp = NULL;
     MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
@@ -487,16 +557,16 @@ VOID mtk_wcn_wmt_exp_init()
 {
 	MTK_WCN_WMT_EXP_CB_INFO wmtExpCb = {
 		
-	.wmt_func_on_cb				= mtk_wcn_wmt_func_on,
-	.wmt_func_off_cb			= mtk_wcn_wmt_func_off,
-	.wmt_therm_ctrl_cb			= mtk_wcn_wmt_therm_ctrl,
-	.wmt_hwver_get_cb			= mtk_wcn_wmt_hwver_get,
-	.wmt_dsns_ctrl_cb			= mtk_wcn_wmt_dsns_ctrl,
-	.wmt_msgcb_reg_cb			= mtk_wcn_wmt_msgcb_reg,
-	.wmt_msgcb_unreg_cb			= mtk_wcn_wmt_msgcb_unreg,
-	.wmt_sdio_op_reg_cb			= mtk_wcn_stp_wmt_sdio_op_reg,
-	.wmt_sdio_host_awake_cb		= mtk_wcn_stp_wmt_sdio_host_awake,
-	.wmt_assert_cb				= mtk_wcn_wmt_assert
+	.wmt_func_on_cb				= _mtk_wcn_wmt_func_on,
+	.wmt_func_off_cb			= _mtk_wcn_wmt_func_off,
+	.wmt_therm_ctrl_cb			= _mtk_wcn_wmt_therm_ctrl,
+	.wmt_hwver_get_cb			= _mtk_wcn_wmt_hwver_get,
+	.wmt_dsns_ctrl_cb			= _mtk_wcn_wmt_dsns_ctrl,
+	.wmt_msgcb_reg_cb			= _mtk_wcn_wmt_msgcb_reg,
+	.wmt_msgcb_unreg_cb			= _mtk_wcn_wmt_msgcb_unreg,
+	.wmt_sdio_op_reg_cb			= _mtk_wcn_stp_wmt_sdio_op_reg,
+	.wmt_sdio_host_awake_cb		= _mtk_wcn_stp_wmt_sdio_host_awake,
+	.wmt_assert_cb				= _mtk_wcn_wmt_assert
 	};
 
 	mtk_wcn_wmt_exp_cb_reg(&wmtExpCb);

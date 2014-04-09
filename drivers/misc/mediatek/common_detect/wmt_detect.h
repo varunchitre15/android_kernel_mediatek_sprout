@@ -34,6 +34,11 @@
 *                              C O N S T A N T S
 ********************************************************************************
 */
+#ifdef MTK_WCN_REMOVE_KERNEL_MODULE
+#define MTK_WCN_REMOVE_KO 1
+#else
+#define MTK_WCN_REMOVE_KO 0
+#endif
 
 #include "sdio_detect.h"
 #include "wmt_detect_pwr.h"
@@ -55,14 +60,25 @@ extern unsigned int gWmtDetectDbgLvl;
 #define WMT_DETECT_ERR_FUNC(fmt, arg...)    if (gWmtDetectDbgLvl >= WMT_DETECT_LOG_ERR) { printk(KERN_WARNING DFT_TAG"[E]%s(%d):"  fmt, __FUNCTION__ , __LINE__, ##arg);}
 
 #define WMT_IOC_MAGIC        		'w'
-#define COMBO_IOCTL_GET_CHIP_ID  	_IOR(WMT_IOC_MAGIC, 0, int)
-#define COMBO_IOCTL_SET_CHIP_ID  	_IOW(WMT_IOC_MAGIC, 1, int)
-#define COMBO_IOCTL_EXT_CHIP_DETECT _IOR(WMT_IOC_MAGIC, 2, int)
-#define COMBO_IOCTL_GET_SOC_CHIP_ID  	_IOR(WMT_IOC_MAGIC, 3, int)
+#define COMBO_IOCTL_GET_CHIP_ID  	  _IOR(WMT_IOC_MAGIC, 0, int)
+#define COMBO_IOCTL_SET_CHIP_ID  	  _IOW(WMT_IOC_MAGIC, 1, int)
+#define COMBO_IOCTL_EXT_CHIP_DETECT   _IOR(WMT_IOC_MAGIC, 2, int)
+#define COMBO_IOCTL_GET_SOC_CHIP_ID   _IOR(WMT_IOC_MAGIC, 3, int)
+#define COMBO_IOCTL_DO_MODULE_INIT    _IOR(WMT_IOC_MAGIC, 4, int)
+#define COMBO_IOCTL_MODULE_CLEANUP    _IOR(WMT_IOC_MAGIC, 5, int)
+#define COMBO_IOCTL_EXT_CHIP_PWR_ON   _IOR(WMT_IOC_MAGIC, 6, int)
+#define COMBO_IOCTL_EXT_CHIP_PWR_OFF  _IOR(WMT_IOC_MAGIC, 7, int)
+#define COMBO_IOCTL_DO_SDIO_AUDOK     _IOR(WMT_IOC_MAGIC, 8, int)
+
+
+
+
 
 typedef unsigned int UINT32;
 /*******************************************************************************
 *                   F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************/
 extern int wmt_detect_ext_chip_detect(void);
+extern int wmt_detect_ext_chip_pwr_on(void);
+extern int wmt_detect_ext_chip_pwr_off(void);
 #endif

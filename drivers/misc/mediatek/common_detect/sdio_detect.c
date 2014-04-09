@@ -19,7 +19,12 @@
 
 #include "wmt_detect.h"
 
+#if MTK_HIF_SDIO_AUTOK_ENABLED
+#include <mach/mt_boot.h>
+#endif
+
 unsigned int gComboChipId = -1;
+struct sdio_func *g_func = NULL;
 
 MTK_WCN_HIF_SDIO_CHIP_INFO gChipInfoArray[] = {
     /* MT6620 */ /* Not an SDIO standard class device */
@@ -160,11 +165,6 @@ int sdio_detect_query_chipid(int waitFlag)
 	if (0 <= hif_sdio_is_chipid_valid(gComboChipId))
 		return gComboChipId;
 	
-	//wmt_plat_sdio_ctrl(WMT_SDIO_SLOT_SDIO1, FUNC_ON);
-	if (0 != wmt_detect_sdio_pwr_ctrl(1))
-	{
-		return -1;
-	}
 	while (counter < maxTimeSlot)
 	{
 		if (0 <= hif_sdio_is_chipid_valid(gComboChipId))
@@ -173,13 +173,48 @@ int sdio_detect_query_chipid(int waitFlag)
 		counter++;
 	}
 	
-	//wmt_plat_sdio_ctrl(WMT_SDIO_SLOT_SDIO1, FUNC_OFF);
-	wmt_detect_sdio_pwr_ctrl(0);
-	
 	return gComboChipId;
 }
 
-
+int sdio_detect_do_autok(int chipId)
+{
+#if MTK_HIF_SDIO_AUTOK_ENABLED
+	BOOTMODE boot_mode;
+	
+	boot_mode = get_boot_mode();
+	
+	if (boot_mode == META_BOOT)
+	{
+		WMT_DETECT_INFO_FUNC("omit autok in meta mode\n");
+		return 0;
+	}
+	
+	if (0x6630 == chipId)
+    {
+        #ifdef CONFIG_SDIOAUTOK_SUPPORT
+        if (NULL!= g_func)
+        {
+            WMT_DETECT_INFO_FUNC("wait_sdio_autok_ready++\n");
+            wait_sdio_autok_ready(g_func->card->host);
+            WMT_DETECT_INFO_FUNC("wait_sdio_autok_ready--\n");
+        }
+        else
+        {
+            WMT_DETECT_INFO_FUNC("g_func NULL, omit autok\n");
+        }
+        #else
+        WMT_DETECT_INFO_FUNC("MTK_SDIOAUTOK_SUPPORT not defined\n");
+        #endif
+    }
+    else
+	{
+		WMT_DETECT_INFO_FUNC("MT%x does not support SDIO3.0 autoK is not needed\n", chipId);
+	}
+#else
+	WMT_DETECT_INFO_FUNC("MTK_HIF_SDIO_AUTOK_ENABLED is not defined\n");
+#endif
+	return 0;
+}
 
 
 /*!
@@ -199,8 +234,24 @@ static int sdio_detect_probe (
     const struct sdio_device_id *id
     )
 {
+	int chipId = 0;
 	WMT_DETECT_INFO_FUNC("vendor(0x%x) device(0x%x) num(0x%x)\n", func->vendor, func->device, func->num);
-	hif_sdio_match_chipid_by_dev_id(id);
+	chipId = hif_sdio_match_chipid_by_dev_id(id);
+	
+	if ((0x6630 == chipId) && (1 == func->num))
+	{
+		int ret = 0;
+		g_func = func;
+		WMT_DETECT_INFO_FUNC("autok function detected, func:0x%p\n", g_func);
+		
+		sdio_claim_host(func);
+    ret = sdio_enable_func(func);
+    sdio_release_host(func);
+    if (ret) {
+        WMT_DETECT_ERR_FUNC("sdio_enable_func failed!\n");
+    }
+	}
+	
 	return 0;
 }
 
@@ -209,6 +260,14 @@ static void sdio_detect_remove (
     struct sdio_func *func
     )
 {
+	if (g_func == func)
+	{
+		sdio_claim_host(func);
+    sdio_disable_func(func);
+    sdio_release_host(func);
+		g_func = NULL;
+	}
+	WMT_DETECT_INFO_FUNC("do sdio remove\n");
 	return ;
 }
 
@@ -226,8 +285,10 @@ int sdio_detect_init(void)
 
 int sdio_detect_exit(void)
 {
+	g_func = NULL;
 	//register to mmc driver
 	sdio_unregister_driver(&mtk_sdio_client_drv);
+	WMT_DETECT_INFO_FUNC("sdio_unregister_driver\n");
 	return 0;
 }
 

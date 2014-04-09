@@ -45,6 +45,13 @@
 
 #ifdef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 
+#if (WMT_PLAT_ALPS)
+#define CFG_WMT_LTE_COEX_HANDLING 0
+#else
+#define CFG_WMT_LTE_COEX_HANDLING 0
+#endif
+
+
 /*from stp_exp.h*/
 #define BT_TASK_INDX        (0)
 #define FM_TASK_INDX        (1)
@@ -54,7 +61,12 @@
 #define STP_TASK_INDX       (5)
 #define INFO_TASK_INDX      (6)
 #define ANT_TASK_INDX       (7)
-#define MTKSTP_MAX_TASK_NUM (8)
+#if CFG_WMT_LTE_COEX_HANDLING
+#define COEX_TASK_INDX		(8)
+#define MTKSTP_MAX_TASK_NUM (9)
+#else
+#define MTKSTP_MAX_TASK_NUM	(8)
+#endif
 
 #define MTKSTP_BUFFER_SIZE  (16384) //Size of RX Queue
 /*end from stp_exp.h*/
@@ -177,6 +189,17 @@ typedef enum _SDIO_PS_OP{
 } SDIO_PS_OP;
 
 typedef INT32 (*PF_WMT_SDIO_PSOP)(SDIO_PS_OP);
+
+
+typedef enum _ENUM_WMTCHIN_TYPE_T{
+   WMTCHIN_CHIPID = 0x0,
+   WMTCHIN_HWVER = WMTCHIN_CHIPID + 1,
+   WMTCHIN_MAPPINGHWVER = WMTCHIN_HWVER + 1,
+   WMTCHIN_FWVER = WMTCHIN_MAPPINGHWVER + 1,
+   WMTCHIN_MAX,
+   
+}ENUM_WMT_CHIPINFO_TYPE_T, *P_ENUM_WMT_CHIPINFO_TYPE_T;
+
 /*end moved from wmt_exp.h*/
 
 typedef MTK_WCN_BOOL (*MTK_WCN_WMT_FUNC_CTRL)(ENUM_WMTDRV_TYPE_T type);
@@ -188,6 +211,8 @@ typedef INT32 (*MTK_WCN_WMT_MSGCB_UNREG) (ENUM_WMTDRV_TYPE_T eType);
 typedef INT32 (*MTK_WCN_WMT_SDIO_OP_REG)(PF_WMT_SDIO_PSOP own_cb);
 typedef INT32 (*MTK_WCN_WMT_SDIO_HOST_AWAKE)(VOID);
 typedef MTK_WCN_BOOL(*MTK_WCN_WMT_ASSERT)(ENUM_WMTDRV_TYPE_T type,UINT32 reason);
+typedef UINT32 (*MTK_WCN_WMT_IC_INFO_GET) (ENUM_WMT_CHIPINFO_TYPE_T type);
+
 
 typedef struct _MTK_WCN_WMT_EXP_CB_INFO_{
 	MTK_WCN_WMT_FUNC_CTRL wmt_func_on_cb;
@@ -200,6 +225,7 @@ typedef struct _MTK_WCN_WMT_EXP_CB_INFO_{
 	MTK_WCN_WMT_SDIO_OP_REG wmt_sdio_op_reg_cb;
 	MTK_WCN_WMT_SDIO_HOST_AWAKE wmt_sdio_host_awake_cb;
 	MTK_WCN_WMT_ASSERT wmt_assert_cb;
+	MTK_WCN_WMT_IC_INFO_GET wmt_ic_info_get_cb;
 }MTK_WCN_WMT_EXP_CB_INFO,*P_MTK_WCN_WMT_EXP_CB_INFO;
 
 /*******************************************************************************
@@ -470,6 +496,20 @@ extern INT8 mtk_wcn_wmt_therm_ctrl (ENUM_WMTTHERM_TYPE_T eType);
 *  >=0: chip hw version; 0xff:error
 *****************************************************************************/
 extern ENUM_WMTHWVER_TYPE_T mtk_wcn_wmt_hwver_get (VOID);
+
+/*****************************************************************************
+* FUNCTION
+*  mtk_wcn_wmt_ic_info_get
+* DESCRIPTION
+*  get chip hardware version or f/w version
+* PARAMETERS
+*  type : which kind of information is needed
+* RETURNS
+*  f/w version or hw version information
+*****************************************************************************/
+extern UINT32
+mtk_wcn_wmt_ic_info_get (ENUM_WMT_CHIPINFO_TYPE_T type);
+
 
 /*****************************************************************************
 * FUNCTION

@@ -148,7 +148,6 @@ typedef enum _SDIO_PS_OP{
 
 typedef INT32 (*PF_WMT_SDIO_PSOP)(SDIO_PS_OP);
 
-#endif
 
 typedef enum _ENUM_WMTCHIN_TYPE_T{
    WMTCHIN_CHIPID = 0x0,
@@ -159,6 +158,7 @@ typedef enum _ENUM_WMTCHIN_TYPE_T{
    
 }ENUM_WMT_CHIPINFO_TYPE_T, *P_ENUM_WMT_CHIPINFO_TYPE_T;
 
+#endif
 
 typedef enum _ENUM_WMTRSTMSG_TYPE_T{
     WMTRSTMSG_RESET_START = 0x0,
@@ -227,6 +227,9 @@ extern wmt_wlan_bus_cnt_clr_cb mtk_wcn_wlan_bus_tx_cnt_clr;
 */
 /*subsystem function ctrl APIs*/
 
+#ifndef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
+#define WMT_EXP_HID_API_EXPORT 0
+
 extern MTK_WCN_BOOL
 mtk_wcn_wmt_func_off (
     ENUM_WMTDRV_TYPE_T type
@@ -277,6 +280,9 @@ mtk_wcn_wmt_therm_ctrl (
 extern ENUM_WMTHWVER_TYPE_T
 mtk_wcn_wmt_hwver_get (VOID);
 
+#else
+#define WMT_EXP_HID_API_EXPORT 1
+#endif
 
 extern INT32 wmt_lib_set_aif (
     CMB_STUB_AIF_X aif,

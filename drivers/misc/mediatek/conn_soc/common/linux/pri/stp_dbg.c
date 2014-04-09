@@ -31,7 +31,6 @@
 #include <linux/zlib.h>
 #include <linux/uaccess.h>
 #include <linux/crc32.h>
-
 #include "stp_dbg.h"
 //#include "stp_btm.h"
 #include "btm_core.h"
@@ -59,7 +58,11 @@ MTKSTP_DBG_T *g_stp_dbg = NULL;
 
 #define STP_DBG_FAMILY_NAME        "STP_DBG"
 #define MAX_BIND_PROCESS    (4)
+#ifdef WMT_PLAT_ALPS
 #define STP_DBG_AEE_EXP_API (1)
+#else
+#define STP_DBG_AEE_EXP_API (0)
+#endif
 enum {
     __STP_DBG_ATTR_INVALID,
     STP_DBG_ATTR_MSG,
@@ -415,7 +418,6 @@ INT32 wcn_core_dump_flush(INT32 rst)
     //osal_dbg_assert_aee("MT662x f/w coredump end", "MT662x firmware coredump ends");
 #if STP_DBG_AEE_EXP_API
     aee_kernel_dal_show("++ SOC_CONSYS coredump get successfully ++\n");
-
     // call AEE driver API
     aed_combo_exception(NULL, 0, (const int*)pbuf, len, (const char*)g_core_dump->info);
 #endif   
@@ -1496,7 +1498,7 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times,UINT32 sleep,UINT32 cmd)
 			STP_DBG_INFO_FUNC("i:%d,cpupcr:%08x\n",i,wmt_plat_read_cpupcr());
 			//osal_memcpy(&g_stp_dbg_cpupcr->buffer[i],(UINT8*)(CONSYS_REG_READ(CONSYS_CPUPCR_REG)),osal_sizeof(UINT32));
 			g_stp_dbg_cpupcr->buffer[g_stp_dbg_cpupcr->count + i] = wmt_plat_read_cpupcr();
-			osal_msleep(sleep);
+			osal_sleep_ms(sleep);
 		}
 		g_stp_dbg_cpupcr->count += times;
 
@@ -1516,7 +1518,7 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times,UINT32 sleep,UINT32 cmd)
 			STP_DBG_INFO_FUNC("i:%d,cpupcr:%08x\n",i,wmt_plat_read_cpupcr());
 			//osal_memcpy(&g_stp_dbg_cpupcr->buffer[i],(UINT8*)(CONSYS_REG_READ(CONSYS_CPUPCR_REG)),osal_sizeof(UINT32));
 			g_stp_dbg_cpupcr->buffer[i] = wmt_plat_read_cpupcr();
-			osal_msleep(sleep);
+			osal_sleep_ms(sleep);
 		}
 		g_stp_dbg_cpupcr->count = times;
 
@@ -1761,6 +1763,8 @@ INT32 stp_dbg_cpupcr_infor_format(UINT8 **buf,UINT32 *str_len)
 		len += osal_sprintf(*buf + len,"<client>\n\t\t\t<task>%s</task>\n\t\t\t",_stp_dbg_id_to_task(g_stp_dbg_cpupcr->fwTaskId));
 		len += osal_sprintf(*buf + len,"<irqx>IRQ_0x%x</irqx>\n\t\t\t",g_stp_dbg_cpupcr->fwRrq);
 		len += osal_sprintf(*buf + len,"<isr>0x%x</isr>\n\t\t\t",g_stp_dbg_cpupcr->fwIsr);
+		len += osal_sprintf(*buf + len,"<drv_type>NULL</drv_type>\n\t\t\t");
+		len += osal_sprintf(*buf + len,"<reason>NULL</reason>\n\t\t\t");
 	}else if((STP_FW_ASSERT_ISSUE == g_stp_dbg_cpupcr->issue_type) ||
 		(STP_HOST_TRIGGER_FW_ASSERT == g_stp_dbg_cpupcr->issue_type))
 	{
@@ -1778,6 +1782,18 @@ INT32 stp_dbg_cpupcr_infor_format(UINT8 **buf,UINT32 *str_len)
 			len += osal_sprintf(*buf + len,"<irqx>IRQ_0x%x</irqx>\n\t\t\t",g_stp_dbg_cpupcr->fwRrq);
 		}
 		len += osal_sprintf(*buf + len,"<isr>0x%x</isr>\n\t\t\t",g_stp_dbg_cpupcr->fwIsr);
+
+		if(STP_FW_ASSERT_ISSUE == g_stp_dbg_cpupcr->issue_type)
+		{
+			len += osal_sprintf(*buf + len,"<drv_type>NULL</drv_type>\n\t\t\t");
+			len += osal_sprintf(*buf + len,"<reason>NULL</reason>\n\t\t\t");
+		}
+
+		if(STP_HOST_TRIGGER_FW_ASSERT == g_stp_dbg_cpupcr->issue_type)
+		{
+			len += osal_sprintf(*buf + len,"<drv_type>%d</drv_type>\n\t\t\t",g_stp_dbg_cpupcr->host_assert_info.drv_type);
+			len += osal_sprintf(*buf + len,"<reason>%d</reason>\n\t\t\t",g_stp_dbg_cpupcr->host_assert_info.reason);
+		}
 	}else
 	{
 		len += osal_sprintf(*buf + len,"NULL\n\t\t</classification>\n\t\t<rc>\n\t\t\t");
@@ -1787,6 +1803,8 @@ INT32 stp_dbg_cpupcr_infor_format(UINT8 **buf,UINT32 *str_len)
 		len += osal_sprintf(*buf + len,"<client>\n\t\t\t<task>NULL</task>\n\t\t\t");
 		len += osal_sprintf(*buf + len,"<irqx>NULL</irqx>\n\t\t\t");
 		len += osal_sprintf(*buf + len,"<isr>NULL</isr>\n\t\t\t");
+		len += osal_sprintf(*buf + len,"<drv_type>NULL</drv_type>\n\t\t\t");
+		len += osal_sprintf(*buf + len,"<reason>NULL</reason>\n\t\t\t");
 	}
 
 	len += osal_sprintf(*buf + len,"<pctrace>");

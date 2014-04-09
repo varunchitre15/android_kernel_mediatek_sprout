@@ -58,7 +58,7 @@ struct class * gps_class = NULL;
 struct device * gps_dev = NULL;
 #endif
 
-unsigned int gDbgLevel = GPS_LOG_DBG;
+static unsigned int gDbgLevel = GPS_LOG_DBG;
 
 #define GPS_DBG_FUNC(fmt, arg...)    if(gDbgLevel >= GPS_LOG_DBG){ printk(PFX "%s: "  fmt, __FUNCTION__ ,##arg);}
 #define GPS_INFO_FUNC(fmt, arg...)   if(gDbgLevel >= GPS_LOG_INFO){ printk(PFX "%s: "  fmt, __FUNCTION__ ,##arg);}
@@ -77,7 +77,7 @@ static unsigned char o_buf[MTKSTP_BUFFER_SIZE];    // output buffer of write()
 static struct semaphore wr_mtx, rd_mtx;
 static DECLARE_WAIT_QUEUE_HEAD(GPS_wq);
 static int flag = 0;
-volatile int retflag = 0;
+static volatile int retflag = 0;
 
 extern bool rtc_low_power_detected(void);
 
@@ -504,7 +504,28 @@ static void GPS_exit(void)
     printk(KERN_ALERT "%s driver removed.\n", GPS_DRIVER_NAME);
 }
 
+
+#ifdef MTK_WCN_REMOVE_KERNEL_MODULE
+	
+int mtk_wcn_stpgps_drv_init(void)
+{
+	return GPS_init();
+
+}
+
+void mtk_wcn_stpgps_drv_exit (void)
+{
+	return GPS_exit();
+}
+
+
+EXPORT_SYMBOL(mtk_wcn_stpgps_drv_init);
+EXPORT_SYMBOL(mtk_wcn_stpgps_drv_exit);
+#else
+	
 module_init(GPS_init);
 module_exit(GPS_exit);
+	
+#endif
 
 

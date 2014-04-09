@@ -45,9 +45,22 @@
 #define WMT_TASK_INDX       (4)
 #define STP_TASK_INDX       (5)
 #define INFO_TASK_INDX      (6)
-#define MTKSTP_MAX_TASK_NUM (7)
+#define ANT_TASK_INDX       (7)
+#if CFG_WMT_LTE_COEX_HANDLING
+#define COEX_TASK_INDX		(8)
+#define MTKSTP_MAX_TASK_NUM (9)
+#else
+#define MTKSTP_MAX_TASK_NUM	(8)
+#endif
 
 #define MTKSTP_BUFFER_SIZE  (16384) //Size of RX Queue
+
+#define STP_EXP_HID_API_EXPORT 0
+
+#else
+
+#define STP_EXP_HID_API_EXPORT 1
+
 #endif
 
 
@@ -97,6 +110,7 @@ typedef enum {
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
+#ifndef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 
 /*****************************************************************************
 * FUNCTION
@@ -228,6 +242,23 @@ extern int mtk_wcn_stp_register_if_rx(MTK_WCN_STP_IF_RX func);
 *                              F U N C T I O N S
 ********************************************************************************
 */
+
+#else
+extern INT32 _mtk_wcn_stp_receive_data(UINT8 *buffer, UINT32 length, UINT8 type);
+extern INT32 _mtk_wcn_stp_send_data_raw(const UINT8 *buffer, const UINT32 length, const UINT8 type);
+extern INT32 _mtk_wcn_stp_send_data(const UINT8 *buffer, const UINT32 length, const UINT8 type);
+extern MTK_WCN_BOOL _mtk_wcn_stp_is_rxqueue_empty(UINT8 type);
+extern MTK_WCN_BOOL _mtk_wcn_stp_is_ready(void);
+extern INT32 _mtk_wcn_stp_parser_data(UINT8 *buffer, UINT32 length);
+extern void _mtk_wcn_stp_set_bluez(MTK_WCN_BOOL sdio_flag);
+extern INT32 _mtk_wcn_stp_register_tx_event_cb(INT32 type, MTK_WCN_STP_EVENT_CB func);
+extern INT32 _mtk_wcn_stp_register_event_cb(INT32 type, MTK_WCN_STP_EVENT_CB func);
+extern INT32 _mtk_wcn_stp_register_if_tx(ENUM_STP_TX_IF_TYPE stp_if, MTK_WCN_STP_IF_TX func);
+extern INT32 _mtk_wcn_stp_register_if_rx(MTK_WCN_STP_IF_RX func);
+extern INT32 _mtk_wcn_stp_coredump_start_get(VOID);
+
+#endif
+
 
 #endif /* _WMT_EXP_H_ */
 

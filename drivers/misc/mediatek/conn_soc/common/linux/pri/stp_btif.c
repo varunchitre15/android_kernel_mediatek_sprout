@@ -173,7 +173,7 @@ INT32 mtk_wcn_consys_stp_btif_tx(const UINT8 *pBuf,const UINT32 len,UINT32 *writ
 	}
 
 	while((retry_left--)&&(wr_count < len)){
-		osal_msleep(STP_BTIF_TX_RTY_DLY);
+		osal_sleep_ms(STP_BTIF_TX_RTY_DLY);
 		written = mtk_wcn_btif_write(stpBtifId, pBuf + wr_count, len - wr_count);
 		if(written < 0)
 		{

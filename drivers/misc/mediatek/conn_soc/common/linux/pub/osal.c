@@ -1225,7 +1225,7 @@ INT32 osal_sleepable_lock_deinit (P_OSAL_SLEEPABLE_LOCK pSL)
     return 0;
 }
 
-INT32 osal_msleep(UINT32 ms)
+INT32 osal_sleep_ms(UINT32 ms)
 {
     msleep(ms);
     return 0;

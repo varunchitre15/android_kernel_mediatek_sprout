@@ -150,6 +150,9 @@ static INT32 opfunc_pin_state (P_WMT_OP pWmtOp);
 static INT32 opfunc_bgw_ds(P_WMT_OP pWmtOp);
 static INT32 opfunc_set_mcu_clk(P_WMT_OP pWmtOp);
 static INT32 opfunc_adie_lpbk_test(P_WMT_OP pWmtOp);
+#if CFG_WMT_LTE_COEX_HANDLING
+static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp);
+#endif
 static VOID wmt_core_dump_func_state (CHAR *pSource);
 static INT32 wmt_core_stp_init (VOID);
 static INT32 wmt_core_stp_deinit (VOID);
@@ -254,6 +257,9 @@ const static WMT_OPID_FUNC wmt_core_opfunc[] = {
     [WMT_OPID_BGW_DS] = opfunc_bgw_ds,
     [WMT_OPID_SET_MCU_CLK] = opfunc_set_mcu_clk,
     [WMT_OPID_ADIE_LPBK_TEST] = opfunc_adie_lpbk_test,
+#if CFG_WMT_LTE_COEX_HANDLING
+    [WMT_OPID_IDC_MSG_HANDLING] = opfunc_idc_msg_handling,
+#endif
 };
 
 /*******************************************************************************
@@ -321,7 +327,7 @@ wmt_core_tx (
 		while ((0 == *writtenSize) && (retry_times < max_retry_times))
 		{
 			WMT_ERR_FUNC("WMT-CORE: retrying, wait for %d ms\n", retry_delay_ms);
-			osal_msleep(retry_delay_ms);
+			osal_sleep_ms(retry_delay_ms);
 			
 			iRet = wmt_ctrl_tx_ex(pData, size, writtenSize, bRawFlag);
 			retry_times++;
@@ -835,6 +841,8 @@ wmt_core_hw_check (VOID)
 	case 0x6572:
 	case 0x6582:
 	case 0x6592:
+	case 0x8127:
+	case 0x6571:
 		p_ops = &wmt_ic_ops_soc;
 		break;
 #endif
@@ -1241,11 +1249,12 @@ typedef INT32 (*STP_PSM_CB)(INT32);
         ret = wmt_core_rx(evt_buf, evt_len, &u4_result);
         if (ret || (u4_result != evt_len))
         {
-            UINT32 ctrlpa = WMTDRV_TYPE_WMT;
+            UINT32 ctrlpa1 = WMTDRV_TYPE_WMT;
+			UINT32 ctrlpa2 = 33;
             wmt_core_rx_flush(WMT_TASK_INDX);
             WMT_ERR_FUNC("wmt_core: read SLEEP_EVT fail(%d) len(%d, %d)", ret, u4_result, evt_len);
             mtk_wcn_stp_dbg_dump_package();
-			wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT,&ctrlpa,0);
+			wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT,&ctrlpa1,&ctrlpa2);
             goto pwr_sv_done;
         }
 
@@ -1290,10 +1299,11 @@ typedef INT32 (*STP_PSM_CB)(INT32);
         ret = wmt_core_rx(evt_buf, evt_len, &u4_result);
         if (ret || (u4_result != evt_len))
         {
-            UINT32 ctrlpa = WMTDRV_TYPE_WMT;
+            UINT32 ctrlpa1 = WMTDRV_TYPE_WMT;
+			UINT32 ctrlpa2 = 34;
             WMT_ERR_FUNC("wmt_core: read WAKEUP_EVT fail(%d) len(%d, %d)", ret, u4_result, evt_len);
             mtk_wcn_stp_dbg_dump_package();
-			wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT,&ctrlpa,0);
+			wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT,&ctrlpa1,&ctrlpa2);
             goto pwr_sv_done;
         }
 
@@ -1329,11 +1339,12 @@ typedef INT32 (*STP_PSM_CB)(INT32);
         ret = wmt_core_rx(evt_buf, evt_len, &u4_result);
         if (ret || (u4_result != evt_len))
         {
-        	UINT32 ctrlpa = WMTDRV_TYPE_WMT;
+        	UINT32 ctrlpa1 = WMTDRV_TYPE_WMT;
+			UINT32 ctrlpa2 = 35;
             wmt_core_rx_flush(WMT_TASK_INDX);
             WMT_ERR_FUNC("wmt_core: read HOST_AWAKE_EVT fail(%d) len(%d, %d)", ret, u4_result, evt_len);
             mtk_wcn_stp_dbg_dump_package();
-			wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT,&ctrlpa,0);
+			wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT,&ctrlpa1,&ctrlpa2);
             goto pwr_sv_done;
         }
 
@@ -2186,8 +2197,92 @@ static INT32 opfunc_adie_lpbk_test(P_WMT_OP pWmtOp)
 	return fgFail;
 }
 
+#if CFG_WMT_LTE_COEX_HANDLING
+static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp)
+{
+	MTK_WCN_BOOL fgFail;
+	UINT32 u4Res;
+    UCHAR host_lte_btwf_coex_cmd[] = {0x01, 0x10, 0x00, 0x00, 0x00};
+    UCHAR host_lte_btwf_coex_evt[] = {0x02, 0x10, 0x01, 0x00, 0x00};
+    ipc_ilm_t *pTxBuf = NULL;
+	UINT8 msg_local_buffer[1300] = {0};
+	UINT8 evtbuf[8] = {0};
+	INT32 iRet = -1;
+	UINT16 msg_len = 0;
+	UINT32 total_len = 0;
+	UINT32 index = 0;
+
+	pTxBuf = (ipc_ilm_t *)pWmtOp->au4OpData[0];
+	if(NULL == pTxBuf)
+	{
+		WMT_ERR_FUNC("idc msg buffer is NULL\n");
+		return -1;
+	}else
+	{
+		msg_len = pTxBuf->local_para_ptr->msg_len - osal_sizeof(local_para_struct);
+		if(msg_len > 1200)
+		{
+			WMT_ERR_FUNC("abnormal idc msg len:%d\n",msg_len);
+			return -2;
+		}
+		msg_len += 1;/*flag byte*/
+
+		osal_memcpy(&host_lte_btwf_coex_cmd[2],&msg_len,2);
+		host_lte_btwf_coex_cmd[4] = (pWmtOp->au4OpData[1] & 0x00ff);
+		osal_memcpy(&msg_local_buffer[0],&host_lte_btwf_coex_cmd[0],osal_sizeof(host_lte_btwf_coex_cmd));
+		osal_memcpy(&msg_local_buffer[osal_sizeof(host_lte_btwf_coex_cmd)],
+			&(pTxBuf->local_para_ptr->data[0]),msg_len - 1);
+
+		total_len = osal_sizeof(host_lte_btwf_coex_cmd) + msg_len - 1;
+
+		WMT_INFO_FUNC("wmt_core:idc msg payload len form lte(%d),wmt msg total len(%d)\n",msg_len-1,total_len);
+		WMT_INFO_FUNC("wmt_core:idc msg payload:\n");
+		for(index = 0;index < total_len;index ++)
+		{
+			WMT_INFO_FUNC("0x%02x ",msg_local_buffer[index]);
+		}
+	}
+	
+	do{
+		fgFail = MTK_WCN_BOOL_TRUE;
+
+        /* read A die chipid by wmt cmd */
+    	iRet = wmt_core_tx((PUINT8)&msg_local_buffer[0], total_len, &u4Res, MTK_WCN_BOOL_FALSE);
+    	if (iRet || (u4Res != total_len)) {
+    		WMT_ERR_FUNC("wmt_core:send lte idc msg to connsys fail(%d),size(%d)\n", iRet, u4Res);
+            break;
+    	}
+    	osal_memset(evtbuf, 0, osal_sizeof(evtbuf));
+    	iRet = wmt_core_rx(evtbuf,osal_sizeof(host_lte_btwf_coex_evt), &u4Res);
+    	if (iRet || (u4Res != osal_sizeof(host_lte_btwf_coex_evt))) {
+    		WMT_ERR_FUNC("wmt_core:recv host_lte_btwf_coex_evt fail(%d),size(%d)\n", iRet, u4Res);
+            break;
+    	}
+
+		fgFail = MTK_WCN_BOOL_FALSE;
+
+	}while(0);
+
+	return fgFail;
+}
+#endif
+
 VOID wmt_core_set_coredump_state(ENUM_DRV_STS state)
 {
 	WMT_INFO_FUNC("wmt-core: set coredump state(%d)\n",state);
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_COREDUMP] = state;
 }
+
+#if CFG_WMT_LTE_COEX_HANDLING
+/*TEST CODE*/
+static UINT32 g_open_wmt_lte_flag = 0;
+VOID wmt_core_set_flag_for_test(UINT32 enable)
+{	
+	WMT_INFO_FUNC("%s wmt_lte_flag\n",enable ? "enable" : "disable");
+	g_open_wmt_lte_flag = enable;
+}
+UINT32 wmt_core_get_flag_for_test(VOID)
+{
+	return g_open_wmt_lte_flag;
+}
+#endif

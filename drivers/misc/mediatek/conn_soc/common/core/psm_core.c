@@ -402,7 +402,8 @@ static INT32 _stp_psm_put_op (
     }
     
     osal_unlock_unsleepable_lock(&(stp_psm->wq_spinlock));
-
+	STP_PSM_DBG_FUNC("stp_psm do unlock,active queue? (%s)\n",(pOpQ == &stp_psm->rActiveOpQ)? "y" : "n");
+	
     if (ret) 
     {
         STP_PSM_WARN_FUNC("RB_FULL, RB_COUNT=%d , RB_SIZE=%d\n",RB_COUNT(pOpQ), RB_SIZE(pOpQ));
@@ -1450,7 +1451,7 @@ static inline INT32  _stp_psm_do_wait(MTKSTP_PSM_T *stp_psm, MTKSTP_PSM_STATE_T 
 
      while(_stp_psm_get_state(stp_psm)!=state && i < limit)
      {
-        osal_msleep(POLL_WAIT);
+        osal_sleep_ms(POLL_WAIT);
         i++;
         STP_PSM_INFO_FUNC("STP is waiting state for %s, i=%d, state = %d\n", g_psm_state[state],i , _stp_psm_get_state(stp_psm));
      }

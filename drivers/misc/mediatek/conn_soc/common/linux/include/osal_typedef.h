@@ -47,6 +47,7 @@
 #include <linux/jiffies.h>
 #include <linux/slab.h>
 #include <linux/err.h>
+#include <linux/earlysuspend.h>
 #ifdef WMT_PLAT_ALPS
 #include <linux/aee.h>
 #endif

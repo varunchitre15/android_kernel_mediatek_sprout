@@ -24,6 +24,7 @@
 #define _WMT_PLAT_H_
 #include "osal_typedef.h"
 #include <mach/mtk_wcn_cmb_stub.h>
+
 //#include "mtk_wcn_consys_hw.h"
 
 
@@ -64,6 +65,7 @@ extern UINT32 wmtPlatLogLvl;
 #define CFG_WMT_DUMP_INT_STATUS 0
 #define CONSYS_ENALBE_SET_JTAG 1
 #define CONSYS_WMT_REG_SUSPEND_CB_ENABLE 0
+#define CFG_WMT_LTE_COEX_HANDLING 0
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -87,6 +89,9 @@ typedef enum _ENUM_PIN_ID_{
     PIN_I2S_GRP = 1,
     PIN_GPS_SYNC = 2,
     PIN_GPS_LNA = 3,
+#if CFG_WMT_LTE_COEX_HANDLING
+    PIN_TDM_REQ = 4,
+#endif
     PIN_ID_MAX
 } ENUM_PIN_ID, *P_ENUM_PIN_ID;
 
@@ -187,6 +192,12 @@ typedef struct _CONSYS_EMI_ADDR_INFO_{
 	P_EMI_CTRL_STATE_OFFSET p_emi_ctrl_state_offset;
 }CONSYS_EMI_ADDR_INFO,*P_CONSYS_EMI_ADDR_INFO;
 
+typedef struct _GPIO_TDM_REQ_INFO_{
+	UINT32 ant_sel_index;
+	UINT32 gpio_number;
+	UINT32 cr_address;
+}GPIO_TDM_REQ_INFO,*P_GPIO_TDM_REQ_INFO;
+
 typedef VOID (*irq_cb)(VOID);
 typedef INT32 (*device_audio_if_cb) (CMB_STUB_AIF_X aif, MTK_WCN_BOOL share);
 typedef VOID (*func_ctrl_cb)(UINT32 on,UINT32 type);
@@ -277,6 +288,9 @@ UINT32 wmt_plat_force_trigger_assert(ENUM_FORCE_TRG_ASSERT_T type);
 INT32 wmt_plat_update_host_sync_num(VOID);
 INT32 wmt_plat_get_dump_info(UINT32 offset);
 UINT32 wmt_plat_get_soc_chipid(VOID);
+#if CFG_WMT_LTE_COEX_HANDLING
+INT32 wmt_plat_get_tdm_antsel_index(VOID);
+#endif
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

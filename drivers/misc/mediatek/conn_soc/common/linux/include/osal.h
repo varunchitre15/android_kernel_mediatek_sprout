@@ -262,7 +262,7 @@ extern VOID* osal_memset(VOID *buf, INT32 i, UINT32 len);
 extern VOID* osal_memcpy(VOID *dst, const VOID *src, UINT32 len);
 extern INT32 osal_memcmp(const VOID *buf1, const VOID *buf2, UINT32 len);
 
-extern INT32 osal_msleep(UINT32 ms);
+extern INT32 osal_sleep_ms(UINT32 ms);
 extern INT32 osal_udelay(UINT32 us);
 extern INT32 osal_timer_create(P_OSAL_TIMER);
 extern INT32 osal_timer_start(P_OSAL_TIMER, UINT32);

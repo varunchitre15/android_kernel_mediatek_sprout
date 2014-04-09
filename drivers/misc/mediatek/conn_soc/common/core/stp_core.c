@@ -33,12 +33,15 @@ UINT32 gStpDbgLvl = STP_LOG_INFO;
 
 #define STP_POLL_CPUPCR_NUM 16
 #define STP_POLL_CPUPCR_DELAY 10
+#define STP_RETRY_OPTIMIZE 0
 
 /* global variables */
 static const UINT8       stp_delimiter[STP_DEL_SIZE] = {0x55, 0x55};
 static INT32             fgEnableNak         = 0; // 0=enable NAK; 1=disable NAK
 static INT32             fgEnableDelimiter   = 0; // 0=disable Delimiter; 1=enable Delimiter
+#if STP_RETRY_OPTIMIZE
 static UINT32 		     g_retry_times = 0;
+#endif
 /* common interface */
 static IF_TX            sys_if_tx           = NULL;
 /* event/signal */
@@ -386,21 +389,27 @@ VOID stp_do_tx_timeout(VOID)
     //osal_lock_unsleepable_lock(&stp_core_ctx.stp_mutex);
     stp_ctx_lock(&stp_core_ctx);
 
+#if STP_RETRY_OPTIMIZE
 	if((g_retry_times != 0) && (stp_core_ctx.sequence.retry_times == 0))
 	{
 		STP_INFO_FUNC("STP TX timeout has been recoveryed by resend,record_retry_time(%d)\n",g_retry_times);
 		g_retry_times = 0;
 		stp_ctx_unlock(&stp_core_ctx);
 		return;
-	}else if(stp_core_ctx.sequence.retry_times > (MTKSTP_RETRY_LIMIT))
+	}else 
+#endif
+	if(stp_core_ctx.sequence.retry_times > (MTKSTP_RETRY_LIMIT))
 	{
 		STP_INFO_FUNC("STP retry times(%d) have reached retry limit,stop it\n",stp_core_ctx.sequence.retry_times);
 		stp_ctx_unlock(&stp_core_ctx);
 		return;
-	}else
+	}
+#if STP_RETRY_OPTIMIZE
+	else
 	{
 		STP_DBG_FUNC("current TX timeout package has not received ACK yet,retry_times(%d)\n",g_retry_times);
 	}
+#endif
 	/*polling cpupcr when no ack occurs at first retry*/
 	stp_notify_btm_poll_cpupcr(STP_BTM_CORE(stp_core_ctx),STP_POLL_CPUPCR_NUM,STP_POLL_CPUPCR_DELAY);
 
@@ -445,13 +454,16 @@ VOID stp_do_tx_timeout(VOID)
     {
         stp_core_ctx.sequence.retry_times++;
         STP_ERR_FUNC("mtkstp_tx_timeout_handler, retry = %d\n", stp_core_ctx.sequence.retry_times);
+#if STP_RETRY_OPTIMIZE
 		g_retry_times = stp_core_ctx.sequence.retry_times;
-		
+#endif		
         /*If retry too much, try to recover STP by return back to initializatin state*/
         /*And not to retry again*/
         if (stp_core_ctx.sequence.retry_times > MTKSTP_RETRY_LIMIT)
         {
+#if STP_RETRY_OPTIMIZE
         	g_retry_times = 0;
+#endif
             osal_timer_stop(&stp_core_ctx.tx_timer);
 			stp_ctx_unlock(&stp_core_ctx);
 
@@ -468,6 +480,8 @@ VOID stp_do_tx_timeout(VOID)
             	{
 	            	stp_psm_disable(STP_PSM_CORE(stp_core_ctx));
 					mtk_wcn_stp_set_wmt_evt_err_trg_assert(1);
+					stp_dbg_set_host_assert_info(4, 36, 1);
+					STP_INFO_FUNC("**STP NoAck trigger firmware assert**\n");
 	            	iRet = stp_notify_btm_do_fw_assert_via_emi(STP_BTM_CORE(stp_core_ctx));
 
 					if(iRet)
@@ -1061,6 +1075,7 @@ static VOID stp_process_packet(VOID)
     MTK_WCN_BOOL b;
     MTK_WCN_BOOL is_function_active = 0;
     static INT32 stp_process_packet_fail_count = 0;
+	INT32 iRet = -1;
         
     stp_dbg_pkt_log(stp_core_ctx.parser.type,
         stp_core_ctx.parser.ack,
@@ -1126,9 +1141,28 @@ static VOID stp_process_packet(VOID)
             stp_send_ack(txAck, 0);
 
 			stp_ctx_unlock(&stp_core_ctx);
-
-            fgRxOk = stp_add_to_rx_queue(stp_core_ctx.rx_buf, stp_core_ctx.rx_counter, stp_core_ctx.parser.type);
-        }
+#if CFG_WMT_LTE_COEX_HANDLING
+			if((stp_core_ctx.parser.type == WMT_TASK_INDX) && 
+				(stp_core_ctx.parser.wmtsubtype == WMT_LTE_COEX_FLAG))
+			{
+            	fgRxOk = stp_add_to_rx_queue(stp_core_ctx.rx_buf, stp_core_ctx.rx_counter, COEX_TASK_INDX);			
+			}
+			else
+			{
+				fgRxOk = stp_add_to_rx_queue(stp_core_ctx.rx_buf, stp_core_ctx.rx_counter, stp_core_ctx.parser.type);
+			}
+#else
+			if((stp_core_ctx.parser.type == WMT_TASK_INDX) && 
+				(stp_core_ctx.parser.wmtsubtype == WMT_LTE_COEX_FLAG))
+			{
+            	STP_WARN_FUNC("BT/WIFI & LTE coex in non-LTE projects,drop it...\n");
+			}
+			else
+			{
+            	fgRxOk = stp_add_to_rx_queue(stp_core_ctx.rx_buf, stp_core_ctx.rx_counter, stp_core_ctx.parser.type);
+			}
+#endif
+		}
         else
         {
             if(is_function_active == MTK_WCN_BOOL_FALSE)
@@ -1159,7 +1193,36 @@ static VOID stp_process_packet(VOID)
         {
             stp_process_packet_fail_count = 0;
             /*notify corresponding subfunction of incoming data*/
-            (*sys_event_set)(stp_core_ctx.parser.type);
+#if CFG_WMT_LTE_COEX_HANDLING
+			if((stp_core_ctx.parser.type == WMT_TASK_INDX) && 
+				(stp_core_ctx.parser.wmtsubtype == WMT_LTE_COEX_FLAG))
+			{
+			#if 0
+				STP_INFO_FUNC("WMT/LTE package:[0x%2x][0x%2x][0x%2x][0x%2x][0x%2x][0x%2x][0x%2x][0x%2x]\n",
+					stp_core_ctx.rx_buf[0],stp_core_ctx.rx_buf[1],
+					stp_core_ctx.rx_buf[2],stp_core_ctx.rx_buf[3],
+					stp_core_ctx.rx_buf[4],stp_core_ctx.rx_buf[5],
+					stp_core_ctx.rx_buf[6],stp_core_ctx.rx_buf[7]);
+			#else
+				osal_buffer_dump(&stp_core_ctx.rx_buf[0],"WMT->LTE MSG",stp_core_ctx.rx_counter,MTKSTP_BUFFER_SIZE);
+			#endif
+				stp_notify_btm_handle_wmt_lte_coex(STP_BTM_CORE(stp_core_ctx));
+			}
+			else
+			{
+				(*sys_event_set)(stp_core_ctx.parser.type);
+			}
+#else
+			if((stp_core_ctx.parser.type == WMT_TASK_INDX) && 
+				(stp_core_ctx.parser.wmtsubtype == WMT_LTE_COEX_FLAG))
+			{
+				STP_WARN_FUNC("omit BT/WIFI & LTE coex msg handling in non-LTE projects\n");
+			}
+			else
+			{
+            	(*sys_event_set)(stp_core_ctx.parser.type);
+			}
+#endif
         }
         else
         {
@@ -1213,20 +1276,30 @@ static VOID stp_process_packet(VOID)
         mtk_wcn_stp_dbg_dump_package();                     
         /*Whole Chip Reset Procedure Invoke*/
         /*if(STP_NOT_ENABLE_DBG(stp_core_ctx))*/
+		if(0 == mtk_wcn_stp_get_wmt_evt_err_trg_assert())
         {
-            //(*sys_dbg_assert_aee)("[MT662x]Ack Miss", "**STP Ack Miss**\n Ack Miss.\n");
-            osal_dbg_assert_aee("[SOC_CONSYS]Ack Miss", "**[WCN_ISSUE_INFO]STP Ack Miss**\n Ack Miss.\n");
+	    	stp_psm_disable(STP_PSM_CORE(stp_core_ctx));
+			mtk_wcn_stp_set_wmt_evt_err_trg_assert(1);
+			stp_dbg_set_host_assert_info(4, 37, 1);
+			STP_INFO_FUNC("**Ack Miss trigger firmware assert**\n");
+	        iRet = stp_notify_btm_do_fw_assert_via_emi(STP_BTM_CORE(stp_core_ctx));
+			if(iRet)
+	        {
+	        	mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);
+	            //(*sys_dbg_assert_aee)("[MT662x]Ack Miss", "**STP Ack Miss**\n Ack Miss.\n");
+	            osal_dbg_assert_aee("[SOC_CONSYS]Ack Miss", "**[WCN_ISSUE_INFO]STP Ack Miss**\n Ack Miss.\n");
 
-            if(STP_IS_ENABLE_RST(stp_core_ctx))
-            {
-                STP_SET_READY(stp_core_ctx, 0);
-                stp_btm_notify_wmt_rst_wq(STP_BTM_CORE(stp_core_ctx));
-            }
-            else
-            {
-                STP_INFO_FUNC("No to launch whole chip reset! for debugging purpose\n");
-            }
-        }
+	            if(STP_IS_ENABLE_RST(stp_core_ctx))
+	            {
+	                STP_SET_READY(stp_core_ctx, 0);
+	                stp_btm_notify_wmt_rst_wq(STP_BTM_CORE(stp_core_ctx));
+	            }
+	            else
+	            {
+	                STP_INFO_FUNC("No to launch whole chip reset! for debugging purpose\n");
+	            }
+	        }
+		}
     }
 
     return;
@@ -1579,12 +1652,6 @@ INT32 mtk_wcn_stp_coredump_flag_get(VOID)
 }
 
 
-
-
-
-
-
-
 /*****************************************************************************
 * FUNCTION
 *  mtk_wcn_stp_parser_data
@@ -1596,7 +1663,11 @@ INT32 mtk_wcn_stp_coredump_flag_get(VOID)
 * RETURNS
 *  int            0 = sucess; -1 = crc/checksum error
 *****************************************************************************/
+#if STP_EXP_HID_API_EXPORT
+int _mtk_wcn_stp_parser_data(UINT8 *buffer, UINT32 length)
+#else
 int mtk_wcn_stp_parser_data(UINT8 *buffer, UINT32 length)
+#endif
 {
     /*----------------------------------------------------------------*/
     /* Local Variables                                                */
@@ -1814,7 +1885,13 @@ int mtk_wcn_stp_parser_data(UINT8 *buffer, UINT32 length)
                     break;
 
                 case MTKSTP_CRC2:
-
+                    #if 1
+					if(stp_core_ctx.parser.type == WMT_TASK_INDX)
+					{
+						stp_core_ctx.parser.wmtsubtype = stp_core_ctx.rx_buf[1];
+						STP_DBG_FUNC("wmt sub type (0x%x)\n",stp_core_ctx.parser.wmtsubtype);
+					}
+					#endif
                     /*SDIO mode do it.*/
                     if(mtk_wcn_stp_is_sdio_mode()){
                         /*STP packet 4-bytes alignment*/
@@ -1863,11 +1940,35 @@ int mtk_wcn_stp_parser_data(UINT8 *buffer, UINT32 length)
                         /*check type and function if active?*/
                         if((stp_core_ctx.parser.type < MTKSTP_MAX_TASK_NUM) && (is_function_active == MTK_WCN_BOOL_TRUE))
                         {
-                            stp_add_to_rx_queue(stp_core_ctx.rx_buf, stp_core_ctx.rx_counter, \
+                        #if CFG_WMT_LTE_COEX_HANDLING
+							if((stp_core_ctx.parser.type == WMT_TASK_INDX) && stp_core_ctx.parser.wmtsubtype == WMT_LTE_COEX_FLAG)
+							{
+								STP_INFO_FUNC("wmt/lte coex package!\n");
+								stp_add_to_rx_queue(stp_core_ctx.rx_buf, stp_core_ctx.rx_counter, COEX_TASK_INDX);
+								stp_notify_btm_handle_wmt_lte_coex(STP_BTM_CORE(stp_core_ctx));
+							}
+							else
+							{
+								stp_add_to_rx_queue(stp_core_ctx.rx_buf, stp_core_ctx.rx_counter, \
                                 stp_core_ctx.parser.type);
 
-                            /*notify corresponding subfunction of incoming data*/
-                            (*sys_event_set)(stp_core_ctx.parser.type);
+                            	/*notify corresponding subfunction of incoming data*/
+                            	(*sys_event_set)(stp_core_ctx.parser.type);
+							}
+						#else
+							if((stp_core_ctx.parser.type == WMT_TASK_INDX) && stp_core_ctx.parser.wmtsubtype == WMT_LTE_COEX_FLAG)
+							{
+								STP_WARN_FUNC("omit BT/WIFI & LTE coex msg handling in non-LTE projects\n");
+							}
+							else
+							{
+	                            stp_add_to_rx_queue(stp_core_ctx.rx_buf, stp_core_ctx.rx_counter, \
+	                                stp_core_ctx.parser.type);
+
+	                            /*notify corresponding subfunction of incoming data*/
+	                            (*sys_event_set)(stp_core_ctx.parser.type);
+							}
+						#endif
                         }
                         else
                         {
@@ -2247,6 +2348,13 @@ int mtk_wcn_stp_parser_data(UINT8 *buffer, UINT32 length)
                 case MTKSTP_CRC2:
                     stp_change_rx_state(MTKSTP_SYNC);
                     stp_core_ctx.parser.crc += (*p_data) << 8;
+                    #if 1
+					if(stp_core_ctx.parser.type == WMT_TASK_INDX)
+					{
+						stp_core_ctx.parser.wmtsubtype = stp_core_ctx.rx_buf[1];
+						STP_DBG_FUNC("wmt sub type is (0x%x)\n",stp_core_ctx.parser.wmtsubtype);
+					}
+					#endif
                     if (stp_check_crc(stp_core_ctx.rx_buf, stp_core_ctx.rx_counter, stp_core_ctx.parser.crc) == MTK_WCN_BOOL_TRUE)
                     {
                         if(stp_core_ctx.inband_rst_set == 0)
@@ -2538,7 +2646,11 @@ INT32 mtk_wcn_stp_coredump_start_ctrl(UINT32 value)
 * RETURNS
 *  INT32    0= f/w assert flag is not set, others=f/w assert flag is set
 *****************************************************************************/
+#if STP_EXP_HID_API_EXPORT
+INT32 _mtk_wcn_stp_coredump_start_get(VOID)
+#else
 INT32 mtk_wcn_stp_coredump_start_get(VOID)
+#endif
 {
     return STP_FW_COREDUMP_FLAG(stp_core_ctx);
 }
@@ -2571,12 +2683,17 @@ INT32 mtk_wcn_stp_set_wmt_last_close(UINT32 value)
 * RETURNS
 *  INT32    > 0: length transmitted; = 0: error
 *****************************************************************************/
+#if STP_EXP_HID_API_EXPORT
+INT32 _mtk_wcn_stp_send_data(const UINT8 *buffer, const UINT32 length, const UINT8 type)
+#else
 INT32 mtk_wcn_stp_send_data(const UINT8 *buffer, const UINT32 length, const UINT8 type)
+#endif
 {
     UINT8 mtkstp_header[MTKSTP_HEADER_SIZE], temp[2];
     UINT8 *p_tx_buf = NULL;
     UINT16 crc;
     INT32 ret = 0;
+	MTK_WCN_BOOL is_quick_enable = MTK_WCN_BOOL_TRUE;
 
     //osal_buffer_dump(buffer,"tx", length, 32);
 
@@ -2593,7 +2710,9 @@ INT32 mtk_wcn_stp_send_data(const UINT8 *buffer, const UINT32 length, const UINT
     }
 
 #ifdef CONFIG_POWER_SAVING_SUPPORT
-    if (MTK_WCN_BOOL_TRUE == stp_psm_is_quick_ps_support())
+	is_quick_enable = stp_psm_is_quick_ps_support();
+	STP_DBG_FUNC("is quick sleep enable:%s\n",is_quick_enable ? "yes":"no");
+    if (MTK_WCN_BOOL_TRUE == is_quick_enable)
     {
 	    if(type != WMT_TASK_INDX)
 	    {
@@ -2825,7 +2944,7 @@ INT32 mtk_wcn_stp_send_data(const UINT8 *buffer, const UINT32 length, const UINT
 	
 #ifdef CONFIG_POWER_SAVING_SUPPORT
 
-    if (MTK_WCN_BOOL_TRUE == stp_psm_is_quick_ps_support())
+    if (MTK_WCN_BOOL_TRUE == is_quick_enable)
     {
         if(type != WMT_TASK_INDX) 
         {
@@ -2863,7 +2982,11 @@ INT32 mtk_wcn_stp_send_data(const UINT8 *buffer, const UINT32 length, const UINT
 * RETURNS
 *  INT32    >= 0: length transmitted; < 0: error
 *****************************************************************************/
+#if STP_EXP_HID_API_EXPORT
+INT32 _mtk_wcn_stp_send_data_raw (const UINT8 *buffer, const UINT32 length, const UINT8 type)
+#else
 INT32 mtk_wcn_stp_send_data_raw (const UINT8 *buffer, const UINT32 length, const UINT8 type)
+#endif
 {
     UINT32 written = 0;
     INT32 ret = 0;
@@ -2919,7 +3042,11 @@ INT32 mtk_wcn_stp_send_data_raw (const UINT8 *buffer, const UINT32 length, const
 * RETURNS
 *  INT32    >= 0: size of data received; < 0: error
 *****************************************************************************/
+#if STP_EXP_HID_API_EXPORT
+INT32 _mtk_wcn_stp_receive_data(UINT8 *buffer, UINT32 length, UINT8 type)
+#else
 INT32 mtk_wcn_stp_receive_data(UINT8 *buffer, UINT32 length, UINT8 type)
+#endif
 {
     /* GeorgeKuo modify: reduce "if" branch */
     UINT16 copyLen = 0;
@@ -2995,7 +3122,11 @@ INT32 mtk_wcn_stp_receive_data(UINT8 *buffer, UINT32 length, UINT8 type)
 * RETURNS
 *  INT32    0: queue is NOT empyt; !0: queue is empty
 *****************************************************************************/
+#if STP_EXP_HID_API_EXPORT
+INT32 _mtk_wcn_stp_is_rxqueue_empty(UINT8 type)
+#else
 INT32 mtk_wcn_stp_is_rxqueue_empty(UINT8 type)
+#endif
 {
     INT32 ret;
 
@@ -3315,7 +3446,11 @@ void mtk_wcn_stp_flush_rx_queue(UINT32 type)
 * RETURNS
 *  none
 *****************************************************************************/
+#if STP_EXP_HID_API_EXPORT
+MTK_WCN_BOOL _mtk_wcn_stp_is_ready(void)
+#else
 MTK_WCN_BOOL mtk_wcn_stp_is_ready(void)
+#endif
 {
     return STP_IS_READY(stp_core_ctx);
 }
@@ -3330,8 +3465,11 @@ MTK_WCN_BOOL mtk_wcn_stp_is_ready(void)
 * RETURNS
 *  void
 *****************************************************************************/
-
+#if STP_EXP_HID_API_EXPORT
+void _mtk_wcn_stp_set_bluez(MTK_WCN_BOOL bluez_flag)
+#else
 void mtk_wcn_stp_set_bluez(MTK_WCN_BOOL bluez_flag)
+#endif
 {
     //g_mtkstp_bluez_flag = bluez_flag;
     STP_SET_BT_STK(stp_core_ctx, bluez_flag);
@@ -3517,7 +3655,9 @@ VOID mtk_wcn_stp_ctx_restore()
     }else{
         STP_INFO_FUNC("No to launch whole chip reset! for debugging purpose\n");
     }
+#if STP_RETRY_OPTIMIZE
 	g_retry_times = 0;
+#endif
 	STP_INFO_FUNC("exit --\n");
 	return;
 }
@@ -3531,6 +3671,7 @@ INT32 mtk_wcn_stp_wmt_evt_err_trg_assert()
 	{
 		STP_ERR_FUNC("evt err trigger assert fail,do chip reset to recovery\n");
 
+		mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);
 		if(STP_IS_ENABLE_RST(stp_core_ctx)){
 			stp_btm_notify_wmt_rst_wq(STP_BTM_CORE(stp_core_ctx));
 	    }else{

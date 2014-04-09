@@ -298,6 +298,10 @@ wmt_lib_init (VOID)
 #ifdef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 	mtk_wcn_wmt_exp_init();
 #endif
+
+#if CFG_WMT_LTE_COEX_HANDLING
+	wmt_idc_init();
+#endif
     WMT_DBG_FUNC("init success\n");
     return 0;
 }
@@ -372,6 +376,10 @@ wmt_lib_deinit (VOID)
 
 #ifdef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 	mtk_wcn_wmt_exp_deinit();
+#endif
+
+#if CFG_WMT_LTE_COEX_HANDLING
+	wmt_idc_deinit();
 #endif
 
     return iResult;
@@ -559,6 +567,70 @@ static MTK_WCN_BOOL wmt_lib_ps_action(MTKSTP_PSM_ACTION_T action)
     return bRet;
 }
 
+#if CFG_WMT_LTE_COEX_HANDLING
+MTK_WCN_BOOL wmt_lib_handle_idc_msg(ipc_ilm_t *idc_infor)
+{
+    P_OSAL_OP lxop;
+    MTK_WCN_BOOL bRet;
+	P_OSAL_SIGNAL pSignal;
+
+	WMT_INFO_FUNC("idc_infor from conn_md is 0x%p\n",idc_infor);
+
+    lxop = wmt_lib_get_free_op();
+    if (!lxop)
+    {
+        WMT_WARN_FUNC("get_free_lxop fail \n");
+        return MTK_WCN_BOOL_FALSE;
+    }
+	pSignal = &lxop->signal;
+	pSignal->timeoutValue = MAX_EACH_WMT_CMD;
+    lxop->op.opId = WMT_OPID_IDC_MSG_HANDLING;
+    lxop->op.au4OpData[0] = (UINT32)idc_infor;
+
+	/*msg opcode fill rule is still not clrear,need scott comment*/
+	/***********************************************************/
+	WMT_INFO_FUNC("ilm msg id is (0x%08x)\n",idc_infor->msg_id);
+	switch(idc_infor->msg_id)
+	{
+		case IPC_MSG_ID_EL1_LTE_DEFAULT_PARAM_IND:
+			lxop->op.au4OpData[1] = WMT_IDC_TX_OPCODE_LTE_PARA;
+			break;
+		case IPC_MSG_ID_EL1_LTE_OPER_FREQ_PARAM_IND:
+			lxop->op.au4OpData[1] = WMT_IDC_TX_OPCODE_LTE_FREQ;
+			break;
+		case IPC_MSG_ID_EL1_WIFI_MAX_PWR_IND:
+			lxop->op.au4OpData[1] = WMT_IDC_TX_OPCODE_WIFI_MAX_POWER;
+			break;
+		case IPC_MSG_ID_EL1_LTE_TX_IND:
+			lxop->op.au4OpData[1] = WMT_IDC_TX_OPCODE_LTE_INDICATION;
+			break;
+		default:
+			WMT_ERR_FUNC("unknow msgid from LTE(%d)\n",idc_infor->msg_id);
+			break;
+	}
+
+	/*wake up chip first*/
+    if (DISABLE_PSM_MONITOR()) {
+        WMT_ERR_FUNC("wake up failed\n");
+        wmt_lib_put_op_to_free_queue(lxop);
+        return MTK_WCN_BOOL_FALSE;
+    }
+    
+    bRet = wmt_lib_put_act_op(lxop);
+    ENABLE_PSM_MONITOR();
+    if (MTK_WCN_BOOL_FALSE == bRet) {
+        WMT_WARN_FUNC("WMT_OPID_IDC_MSG_HANDLING fail(%d)\n", bRet);
+    }
+    else {
+        WMT_DBG_FUNC("OPID(%d) type(%d) ok\n",
+            lxop->op.opId,
+            lxop->op.au4OpData[1]);
+    }
+	
+    return bRet;
+}
+#endif
+
 static MTK_WCN_BOOL wmt_lib_ps_do_sleep(VOID)
 {
     return wmt_lib_ps_action(SLEEP);
@@ -741,7 +813,7 @@ wmt_lib_ps_stp_cb (
 
 MTK_WCN_BOOL wmt_lib_is_quick_ps_support (VOID)
 {
-	if(g_quick_sleep_ctrl)
+	if((g_quick_sleep_ctrl) && (wmt_dev_get_early_suspend_state() == MTK_WCN_BOOL_TRUE))
 	{
     	return wmt_core_is_quick_ps_support();
 	}

@@ -127,7 +127,8 @@ static const struct parse_data wmtcfg_fields[] = {
     { CHAR(coex_wmt_ant_mode) },
     { CHAR(coex_wmt_wifi_time_ctl) },
     { CHAR(coex_wmt_ext_pta_dev_on) },
-
+    { CHAR(coex_wmt_filter_mode) },
+    
     { CHAR(coex_bt_rssi_upper_limit) },
     { CHAR(coex_bt_rssi_mid_limit) },
     { CHAR(coex_bt_rssi_lower_limit) },

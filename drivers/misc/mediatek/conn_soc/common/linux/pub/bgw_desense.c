@@ -174,26 +174,4 @@ int bgw_init_socket()
 }
 
 
-#if 0
-static int mtk_BGW_probe(void)
-{
-	MSG("hello world\n");
 
-	init_socket();
-	
-	
-	return 0;	
-}
-
-static void mtk_BGW_remove(void)
-{
-	MSG("remove BGW module\n");
-	destory_netlink_kernel();
-	return;
-}
-module_init(mtk_BGW_probe);
-module_exit(mtk_BGW_remove);
-MODULE_LICENSE("Proprietary. Send bug reports to Guang.Yu@MediaTek.com");
-MODULE_DESCRIPTION("MediaTek BGW driver");
-MODULE_AUTHOR("Guang Yu <Guang.Yu@MediaTek.com>");
-#endif

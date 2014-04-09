@@ -29,6 +29,7 @@
 #include <mach/mtk_wcn_cmb_stub.h>
 #include "stp_wmt.h"
 #include "wmt_plat.h"
+#include "wmt_idc.h"
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
 ********************************************************************************
@@ -308,6 +309,9 @@ extern UINT8 *wmt_lib_get_cpupcr_xml_format(UINT32 *len);
 extern INT32 wmt_lib_register_thermal_ctrl_cb(thermal_query_ctrl_cb thermal_ctrl);
 extern UINT32 wmt_lib_set_host_assert_info(UINT32 type,UINT32 reason,UINT32 en);
 extern CHAR wmt_lib_co_clock_get(VOID);
+#if CFG_WMT_LTE_COEX_HANDLING
+extern MTK_WCN_BOOL wmt_lib_handle_idc_msg(ipc_ilm_t *idc_infor);
+#endif
 #if CFG_WMT_PS_SUPPORT
 extern UINT32 wmt_lib_quick_sleep_ctrl(UINT32 en);
 #endif

@@ -34,6 +34,9 @@
 ********************************************************************************
 */
 #define CFG_STP_CORE_CTX_SPIN_LOCK (0)
+
+#define WMT_LTE_COEX_FLAG (0x16)
+
 /*configure using SPINLOCK or just mutex for STP-CORE tx*/
 /*******************************************************************************
 *                                 M A C R O S
@@ -172,6 +175,9 @@ typedef struct
     UINT16           length;
     UINT8            checksum;
     UINT16           crc;
+#if 1
+	UINT8			 wmtsubtype;
+#endif
 } mtkstp_parser_context_struct;
 
 typedef struct

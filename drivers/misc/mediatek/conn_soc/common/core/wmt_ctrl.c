@@ -104,7 +104,11 @@ static INT32 wmt_ctrl_soc_wakeup_consys(P_WMT_CTRL_DATA);
 static INT32 wmt_ctrl_set_stp_dbg_info(P_WMT_CTRL_DATA);
 static INT32 wmt_ctrl_bgw_desense_ctrl(P_WMT_CTRL_DATA);
 static INT32 wmt_ctrl_evt_err_trg_assert(P_WMT_CTRL_DATA);
-	
+
+#if CFG_WMT_LTE_COEX_HANDLING
+static INT32 wmt_ctrl_get_tdm_req_antsel(P_WMT_CTRL_DATA);
+#endif
+
 static INT32
 wmt_ctrl_rx_flush (
     P_WMT_CTRL_DATA
@@ -173,6 +177,9 @@ const static WMT_CTRL_FUNC wmt_ctrl_func[] =
     [WMT_CTRL_SET_STP_DBG_INFO] = wmt_ctrl_set_stp_dbg_info,
     [WMT_CTRL_BGW_DESENSE_CTRL] = wmt_ctrl_bgw_desense_ctrl,
     [WMT_CTRL_EVT_ERR_TRG_ASSERT] = wmt_ctrl_evt_err_trg_assert,
+#if CFG_WMT_LTE_COEX_HANDLING
+    [WMT_CTRL_GET_TDM_REQ_ANTSEL] = wmt_ctrl_get_tdm_req_antsel,
+#endif
     [WMT_CTRL_MAX] = wmt_ctrl_others,
 };
 
@@ -273,7 +280,8 @@ INT32 wmt_ctrl_rx(P_WMT_CTRL_DATA pWmtCtrlData/*UINT8 *pBuff, UINT32 buffLen, UI
         WMT_LOUD_FUNC("wmt_dev_rx_timeout returned\n");
 
         if (0 == waitRet) {
-            WMT_ERR_FUNC("wmt_dev_rx_timeout: timeout \n");
+            WMT_ERR_FUNC("wmt_dev_rx_timeout: timeout,jiffies(%lu),timeoutvalue(%d) \n",
+				jiffies,pDev->rWmtRxWq.timeoutValue);
             return -1;
         }
         else if (waitRet < 0) {
@@ -878,7 +886,7 @@ INT32  wmt_ctrl_sdio_func(P_WMT_CTRL_DATA pWmtCtrlData)
             while (retry-- > 0 && iRet != 0) {
                 if (iRet) {
                     /* sleep 150ms before sdio slot ON ready */
-                    osal_msleep(150);
+                    osal_sleep_ms(150);
                 }
                 iRet = mtk_wcn_hif_sdio_wmt_control(sdioFuncType, MTK_WCN_BOOL_TRUE);
                 if (HIF_SDIO_ERR_NOT_PROBED == iRet) {
@@ -1007,6 +1015,24 @@ static INT32 wmt_ctrl_evt_err_trg_assert(P_WMT_CTRL_DATA pWmtCtrlData)
 	}
 	return 0;
 }
+
+#if CFG_WMT_LTE_COEX_HANDLING
+static INT32 wmt_ctrl_get_tdm_req_antsel(P_WMT_CTRL_DATA pWmtCtrlData)
+{	
+	INT32 antsel_index = wmt_plat_get_tdm_antsel_index();
+
+	if(0 <= antsel_index)
+	{
+		pWmtCtrlData->au4CtrlData[0] = antsel_index;
+	}else
+	{
+		pWmtCtrlData->au4CtrlData[0] = 0xff;
+	}
+	WMT_INFO_FUNC("get tdm req antsel index is %d\n",antsel_index);
+	
+	return 0;
+}
+#endif
 
 static INT32
 wmt_ctrl_gps_sync_set (
