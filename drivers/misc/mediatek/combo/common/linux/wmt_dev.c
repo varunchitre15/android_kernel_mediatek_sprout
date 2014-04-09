@@ -1327,7 +1327,6 @@ static void WMT_exit (void)
 
 module_init(WMT_init);
 module_exit(WMT_exit);
-//MODULE_LICENSE("Proprietary");
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("MediaTek Inc WCN");
 MODULE_DESCRIPTION("MTK WCN combo driver for WMT function");
