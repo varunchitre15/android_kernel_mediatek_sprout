@@ -45,7 +45,7 @@ obj-y	+= matv/
 ifneq ($(CONFIG_MTK_COMBO),)
 	subdir-ccflags-y += -D MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 	subdir-ccflags-y += -D MTK_WCN_REMOVE_KERNEL_MODULE
-	subdir-ccflags-y += -D MTK_CUSTOM_PATH:=$(srctree)/drivers/misc/mediatek/
+	subdir-ccflags-y += -D MTK_CUSTOM_PATH=$(srctree)/drivers/misc/mediatek/
 
 	ifneq ($(filter "MT6620E3",$(CONFIG_MTK_COMBO_CHIP)),)
 		obj-y   +=  combo/
