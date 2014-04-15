@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -114,14 +114,6 @@ int fence_merge(char * const name, int fd1, int fd2);
  * the call should wait indefinitely for the fence to signal.
  */
 inline int fence_wait(struct sync_fence *fence, int timeout);
-
-#ifdef CONFIG_DEBUG_FS
-struct sync_thread_data {
-    int thread_no;
-    int fd[2];                      /* used by the user space */
-    struct sync_fence *fence[2];    /* used by the kernel space */
-};
-#endif /* CONFIG_DEBUG_FS */
 
 #endif /* __KERNEL __ */
 
