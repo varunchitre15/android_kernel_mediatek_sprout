@@ -374,39 +374,6 @@ printk("mtsched_proc input count %d.\n", cnt);
 
 }
 
-/* 4. prof status*/
-MT_DEBUG_ENTRY(status);
-#define MT_CPUTIME 1
-unsigned long mtprof_status = 0;
-static int mt_status_show(struct seq_file *m, void *v)
-{
-    SEQ_printf(m, "%lu\n", mtprof_status);
-    return 0; 
-}
-
-static ssize_t mt_status_write(struct file *filp, const char *ubuf,
-	size_t cnt, loff_t *data)
-{
-    char buf[64];
-    unsigned long val;
-    int ret;
-    if (cnt >= sizeof(buf))
-	return -EINVAL;
-
-    if (copy_from_user(&buf, ubuf, cnt))
-	return -EFAULT;
-
-    buf[cnt] = 0;
-
-    ret = strict_strtoul(buf, 10, &val);
-    if (ret < 0)
-	return ret;
-    //0: off, 1:on
-    printk("[mtprof] status = 0x%x\n", (unsigned int)mtprof_status);
-    mtprof_status = val;
-    printk("[mtprof] new status = 0x%x\n", (unsigned int)mtprof_status);
-    return cnt;
-}
 /* 5. workqueue debug */
 #ifdef CONFIG_MTK_WQ_DEBUG
 
@@ -548,12 +515,6 @@ static int __init init_mtsched_prof(void)
 	{
 		return -ENOMEM;
 	}
-#ifdef CONFIG_MT_ENG_BUILD
-   
-    pe = proc_create("mtprof/status", 0666, NULL, &mt_status_fops);
-    if (!pe)
-	return -ENOMEM;
-#endif    
     return 0;
 }
 __initcall(init_mtsched_prof);
