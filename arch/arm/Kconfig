@@ -1089,10 +1089,6 @@ source "arch/arm/mach-ks8695/Kconfig"
 
 source "arch/arm/mach-lpc32xx/Kconfig"
 
-if ARCH_MT6572
-#source "arch/arm/mach-mt6572/Kconfig"
-endif
-
 if ARCH_MT6582
 source "arch/arm/mach-mt6582/Kconfig"
 endif
