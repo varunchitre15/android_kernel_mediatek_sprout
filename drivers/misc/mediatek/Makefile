@@ -30,7 +30,6 @@ obj-y   += thermal/
 obj-y   += videocodec/
 obj-y   += xlog/
 obj-y   += wdk/
-obj-y   += evdo_support/
 obj-y	+= mt_logger/
 
 obj-y	+= alsps/

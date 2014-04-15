@@ -804,6 +804,9 @@ static ssize_t mt3326_gps_write(struct file *file, const char __user *buf, size_
     if (!count)     /*no data written*/
         return 0;
     
+    if (count > 4096)
+       return -EINVAL;
+       
     if (signal_pending(current))
         return -ERESTARTSYS;
     
