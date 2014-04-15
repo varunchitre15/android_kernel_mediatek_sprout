@@ -34,24 +34,7 @@ DRIVER_DIR=$(src)
 
 $(info $(DRIVER_DIR))
 
-# For customer releases the Linux Device Drivers will be provided as ARM proprietary and GPL releases:
-# The ARM proprietary product will only include the license/proprietary directory
-# The GPL product will only include the license/gpl directory
-#ifeq ($(wildcard $(DRIVER_DIR)/linux/license/gpl/*),)
-#    ccflags-y += -I$(DRIVER_DIR)/linux/license/proprietary
-#    ifeq ($(CONFIG_MALI400_PROFILING),y)
-#        $(error Profiling is incompatible with non-GPL license)
-#    endif
-#    ifeq ($(CONFIG_PM_RUNTIME),y)
-#        $(error Runtime PM is incompatible with non-GPL license)
-#    endif
-#    ifeq ($(CONFIG_DMA_SHARED_BUFFER),y)
-#        $(error DMA-BUF is incompatible with non-GPL license)
-#    endif
-#    $(error Linux Device integration is incompatible with non-GPL license)
-#else
-    ccflags-y += -I$(DRIVER_DIR)/linux/license/gpl
-#endif
+ccflags-y += -I$(DRIVER_DIR)/linux/license/gpl
 
 mali-y += \
 	linux/mali_osk_atomics.o \
