@@ -1049,7 +1049,7 @@ static int mtkfb_set_overlay_layer(struct fb_info *info, struct fb_overlay_layer
 
     MMProfileLogEx(MTKFB_MMP_Events.SetOverlayLayer, MMProfileFlagStart, (id<<24)|(enable<<16)|layerInfo->next_buff_idx, (unsigned int)layerInfo->src_phy_addr);
 
-    MTKFB_INFO("L%d set_overlay:%d,%d\n", layerInfo->layer_id, layerInfo->layer_enable, layerInfo->next_buff_idx);
+//    MTKFB_INFO("L%d set_overlay:%d,%d\n", layerInfo->layer_id, layerInfo->layer_enable, layerInfo->next_buff_idx);
 
     // Update Layer Enable Bits and Layer Config Dirty Bits
     if ((((fbdev->layer_enable >> id) & 1) ^ enable)) {
@@ -1677,7 +1677,7 @@ static int mtkfb_ioctl(struct file *file, struct fb_info *info, unsigned int cmd
     case MTKFB_GET_OVERLAY_LAYER_INFO:
     {
         struct fb_overlay_layer_info layerInfo;
-        MTKFB_INFO(" mtkfb_ioctl():MTKFB_GET_OVERLAY_LAYER_INFO\n");
+//        MTKFB_INFO(" mtkfb_ioctl():MTKFB_GET_OVERLAY_LAYER_INFO\n");
 
         if (copy_from_user(&layerInfo, (void __user *)arg, sizeof(layerInfo))) {
             MTKFB_WRAN("[FB]: copy_from_user failed! line:%d \n", __LINE__);
@@ -1697,7 +1697,7 @@ static int mtkfb_ioctl(struct file *file, struct fb_info *info, unsigned int cmd
     case MTKFB_SET_OVERLAY_LAYER:
     {
         struct fb_overlay_layer layerInfo;
-        MTKFB_INFO(" mtkfb_ioctl():MTKFB_SET_OVERLAY_LAYER\n");
+//        MTKFB_INFO(" mtkfb_ioctl():MTKFB_SET_OVERLAY_LAYER\n");
 
         if (copy_from_user(&layerInfo, (void __user *)arg, sizeof(layerInfo))) {
             MTKFB_WRAN("[FB]: copy_from_user failed! line:%d \n", __LINE__);
@@ -1755,7 +1755,7 @@ static int mtkfb_ioctl(struct file *file, struct fb_info *info, unsigned int cmd
             struct fb_overlay_layer Layer3;
         };
         struct fb_overlay_layer layerInfo[VIDEO_LAYER_COUNT];
-        MTKFB_INFO(" mtkfb_ioctl():MTKFB_SET_VIDEO_LAYERS\n");
+//        MTKFB_INFO(" mtkfb_ioctl():MTKFB_SET_VIDEO_LAYERS\n");
         MMProfileLog(MTKFB_MMP_Events.SetVideoLayers, MMProfileFlagStart);
         if (copy_from_user(&layerInfo, (void __user *)arg, sizeof(layerInfo))) {
             MTKFB_WRAN("[FB]: copy_from_user failed! line:%d \n", __LINE__);
@@ -1789,7 +1789,7 @@ static int mtkfb_ioctl(struct file *file, struct fb_info *info, unsigned int cmd
         };
         struct fb_overlay_layer layerInfo[HW_OVERLAY_COUNT];
 
-        MTKFB_INFO(" mtkfb_ioctl():MTKFB_SET_MULTIPLE_LAYERS\n");
+//        MTKFB_INFO(" mtkfb_ioctl():MTKFB_SET_MULTIPLE_LAYERS\n");
         MMProfileLog(MTKFB_MMP_Events.SetMultipleLayers, MMProfileFlagStart);
 
         if (copy_from_user(&layerInfo, (void __user *)arg, sizeof(layerInfo))) 
@@ -1917,7 +1917,7 @@ static int mtkfb_ioctl(struct file *file, struct fb_info *info, unsigned int cmd
         extern LCM_PARAMS *lcm_params;
         unsigned long lcm_type = lcm_params->type;
 
-		MTKFB_INFO("[MTKFB] MTKFB_GET_INTERFACE_TYPE\n");
+//		MTKFB_INFO("[MTKFB] MTKFB_GET_INTERFACE_TYPE\n");
 
         MTKFB_INFO("[MTKFB EM]MTKFB_GET_INTERFACE_TYPE is %ld\n", lcm_type);
 
