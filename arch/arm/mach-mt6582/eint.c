@@ -45,7 +45,7 @@
 #error NR_IRQS not enough.
 #endif
 
-#define EINT_TEST_V2
+//#define EINT_TEST_V2
 
 #define MD_EINT
 #define EINT_TEST
@@ -1236,7 +1236,7 @@ static ssize_t cur_eint_reg_isr_store(struct device_driver *driver,
     return count;
 }
 DRIVER_ATTR(current_eint_reg_isr, 0644, cur_eint_reg_isr_show, cur_eint_reg_isr_store);
-#endif /*!EINT_TEST */
+#endif /*!EINT_TEST_SOFT */
 
 /*
  * mt_eint_setdomain0: set all eint_num to domain 0.
@@ -1491,7 +1491,7 @@ static unsigned int mt_eint_get_count(unsigned int eint_num)
     return 0;
 }
 
-#ifdef EINT_TEST_V2
+#if defined(EINT_TEST_V2)
 unsigned long long hw_debounce_start;
 unsigned long long hw_debounce_end;
 int EINT_waiting;
@@ -1724,7 +1724,7 @@ static ssize_t test_store(struct device_driver *driver, const char *buf,size_t c
     return count;
 }
 
-DRIVER_ATTR(eint_test_suit, 0666, test_show, test_store);
+DRIVER_ATTR(eint_test_suit, 0664, test_show, test_store);
 
 //DEVICE_ATTR(eint_config, 0666, test_show, test_store);
 
