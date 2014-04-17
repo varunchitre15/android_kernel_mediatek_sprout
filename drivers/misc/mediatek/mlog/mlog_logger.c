@@ -209,7 +209,12 @@ static void mlog_reset_format(void)
             kfree(strfmt_list);
         strfmt_list = kmalloc(sizeof(char *)*len, GFP_ATOMIC);
         strfmt_len = len;
-        BUG_ON(!strfmt_list);
+
+        if (!strfmt_list) {
+            strfmt_len = 0;
+            spin_unlock_bh(&mlogbuf_lock);
+            return;
+        }
     }
 
     /* setup str format */
@@ -694,6 +699,11 @@ int mlog_doread(char __user *buf, size_t len)
     i = 0;
     spin_lock_bh(&mlogbuf_lock);
 
+    if (!strfmt_list) {
+        error = -ENOMEM;
+        goto errorout;
+    }
+
     //MLOG_PRINTK("[mlog] doread %d %d\n", mlog_start, mlog_end);
     while (!error && (mlog_start != mlog_end) && i < len - MLOG_STR_LEN) {
         int size;
@@ -735,6 +745,7 @@ int mlog_doread(char __user *buf, size_t len)
         spin_lock_bh(&mlogbuf_lock);
     }
 
+errorout:
     spin_unlock_bh(&mlogbuf_lock);
     if (!error)
         error = i;
