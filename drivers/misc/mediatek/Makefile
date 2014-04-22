@@ -104,7 +104,7 @@ obj-y	+= i2c/
 obj-y	+= leds/
 obj-y	+= masp/
 obj-$(CONFIG_MTK_MMC) += mmc-host/
-obj-$(CONFIG_MTK_ETM) += mt_etm/
+#obj-$(CONFIG_MTK_ETM) += mt_etm/
 obj-$(CONFIG_MTK_MTD_NAND) += nand/
 obj-$(CONFIG_MTK_MMC) += pmt/
 
