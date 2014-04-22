@@ -2151,9 +2151,6 @@ static const struct mmc_fixup blk_fixups[] =
 	END_FIXUP
 };
 
-#if defined(CONFIG_MTK_EMMC_SUPPORT)
-	extern void emmc_create_sys_symlink (struct mmc_card *card);
-#endif
 static int mmc_blk_probe(struct mmc_card *card)
 {
 	struct mmc_blk_data *md, *part_md;
@@ -2193,9 +2190,6 @@ static int mmc_blk_probe(struct mmc_card *card)
 		if (mmc_add_disk(part_md))
 			goto out;
 	}
-#if defined(CONFIG_MTK_EMMC_SUPPORT)
-	emmc_create_sys_symlink(card);
-#endif
 	return 0;
 
  out:

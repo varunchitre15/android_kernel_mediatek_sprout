@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -44,7 +44,7 @@
 #define PROCNAME                 "driver/otp"
 
 #ifndef CONFIG_MTK_EMMC_SUPPORT_OTP
-#define CONFIG_MTK_EMMC_SUPPORT_OTP     
+#define CONFIG_MTK_EMMC_SUPPORT_OTP
 #endif
 
 #define EMMC_OTP_DEBUG           1
@@ -81,12 +81,12 @@ unsigned int emmc_get_wp_size(void)
         BUG_ON(!host_ctl->mmc->card);
 
         printk("[%s:%d]mmc_host is : 0x%p\n", __func__, __LINE__, host_ctl->mmc);
-        //printk("[%s:%d]claim host done! claim_status = %d, claim_cnt = %d, claimer = 0x%x, current = 0x%x\n", __func__, __LINE__, 
+        //printk("[%s:%d]claim host done! claim_status = %d, claim_cnt = %d, claimer = 0x%x, current = 0x%x\n", __func__, __LINE__,
                 //host_ctl->mmc->claimed, host_ctl->mmc->claim_cnt, host_ctl->mmc->claimer, current);
 
         mmc_claim_host(host_ctl->mmc);
 
-        //printk("[%s:%d]claim host done! claim_status = %d, claim_cnt = %d, claimer = 0x%x, current = 0x%x\n", __func__, __LINE__, 
+        //printk("[%s:%d]claim host done! claim_status = %d, claim_cnt = %d, claimer = 0x%x, current = 0x%x\n", __func__, __LINE__,
                 //host_ctl->mmc->claimed, host_ctl->mmc->claim_cnt, host_ctl->mmc->claimer, current);
 
         /*
@@ -115,7 +115,7 @@ unsigned int emmc_get_wp_size(void)
             /* use high-capacity erase uint size, hc erase timeout, hc wp size, store in EXT_CSD */
             sg_wp_size = (512 * 1024 * l_ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE] * l_ext_csd[EXT_CSD_HC_WP_GRP_SIZE]);
         } else {
-            /* use old erase group size and write protect group sizei, store in CSD */ 
+            /* use old erase group size and write protect group sizei, store in CSD */
             sg_wp_size = (512 * host_ctl->mmc->card->erase_size);
         }
     }
@@ -135,19 +135,19 @@ unsigned int  emmc_otp_start(void)
     unsigned int l_size;
     unsigned int l_offset;      /* for emmc combo reserved */
     struct msdc_host *host_ctl;
-    
+
     if (0 == sg_wp_size){
         emmc_get_wp_size();
-    } 
+    }
 
     host_ctl = emmc_otp_get_host();
 
     BUG_ON(!host_ctl);
     BUG_ON(!host_ctl->mmc);
     BUG_ON(!host_ctl->mmc->card);
-    
+
     l_offset = msdc_get_reserve();
-    l_offset -= (RESERVE_REGION); 
+    l_offset -= (RESERVE_REGION);
 
     if (mmc_card_blockaddr(host_ctl->mmc->card)){
         l_size = host_ctl->mmc->card->ext_csd.sectors;
@@ -170,7 +170,7 @@ unsigned int  emmc_otp_start(void)
 
         l_addr += l_offset << 9;
     }
-    
+
     printk("find OTP start address is 0x%x \n", l_addr);
 
     return l_addr;
@@ -188,17 +188,17 @@ unsigned int  emmc_otp_start(void)
     unsigned int l_offset;      /* for emmc combo reserved */
     unsigned int l_reserve;
     struct msdc_host *host_ctl;
-    
+
     if (0 == sg_wp_size){
         emmc_get_wp_size();
-    } 
+    }
 
     host_ctl = emmc_otp_get_host();
 
     BUG_ON(!host_ctl);
     BUG_ON(!host_ctl->mmc);
     BUG_ON(!host_ctl->mmc->card);
-    
+
     l_offset = msdc_get_offset();
     l_reserve = msdc_get_reserve();
 
@@ -211,22 +211,20 @@ unsigned int  emmc_otp_start(void)
             l_addr += ((sg_wp_size >> 9) - l_addr % (sg_wp_size >> 9));
         }
 
-        l_addr -= l_offset;
     } else {
         l_size = host_ctl->mmc->card->csd.capacity * (1 << host_ctl->mmc->card->csd.read_blkbits); /* byte unit */
-        
+
         l_addr = l_size - ((l_reserve - l_offset) << 9);
-        
+
         /* find wp group start address in 43MB reserved region */
         if (l_addr % sg_wp_size) {
             l_addr += (sg_wp_size - l_addr % sg_wp_size);
         }
-        
-        l_addr -= l_offset << 9;
-        
-        l_addr >>= 9;   /* change to block unit */ 
+
+
+        l_addr >>= 9;   /* change to block unit */
     }
-    
+
     printk("find OTP start address is 0x%x \n", l_addr);
 
     return l_addr;
@@ -247,7 +245,7 @@ unsigned int emmc_otp_read(unsigned int blk_offset, void *BufferPtr)
     char l_buf[512];
     unsigned char* l_rcv_buf = (unsigned char*)BufferPtr;
     unsigned int l_addr;
-    unsigned int l_otp_size;   
+    unsigned int l_otp_size;
     unsigned int l_ret;
     struct scatterlist msdc_sg;
     struct mmc_data    msdc_data;
@@ -282,7 +280,7 @@ unsigned int emmc_otp_read(unsigned int blk_offset, void *BufferPtr)
 
 #if EMMC_OTP_DEBUG
     printk("EMMC_OTP: start MSDC_SINGLE_READ_WRITE!\n");
-#endif    
+#endif
 
     memset(&msdc_data, 0, sizeof(struct mmc_data));
     memset(&msdc_mrq, 0, sizeof(struct mmc_request));
@@ -336,13 +334,13 @@ unsigned int emmc_otp_write(unsigned int blk_offset, void *BufferPtr)
     unsigned char* l_send_buf = (unsigned char*)BufferPtr;
     unsigned int l_ret;
     unsigned int l_addr;
-    unsigned int l_otp_size;   
+    unsigned int l_otp_size;
     struct scatterlist msdc_sg;
     struct mmc_data    msdc_data;
     struct mmc_command msdc_cmd;
     struct mmc_request msdc_mrq;
     struct msdc_host *host_ctl;
- 
+
     /* check parameter */
     l_addr = emmc_otp_start();
     l_otp_size = emmc_get_wp_size();
@@ -350,10 +348,10 @@ unsigned int emmc_otp_write(unsigned int blk_offset, void *BufferPtr)
         return OTP_ERROR_OVERSCOPE;
     }
 
-    l_addr += blk_offset;  
-   
+    l_addr += blk_offset;
+
     host_ctl = emmc_otp_get_host();
-    
+
     BUG_ON(!host_ctl);
     BUG_ON(!host_ctl->mmc);
 
@@ -369,7 +367,7 @@ unsigned int emmc_otp_write(unsigned int blk_offset, void *BufferPtr)
 
 #if EMMC_OTP_DEBUG
     printk("EMMC_OTP: start MSDC_SINGLE_READ_WRITE!\n");
-#endif    
+#endif
 
     memset(&msdc_data, 0, sizeof(struct mmc_data));
     memset(&msdc_mrq, 0, sizeof(struct mmc_request));
@@ -377,7 +375,7 @@ unsigned int emmc_otp_write(unsigned int blk_offset, void *BufferPtr)
 
     msdc_mrq.cmd = &msdc_cmd;
     msdc_mrq.data = &msdc_data;
-        
+
     msdc_data.flags = MMC_DATA_WRITE;
     msdc_cmd.opcode = MMC_WRITE_BLOCK;
     msdc_data.blocks = 1;
@@ -420,7 +418,7 @@ static int emmc_otp_proc_read(char *page, char **start, off_t off,
     int count, int *eof, void *data)
 {
     int len;
-    if (off > 0) 
+    if (off > 0)
     {
         return 0;
     }
@@ -432,13 +430,13 @@ static int emmc_otp_proc_write(struct file* file, const char* buffer,
 {
     char buf[16];
     int len = count;
-    
-    if (len >= sizeof(buf)) 
+
+    if (len >= sizeof(buf))
     {
         len = sizeof(buf) - 1;
     }
 
-    if (copy_from_user(buf, buffer, len)) 
+    if (copy_from_user(buf, buffer, len))
     {
         return -EFAULT;
     }
@@ -586,7 +584,7 @@ static long mt_otp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
     case EMMC_OTP_GET_LENGTH:
         printk("OTP IOCTL: EMMC_OTP_GET_LENGTH\n");
         if (('c' == (otpctl.status & 0xff)) && ('c' == ((otpctl.status >> 8) & 0xff)) && ('c' == ((otpctl.status >> 16) & 0xff)) && ('i' == ((otpctl.status >> 24) & 0xff))){
-            otpctl.QLength = g_otp_user_ccci; 
+            otpctl.QLength = g_otp_user_ccci;
         } else {
             g_emmc_otp_func.query_length(&otpctl.QLength);
         }
@@ -670,9 +668,9 @@ static int __init emmc_otp_init(void)
 {
     struct proc_dir_entry *entry;
     int err = 0;
-    
+
     printk("MediaTek EMMC OTP misc driver init\n");
-    
+
     //spin_lock_init(&g_emmc_otp_lock);
 
     g_emmc_otp_func.query_length = emmc_otp_query_length;
@@ -680,14 +678,14 @@ static int __init emmc_otp_init(void)
     g_emmc_otp_func.write        = emmc_otp_write;
 
     entry = create_proc_entry(PROCNAME, 0666, NULL);
-    if (entry == NULL) 
+    if (entry == NULL)
     {
         printk("emmc OTP: unable to create /proc entry\n");
         return -ENOMEM;
     }
 
     entry->read_proc = emmc_otp_proc_read;
-    entry->write_proc = emmc_otp_proc_write;    
+    entry->write_proc = emmc_otp_proc_write;
     //entry->owner = THIS_MODULE;
 
     platform_driver_register(&emmc_otp_driver);
@@ -706,7 +704,7 @@ static int __init emmc_otp_init(void)
 static void __exit emmc_otp_exit(void)
 {
     printk("MediaTek EMMC OTP misc driver exit\n");
-    
+
     misc_deregister(&emmc_otp_dev);
 
     g_emmc_otp_func.query_length = NULL;

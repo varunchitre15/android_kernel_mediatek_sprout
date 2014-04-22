@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -14,8 +14,8 @@
 
 #ifndef __ENV_H__
 #define __ENV_H__
-#include <linux/errno.h>	/* error codes */
-#include <linux/types.h>	/* size_t */
+#include <linux/errno.h>    /* error codes */
+#include <linux/types.h>    /* size_t */
 #include <linux/proc_fs.h>  /*proc*/
 #include <linux/ioctl.h> /*ioctl*/
 #include <linux/module.h>
@@ -39,30 +39,29 @@
 #define LIMIT_SDCARD_SIZE
 
 extern long long data_free_size_th;
-EXPORT_SYMBOL(data_free_size_th);
 
 #endif
 
 typedef struct env_struct
 {
-	char sig[8]; // "ENV_v1"
-	char *env_data;
-	char sig_1[8];  //"ENV_v1"
-	int checksum; // checksum for env_data
+    char sig[8]; // "ENV_v1"
+    char *env_data;
+    char sig_1[8];  //"ENV_v1"
+    int checksum; // checksum for env_data
 }env_t;
 
-#define ENV_MAGIC	 'e'
-#define ENV_READ		_IOW(ENV_MAGIC, 1, int)
-#define ENV_WRITE 		_IOW(ENV_MAGIC, 2, int)
+#define ENV_MAGIC     'e'
+#define ENV_READ        _IOW(ENV_MAGIC, 1, int)
+#define ENV_WRITE         _IOW(ENV_MAGIC, 2, int)
 
 struct env_ioctl
 {
-	char *name;
-	int name_len;
-	char *value;
-	int value_len;	
+    char *name;
+    int name_len;
+    char *value;
+    int value_len;
 };
-extern void env_init(loff_t env_part_addr);
+
 extern int set_env(char *name,char *value);
 extern char *get_env(char *name);
 

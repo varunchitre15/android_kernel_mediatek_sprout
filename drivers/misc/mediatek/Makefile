@@ -5,11 +5,13 @@ include $(srctree)/drivers/misc/mediatek/Makefile.custom
 obj-y	+= kernel/
 obj-y	+= aee/
 obj-y	+= dual_ccci/
+obj-y	+= fmradio/
 obj-y	+= gps/
 obj-y	+= hwmon/
 obj-y	+= m4u/
 obj-y	+= mhl/
 obj-y	+= mtprof/
+obj-y   += partition/
 
 obj-y	+= sched/
 obj-y	+= video/
@@ -106,7 +108,6 @@ obj-y	+= masp/
 obj-$(CONFIG_MTK_MMC) += mmc-host/
 #obj-$(CONFIG_MTK_ETM) += mt_etm/
 obj-$(CONFIG_MTK_MTD_NAND) += nand/
-obj-$(CONFIG_MTK_MMC) += pmt/
 
 obj-y   += dbg_dump/
 obj-y	+= power/
