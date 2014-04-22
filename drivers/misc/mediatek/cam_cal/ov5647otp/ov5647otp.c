@@ -68,7 +68,6 @@ static struct cdev * g_pCAM_CAL_CharDrv = NULL;
 //spin_unlock(&g_CAM_CALLock);
 
 static struct class *CAM_CAL_class = NULL;
-static atomic_t g_CAM_CALatomic;
 //static DEFINE_SPINLOCK(kdcam_cal_drv_lock);
 //spin_lock(&kdcam_cal_drv_lock);
 //spin_unlock(&kdcam_cal_drv_lock);
@@ -389,7 +388,6 @@ static int CAM_CAL_Open(struct inode * a_pstInode, struct file * a_pstFile)
     else
     {
         g_u4Opened = 1;
-        atomic_set(&g_CAM_CALatomic,0);
     }
     spin_unlock(&g_CAM_CALLock);
 
@@ -414,7 +412,6 @@ static int CAM_CAL_Release(struct inode * a_pstInode, struct file * a_pstFile)
 
     g_u4Opened = 0;
 
-    atomic_set(&g_CAM_CALatomic,0);
 
     spin_unlock(&g_CAM_CALLock);
 

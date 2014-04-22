@@ -73,7 +73,6 @@ static dev_t g_EEPROMdevno = MKDEV(EEPROM_DEV_MAJOR_NUMBER,0);
 static struct cdev * g_pEEPROM_CharDrv = NULL;
 //static spinlock_t g_EEPROMLock;
 static struct class *EEPROM_class = NULL;
-static atomic_t g_EEPROMatomic;
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -421,7 +420,6 @@ static int EEPROM_Open(struct inode * a_pstInode, struct file * a_pstFile)
     else
     {
         g_u4Opened = 1;
-        atomic_set(&g_EEPROMatomic,0);
     }
     spin_unlock(&g_EEPROMLock);
 
@@ -445,7 +443,6 @@ static int EEPROM_Release(struct inode * a_pstInode, struct file * a_pstFile)
 
     g_u4Opened = 0;
 
-    atomic_set(&g_EEPROMatomic,0);
 
     spin_unlock(&g_EEPROMLock);
 

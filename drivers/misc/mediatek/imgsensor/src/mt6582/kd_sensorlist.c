@@ -129,8 +129,6 @@ static struct class *sensor_class = NULL;
 
 static atomic_t g_CamHWOpend;
 
-static atomic_t g_CamHWOpening;
-static atomic_t g_CamDrvOpenCnt;
 
 
 
@@ -756,18 +754,7 @@ int kdSetSensorSyncFlag(BOOL bSensorSync)
     return 0;
 }
 
-/*******************************************************************************
-* kdCheckSensorPowerOn
-********************************************************************************/
-int kdCheckSensorPowerOn(void)
-{
-    if (atomic_read(&g_CamHWOpening)==0){//sensor power off
-        return 0;
-    }
-    else {//sensor power on
-        return 1;
-    }
-}
+
 
 /*******************************************************************************
 * kdSensorSyncFunctionPtr
@@ -1412,7 +1399,6 @@ inline static int adopt_CAMERA_HW_Close(void)
     }
 	atomic_set(&g_CamHWOpend, 0);
 
-	atomic_set(&g_CamHWOpening, 0);
 
     // reset the delay frame flag
     spin_lock(&kdsensor_drv_lock);
@@ -1553,20 +1539,7 @@ CAMERA_HW_Ioctl_EXIT:
 ********************************************************************************/
 static int CAMERA_HW_Open(struct inode * a_pstInode, struct file * a_pstFile)
 {
-	//reset once in multi-open
-    if ( atomic_read(&g_CamDrvOpenCnt) == 0) {
-	    //default OFF state
-	    //MUST have
-	    //kdCISModulePowerOn(DUAL_CAMERA_MAIN_SENSOR,"",true,CAMERA_HW_DRVNAME1);
-	    //kdCISModulePowerOn(DUAL_CAMERA_SUB_SENSOR,"",true,CAMERA_HW_DRVNAME1);	    
-		
-	    //kdCISModulePowerOn(DUAL_CAMERA_MAIN_SENSOR,"",false,CAMERA_HW_DRVNAME1);
-	    //kdCISModulePowerOn(DUAL_CAMERA_SUB_SENSOR,"",false,CAMERA_HW_DRVNAME1);
 
-    }
-
-    //
-    atomic_inc(&g_CamDrvOpenCnt);
     return 0;
 }
 
@@ -1580,7 +1553,6 @@ static int CAMERA_HW_Open(struct inode * a_pstInode, struct file * a_pstFile)
 ********************************************************************************/
 static int CAMERA_HW_Release(struct inode * a_pstInode, struct file * a_pstFile)
 {
-    atomic_dec(&g_CamDrvOpenCnt);
 
     return 0;
 }
@@ -1854,9 +1826,6 @@ static int __init CAMERA_HW_i2C_init(void)
 
     atomic_set(&g_CamHWOpend, 0); 
 
-    atomic_set(&g_CamDrvOpenCnt, 0);
-
-    atomic_set(&g_CamHWOpening, 0);
     return 0;
 }
 
