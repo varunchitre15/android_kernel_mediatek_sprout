@@ -293,11 +293,11 @@ static int __mt_enable_freqhopping(unsigned int pll_id,const struct freqhopping_
 	unsigned long 	flags=0;
 
 	//FH_MSG("EN: en_fh");
-	FH_MSG("EN: %s:: %x u: %x df: %d dt: %d dds:%x",__func__ ,ssc_setting->lowbnd
-			   			      ,ssc_setting->upbnd
-			   			      ,ssc_setting->df
-			   			      ,ssc_setting->dt
-			   			      ,ssc_setting->dds);
+	//FH_MSG("EN: %s:: %x u: %x df: %d dt: %d dds:%x",__func__ ,ssc_setting->lowbnd
+	//		   			      ,ssc_setting->upbnd
+	//		   			      ,ssc_setting->df
+	//		   			      ,ssc_setting->dt
+	//		   			      ,ssc_setting->dds);
 	
 	update_fhctl_status(pll_id, PLL_STATUS_ENABLE) ;
         mb() ;
@@ -649,7 +649,7 @@ static int __freqhopping_ctrl(struct freqhopping_ioctl* fh_ctl,bool enable)
 			
 			if( 0 == __mt_enable_freqhopping(fh_ctl->pll_id,pSSC_setting)) {
 				retVal = 0;
-				FH_MSG("en ok");
+				//FH_MSG("en ok");
 			}
 			else{
 				FH_MSG("__mt_enable_freqhopping fail.");
@@ -660,7 +660,7 @@ static int __freqhopping_ctrl(struct freqhopping_ioctl* fh_ctl,bool enable)
 	else{ //disable req. hopping @ fh_ctl->pll_id
 		if( 0 == __mt_disable_freqhopping(fh_ctl->pll_id,pSSC_setting)) {
 			retVal = 0;
-			FH_MSG("dis ok");
+			//FH_MSG("dis ok");
 		}
 		else{
 			FH_MSG("__mt_disable_freqhopping fail.");
