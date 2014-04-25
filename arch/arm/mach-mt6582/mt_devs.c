@@ -1333,8 +1333,18 @@ struct platform_device sensor_gyroscope = {
 
 struct platform_device sensor_barometer = {
 	.name	       = "barometer",
-	.id            = -1,
+    .id            = -1,
 };
+struct platform_device sensor_temperature = {
+    .name           = "temperature",
+    .id            = -1,
+};
+
+struct platform_device sensor_batch = {
+    .name           = "batchsensor",
+    .id            = -1,
+};
+
 /* hwmon sensor */
 struct platform_device hwmon_sensor = {
 	.name	       = "hwmsensor",
@@ -1346,7 +1356,31 @@ struct platform_device acc_sensor = {
 	.id            = -1,
 };
 struct platform_device mag_sensor = {
-	.name	       = "m_mag_pl",
+    .name           = "m_mag_pl",
+    .id            = -1,
+};
+struct platform_device alsps_sensor = {
+    .name           = "m_alsps_pl",
+    .id            = -1,
+};
+
+struct platform_device gyro_sensor = {
+    .name           = "m_gyro_pl",
+    .id            = -1,
+};
+
+struct platform_device barometer_sensor = {
+    .name           = "m_baro_pl",
+    .id            = -1,
+};
+
+struct platform_device temp_sensor = {
+    .name           = "m_temp_pl",
+    .id            = -1,
+};
+
+struct platform_device batch_sensor = {
+    .name           = "m_batch_pl",
 	.id            = -1,
 };
 
@@ -1813,60 +1847,111 @@ if (retval != 0) {
 
 #if defined(CONFIG_MTK_SENSOR_SUPPORT)
 
-	retval = platform_device_register(&hwmon_sensor);
-	printk("hwmon_sensor device!");
-	if (retval != 0)
-		return retval;
-
-	retval = platform_device_register(&acc_sensor);
-	printk("acc_sensor device!");
-	if (retval != 0)
-		return retval;
-
-	retval = platform_device_register(&mag_sensor);
-	printk("mag_sensor device!");
-	if (retval != 0)
-		return retval;
-
+    retval = platform_device_register(&hwmon_sensor);
+    if (retval != 0)
+    {
+        printk("[%s]: hwmon_sensor device register fail\n!", __func__);
+        return retval;
+    }
+    retval = platform_device_register(&batch_sensor);
+    if (retval != 0)
+    {
+        printk("[%s]: batch_sensor device register fail\n", __func__);
+        return retval;
+    }
+    retval = platform_device_register(&acc_sensor);
+    if (retval != 0)
+    {
+        printk("[%s]: acc_sensor device register fail\n", __func__);
+        return retval;
+    }
+    retval = platform_device_register(&mag_sensor);
+    if (retval != 0)
+    {
+        printk("[%s]: mag_sensor device register fail\n", __func__);
+        return retval;
+    }
+    retval = platform_device_register(&gyro_sensor);
+    if (retval != 0)
+    {
+        printk("[%s]: gyro_sensor device register fail\n", __func__);
+        return retval;
+    }
+    retval = platform_device_register(&alsps_sensor);
+    if (retval != 0)
+    {
+        printk("[%s]: alsps_sensor device register fail\n", __func__);
+        return retval;
+    }
+    retval = platform_device_register(&barometer_sensor);
+    if (retval != 0)
+    {
+        printk("[%s]: barometer_sensor device register fail \n!", __func__);
+        return retval;
+    }
+    retval = platform_device_register(&temp_sensor);
+    if (retval != 0)
+    {
+        printk("[%s]: temp_sensor device register fail \n", __func__);
+        return retval;
+    }
 #if defined(CONFIG_CUSTOM_KERNEL_ACCELEROMETER)
-	retval = platform_device_register(&sensor_gsensor);
-		printk("sensor_gsensor device!");
-	if (retval != 0)
-		return retval;
+    retval = platform_device_register(&sensor_gsensor);
+    if (retval != 0)
+    {
+        printk("[%s]: sensor_gsensor device register fail \n", __func__);
+        return retval;
+    }
 #endif
 
 #if defined(CONFIG_CUSTOM_KERNEL_MAGNETOMETER)
-	retval = platform_device_register(&sensor_msensor);
-		printk("sensor_msensor device!");
-	if (retval != 0)
-		return retval;
-
-	retval = platform_device_register(&sensor_orientation);
-		printk("sensor_osensor device!");
-	if (retval != 0)
-		return retval;
-
+    retval = platform_device_register(&sensor_msensor);
+    if (retval != 0)
+    {
+        printk("[%s]: sensor_msensor device register fail \n", __func__);
+        return retval;
+    }
+    retval = platform_device_register(&sensor_orientation);
+    if (retval != 0)
+    {
+        printk("[%s]: sensor_orientation device register fail \n", __func__);
+        return retval;
+    }
 #endif
 
 #if defined(CONFIG_CUSTOM_KERNEL_GYROSCOPE)
-	retval = platform_device_register(&sensor_gyroscope);
-		printk("sensor_gyroscope device!");
-	if (retval != 0)
-		return retval;
+    retval = platform_device_register(&sensor_gyroscope);
+    if (retval != 0)
+    {
+        printk("[%s]: sensor_gyroscope device register fail \n", __func__);
+        return retval;
+    }
 #endif
 
 #if defined(CONFIG_CUSTOM_KERNEL_BAROMETER)
 	retval = platform_device_register(&sensor_barometer);
-		printk("sensor_barometer device!");
-	if (retval != 0)
-		return retval;
+    if (retval != 0)
+    {
+        printk("[%s]: sensor_barometer device register fail \n", __func__);
+        return retval;
+    }
 #endif
 
 #if defined(CONFIG_CUSTOM_KERNEL_ALSPS)
-	retval = platform_device_register(&sensor_alsps);
-		printk("sensor_alsps device!");
-	if (retval != 0)
-		return retval;
+    retval = platform_device_register(&sensor_alsps);
+    if (retval != 0)
+    {
+        printk("[%s]: sensor_alsps device register fail \n", __func__);
+        return retval;
+    }
+#endif
+#if defined(CONFIG_CUSTOM_KERNEL_TEMPERATURE)
+    retval = platform_device_register(&sensor_temperature);
+    if (retval != 0)
+    {
+        printk("[%s]: sensor_temperature device register fail\n!", __func__);
+        return retval;
+    }
 #endif
 #endif
 

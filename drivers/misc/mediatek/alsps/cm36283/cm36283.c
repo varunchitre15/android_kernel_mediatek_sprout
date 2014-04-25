@@ -1582,8 +1582,7 @@ static int cm36283_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		err = -ENOMEM;
 		goto exit;
 	}
-	
-	memset(obj, 0, sizeof(*obj));
+
 	cm36283_obj = obj;
 	
 	obj->hw = get_cust_alsps_hw();//get custom file data struct

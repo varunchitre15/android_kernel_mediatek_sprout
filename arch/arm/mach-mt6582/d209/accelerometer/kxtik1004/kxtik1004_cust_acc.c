@@ -15,7 +15,7 @@
 #include <linux/types.h>
 #include <cust_acc.h>
 #include <mach/mt_pm_ldo.h>
-#define AGOLD_ACC_KXTIK1004_DIR_VAULE 5
+#define AGOLD_ACC_KXTIK1004_DIR_VAULE 3
 /*---------------------------------------------------------------------------*/
 #if defined(MTK_AUTO_DETECT_ACCELEROMETER)
 static struct acc_hw kxtik1004_cust_acc_hw = {
@@ -38,7 +38,7 @@ struct acc_hw* kxtik1004_get_cust_acc_hw(void)
 static struct acc_hw cust_acc_hw = {
     .i2c_num = 2,
 #if defined(AGOLD_ACC_KXTIK1004_DIR_VAULE) // fix me
-#warning
+//#warning
     .direction = AGOLD_ACC_KXTIK1004_DIR_VAULE,
 #else
     .direction = 0,
