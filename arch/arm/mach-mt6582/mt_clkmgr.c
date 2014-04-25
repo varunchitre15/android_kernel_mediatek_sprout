@@ -41,9 +41,9 @@
 //#define CLK_LOG
 //#define SYS_LOG
 //#define MUX_LOG_TOP
-#define MUX_LOG
+//#define MUX_LOG
 //#define PLL_LOG_TOP
-#define PLL_LOG
+//#define PLL_LOG
 
 /************************************************
  **********         log debug          **********
@@ -2742,8 +2742,8 @@ int mt_enable_clock(enum cg_clk_id id, char *name)
 #ifdef CLK_LOG_TOP
     clk_info("[%s]: id=%d, names=%s\n", __func__, id, name);
 #else
-    if (id == MT_CG_DISP0_SMI_COMMON)
-        clk_dbg("[%s]: id=%d, names=%s\n", __func__, id, name);
+//    if (id == MT_CG_DISP0_SMI_COMMON)
+//        clk_dbg("[%s]: id=%d, names=%s\n", __func__, id, name);
 #endif
 
     clkmgr_lock(flags);
@@ -2769,8 +2769,8 @@ int mt_disable_clock(enum cg_clk_id id, char *name)
 #ifdef CLK_LOG_TOP
     clk_info("[%s]: id=%d, names=%s\n", __func__, id, name);
 #else
-    if (id == MT_CG_DISP0_SMI_COMMON)
-        clk_dbg("[%s]: id=%d, names=%s\n", __func__, id, name);
+//    if (id == MT_CG_DISP0_SMI_COMMON)
+//        clk_dbg("[%s]: id=%d, names=%s\n", __func__, id, name);
 #endif
 
     clkmgr_lock(flags);
