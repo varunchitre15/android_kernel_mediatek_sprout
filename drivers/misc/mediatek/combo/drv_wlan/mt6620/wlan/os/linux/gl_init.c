@@ -706,12 +706,7 @@ typedef struct _WLANDEV_INFO_T {
 MODULE_AUTHOR(NIC_AUTHOR);
 MODULE_DESCRIPTION(NIC_DESC);
 MODULE_SUPPORTED_DEVICE(NIC_NAME);
-
-#if 0
-    MODULE_LICENSE("MTK Propietary");
-#else
-    MODULE_LICENSE("GPL");
-#endif
+MODULE_LICENSE("GPL");
 
 #define NIC_INF_NAME    "wlan%d" /* interface name */
 
