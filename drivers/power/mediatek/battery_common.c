@@ -2291,6 +2291,7 @@ void update_battery_2nd_info(int status_2nd, int capacity_2nd, int present_2nd)
 
 static void mt_kpoc_power_off_check(void)
 {
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	kal_int32 charger_vol = battery_meter_get_charger_voltage();
 
 	battery_xlog_printk(BAT_LOG_CRTI, "[mt_kpoc_power_off_check] , chr_vol=%d, boot_mode=%d\r\n",charger_vol,g_platform_boot_mode);
@@ -2302,6 +2303,7 @@ static void mt_kpoc_power_off_check(void)
             battery_charging_control(CHARGING_CMD_SET_POWER_OFF,NULL);
 		}
 	}
+#endif
 }
 
 void do_chrdet_int_task(void)
