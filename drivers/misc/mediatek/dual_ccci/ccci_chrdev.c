@@ -60,8 +60,8 @@ static void release_client(struct ccci_dev_client *client)
 {
 	unsigned long flags;
 	chr_ctl_block_t *ctlb = (chr_ctl_block_t *)client->ctlb;
-	WARN_ON(spin_is_locked(&client->lock)||list_empty(&client->dev_list));
-	mutex_lock(&ctlb->chr_dev_mutex);
+	// WARN_ON(spin_is_locked(&client->lock)||list_empty(&client->dev_list));
+	// mutex_lock(&ctlb->chr_dev_mutex);
 	if(client->ch_num == CCCI_MD_LOG_RX) {
 		spin_lock_irqsave(&md_logger_lock, flags);
 		md_logger_client = NULL;
@@ -70,14 +70,18 @@ static void release_client(struct ccci_dev_client *client)
 	list_del(&client->dev_list);
 	un_register_to_logic_ch(client->md_id, client->ch_num);
 	kfree(client);
-	mutex_unlock(&ctlb->chr_dev_mutex);
+	// mutex_unlock(&ctlb->chr_dev_mutex);
 }
 
 static inline void ccci_put_client(struct ccci_dev_client *client)
 {
 	WARN_ON(client==NULL);
+	chr_ctl_block_t *ctlb = (chr_ctl_block_t *)client->ctlb;
+	WARN_ON(spin_is_locked(&client->lock)||list_empty(&client->dev_list));
+	mutex_lock(&ctlb->chr_dev_mutex);
 	if (atomic_dec_and_test(&client->user))
 		release_client(client);
+	mutex_unlock(&ctlb->chr_dev_mutex);
 }
 
 
@@ -239,10 +243,18 @@ static ssize_t ccci_dev_write(struct file *file, const char __user *buf, size_t 
 	int j=0;
 	int ret=0;
 	int ch=client->ch_num;
-	ccci_msg_t *buff=kmalloc(i*sizeof(ccci_msg_t),GFP_KERNEL);
+	ccci_msg_t *buff = NULL;
 	ccci_msg_t msg;
 	WARN_ON(count%sizeof(ccci_msg_t));
 
+	if (!buf || (i < 1))
+	{
+		CCCI_MSG_INF(md_id, "chr", "count:%d, i:%d, buf:0x%x \n", count, i, ((unsigned int) buf));
+		ret=-EINVAL;
+		goto out;
+	}
+
+	buff = (ccci_msg_t *)kmalloc(i*sizeof(ccci_msg_t),GFP_KERNEL);
 	if (buff==NULL)
 	{
 		CCCI_MSG_INF(md_id, "chr", "kmalloc for ccci_msg_t fail \n");
@@ -643,8 +655,8 @@ static void ccci_vir_client_init(ccci_vir_client_t *client, int idx, pid_t pid)
 static void release_vir_client(ccci_vir_client_t *client)
 {
 	vir_ctl_block_t *ctlb = (vir_ctl_block_t *)client->ctlb;
-	WARN_ON(spin_is_locked(&client->lock)||list_empty(&client->dev_list));
-	mutex_lock(&ctlb->chr_dev_mutex);
+	// WARN_ON(spin_is_locked(&client->lock)||list_empty(&client->dev_list));
+	// mutex_lock(&ctlb->chr_dev_mutex);
 
 	if(client->index == 0) {
 		remove_system_msg_transfer(ctlb->md_id);
@@ -657,14 +669,19 @@ static void release_vir_client(ccci_vir_client_t *client)
 	}
 
 	kfree(client);
-	mutex_unlock(&ctlb->chr_dev_mutex);
+	// mutex_unlock(&ctlb->chr_dev_mutex);
 }
 
 static inline void ccci_put_vir_client(ccci_vir_client_t *client)
 {
 	WARN_ON(client == NULL);
+	vir_ctl_block_t *ctlb = (vir_ctl_block_t *)client->ctlb;
+	WARN_ON(spin_is_locked(&client->lock)||list_empty(&client->dev_list));
+
+	mutex_lock(&ctlb->chr_dev_mutex);
 	if (atomic_dec_and_test(&client->user))
 		release_vir_client(client);
+	mutex_unlock(&ctlb->chr_dev_mutex);
 }
 
 

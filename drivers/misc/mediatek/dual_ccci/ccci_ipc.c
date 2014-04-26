@@ -553,6 +553,8 @@ static int ccci_ipc_open(struct inode *inode, struct file *file)
 	int				major;
 	int				index;
 	ipc_ctl_block_t	*ctl_b;
+	IPC_TASK		*task = NULL;
+	unsigned long   flags = 0;
 
 	major = imajor(inode);
 	md_id = get_md_id_by_dev_major(major);
@@ -571,7 +573,11 @@ static int ccci_ipc_open(struct inode *inode, struct file *file)
 	CCCI_DBG_MSG(md_id, "ipc", "%s: register task%d\n", __FUNCTION__, index);
 	nonseekable_open(inode,file);
 	file->private_data = ctl_b->ipc_task+index;
-	atomic_inc(&((ctl_b->ipc_task+index)->user));
+
+	task = (IPC_TASK *)(file->private_data);
+	spin_lock_irqsave(&task->lock, flags);
+	atomic_inc(&(task->user));
+	spin_unlock_irqrestore(&task->lock, flags);
 	return 0;
 
 }
@@ -792,15 +798,16 @@ static int ccci_ipc_release(struct inode *inode, struct file *file)
 	IPC_TASK		*task = file->private_data;
 	unsigned long	flags;
 
+	spin_lock_irqsave(&task->lock, flags);
 	if (atomic_dec_and_test(&task->user))
 	{
-		spin_lock_irqsave(&task->lock, flags);
 		list_for_each_entry_safe(item, n, &task->recv_list, list)
 		{
 			release_recv_item(item);
 		}
-		spin_unlock_irqrestore(&task->lock, flags);
 	}
+	spin_unlock_irqrestore(&task->lock, flags);
+
 	clear_bit(CCCI_TASK_PENDING, &task->flag);
 	CCCI_DBG_MSG(0, "ipc", "%s\n", __FUNCTION__);
 	

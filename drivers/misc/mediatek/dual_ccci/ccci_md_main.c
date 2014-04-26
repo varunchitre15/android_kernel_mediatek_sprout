@@ -78,6 +78,7 @@ typedef struct _md_ctl_block
 	volatile unsigned int ee_info_got;
 	volatile unsigned int ee_info_flag;
 	spinlock_t			ctl_lock;
+	spinlock_t			ctl_lock_md_reset;
 	unsigned int		m_md_id;
 	struct ccci_reset_sta reset_sta[NR_CCCI_RESET_USER];
 }md_ctl_block_t;
@@ -1782,16 +1783,20 @@ int ccci_pre_stop(int md_id)
 {
 	md_ctl_block_t		*ctl_b;
 	int					ret = 0;
+	unsigned long       flags = 0;
 
 	ctl_b = md_ctlb[md_id];
 	if(ctl_b == NULL) {
 		return -CCCI_ERR_FATAL_ERR;
 	}
 	/* prevent another reset modem action from wdt timeout IRQ during modem reset */
+	spin_lock_irqsave(&ctl_b->ctl_lock_md_reset, flags);
 	if(atomic_inc_and_test(&ctl_b->md_reset_on_going) > 1){
 		CCCI_MSG_INF(md_id, "ctl", "One reset flow is on-going \n");
+		spin_unlock_irqrestore(&ctl_b->ctl_lock_md_reset, flags);
 		return -CCCI_ERR_MD_IN_RESET;
 	}
+	spin_unlock_irqrestore(&ctl_b->ctl_lock_md_reset, flags);
 
 	additional_operation_before_stop_md(md_id);	
 
@@ -2450,6 +2455,7 @@ int ccci_md_ctrl_init(int md_id)
 	ctlb->md_boot_up_check_timer.data = (unsigned long)ctlb;
 
 	spin_lock_init(&ctlb->ctl_lock);
+	spin_lock_init(&ctlb->ctl_lock_md_reset);
 	ctlb->ee_info_got = 0;
 	ctlb->ee_info_flag = 0;
 
