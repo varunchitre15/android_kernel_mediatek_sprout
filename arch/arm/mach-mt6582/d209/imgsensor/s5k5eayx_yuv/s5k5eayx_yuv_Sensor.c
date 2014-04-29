@@ -3455,7 +3455,7 @@ static void S5K5EAYXGetCurAeAwbInfo(PSENSOR_AE_AWB_CUR_STRUCT Info)
 static void S5K5EAYX_Get_AF_Max_Num_Focus_Areas(UINT32 *pFeatureReturnPara32)
 { 	
     
-    *pFeatureReturnPara32 = 1;    
+    *pFeatureReturnPara32 = 0;    
     SENSORDB("[5EA]: S5K5EAYX_Get_AF_Max_Num_Focus_Areas: *pFeatureReturnPara32 = %d\n",  *pFeatureReturnPara32);	
 }
 
