@@ -932,17 +932,23 @@ void mtk_uart_dma_setup(struct mtk_uart *uart,
 int mtk_uart_dma_start(struct mtk_uart *uart, struct mtk_uart_dma *dma)
 {
     void *base;
+    unsigned long flags;
     MSG_FUNC_ENTRY();
 
     if (!dma)
         return -1;
         
-    if (!atomic_read(&dma->free))
+    spin_lock_irqsave(&dma->vfifo->dma_free_lock, flags);
+
+    if (!atomic_read(&dma->free)) {
+        spin_unlock_irqrestore(&dma->vfifo->dma_free_lock, flags);
         return -1;
+    }
 
     if (dma->mode == UART_TX_VFIFO_DMA || dma->mode == UART_RX_VFIFO_DMA) {
         if (!dma->vfifo) {
             MSG(ERR, "null\n");
+            spin_unlock_irqrestore(&dma->vfifo->dma_free_lock, flags);
             return -EINVAL;
         }
         base = dma->vfifo->base;
@@ -955,6 +961,7 @@ int mtk_uart_dma_start(struct mtk_uart *uart, struct mtk_uart_dma *dma)
 
     atomic_set(&dma->free, 0);
     init_completion(&dma->done);
+    spin_unlock_irqrestore(&dma->vfifo->dma_free_lock, flags);
 
     return 0;
 }

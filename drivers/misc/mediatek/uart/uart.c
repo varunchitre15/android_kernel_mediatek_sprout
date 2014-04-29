@@ -68,13 +68,13 @@ static DEFINE_SPINLOCK(mtk_uart_vfifo_port_lock);
     {.ch = (c), .size = (n), .trig = VFF_RX_THRE(n), .type = UART_RX_VFIFO, \
      .base = (void*)VFF_BASE_CH(i), .port = NULL, .addr = NULL,             \
      .entry = ATOMIC_INIT(0), .reg_cb = ATOMIC_INIT(0), .iolock=__SPIN_LOCK_UNLOCKED(mtk_uart_vfifo_port[i].lock), \
-     .irq_id = id} 
+     .dma_free_lock=__SPIN_LOCK_UNLOCKED(mtk_uart_vfifo_port[i].dma_free_lock), .irq_id = id} 
 /*---------------------------------------------------------------------------*/
 #define VFIFO_INIT_TX(c, i, n, id) \
     {.ch = (c), .size = (n), .trig = VFF_TX_THRE(n), .type = UART_TX_VFIFO, \
      .base = (void*)VFF_BASE_CH(i), .port = NULL,         \
      .addr = NULL, .entry = ATOMIC_INIT(0), .reg_cb = ATOMIC_INIT(0), .iolock=__SPIN_LOCK_UNLOCKED(mtk_uart_vfifo_port[i].lock), \
-     .irq_id = id}
+     .dma_free_lock=__SPIN_LOCK_UNLOCKED(mtk_uart_vfifo_port[i].dma_free_lock), .irq_id = id}
 /*---------------------------------------------------------------------------*/
 static struct mtk_uart_vfifo mtk_uart_vfifo_port[] = {
     VFIFO_INIT_TX(P_DMA_UART1_TX, 0, C_UART1_VFF_TX_SIZE, UART1_VFF_TX_IRQ_ID),
@@ -968,6 +968,7 @@ static int mtk_uart_dma_alloc(struct mtk_uart *uart,
                                  struct mtk_uart_vfifo *vfifo)
 {
     int ret = 0;
+    unsigned long flags;
 
     MSG_FUNC_ENTRY();
 
@@ -1002,7 +1003,9 @@ static int mtk_uart_dma_alloc(struct mtk_uart *uart,
             atomic_set(&vfifo->reg_cb, 1);
         } 
 
+        spin_lock_irqsave(&dma->vfifo->dma_free_lock, flags);
         atomic_set(&dma->free, 1);
+        spin_unlock_irqrestore(&dma->vfifo->dma_free_lock, flags);
 
         break;
         
@@ -1031,8 +1034,10 @@ static int mtk_uart_dma_alloc(struct mtk_uart *uart,
                 return ret;
             atomic_set(&vfifo->reg_cb, 1);
         }
-            
+
+        spin_lock_irqsave(&vfifo->dma_free_lock, flags);
         atomic_set(&dma->free, 1);
+        spin_unlock_irqrestore(&vfifo->dma_free_lock, flags);
       
         break;
     }

@@ -128,6 +128,7 @@ struct mtk_uart_vfifo
     atomic_t                    reg_cb;
     atomic_t                    entry;  /* entry count */
     spinlock_t                  iolock;
+    spinlock_t                  dma_free_lock;
     struct timer_list           timer;  /* vfifo timer */
     struct hrtimer              flush;  
     dma_addr_t                  dmahd;  /* dma handle */
