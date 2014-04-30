@@ -195,10 +195,7 @@ void aee_sram_fiq_save_bin(const char *msg, size_t len)
 		len -= len%4;
 	}
 	
-	if(!atomic_read(&rc_in_fiq))
-	{
-		atomic_set(&rc_in_fiq, 1);
-	}
+	atomic_set(&rc_in_fiq, 1);
 
 	while ((delay > 0) && (spin_is_locked(&ram_console_lock))) {
 		udelay(1);
@@ -216,8 +213,6 @@ void aee_sram_fiq_save_bin(const char *msg, size_t len)
 	sram_log_save(msg, len);	
 	FIQ_log_size = FIQ_log_size + len +4;
 	buffer->bin_log_count += len;
-	
-
 }
 
 
@@ -238,10 +233,7 @@ void aee_sram_fiq_log(const char *msg)
 		return;
 	}
 
-	if(!atomic_read(&rc_in_fiq))
-	{
-		atomic_set(&rc_in_fiq, 1);
-	}
+	atomic_set(&rc_in_fiq, 1);
 
 	while ((delay > 0) && (spin_is_locked(&ram_console_lock))) {
 		udelay(1);
