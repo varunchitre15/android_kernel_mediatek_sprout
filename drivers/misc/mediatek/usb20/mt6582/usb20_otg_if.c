@@ -1158,7 +1158,7 @@ static struct miscdevice musb_otg_test_dev = {
     //.minor = 254,
 	.name = TEST_DRIVER_NAME,
 	.fops = &musb_otg_test_fops,
-	.mode = 0666,
+	.mode = 0660,
 };
 
 
