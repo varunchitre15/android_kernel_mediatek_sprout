@@ -1,18 +1,16 @@
 /*
- * Copyright (C) 2007 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+* Copyright (C) 2011-2014 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
 /*******************************************************************************
  *
  * Filename:
@@ -95,11 +93,11 @@ uint32 Ana_Get_Reg(uint32 offset)
 void Ana_Log_Print(void)
 {
     AudDrv_ANA_Clk_On();
-    printk("ABB_AFE_CON0	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON0));
-    printk("ABB_AFE_CON1	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON1));
-    printk("ABB_AFE_CON2	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON2));
-    printk("ABB_AFE_CON3	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON3));
-    printk("ABB_AFE_CON4	= 0x%x\n", Ana_Get_Reg(ABB_AFE_CON4));
+    printk("ABB_AFE_CON0    = 0x%x\n", Ana_Get_Reg(ABB_AFE_CON0));
+    printk("ABB_AFE_CON1    = 0x%x\n", Ana_Get_Reg(ABB_AFE_CON1));
+    printk("ABB_AFE_CON2    = 0x%x\n", Ana_Get_Reg(ABB_AFE_CON2));
+    printk("ABB_AFE_CON3    = 0x%x\n", Ana_Get_Reg(ABB_AFE_CON3));
+    printk("ABB_AFE_CON4    = 0x%x\n", Ana_Get_Reg(ABB_AFE_CON4));
     printk("ABB_AFE_CON5  = 0x%x\n", Ana_Get_Reg(ABB_AFE_CON5));
     printk("ABB_AFE_CON6  = 0x%x\n", Ana_Get_Reg(ABB_AFE_CON6));
     printk("ABB_AFE_CON7  = 0x%x\n", Ana_Get_Reg(ABB_AFE_CON7));
@@ -112,11 +110,11 @@ void Ana_Log_Print(void)
     printk("ABB_AFE_STA1  = 0x%x\n", Ana_Get_Reg(ABB_AFE_STA1));
     printk("ABB_AFE_STA2  = 0x%x\n", Ana_Get_Reg(ABB_AFE_STA2));
 
-    printk("ABB_AFE_UP8X_FIFO_CFG0	= 0x%x\n", Ana_Get_Reg(ABB_AFE_UP8X_FIFO_CFG0));
-    printk("ABB_AFE_UP8X_FIFO_LOG_MON0	= 0x%x\n", Ana_Get_Reg(ABB_AFE_UP8X_FIFO_LOG_MON0));
-    printk("ABB_AFE_UP8X_FIFO_LOG_MON1	= 0x%x\n", Ana_Get_Reg(ABB_AFE_UP8X_FIFO_LOG_MON1));
-    printk("ABB_AFE_PMIC_NEWIF_CFG0	= 0x%x\n", Ana_Get_Reg(ABB_AFE_PMIC_NEWIF_CFG0));
-    printk("ABB_AFE_PMIC_NEWIF_CFG1	= 0x%x\n", Ana_Get_Reg(ABB_AFE_PMIC_NEWIF_CFG1));
+    printk("ABB_AFE_UP8X_FIFO_CFG0    = 0x%x\n", Ana_Get_Reg(ABB_AFE_UP8X_FIFO_CFG0));
+    printk("ABB_AFE_UP8X_FIFO_LOG_MON0    = 0x%x\n", Ana_Get_Reg(ABB_AFE_UP8X_FIFO_LOG_MON0));
+    printk("ABB_AFE_UP8X_FIFO_LOG_MON1    = 0x%x\n", Ana_Get_Reg(ABB_AFE_UP8X_FIFO_LOG_MON1));
+    printk("ABB_AFE_PMIC_NEWIF_CFG0    = 0x%x\n", Ana_Get_Reg(ABB_AFE_PMIC_NEWIF_CFG0));
+    printk("ABB_AFE_PMIC_NEWIF_CFG1    = 0x%x\n", Ana_Get_Reg(ABB_AFE_PMIC_NEWIF_CFG1));
     printk("ABB_AFE_PMIC_NEWIF_CFG2  = 0x%x\n", Ana_Get_Reg(ABB_AFE_PMIC_NEWIF_CFG2));
     printk("ABB_AFE_PMIC_NEWIF_CFG3  = 0x%x\n", Ana_Get_Reg(ABB_AFE_PMIC_NEWIF_CFG3));
     printk("ABB_AFE_TOP_CON0  = 0x%x\n", Ana_Get_Reg(ABB_AFE_TOP_CON0));
@@ -134,7 +132,7 @@ void Ana_Log_Print(void)
     printk("SPK_CON11  = 0x%x\n", Ana_Get_Reg(SPK_CON11));
     printk("SPK_CON12  = 0x%x\n", Ana_Get_Reg(SPK_CON12));
 
-    printk("CID	= 0x%x\n", Ana_Get_Reg(CID));
+    printk("CID    = 0x%x\n", Ana_Get_Reg(CID));
     printk("TOP_CKPDN0  = 0x%x\n", Ana_Get_Reg(TOP_CKPDN0));
     printk("TOP_CKPDN0_SET  = 0x%x\n", Ana_Get_Reg(TOP_CKPDN0_SET));
     printk("TOP_CKPDN0_CLR  = 0x%x\n", Ana_Get_Reg(TOP_CKPDN0_CLR));
