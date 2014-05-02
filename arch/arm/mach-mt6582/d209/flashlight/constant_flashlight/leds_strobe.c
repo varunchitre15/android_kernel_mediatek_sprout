@@ -103,77 +103,69 @@ static DECLARE_MUTEX(g_strobeSem);
 #endif
 
 
-#define STROBE_DEVICE_ID 0xC6
+#define STROBE_DEVICE_ID 0x60
 
 
 static struct work_struct workTimeOut;
 
-#define FLASH_GPIO_ENF GPIO12
-#define FLASH_GPIO_ENT GPIO13
-
 /*****************************************************************************
 Functions
 *****************************************************************************/
+#define GPIO_ENF GPIO_CAMERA_FLASH_EN_PIN
+#define GPIO_ENT GPIO_CAMERA_FLASH_MODE_PIN
+
+
+    /*CAMERA-FLASH-EN */
+
+
 extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
 extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 static void work_timeOutFunc(struct work_struct *data);
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 int FL_Enable(void)
 {
-	char buf[2];
-//	char bufR[2];
-
-  if(g_duty<=4)
-  {
-    int val;
-    val = (g_duty+3)<<4;
-    buf[0]=9;
-	  buf[1]=val;
-	  iWriteRegI2C(buf , 2, STROBE_DEVICE_ID);
-
-	  buf[0]=10;
-	  buf[1]=0x02;
-	  iWriteRegI2C(buf , 2, STROBE_DEVICE_ID);
-  }
-  else
-  {
-    int val;
-    val = (g_duty-3);
-    buf[0]=9;
-	  buf[1]=val;
-	  iWriteRegI2C(buf , 2, STROBE_DEVICE_ID);
-
-	  buf[0]=10;
-	  buf[1]=0x03;
-	  iWriteRegI2C(buf , 2, STROBE_DEVICE_ID);
-  }
-	PK_DBG(" FL_Enable line=%d\n",__LINE__);
-
-
+	if(g_duty==0)
+	{
+		mt_set_gpio_out(GPIO_ENT,GPIO_OUT_ONE);
+		mt_set_gpio_out(GPIO_ENF,GPIO_OUT_ZERO);
+		PK_DBG(" FL_Enable line=%d\n",__LINE__);
+	}
+	else
+	{
+		mt_set_gpio_out(GPIO_ENT,GPIO_OUT_ZERO);
+		mt_set_gpio_out(GPIO_ENF,GPIO_OUT_ONE);
+		PK_DBG(" FL_Enable line=%d\n",__LINE__);
+	}
 
     return 0;
 }
 
-
-
 int FL_Disable(void)
 {
-		char buf[2];
 
-///////////////////////
-	buf[0]=10;
-	buf[1]=0x00;
-	iWriteRegI2C(buf , 2, STROBE_DEVICE_ID);
+	mt_set_gpio_out(GPIO_ENT,GPIO_OUT_ZERO);
+	mt_set_gpio_out(GPIO_ENF,GPIO_OUT_ZERO);
 	PK_DBG(" FL_Disable line=%d\n",__LINE__);
     return 0;
 }
 
 int FL_dim_duty(kal_uint32 duty)
 {
+	g_duty=duty;
 	PK_DBG(" FL_dim_duty line=%d\n",__LINE__);
-	g_duty = duty;
     return 0;
 }
 
@@ -181,31 +173,16 @@ int FL_dim_duty(kal_uint32 duty)
 int FL_Init(void)
 {
 
-  char buf[2];
-  buf[0]=0xa;
-	buf[1]=0x0;
-	iWriteRegI2C(buf , 2, STROBE_DEVICE_ID);
 
-	buf[0]=0x8;
-	buf[1]=0x47;
-	iWriteRegI2C(buf , 2, STROBE_DEVICE_ID);
+	if(mt_set_gpio_mode(GPIO_ENF,GPIO_MODE_00)){PK_DBG("[constant_flashlight] set gpio mode failed!! \n");}
+    if(mt_set_gpio_dir(GPIO_ENF,GPIO_DIR_OUT)){PK_DBG("[constant_flashlight] set gpio dir failed!! \n");}
+    if(mt_set_gpio_out(GPIO_ENF,GPIO_OUT_ZERO)){PK_DBG("[constant_flashlight] set gpio failed!! \n");}
+    /*Init. to disable*/
+    if(mt_set_gpio_mode(GPIO_ENT,GPIO_MODE_00)){PK_DBG("[constant_flashlight] set gpio mode failed!! \n");}
+    if(mt_set_gpio_dir(GPIO_ENT,GPIO_DIR_OUT)){PK_DBG("[constant_flashlight] set gpio dir failed!! \n");}
+    if(mt_set_gpio_out(GPIO_ENT,GPIO_OUT_ZERO)){PK_DBG("[constant_flashlight] set gpio failed!! \n");}
 
-	buf[0]=9;
-	buf[1]=0x35;
-	iWriteRegI2C(buf , 2, STROBE_DEVICE_ID);
-
-
-	if(mt_set_gpio_mode(FLASH_GPIO_ENT,GPIO_MODE_00)){PK_DBG("[constant_flashlight] set gpio mode failed!! \n");}
-    if(mt_set_gpio_dir(FLASH_GPIO_ENT,GPIO_DIR_OUT)){PK_DBG("[constant_flashlight] set gpio dir failed!! \n");}
-    if(mt_set_gpio_out(FLASH_GPIO_ENT,GPIO_OUT_ZERO)){PK_DBG("[constant_flashlight] set gpio failed!! \n");}
-
-    	if(mt_set_gpio_mode(FLASH_GPIO_ENF,GPIO_MODE_00)){PK_DBG("[constant_flashlight] set gpio mode failed!! \n");}
-    if(mt_set_gpio_dir(FLASH_GPIO_ENF,GPIO_DIR_OUT)){PK_DBG("[constant_flashlight] set gpio dir failed!! \n");}
-    if(mt_set_gpio_out(FLASH_GPIO_ENF,GPIO_OUT_ZERO)){PK_DBG("[constant_flashlight] set gpio failed!! \n");}
-
-
-
-
+    INIT_WORK(&workTimeOut, work_timeOutFunc);
     PK_DBG(" FL_Init line=%d\n",__LINE__);
     return 0;
 }
@@ -238,7 +215,6 @@ enum hrtimer_restart ledTimeOutCallback(struct hrtimer *timer)
 static struct hrtimer g_timeOutTimer;
 void timerInit(void)
 {
-  INIT_WORK(&workTimeOut, work_timeOutFunc);
 	g_timeOutTimeMs=1000; //1s
 	hrtimer_init( &g_timeOutTimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL );
 	g_timeOutTimer.function=ledTimeOutCallback;
@@ -259,6 +235,19 @@ static int constant_flashlight_ioctl(MUINT32 cmd, MUINT32 arg)
 	PK_DBG("constant_flashlight_ioctl() line=%d ior_shift=%d, iow_shift=%d iowr_shift=%d arg=%d\n",__LINE__, ior_shift, iow_shift, iowr_shift, arg);
     switch(cmd)
     {
+
+        case FLASHLIGHTIOC_G_FLASHTYPE:
+            {
+                int iFlashType;
+                PK_DBG("FLASHLIGHTIOC_G_FLASHTYPE: constant\n");
+                iFlashType = FLASHLIGHT_LED_CONSTANT;
+                if(copy_to_user((void __user *) arg , (void*)&iFlashType , 4))
+                {
+                    PK_DBG("[strobe_ioctl] ioctl copy to user failed\n");
+                    return -EFAULT;
+                }
+            }
+            break;
 
 		case FLASH_IOC_SET_TIME_OUT_TIME_MS:
 			PK_DBG("FLASH_IOC_SET_TIME_OUT_TIME_MS: %d\n",arg);
