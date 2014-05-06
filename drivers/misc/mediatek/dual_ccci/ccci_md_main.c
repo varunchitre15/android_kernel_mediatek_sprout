@@ -1622,7 +1622,7 @@ static int set_md_runtime(int md_id,
 	}
 
 	//add a new attribute of mdlogger auto start info to notify md
-	filp = filp_open(MDLOGGER_FILE_PATH, O_RDONLY, 0777);
+	filp = filp_open(MDLOGGER_FILE_PATH, O_RDONLY, 0);
 	if (IS_ERR(filp)) {
 		CCCI_MSG_INF(md_id, "ctl", "open /data/mdl/mdl_config fail:%ld\n", PTR_ERR(filp));
 		filp=NULL;
