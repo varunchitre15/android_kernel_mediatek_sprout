@@ -33,9 +33,6 @@ static inline unsigned long COLOUR_ALIGN_DOWN(unsigned long addr,
 
 static int mmap_is_legacy(void)
 {
-	//Force to random the MMAP Address from TASK_UNMAPPED_BASE (0x40000000)
-	//by loda.
-	return 1;
 	if (current->personality & ADDR_COMPAT_LAYOUT)
 		return 1;
 
