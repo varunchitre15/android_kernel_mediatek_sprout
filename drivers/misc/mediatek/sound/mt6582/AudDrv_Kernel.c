@@ -2785,6 +2785,19 @@ int AudDrv_GET_UL_REMAIN_TIME(struct file *fp)
 
 }
 
+/*****************************************************************************
+ * FUNCTION
+ *  AudDrv_AUDIO_REMAINING
+ *
+ * DESCRIPTION
+ *  Get DL buffer remaining size and time stamp
+ *
+ ******************************************************************************/
+void AudDrv_AUDIO_REMAINING(struct file *fp, Data_Remaining *time)
+{
+    jiffies_to_timespec(jiffies, &(time->time));
+    time->bytes_remaining = AudDrv_GET_DL1_REMAIN_TIME(fp);
+}
 
 /*****************************************************************************
  * FILE OPERATION FUNCTION
@@ -3431,6 +3444,17 @@ static long AudDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
         {
             //PRINTK_AUDDRV("AudDrv AUDDRV_GET_UL_REMAINDATA_TIME ");
             ret = AudDrv_GET_UL_REMAIN_TIME(fp);
+            break;
+        }
+        case AUDDRV_AUDIO_REMAINING:
+        {
+            Data_Remaining data;
+            AudDrv_AUDIO_REMAINING(fp, &data);
+            if (copy_to_user((void __user *)(arg), (void *)(&data), sizeof(Data_Remaining)))
+            {
+                return -EFAULT;
+            }
+
             break;
         }
         default:
