@@ -201,7 +201,7 @@ int osal_filp_open_read_only(const char *file_path)
         }
     }
     
-    g_osal_fp[filp_id] = filp_open(file_path, O_RDONLY, 0777);
+    g_osal_fp[filp_id] = filp_open(file_path, O_RDONLY, 0);
 
     if(IS_ERR(g_osal_fp[filp_id]))
     {
