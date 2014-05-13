@@ -395,19 +395,13 @@ ssize_t WIFI_write(struct file *filp, const char __user *buf, size_t count, loff
                     wlan_dbg_level[k] = DBG_CLASS_ERROR | \
                         DBG_CLASS_WARN | \
                         DBG_CLASS_STATE | \
-                        DBG_CLASS_EVENT | \
-                        DBG_CLASS_TRACE | \
-                        DBG_CLASS_INFO;
+                        DBG_CLASS_EVENT;
                 }
-                wlan_dbg_level[DBG_TX_IDX] &= ~(DBG_CLASS_EVENT | \
-                    DBG_CLASS_TRACE | \
-                    DBG_CLASS_INFO);
-                wlan_dbg_level[DBG_RX_IDX] &= ~(DBG_CLASS_EVENT | \
-                    DBG_CLASS_TRACE | \
-                    DBG_CLASS_INFO);
-                wlan_dbg_level[DBG_REQ_IDX] &= ~(DBG_CLASS_EVENT | \
-                    DBG_CLASS_TRACE | \
-                    DBG_CLASS_INFO);
+                wlan_dbg_level[DBG_INIT_IDX] &= DBG_CLASS_TRACE | DBG_CLASS_INFO;
+                wlan_dbg_level[DBG_HAL_IDX] &= DBG_CLASS_TRACE | DBG_CLASS_INFO;
+                wlan_dbg_level[DBG_REQ_IDX] &= ~(DBG_CLASS_EVENT);
+                wlan_dbg_level[DBG_TX_IDX] &= ~(DBG_CLASS_EVENT);
+                wlan_dbg_level[DBG_RX_IDX] &= ~(DBG_CLASS_EVENT);
                 wlan_dbg_level[DBG_INTR_IDX] = 0;
                 wlan_dbg_level[DBG_MEM_IDX] = 0;
                 if (pf_set_dbg_level) {

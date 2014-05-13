@@ -269,7 +269,6 @@ typedef enum _ENUM_DBG_MODULE_T {
  *
  * A caller shall not invoke these three macros when DBG=0.
  */
-#define LOG_FUNC_TIME           kalPrint
 #define LOG_FUNC                kalPrint
 
 #if DBG
@@ -318,12 +317,10 @@ typedef enum _ENUM_DBG_MODULE_T {
         { \
             if (aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) { \
                 if (DBG_CLASS_##_Class == DBG_CLASS_ERROR) { \
-                    LOG_FUNC_TIME("[wlan] **Error[%s:%d]-", __FILE__, __LINE__); \
-                    LOG_FUNC("[wlan] %s: (" #_Module " " #_Class ") ", __FUNCTION__); \
+                    LOG_FUNC("[wlan] **Error-%s: (" #_Module " " #_Class ") ", __FUNCTION__); \
                 } \
                 else if (DBG_CLASS_##_Class == DBG_CLASS_WARN) { \
-                    LOG_FUNC_TIME("[wlan] **Warning[%s:%d]-", __FILE__, __LINE__); \
-                    LOG_FUNC("[wlan] %s: (" #_Module " " #_Class ") ", __FUNCTION__); \
+                    LOG_FUNC("[wlan] **Warning-%s: (" #_Module " " #_Class ") ", __FUNCTION__); \
                 } \
                 else { \
                     LOG_FUNC("[wlan] %s: (" #_Module " " #_Class ") ", __FUNCTION__); \
@@ -391,12 +388,10 @@ typedef enum _ENUM_DBG_MODULE_T {
     { \
         if (aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) { \
             if (DBG_CLASS_##_Class == DBG_CLASS_ERROR) { \
-                LOG_FUNC_TIME("[wlan] **Error[%s:%d]-", __FILE__, __LINE__); \
-                LOG_FUNC("[wlan] %s: (" #_Module " " #_Class ") ", __FUNCTION__); \
+                LOG_FUNC("[wlan] **Error-%s: (" #_Module " " #_Class ") ", __FUNCTION__); \
             } \
             else if (DBG_CLASS_##_Class == DBG_CLASS_WARN) { \
-                LOG_FUNC_TIME("[wlan] **Warning[%s:%d]-", __FILE__, __LINE__); \
-                LOG_FUNC("[wlan] %s: (" #_Module " " #_Class ") ", __FUNCTION__); \
+                LOG_FUNC("[wlan] **Warning-%s: (" #_Module " " #_Class ") ", __FUNCTION__); \
             } \
             else { \
                 LOG_FUNC("[wlan] %s: (" #_Module " " #_Class ") ", __FUNCTION__); \
