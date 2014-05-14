@@ -2141,6 +2141,29 @@ unsigned int mtkfb_fm_auto_test()
 	return result;
 }
 
+static int mtkfb_blank(int blank_mode, struct fb_info *info)
+{
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	switch (blank_mode) {
+	case FB_BLANK_UNBLANK:
+	case FB_BLANK_NORMAL:
+		mtkfb_late_resume(NULL);
+		break;
+	case FB_BLANK_VSYNC_SUSPEND:
+	case FB_BLANK_HSYNC_SUSPEND:
+		break;
+	case FB_BLANK_POWERDOWN:
+		mtkfb_early_suspend(NULL);
+		break;
+	default:
+		return -EINVAL;
+        }
+	return 0;
+#else
+	return -EINVAL;
+#endif
+}
+
 /* Callback table for the frame buffer framework. Some of these pointers
  * will be changed according to the current setting of fb_info->accel_flags.
  */
@@ -2157,6 +2180,7 @@ static struct fb_ops mtkfb_ops = {
     .fb_check_var   = mtkfb_check_var,
     .fb_set_par     = mtkfb_set_par,
     .fb_ioctl       = mtkfb_ioctl,
+    .fb_blank       = mtkfb_blank,
 };
 
 /*
