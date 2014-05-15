@@ -229,6 +229,7 @@ FID_TO_TYPE_ENUM  (
         AF_MODE_AFC_VIDEO,                  // AF-Continuous Mode (Video)
         AF_MODE_MACRO,                      // AF Macro Mode 
         AF_MODE_INFINITY,                   // Focus is set at infinity. 
+        AF_MODE_FIXED,                      // Focus is fixed. 
         AF_MODE_MF,                         // Manual Focus Mode
         AF_MODE_FULLSCAN,                   // AF Full Scan Mode
         NUM_OF_AF_MODE
