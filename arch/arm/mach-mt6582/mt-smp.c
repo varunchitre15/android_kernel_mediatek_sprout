@@ -113,12 +113,6 @@ int L2CTLR_get_core_count(void){
     else
         cores = 2;
 
-    /*
-     * 20140211 marc.huang 
-     * force mt6582 to dual core
-     */
-    cores = 2;
-
     printk("[CORE] num:%d\n",cores);
     return cores;
 }
