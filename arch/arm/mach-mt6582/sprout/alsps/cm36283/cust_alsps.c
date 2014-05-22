@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -19,8 +19,8 @@
 
 static struct alsps_hw cust_alsps_hw = {
     .i2c_num    = 2,
-	.polling_mode_ps =0,
-	.polling_mode_als =1,
+    .polling_mode_ps =0,
+    .polling_mode_als =1,
     .power_id   = MT65XX_POWER_NONE,    /*LDO is not used*/
     .power_vol  = VOL_DEFAULT,          /*LDO is not used*/
     //.i2c_addr   = {0x0C, 0x48, 0x78, 0x00},
@@ -29,8 +29,10 @@ static struct alsps_hw cust_alsps_hw = {
     /* MTK: modified to support AAL */
     .als_level  = { 0, 45, 45, 45, 303, 303, 303, 1305, 1305, 2699, 2699, 7622, 38416, 46881, 65535},
     .als_value  = { 0, 80, 80, 80, 107, 107, 107,  650,  650, 1160, 1160, 3100,  5000,  8500, 10050, 10240},
-    .ps_threshold_high = 31,
-    .ps_threshold_low = 21,
+    //.ps_threshold_high = 80,
+    .ps_threshold_high = 65535,
+    //.ps_threshold_low = 50,
+    .ps_threshold_low = 0,
 };
 struct alsps_hw *get_cust_alsps_hw(void) {
     return &cust_alsps_hw;
@@ -38,10 +40,10 @@ struct alsps_hw *get_cust_alsps_hw(void) {
 
 int pmic_ldo_suspend_enable(int enable)
 {
-	//0 for disable suspend, 1 for enable suspend
-	upmu_set_vio18_lp_sel(enable);
-	upmu_set_vio28_lp_sel(enable);
-	return 0;
+    //0 for disable suspend, 1 for enable suspend
+    upmu_set_vio18_lp_sel(enable);
+    upmu_set_vio28_lp_sel(enable);
+    return 0;
 }
 
 
