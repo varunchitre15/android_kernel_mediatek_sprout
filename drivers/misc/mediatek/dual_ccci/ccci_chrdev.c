@@ -448,7 +448,7 @@ static long ccci_dev_ioctl( struct file *file, unsigned int cmd, unsigned long a
 
 static int ccci_dev_mmap(struct file *file, struct vm_area_struct *vma)
 {
-	int				pfn, len; 
+	int				pfn, len = 0; 
 	unsigned long	addr;
 	struct ccci_dev_client *client=(struct ccci_dev_client *)file->private_data;
 	int				md_id = client->md_id;
@@ -460,7 +460,7 @@ static int ccci_dev_mmap(struct file *file, struct vm_area_struct *vma)
 		ccci_mdlog_base_req(md_id, NULL, &addr, &len);
 	}
 
-	CCCI_CHR_MSG(md_id, "remap addr:0x%lx len:%d  map-len=%lu\n",addr,len,vma->vm_end-vma->vm_start);
+	CCCI_CHR_MSG(md_id, "remap addr:0x%lx len:%d  map-len:%lu\n",addr,len,vma->vm_end-vma->vm_start);
 	if ((vma->vm_end-vma->vm_start)> len) {
 		CCCI_DBG_MSG(md_id, "chr", "Get invalid mm size request from ch%d!\n", client->ch_num);
 	}
