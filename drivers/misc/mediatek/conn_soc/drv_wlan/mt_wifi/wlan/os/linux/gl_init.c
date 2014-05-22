@@ -704,6 +704,8 @@ MODULE_SUPPORTED_DEVICE(NIC_NAME);
 MODULE_LICENSE("GPL");
 
 #define NIC_INF_NAME    "wlan%d" /* interface name */
+#define NIC_INF_NAME_FOR_AP_MODE "legacy%d"
+extern volatile int wlan_if_changed;
 
 /* support to change debug module info dynamically */
 UINT_8  aucDebugModule[DBG_MODULE_NUM];
@@ -2256,8 +2258,12 @@ wlanNetCreate(
     }
 
     //4 <3> Initial Glue structure
-    //4 <3.1> create net device 
-    prGlueInfo->prDevHandler = alloc_netdev_mq(sizeof(P_GLUE_INFO_T), NIC_INF_NAME, ether_setup, CFG_MAX_TXQ_NUM);
+    //4 <3.1> Create net device 
+	if (wlan_if_changed) {
+		prGlueInfo->prDevHandler = alloc_netdev_mq(sizeof(P_GLUE_INFO_T), NIC_INF_NAME_FOR_AP_MODE, ether_setup, CFG_MAX_TXQ_NUM);
+	} else {
+		prGlueInfo->prDevHandler = alloc_netdev_mq(sizeof(P_GLUE_INFO_T), NIC_INF_NAME, ether_setup, CFG_MAX_TXQ_NUM);
+	}
 
     DBGLOG(INIT, INFO, ("net_device prDev(0x%p) allocated\n", prGlueInfo->prDevHandler));
     if (!prGlueInfo->prDevHandler) {

@@ -25,7 +25,9 @@
 #include <linux/poll.h>
 #include <linux/time.h>
 #include <linux/delay.h>
+#include <linux/device.h>
 #include <linux/netdevice.h>
+#include <linux/inetdevice.h>
 #include <net/net_namespace.h>
 #include <linux/string.h>
 
@@ -54,6 +56,7 @@ unsigned int gDbgLevel = WIFI_LOG_DBG;
 #define VERSION "1.0"
 
 #define WLAN_IFACE_NAME "wlan0"
+#define LEGACY_IFACE_NAME "legacy0"
 
 enum {
     WLAN_MODE_HALT,
@@ -63,6 +66,9 @@ enum {
 };
 static int wlan_mode = WLAN_MODE_HALT;
 static int powered = 0;
+static char *ifname = WLAN_IFACE_NAME;
+volatile int wlan_if_changed = 0;
+EXPORT_SYMBOL(wlan_if_changed);
 
 /*
  *  enable = 1, mode = 0  => init P2P network
@@ -75,7 +81,7 @@ typedef struct _PARAM_CUSTOM_P2P_SET_STRUC_T {
 } PARAM_CUSTOM_P2P_SET_STRUC_T, *P_PARAM_CUSTOM_P2P_SET_STRUC_T;
 typedef int (*set_p2p_mode)(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUC_T p2pmode);
 
-set_p2p_mode pf_set_p2p_mode;
+static set_p2p_mode pf_set_p2p_mode;
 void register_set_p2p_mode_handler(set_p2p_mode handler) {
     WIFI_INFO_FUNC("(pid %d) register set p2p mode handler %p\n", current->pid, handler);
     pf_set_p2p_mode = handler;
@@ -132,7 +138,7 @@ typedef enum _ENUM_DBG_MODULE_T {
 typedef void (*set_dbg_level)(unsigned char modules[DBG_MODULE_NUM]);
 
 unsigned char wlan_dbg_level[DBG_MODULE_NUM];
-set_dbg_level pf_set_dbg_level;
+static set_dbg_level pf_set_dbg_level;
 void register_set_dbg_level_handler(set_dbg_level handler) {
     pf_set_dbg_level = handler;
 }
@@ -169,9 +175,9 @@ int wifi_reset_start(void)
     down(&wr_mtx);
 
     if (powered == 1) {
-        netdev = dev_get_by_name(&init_net, WLAN_IFACE_NAME);
+        netdev = dev_get_by_name(&init_net, ifname);
         if (netdev == NULL) {
-            WIFI_ERR_FUNC("Fail to get wlan0 net device\n");
+            WIFI_ERR_FUNC("Fail to get %s net device\n", ifname);
         }
         else {
             p2pmode.u4Enable = 0;
@@ -225,15 +231,15 @@ int wifi_reset_end(void)
             goto done;
         }
 
-        netdev = dev_get_by_name(&init_net, WLAN_IFACE_NAME);
+        netdev = dev_get_by_name(&init_net, ifname);
         while (netdev == NULL && wait_cnt < 10) {
-            WIFI_ERR_FUNC("Fail to get wlan0 net device, sleep 300ms\n");
+            WIFI_ERR_FUNC("Fail to get %s net device, sleep 300ms\n", ifname);
             msleep(300);
             wait_cnt ++;
-            netdev = dev_get_by_name(&init_net, WLAN_IFACE_NAME);
+            netdev = dev_get_by_name(&init_net, ifname);
         }
         if (wait_cnt >= 10) {
-            WIFI_ERR_FUNC("Get wlan0 net device timeout\n");
+            WIFI_ERR_FUNC("Get %s net device timeout\n", ifname);
             goto done;
         }
 
@@ -324,9 +330,9 @@ ssize_t WIFI_write(struct file *filp, const char __user *buf, size_t count, loff
                 goto done;
             }
 
-            netdev = dev_get_by_name(&init_net, WLAN_IFACE_NAME);
+            netdev = dev_get_by_name(&init_net, ifname);
             if (netdev == NULL) {
-                WIFI_ERR_FUNC("Fail to get wlan0 net device\n");
+                WIFI_ERR_FUNC("Fail to get %s net device\n", ifname);
             }
             else {
                 p2pmode.u4Enable = 0;
@@ -352,6 +358,8 @@ ssize_t WIFI_write(struct file *filp, const char __user *buf, size_t count, loff
                 powered = 0;
                 retval = count;
                 wlan_mode = WLAN_MODE_HALT;
+				ifname = WLAN_IFACE_NAME;
+                wlan_if_changed = 0;
             }
         }
         else if (local[0] == '1') {
@@ -460,15 +468,15 @@ ssize_t WIFI_write(struct file *filp, const char __user *buf, size_t count, loff
                 goto done;
             }
 
-            netdev = dev_get_by_name(&init_net, WLAN_IFACE_NAME);
+            netdev = dev_get_by_name(&init_net, ifname);
             while (netdev == NULL && wait_cnt < 10) {
-                WIFI_ERR_FUNC("Fail to get wlan0 net device, sleep 300ms\n");
+                WIFI_ERR_FUNC("Fail to get %s net device, sleep 300ms\n", ifname);
                 msleep(300);
                 wait_cnt ++;
-                netdev = dev_get_by_name(&init_net, WLAN_IFACE_NAME);
+                netdev = dev_get_by_name(&init_net, ifname);
             }
             if (wait_cnt >= 10) {
-                WIFI_ERR_FUNC("Get wlan0 net device timeout\n");
+                WIFI_ERR_FUNC("Get %s net device timeout\n", ifname);
                 goto done;
             }
 
@@ -483,6 +491,22 @@ ssize_t WIFI_write(struct file *filp, const char __user *buf, size_t count, loff
             }
 
             if (local[0] == 'S' || local[0] == 'P'){
+				/*restore wlan0 ifname for STA nic*/
+				rtnl_lock();
+                if (strcmp(ifname, WLAN_IFACE_NAME) != 0){
+                    if (dev_change_name(netdev, WLAN_IFACE_NAME) != 0){
+                        WIFI_ERR_FUNC("netdev name change to %s fail\n", WLAN_IFACE_NAME);
+                        rtnl_unlock();
+                        goto done;
+                    }
+                    else{
+                        WIFI_INFO_FUNC("netdev name changed %s --> %s\n", ifname, WLAN_IFACE_NAME);
+                        ifname = WLAN_IFACE_NAME;
+                        wlan_if_changed = 0;
+                    }
+                }
+                rtnl_unlock();
+
                 p2pmode.u4Enable = 1;
                 p2pmode.u4Mode = 0;
                 if (pf_set_p2p_mode(netdev, p2pmode) != 0){
@@ -494,6 +518,22 @@ ssize_t WIFI_write(struct file *filp, const char __user *buf, size_t count, loff
                     retval = count;
                 }
             } else if (local[0] == 'A'){
+				/*change name for STA nic*/
+				rtnl_lock();
+                if (strcmp(ifname, LEGACY_IFACE_NAME) != 0){
+                    if (dev_change_name(netdev, LEGACY_IFACE_NAME) != 0){
+                        WIFI_ERR_FUNC("netdev name change to %s fail\n", LEGACY_IFACE_NAME);
+                        rtnl_unlock();
+                        goto done;
+                    }
+                    else{
+                        WIFI_INFO_FUNC("netdev name changed %s --> %s\n", ifname, LEGACY_IFACE_NAME);
+                        ifname = LEGACY_IFACE_NAME;
+                        wlan_if_changed = 1;
+                    }
+                }
+                rtnl_unlock();
+
                 p2pmode.u4Enable = 1;
                 p2pmode.u4Mode = 1;
                 if (pf_set_p2p_mode(netdev, p2pmode) != 0){

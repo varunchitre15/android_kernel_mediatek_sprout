@@ -44,7 +44,7 @@
 */
 
 #define P2P_MODE_INF_NAME "p2p%d";
-#define AP_MODE_INF_NAME "ap%d";
+#define AP_MODE_INF_NAME "wlan%d";
 //#define MAX_INF_NAME_LEN 15
 //#define MIN_INF_NAME_LEN 1
 
