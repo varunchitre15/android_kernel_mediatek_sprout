@@ -105,8 +105,8 @@
 #define MT9M111_SENSOR_ID                       0x143A
 #define MT9M112_SENSOR_ID                       0x148C
 #define MT9M113_SENSOR_ID                       0x2480
-#define MT9P012_SENSOR_ID						0x2800
-#define MT9P012_SENSOR_ID_REV7					0x2801
+#define MT9P012_SENSOR_ID						            0x2800
+#define MT9P012_SENSOR_ID_REV7					        0x2801
 #define MT9T012_SENSOR_ID                       0x1600
 #define MT9T013_SENSOR_ID                       0x2600
 #define MT9T113_SENSOR_ID                       0x4680
@@ -233,6 +233,10 @@
 #define IMX135_SENSOR_ID                        0x0135  
 
 #define GC2035_SENSOR_ID			0x2035
+#define  GC0329_SENSOR_ID				0x00c0
+#define S5K5EAYX_YUV_SENSOR_ID             	0x5EA1
+#define HI258MIPI_YUV_SENSOR_ID             0x00d1
+#define OV2680MIPI_SENSOR_ID					      0x2680
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME            "kd_camera_hw"
 
@@ -302,6 +306,10 @@
 #define SENSOR_DRVNAME_SP0A19_YUV   "sp0a19yuv"
 #define SENSOR_DRVNAME_IMX135_MIPI_RAW   "imx135mipiraw"
 #define SENSOR_DRVNAME_GC0313MIPI_YUV      "gc0313mipiyuv"
+#define  SENSOR_DRVNAME_GC0329_YUV   "gc0329yuv"
+#define SENSOR_DRVNAME_S5K5EAYX_YUV   "s5k5eayxyuv"
+#define SENSOR_DRVNAME_HI258_MIPI_YUV    	"hi258mipiyuv"
+#define SENSOR_DRVNAME_OV2680_MIPI_RAW   	"ov2680mipiraw"
 /*******************************************************************************
 *
 ********************************************************************************/
