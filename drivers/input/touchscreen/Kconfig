@@ -412,7 +412,15 @@ config MTK_MSG2133
 config MTK_SYNAPTICS_3508
         bool "SYNAPTICS_3508 for Mediatek package"
         default n
-        
+
+config MTK_FT6X06
+        bool "FT6X06 for Mediatek package"
+        default n
+
+config MTK_S3203
+        bool "S3203 for Mediatek package"
+        default n
+
 config MTK_CTP_RESET_CONFIG
 	bool "MTK_CTP_RESET_CONFIG"
 	help

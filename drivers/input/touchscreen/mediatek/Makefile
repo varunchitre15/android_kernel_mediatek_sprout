@@ -34,3 +34,11 @@ endif
 ifeq ($(CONFIG_MTK_SYNAPTICS_3508),y)
 obj-y	+=  synaptics_3508/
 endif
+
+ifeq ($(CONFIG_MTK_FT6X06),y)
+obj-y	+=  ft6x06/
+endif
+
+ifeq ($(CONFIG_MTK_S3203),y)
+obj-y	+=  S3203/
+endif
