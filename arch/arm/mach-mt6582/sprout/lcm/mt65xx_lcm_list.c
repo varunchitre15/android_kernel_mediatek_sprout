@@ -148,6 +148,7 @@ extern LCM_DRIVER nt35520_hd720_tm_lcm_drv;
 extern LCM_DRIVER nt35520_hd720_boe_lcm_drv;
 extern LCM_DRIVER nt35521_hd720_dsi_vdo_boe_lcm_drv;
 extern LCM_DRIVER nt35521_hd720_tm_lcm_drv;
+extern LCM_DRIVER otm8018b_dsi_vdo_boe_g6_lcm_drv;
 
 extern LCM_DRIVER ili9806c_dsi_vdo_djn_fwvga_lcm_drv;  // zhoulidong add
 extern LCM_DRIVER hx8379a_dsi_vdo_by_fwvga_lcm_drv;  // zhoulidong add
@@ -180,6 +181,10 @@ extern LCM_DRIVER otm9605a_dsi_vdo_hlt_qhd_ips_lcm_drv;//add by wuhao
 extern LCM_DRIVER otm9605a_dsi_vdo_djn_qhd_ips_lcm_drv;//add by yangjuwei
 LCM_DRIVER* lcm_driver_list[] = 
 { 
+#if defined(OTM8018B_DSI_VDO_BOE_G6)
+	&otm8018b_dsi_vdo_boe_g6_lcm_drv,
+#endif
+
 #if defined(ILI9806C_DSI_VDO_TXD_IPS)
 		&ili9806c_dsi_vdo_txd_ips_lcm_drv,
 #endif
