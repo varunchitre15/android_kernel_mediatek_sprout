@@ -131,7 +131,7 @@ static void tpd_clear_interrupt(struct i2c_client *client);
 
 
 static const struct i2c_device_id tpd_id[] = {{"S3203",0},{}};
-static struct i2c_board_info __initdata i2c_tpd={ I2C_BOARD_INFO("S3203", (0x22))};
+static struct i2c_board_info __initdata i2c_tpd={ I2C_BOARD_INFO("S3203", (0x39))};
 
 static struct i2c_driver tpd_i2c_driver = {
     .driver = {
