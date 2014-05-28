@@ -1,3 +1,17 @@
+/*
+* Copyright (C) 2011-2014 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <linux/slab.h>
 #include <linux/i2c.h>
 #include <linux/semaphore.h>
@@ -136,7 +150,7 @@ static int ft_rw_iic_drv_RDWR(struct i2c_client *client, unsigned long arg)
 
 
     i2c_rw_msg = (struct ft_rw_i2c*)
-        kmalloc(i2c_rw_queue.queuenum *sizeof(struct ft_rw_i2c),
+        kzalloc(i2c_rw_queue.queuenum *sizeof(struct ft_rw_i2c),
         GFP_KERNEL);
     if (!i2c_rw_msg)
         return -ENOMEM;
@@ -176,7 +190,7 @@ static int ft_rw_iic_drv_RDWR(struct i2c_client *client, unsigned long arg)
 
     if (ret < 0) {
         int j;
-        for (j=0; j<i; ++j)
+        for (j=0; j<=i; ++j)
             kfree(i2c_rw_msg[j].buf);
         kfree(data_ptrs);
         kfree(i2c_rw_msg);
@@ -195,6 +209,8 @@ static int ft_rw_iic_drv_RDWR(struct i2c_client *client, unsigned long arg)
                     i2c_rw_msg[i].buf, i2c_rw_msg[i].length);
     }
 
+    kfree(data_ptrs);
+    kfree(i2c_rw_msg);
     return ret;
 
 }
@@ -250,16 +266,21 @@ static const struct file_operations ft_rw_iic_drv_fops = {
 };
 
 
-static void ft_rw_iic_drv_setup_cdev(struct ft_rw_i2c_dev *dev, int index)
+static int ft_rw_iic_drv_setup_cdev(struct ft_rw_i2c_dev *dev, int index)
 {
-    int err, devno = MKDEV(ft_rw_iic_drv_major, index);
+    int err = 0;
+    int devno = MKDEV(ft_rw_iic_drv_major, index);
 
     cdev_init(&dev->cdev, &ft_rw_iic_drv_fops);
     dev->cdev.owner = THIS_MODULE;
     dev->cdev.ops = &ft_rw_iic_drv_fops;
     err = cdev_add(&dev->cdev, devno, 1);
-    if (err)
-        printk(KERN_NOTICE "Error %d adding LED%d", err, index);
+    if (err){
+        cdev_del(&dev->cdev);
+        printk(KERN_NOTICE "Error %d ft_rw_iic_drv_setup_cdev index: %d", err, index);
+
+    }
+    return err;
 }
 
 static int ft_rw_iic_drv_myinitdev(struct i2c_client *client)
@@ -289,10 +310,17 @@ static int ft_rw_iic_drv_myinitdev(struct i2c_client *client)
     }
     ft_rw_i2c_dev_tt->client = client;
 
-    ft_rw_iic_drv_setup_cdev(ft_rw_i2c_dev_tt, 0);
+    err = ft_rw_iic_drv_setup_cdev(ft_rw_i2c_dev_tt, 0);
+    if(err)
+    {
+        dev_err(&client->dev, "%s:failed in ft_rw_iic_drv_setup_cdev.\n",
+                __func__);
+    }
 
     fts_class = class_create(THIS_MODULE, "fts_class");
     if (IS_ERR(fts_class)) {
+        unregister_chrdev_region(devno, 1);
+        kfree(ft_rw_i2c_dev_tt);
         dev_err(&client->dev, "%s:failed in creating class.\n",
                 __func__);
         return -1;

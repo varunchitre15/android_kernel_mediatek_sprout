@@ -1,3 +1,16 @@
+/*
+* Copyright (C) 2011-2014 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "tpd.h"
 #include <linux/interrupt.h>
@@ -143,8 +156,10 @@ static int tp_key_init(struct input_dev *dev)
     tp_keystore->dev=dev;
     tp_keystore->tp_key_init_flag=0;
     tp_keystore->tp_key_wq = create_singlethread_workqueue("tp_key_wq");
-    if (!tp_keystore->tp_key_wq)
+    if (!tp_keystore->tp_key_wq){
+        kfree(tp_keystore);
         return -ENOMEM;
+    }
     mutex_init(&tp_keystore->tp_key_mutex);
     INIT_WORK(&tp_keystore->tp_queue, tp_delay_process);
 
@@ -163,8 +178,8 @@ int fts_6x06_key_cancel(void)
     CTP_DBG();
     tp_buf_clear();
     if(tp_keystore->tp_key_init_flag){
-        cancel_work_sync(&tp_keystore->tp_queue);
         del_timer(&tp_keystore->tp_key_delay_timer);
+        cancel_work_sync(&tp_keystore->tp_queue);
     }
     return 0;
 }
@@ -175,7 +190,6 @@ static int tp_key_exit(void)
     if (tp_keystore->tp_key_wq)
         destroy_workqueue(tp_keystore->tp_key_wq);
     kfree(tp_keystore);
-    tp_keystore->tp_key_init_flag=0;
     return 0;
 }
 
