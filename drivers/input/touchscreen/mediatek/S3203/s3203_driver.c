@@ -54,6 +54,9 @@ static int tpd_keys_local[TPD_KEY_COUNT] = TPD_KEYS;
 static int tpd_keys_dim_local[TPD_KEY_COUNT][4] = TPD_KEYS_DIM;
 u8 tpd_res[4]={(u8)CUSTOM_MAX_WIDTH, (u8)(CUSTOM_MAX_WIDTH>>8),\
             (u8)(CUSTOM_MAX_HEIGHT + TPD_BUTTON_HEIGH), (u8)((CUSTOM_MAX_HEIGHT + TPD_BUTTON_HEIGH)>>8)};
+#else
+u8 tpd_res[4]={(u8)CUSTOM_MAX_WIDTH, (u8)(CUSTOM_MAX_WIDTH>>8),\
+            (u8)(CUSTOM_MAX_HEIGHT), (u8)((CUSTOM_MAX_HEIGHT)>>8)};
 #endif
 #if (defined(TPD_WARP_START) && defined(TPD_WARP_END))
 static int tpd_wb_start_local[TPD_WARP_CNT] = TPD_WARP_START;

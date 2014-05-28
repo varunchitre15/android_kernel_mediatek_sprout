@@ -8,18 +8,18 @@
 #define FD_ADDR_MIN        0xDD
 #define FD_BYTE_COUNT     6
 
-#define CUSTOM_MAX_WIDTH (600)
-#define CUSTOM_MAX_HEIGHT (800)
+#define CUSTOM_MAX_WIDTH (480)
+#define CUSTOM_MAX_HEIGHT (854)
 
 //#define TPD_UPDATE_FIRMWARE
 
-#define TPD_HAVE_BUTTON
+//#define TPD_HAVE_BUTTON
 #define TPD_BUTTON_HEIGH        (100)
 #define TPD_KEY_COUNT           3
 #define TPD_KEYS                { KEY_BACK, KEY_HOMEPAGE, KEY_MENU}
-#define TPD_KEYS_DIM        {{100,854,120,TPD_BUTTON_HEIGH},\
-                            {300,854,120,TPD_BUTTON_HEIGH},\
-                            {500,854,120,TPD_BUTTON_HEIGH}}
+#define TPD_KEYS_DIM        {{80,854,100,TPD_BUTTON_HEIGH},\
+                            {240,854,100,TPD_BUTTON_HEIGH},\
+                            {400,854,100,TPD_BUTTON_HEIGH}}
 
 #define TPD_POWER_SOURCE_CUSTOM         MT6323_POWER_LDO_VGP1//MT65XX_POWER_LDO_VGP1
 
