@@ -826,11 +826,17 @@ config MTK_K2DH
         bool "K2DH for MediaTek package"
         default n
 
+config MTK_BMC156_ACC
+        bool "BMC156 ACCELEROMETER for MediaTek package"
+        default n
 # Gyro sensor
 config MTK_MPU3050C
         bool "MPU3050C for MediaTek package"
         default n
         
+config MTK_BMG160
+        bool "BMG160 gyroscope for MediaTek package"
+        default n
 # Magnet sensor
 config MTK_AKM8963
         bool "AKM8963 for MediaTek package"
@@ -838,6 +844,9 @@ config MTK_AKM8963
         
 config MTK_HSCDTD006
         bool "HSCDTD006 for MediaTek package"
+        default n
+config MTK_BMC156_MAG
+        bool "BMC156 Magnetometer for MediaTek package"
         default n
 
 # Analog TV
@@ -1213,7 +1222,11 @@ config MTK_LENS_BU6429AF_SUPPORT
 config MTK_LENS_DW9718AF_SUPPORT
        bool "DW9718AF Lens Driver"
        default n
-
+       
+config MTK_LENS_DW9714AF_SUPPORT
+       bool "DW9714AF Lens Driver"
+       default n
+       
 config MTK_LENS_FM50AF_SUPPORT
        bool "FM50AF Lens Driver"
        default n
