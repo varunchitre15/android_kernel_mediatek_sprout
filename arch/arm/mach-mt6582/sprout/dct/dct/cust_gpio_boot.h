@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -42,14 +42,14 @@
 //Configureation for Pin 3
 #define GPIO3_MODE      GPIO_MODE_00
 #define GPIO3_DIR       GPIO_DIR_IN
-#define GPIO3_PULLEN    GPIO_PULL_DISABLE
+#define GPIO3_PULLEN    GPIO_PULL_ENABLE
 #define GPIO3_PULL      GPIO_PULL_DOWN
 #define GPIO3_DATAOUT   GPIO_OUT_ZERO
 
 //Configureation for Pin 4
 #define GPIO4_MODE      GPIO_MODE_00
 #define GPIO4_DIR       GPIO_DIR_IN
-#define GPIO4_PULLEN    GPIO_PULL_DISABLE
+#define GPIO4_PULLEN    GPIO_PULL_ENABLE
 #define GPIO4_PULL      GPIO_PULL_DOWN
 #define GPIO4_DATAOUT   GPIO_OUT_ZERO
 
@@ -57,7 +57,7 @@
 #define GPIO5_MODE      GPIO_MODE_00
 #define GPIO5_DIR       GPIO_DIR_IN
 #define GPIO5_PULLEN    GPIO_PULL_ENABLE
-#define GPIO5_PULL      GPIO_PULL_DOWN
+#define GPIO5_PULL      GPIO_PULL_UP
 #define GPIO5_DATAOUT   GPIO_OUT_ZERO
 
 //Configureation for Pin 6
@@ -90,16 +90,16 @@
 
 //Configureation for Pin 10
 #define GPIO10_MODE      GPIO_MODE_00
-#define GPIO10_DIR       GPIO_DIR_OUT
-#define GPIO10_PULLEN    GPIO_PULL_DISABLE
-#define GPIO10_PULL      GPIO_PULL_DOWN
+#define GPIO10_DIR       GPIO_DIR_IN
+#define GPIO10_PULLEN    GPIO_PULL_ENABLE
+#define GPIO10_PULL      GPIO_PULL_UP
 #define GPIO10_DATAOUT   GPIO_OUT_ZERO
 
 //Configureation for Pin 11
 #define GPIO11_MODE      GPIO_MODE_00
 #define GPIO11_DIR       GPIO_DIR_IN
 #define GPIO11_PULLEN    GPIO_PULL_ENABLE
-#define GPIO11_PULL      GPIO_PULL_DOWN
+#define GPIO11_PULL      GPIO_PULL_UP
 #define GPIO11_DATAOUT   GPIO_OUT_ZERO
 
 //Configureation for Pin 12
@@ -134,11 +134,11 @@
 #define GPIO16_MODE      GPIO_MODE_00
 #define GPIO16_DIR       GPIO_DIR_OUT
 #define GPIO16_PULLEN    GPIO_PULL_DISABLE
-#define GPIO16_PULL      GPIO_PULL_UP
+#define GPIO16_PULL      GPIO_PULL_DOWN
 #define GPIO16_DATAOUT   GPIO_OUT_ZERO
 
 //Configureation for Pin 17
-#define GPIO17_MODE      GPIO_MODE_00
+#define GPIO17_MODE      GPIO_MODE_04
 #define GPIO17_DIR       GPIO_DIR_IN
 #define GPIO17_PULLEN    GPIO_PULL_ENABLE
 #define GPIO17_PULL      GPIO_PULL_UP
@@ -197,7 +197,7 @@
 #define GPIO25_MODE      GPIO_MODE_00
 #define GPIO25_DIR       GPIO_DIR_IN
 #define GPIO25_PULLEN    GPIO_PULL_ENABLE
-#define GPIO25_PULL      GPIO_PULL_DOWN
+#define GPIO25_PULL      GPIO_PULL_UP
 #define GPIO25_DATAOUT   GPIO_OUT_ZERO
 
 //Configureation for Pin 26
@@ -322,28 +322,28 @@
 //Configureation for Pin 43
 #define GPIO43_MODE      GPIO_MODE_00
 #define GPIO43_DIR       GPIO_DIR_IN
-#define GPIO43_PULLEN    GPIO_PULL_ENABLE
+#define GPIO43_PULLEN    GPIO_PULL_DISABLE
 #define GPIO43_PULL      GPIO_PULL_DOWN
 #define GPIO43_DATAOUT   GPIO_OUT_ZERO
 
 //Configureation for Pin 44
 #define GPIO44_MODE      GPIO_MODE_00
 #define GPIO44_DIR       GPIO_DIR_IN
-#define GPIO44_PULLEN    GPIO_PULL_ENABLE
+#define GPIO44_PULLEN    GPIO_PULL_DISABLE
 #define GPIO44_PULL      GPIO_PULL_DOWN
 #define GPIO44_DATAOUT   GPIO_OUT_ZERO
 
 //Configureation for Pin 45
 #define GPIO45_MODE      GPIO_MODE_00
 #define GPIO45_DIR       GPIO_DIR_IN
-#define GPIO45_PULLEN    GPIO_PULL_ENABLE
+#define GPIO45_PULLEN    GPIO_PULL_DISABLE
 #define GPIO45_PULL      GPIO_PULL_DOWN
 #define GPIO45_DATAOUT   GPIO_OUT_ZERO
 
 //Configureation for Pin 46
 #define GPIO46_MODE      GPIO_MODE_00
 #define GPIO46_DIR       GPIO_DIR_IN
-#define GPIO46_PULLEN    GPIO_PULL_ENABLE
+#define GPIO46_PULLEN    GPIO_PULL_DISABLE
 #define GPIO46_PULL      GPIO_PULL_DOWN
 #define GPIO46_DATAOUT   GPIO_OUT_ZERO
 
@@ -664,8 +664,8 @@
 
 //Configureation for Pin 92
 #define GPIO92_MODE      GPIO_MODE_01
-#define GPIO92_DIR       GPIO_DIR_OUT
-#define GPIO92_PULLEN    GPIO_PULL_DISABLE
+#define GPIO92_DIR       GPIO_DIR_IN
+#define GPIO92_PULLEN    GPIO_PULL_ENABLE
 #define GPIO92_PULL      GPIO_PULL_DOWN
 #define GPIO92_DATAOUT   GPIO_OUT_ZERO
 
@@ -674,7 +674,7 @@
 #define GPIO93_DIR       GPIO_DIR_IN
 #define GPIO93_PULLEN    GPIO_PULL_ENABLE
 #define GPIO93_PULL      GPIO_PULL_DOWN
-#define GPIO93_DATAOUT   GPIO_OUT_ONE
+#define GPIO93_DATAOUT   GPIO_OUT_ZERO
 
 //Configureation for Pin 94
 #define GPIO94_MODE      GPIO_MODE_01
@@ -859,16 +859,16 @@
 #define GPIO119_DATAOUT   GPIO_OUT_ZERO
 
 //Configureation for Pin 120
-#define GPIO120_MODE      GPIO_MODE_01
+#define GPIO120_MODE      GPIO_MODE_00
 #define GPIO120_DIR       GPIO_DIR_IN
-#define GPIO120_PULLEN    GPIO_PULL_DISABLE
+#define GPIO120_PULLEN    GPIO_PULL_ENABLE
 #define GPIO120_PULL      GPIO_PULL_DOWN
 #define GPIO120_DATAOUT   GPIO_OUT_ZERO
 
 //Configureation for Pin 121
-#define GPIO121_MODE      GPIO_MODE_01
+#define GPIO121_MODE      GPIO_MODE_00
 #define GPIO121_DIR       GPIO_DIR_IN
-#define GPIO121_PULLEN    GPIO_PULL_DISABLE
+#define GPIO121_PULLEN    GPIO_PULL_ENABLE
 #define GPIO121_PULL      GPIO_PULL_DOWN
 #define GPIO121_DATAOUT   GPIO_OUT_ZERO
 
@@ -1188,17 +1188,17 @@
 #define GPIO166_DATAOUT   GPIO_OUT_ZERO
 
 //Configureation for Pin 167
-#define GPIO167_MODE      GPIO_MODE_00
+#define GPIO167_MODE      GPIO_MODE_01
 #define GPIO167_DIR       GPIO_DIR_IN
-#define GPIO167_PULLEN    GPIO_PULL_ENABLE
+#define GPIO167_PULLEN    GPIO_PULL_DISABLE
 #define GPIO167_PULL      GPIO_PULL_DOWN
 #define GPIO167_DATAOUT   GPIO_OUT_ZERO
 
 //Configureation for Pin 168
-#define GPIO168_MODE      GPIO_MODE_01
+#define GPIO168_MODE      GPIO_MODE_00
 #define GPIO168_DIR       GPIO_DIR_IN
 #define GPIO168_PULLEN    GPIO_PULL_ENABLE
-#define GPIO168_PULL      GPIO_PULL_UP
+#define GPIO168_PULL      GPIO_PULL_DOWN
 #define GPIO168_DATAOUT   GPIO_OUT_ZERO
 
 

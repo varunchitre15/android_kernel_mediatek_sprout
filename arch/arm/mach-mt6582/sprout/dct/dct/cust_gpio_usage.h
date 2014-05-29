@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -31,6 +31,15 @@
 #define GPIO_CTP_EINT_PIN_CLK     CLK_OUT0
 #define GPIO_CTP_EINT_PIN_FREQ    GPIO_CLKSRC_NONE
 
+#define GPIO_GSE_2_EINT_PIN         (GPIO3 | 0x80000000)
+#define GPIO_GSE_2_EINT_PIN_M_GPIO   GPIO_MODE_00
+#define GPIO_GSE_2_EINT_PIN_M_CLK   GPIO_MODE_01
+#define GPIO_GSE_2_EINT_PIN_M_MDEINT   GPIO_MODE_04
+#define GPIO_GSE_2_EINT_PIN_M_KCOL   GPIO_MODE_06
+#define GPIO_GSE_2_EINT_PIN_M_EINT   GPIO_GSE_2_EINT_PIN_M_GPIO
+#define GPIO_GSE_2_EINT_PIN_CLK     CLK_OUT1
+#define GPIO_GSE_2_EINT_PIN_FREQ    GPIO_CLKSRC_NONE
+
 #define GPIO_ACCDET_EINT_PIN         (GPIO4 | 0x80000000)
 #define GPIO_ACCDET_EINT_PIN_M_GPIO   GPIO_MODE_00
 #define GPIO_ACCDET_EINT_PIN_M_CLK   GPIO_MODE_01
@@ -42,11 +51,6 @@
 #define GPIO_GYRO_EINT_PIN_M_GPIO   GPIO_MODE_00
 #define GPIO_GYRO_EINT_PIN_M_KCOL   GPIO_MODE_06
 #define GPIO_GYRO_EINT_PIN_M_EINT   GPIO_GYRO_EINT_PIN_M_GPIO
-
-#define GPIO_GSE_2_EINT_PIN         (GPIO6 | 0x80000000)
-#define GPIO_GSE_2_EINT_PIN_M_GPIO   GPIO_MODE_00
-#define GPIO_GSE_2_EINT_PIN_M_KCOL   GPIO_MODE_06
-#define GPIO_GSE_2_EINT_PIN_M_EINT   GPIO_GSE_2_EINT_PIN_M_GPIO
 
 #define GPIO_CAMERA_CMRST_PIN         (GPIO9 | 0x80000000)
 #define GPIO_CAMERA_CMRST_PIN_M_GPIO   GPIO_MODE_00

@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -36,25 +36,20 @@ extern "C" {
 #define CUST_EINT_TOUCH_PANEL_TYPE                            CUST_EINTF_TRIGGER_FALLING
 #define CUST_EINT_TOUCH_PANEL_DEBOUNCE_EN      CUST_EINT_DEBOUNCE_DISABLE
 
-#define CUST_EINT_MSE_NUM              3
-#define CUST_EINT_MSE_DEBOUNCE_CN      0
-#define CUST_EINT_MSE_TYPE                            CUST_EINTF_TRIGGER_FALLING
-#define CUST_EINT_MSE_DEBOUNCE_EN      CUST_EINT_DEBOUNCE_DISABLE
+#define CUST_EINT_GSE_2_NUM              3
+#define CUST_EINT_GSE_2_DEBOUNCE_CN      0
+#define CUST_EINT_GSE_2_TYPE							CUST_EINTF_TRIGGER_RISING
+#define CUST_EINT_GSE_2_DEBOUNCE_EN      CUST_EINT_DEBOUNCE_DISABLE
 
 #define CUST_EINT_ACCDET_NUM              4
-#define CUST_EINT_ACCDET_DEBOUNCE_CN      0
-#define CUST_EINT_ACCDET_TYPE                            CUST_EINTF_TRIGGER_FALLING
-#define CUST_EINT_ACCDET_DEBOUNCE_EN      CUST_EINT_DEBOUNCE_DISABLE
+#define CUST_EINT_ACCDET_DEBOUNCE_CN      256
+#define CUST_EINT_ACCDET_TYPE                            CUST_EINTF_TRIGGER_LOW
+#define CUST_EINT_ACCDET_DEBOUNCE_EN      CUST_EINT_DEBOUNCE_ENABLE
 
 #define CUST_EINT_GSE_1_NUM              5
 #define CUST_EINT_GSE_1_DEBOUNCE_CN      0
 #define CUST_EINT_GSE_1_TYPE                            CUST_EINTF_TRIGGER_FALLING
 #define CUST_EINT_GSE_1_DEBOUNCE_EN      CUST_EINT_DEBOUNCE_DISABLE
-
-#define CUST_EINT_GSE_2_NUM              6
-#define CUST_EINT_GSE_2_DEBOUNCE_CN      0
-#define CUST_EINT_GSE_2_TYPE                            CUST_EINTF_TRIGGER_FALLING
-#define CUST_EINT_GSE_2_DEBOUNCE_EN      CUST_EINT_DEBOUNCE_DISABLE
 
 #define CUST_EINT_OTG_IDDIG_NUM              17
 #define CUST_EINT_OTG_IDDIG_DEBOUNCE_CN      0
