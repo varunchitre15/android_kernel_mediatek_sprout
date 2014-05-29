@@ -1447,7 +1447,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 #ifdef CONFIG_MTK_SCHED_CMP_TGS
 	mt_init_thread_group(p);
 #endif
-	
+
 	/* Now that the task is set up, run cgroup callbacks if
 	 * necessary. We need to run them before the task is visible
 	 * on the tasklist. */
@@ -1683,8 +1683,8 @@ long do_fork(unsigned long clone_flags,
 
 #ifdef CONFIG_SCHEDSTATS
         /* mt shceduler profiling*/
-        save_mtproc_info(p, sched_clock());	
-        printk(KERN_DEBUG "[%d:%s] fork [%d:%s]\n", current->pid, current->comm, p->pid, p->comm);
+        save_mtproc_info(p, sched_clock());
+        //printk(KERN_DEBUG "[%d:%s] fork [%d:%s]\n", current->pid, current->comm, p->pid, p->comm);
 #endif
 		wake_up_new_task(p);
 
