@@ -1902,6 +1902,7 @@ if (retval != 0) {
         printk("[%s]: sensor_gsensor device register fail \n", __func__);
         return retval;
     }
+    printk("[%s]: sensor_gsensor device register success \n", __func__);
 #endif
 
 #if defined(CONFIG_CUSTOM_KERNEL_MAGNETOMETER)
@@ -1911,6 +1912,7 @@ if (retval != 0) {
         printk("[%s]: sensor_msensor device register fail \n", __func__);
         return retval;
     }
+    printk("[%s]: sensor_msensor device register success \n", __func__);
     retval = platform_device_register(&sensor_orientation);
     if (retval != 0)
     {
@@ -1926,6 +1928,7 @@ if (retval != 0) {
         printk("[%s]: sensor_gyroscope device register fail \n", __func__);
         return retval;
     }
+    printk("[%s]: sensor_gyroscope device register success \n", __func__);
 #endif
 
 #if defined(CONFIG_CUSTOM_KERNEL_BAROMETER)
@@ -1944,6 +1947,7 @@ if (retval != 0) {
         printk("[%s]: sensor_alsps device register fail \n", __func__);
         return retval;
     }
+    printk("[%s]: sensor_alsps device register success \n", __func__);	
 #endif
 #if defined(CONFIG_CUSTOM_KERNEL_TEMPERATURE)
     retval = platform_device_register(&sensor_temperature);

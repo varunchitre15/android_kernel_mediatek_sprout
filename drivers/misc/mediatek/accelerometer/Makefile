@@ -19,3 +19,6 @@ ifeq ($(CONFIG_MTK_BMA050-NEW),y)
 obj-y   +=  bma050-new/
 endif
 
+ifeq ($(CONFIG_MTK_BMC156_ACC),y)
+obj-y   +=  BMC156_ACC/
+endif
