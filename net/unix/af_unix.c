@@ -1765,7 +1765,7 @@ static int unix_release(struct socket *sock)
     //////////////add code end///////////////////   
 #endif/* CONFIG_UNIX_SOCKET_TRACK_TOOL */
 
-  printk("[usktrk] socket close[%lu] \n", SOCK_INODE(sock)->i_ino); 
+  //printk("[usktrk] socket close[%lu] \n", SOCK_INODE(sock)->i_ino); 
 	if (!sk)
 		return 0;
 #ifdef CONFIG_UNIX_SOCKET_TRACK_TOOL

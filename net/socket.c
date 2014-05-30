@@ -1125,7 +1125,7 @@ static int sock_close(struct inode *inode, struct file *filp)
 		return 0;
 	}
 
-	printk(KERN_INFO "socket_close[%lu] \n",inode->i_ino); 
+//	printk(KERN_INFO "socket_close[%lu] \n",inode->i_ino); 
 	
 	sock_release(SOCKET_I(inode));
 	
@@ -1362,7 +1362,7 @@ out:
 
 	if((retval >= 0)&& sock && SOCK_INODE(sock) )
 	{
-	   printk(KERN_INFO "socket_create[%lu]:fd=%d \n",SOCK_INODE(sock)->i_ino,retval);
+	   //printk(KERN_INFO "socket_create[%lu]:fd=%d \n",SOCK_INODE(sock)->i_ino,retval);
 #ifdef CONFIG_UNIX_SOCKET_TRACK_TOOL	   
      if (family == PF_LOCAL)
      {
@@ -1621,7 +1621,7 @@ out_put:
 out:
       if( (err>=0)&& newsock && SOCK_INODE(newsock) )
       {
-	  printk( "socket_accept[%lu]:fd=%d \n",SOCK_INODE(newsock)->i_ino,err);
+//	  printk( "socket_accept[%lu]:fd=%d \n",SOCK_INODE(newsock)->i_ino,err);
 #ifdef CONFIG_UNIX_SOCKET_TRACK_TOOL	        
           if (unix_sock_track_socket_check_unixsk(sock->ops))
           {
