@@ -64,16 +64,13 @@ static DEFINE_MUTEX(rtnl_mutex);
 
 void rtnl_lock(void)
 {
-	xlog_printk(ANDROID_LOG_DEBUG, "mtk_net_lock", "rtnl_lock++\n");
 	mutex_lock(&rtnl_mutex);
-	xlog_printk(ANDROID_LOG_DEBUG, "mtk_net_lock", "rtnl_lock--\n");
 }
 EXPORT_SYMBOL(rtnl_lock);
 
 void __rtnl_unlock(void)
 {
 	mutex_unlock(&rtnl_mutex);
-	xlog_printk(ANDROID_LOG_DEBUG, "mtk_net_lock", "rtnl_unlock done\n");
 }
 
 void rtnl_unlock(void)
