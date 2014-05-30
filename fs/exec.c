@@ -1429,7 +1429,6 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
 			retval = fn(bprm, regs);
             /* exec mt_debug*/
             if(-999 == retval){
-                printk("[exec warn] return:%d\n", retval);
                 put_binfmt(fmt);
                 return retval;
             }
@@ -1587,13 +1586,6 @@ static int do_execve_common(const char *filename,
 		goto out;
 
 	retval = search_binary_handler(bprm,regs);
-#ifdef CONFIG_MT_ENG_BUILD
-    if(retval == -999){
-	printk("[exec done]\n");
-//        printk("[exec done] argv[0] = 0x%x\n", argv0);
-//        printk("[exec done] argv0_ptr = 0x%x\n", (unsigned int)argv_p0);
-    }
-#endif
 	if (retval < 0)
 		goto out;
 
@@ -1645,7 +1637,6 @@ int do_execve(const char *filename,
     int retry = 3;
     do{
         ret = do_execve_common(filename, argv, envp, regs);
-        printk(KERN_DEBUG"[exec] %s(%d)\n", filename, retry);
     }while( -999 == ret && retry-- > 0);
 	return ret;
 }
