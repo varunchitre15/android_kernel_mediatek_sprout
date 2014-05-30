@@ -13,13 +13,11 @@
 */
 
 #include "accel.h"
-
 static struct acc_context *acc_context_obj = NULL;
-
-
 static struct acc_init_info* gsensor_init_list[MAX_CHOOSE_G_NUM]= {0}; //modified
 static void acc_early_suspend(struct early_suspend *h);
 static void acc_late_resume(struct early_suspend *h);
+struct input_dev *sm_dev =NULL;
 
 static void acc_work_func(struct work_struct *work)
 {
@@ -208,9 +206,7 @@ static int acc_enable_data(int enable)
        {
           if(false == cxt->acc_ctl.is_report_input_direct)
           {
-              mutex_lock(&cxt->acc_op_mutex);
               cxt->is_polling_run = false;
-              mutex_unlock(&cxt->acc_op_mutex);
               del_timer_sync(&cxt->timer);
               cancel_work_sync(&cxt->report);
             cxt->drv_data.acc_data.values[0] = ACC_INVALID_VALUE;
@@ -389,7 +385,27 @@ static ssize_t acc_show_sensordevnum(struct device* dev,
     return snprintf(buf, PAGE_SIZE, "%s\n", devname+5);
 }
 
+static ssize_t acc_show_significant_motion_devnum(struct device* dev,
+                                 struct device_attribute *attr, char *buf)
+{
+    const char *devname = NULL;
+    devname = dev_name(&sm_dev->dev);
+    return snprintf(buf, PAGE_SIZE, "%s\n", devname+5);
+}
 
+static ssize_t sm_store_active(struct device* dev, struct device_attribute *attr,
+        const char *buf, size_t count)
+{
+    struct acc_context *cxt = acc_context_obj;
+    int enable = 0;
+
+    if (!strncmp(buf, "1", 1))
+        enable =1;
+    else if (!strncmp(buf, "0", 1))
+        enable =0;
+    cxt->acc_ctl.enable_significant_motion(enable);
+    return count;
+}
 static ssize_t acc_store_batch(struct device* dev, struct device_attribute *attr,
                                   const char *buf, size_t count)
 {
@@ -582,6 +598,8 @@ DEVICE_ATTR(accdelay,      S_IWUSR | S_IRUGO, acc_show_delay,  acc_store_delay);
 DEVICE_ATTR(accbatch,              S_IWUSR | S_IRUGO, acc_show_batch,  acc_store_batch);
 DEVICE_ATTR(accflush,              S_IWUSR | S_IRUGO, acc_show_flush,  acc_store_flush);
 DEVICE_ATTR(accdevnum,              S_IWUSR | S_IRUGO, acc_show_sensordevnum,  NULL);
+DEVICE_ATTR(smdevnum,              S_IWUSR | S_IRUGO, acc_show_significant_motion_devnum,  NULL);
+DEVICE_ATTR(smactive,              S_IWUSR | S_IRUGO, NULL,  sm_store_active);
 
 static struct attribute *acc_attributes[] = {
     &dev_attr_accenablenodata.attr,
@@ -590,6 +608,8 @@ static struct attribute *acc_attributes[] = {
     &dev_attr_accbatch.attr,
     &dev_attr_accflush.attr,
     &dev_attr_accdevnum.attr,
+    &dev_attr_smdevnum.attr,
+    &dev_attr_smactive.attr,
     NULL
 };
 
@@ -623,6 +643,7 @@ int acc_register_control_path(struct acc_control_path *ctl)
     cxt->acc_ctl.enable_nodata = ctl->enable_nodata;
     cxt->acc_ctl.is_support_batch = ctl->is_support_batch;
     cxt->acc_ctl.is_report_input_direct= ctl->is_report_input_direct;
+    cxt->acc_ctl.enable_significant_motion= ctl->enable_significant_motion;
 
     if(NULL==cxt->acc_ctl.set_delay || NULL==cxt->acc_ctl.open_report_data
         || NULL==cxt->acc_ctl.enable_nodata)
@@ -664,6 +685,35 @@ int acc_data_report(int x, int y, int z,int status)
     return err;
 }
 
+int acc_report_motion_detect(int motion)
+{
+    //ACC_LOG("[%s] motion:%d\n",__func__,motion);
+    input_report_rel(sm_dev, EVENT_TYPE_SIGNIFICANT_MOTION, motion);
+    input_sync(sm_dev);
+
+    return 0;
+}
+
+static int sm_input_init(void)
+{
+    int err = 0;
+
+    sm_dev = input_allocate_device();
+    if (NULL == sm_dev)
+        return -ENOMEM;
+
+    sm_dev->name = "signifi_motion_input";
+
+    input_set_capability(sm_dev, EV_REL, EVENT_TYPE_SIGNIFICANT_MOTION);
+
+    err = input_register_device(sm_dev);
+    if (err < 0) {
+        input_free_device(sm_dev);
+        return err;
+    }
+
+    return 0;
+}
 static int acc_probe(struct platform_device *pdev)
 {
 
@@ -688,6 +738,12 @@ static int acc_probe(struct platform_device *pdev)
 
     //init input dev
     err = acc_input_init(acc_context_obj);
+    if(err)
+    {
+        ACC_ERR("unable to register acc input device!\n");
+        goto exit_alloc_input_dev_failed;
+    }
+    err = sm_input_init();
     if(err)
     {
         ACC_ERR("unable to register acc input device!\n");

@@ -45,6 +45,7 @@
 #define EVENT_TYPE_ACCEL_Z                  ABS_Z
 #define EVENT_TYPE_ACCEL_STATUS     ABS_WHEEL
 #define EVENT_TYPE_ACCEL_DIV        ABS_GAS
+#define EVENT_TYPE_SIGNIFICANT_MOTION     ABS_THROTTLE
 
 
 #define ACC_VALUE_MAX (32767)
@@ -63,6 +64,7 @@ struct acc_control_path
     int (*enable_nodata)(int en);//only enable not report event to HAL
     int (*set_delay)(u64 delay);
     int (*access_data_fifo)(void);//version2.used for flush operate
+    int (*enable_significant_motion)(int en);
     bool is_report_input_direct;
     bool is_support_batch;//version2.used for batch mode support flag
 };
@@ -121,6 +123,7 @@ extern int acc_data_report(int x, int y, int z,int status);
 extern int acc_register_control_path(struct acc_control_path *ctl);
 extern int acc_register_data_path(struct acc_data_path *data);
 
+extern int acc_report_motion_detect(int motion);
 
 
 

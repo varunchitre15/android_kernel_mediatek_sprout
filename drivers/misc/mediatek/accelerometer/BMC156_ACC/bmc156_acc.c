@@ -37,9 +37,25 @@
 #include <linux/hwmsensor.h>
 #include <linux/hwmsen_dev.h>
 #include <linux/sensors_io.h>
-#include "bmc156_acc.h"
 #include <linux/hwmsen_helper.h>
+#include "bmc156_acc.h"
 
+#define  GSENSOR_MOTION_DETECT
+#ifdef      GSENSOR_MOTION_DETECT
+#include <cust_eint.h>
+#include <cust_gpio_usage.h>
+static int common_use = 0;
+static int sm_use = 0;
+static int motion_detect = 0;
+
+extern void mt_eint_mask(unsigned int eint_num);
+extern void mt_eint_unmask(unsigned int eint_num);
+extern void mt_eint_set_hw_debounce(unsigned int eint_num, unsigned int ms);
+extern void mt_eint_set_polarity(unsigned int eint_num, unsigned int pol);
+extern unsigned int mt_eint_set_sens(unsigned int eint_num, unsigned int sens);
+extern void mt_eint_registration(unsigned int eint_num, unsigned int flow, void (EINT_FUNC_PTR)(void), unsigned int is_auto_umask);
+extern void mt_eint_print_status(void);
+#endif
 #define POWER_NONE_MACRO MT65XX_POWER_NONE
 /*----------------------------------------------------------------------------*/
 #define I2C_DRIVERID_BMA255 255
@@ -165,6 +181,7 @@ static int bma255_resume(struct i2c_client *client);
 
 static int bmc156_acc_local_init(void);
 static int  bmc156_remove(void);
+
 /*----------------------------------------------------------------------------*/
 typedef enum {
     BMA_TRC_FILTER  = 0x01,
@@ -186,6 +203,7 @@ struct data_resolution {
 /*----------------------------------------------------------------------------*/
 #define C_MAX_FIR_LENGTH (32)
 static bool enable_status = false;
+static bool sensor_power = true;
 static DEFINE_MUTEX(bma255_i2c_mutex);
 static DEFINE_MUTEX(bma255_op_mutex);
 static int bma255_init_flag =-1; // 0<==>OK -1 <==> fail
@@ -207,6 +225,7 @@ struct bma255_i2c_data {
     struct i2c_client *client;
     struct acc_hw *hw;
     struct hwmsen_convert   cvt;
+    struct work_struct    eint_work;
 
     /*misc*/
     struct data_resolution *reso;
@@ -250,7 +269,6 @@ static struct i2c_driver bma255_i2c_driver = {
 static struct i2c_client *bma255_i2c_client = NULL;
 //static struct platform_driver bma255_gsensor_driver;
 static struct bma255_i2c_data *obj_i2c_data = NULL;
-static bool sensor_power = true;
 static GSENSOR_VECTOR3D gsensor_gain;
 //static char selftestRes[8]= {0};
 static struct mutex i2c_lock;
@@ -876,6 +894,215 @@ static int BMA255_SetIntEnable(struct i2c_client *client, u8 intenable)
     return BMA255_SUCCESS;
 }
 
+/*
+*BMC156 chip only has INT2 pin. Map slope interrupt to INT2 pin.
+*/
+static int bma255_set_slope_int2_pad(struct i2c_client *client)
+{
+    int comres = 0;
+    unsigned char data[2] = {BMA2X2_EN_INT2_PAD_SLOPE__REG};
+    unsigned char state = 0x01;/*map slope interrupt to INT2 pin: 0->disabled, 1->enabled*/
+    struct bma255_i2c_data *obj = (struct bma255_i2c_data*)i2c_get_clientdata(client);
+
+    if (client == NULL)
+    {
+        return -1;
+    }
+
+    mutex_lock(&obj->lock);
+    comres = bma_i2c_read_block(client,
+            BMA2X2_EN_INT2_PAD_SLOPE__REG, data+1, 1);
+
+    data[1]  = BMA255_SET_BITSLICE(data[1],
+            BMA2X2_EN_INT2_PAD_SLOPE, state);
+
+    comres = i2c_master_send(client, data, 2);
+    mutex_unlock(&obj->lock);
+    if(comres <= 0)
+    {
+        return BMA255_ERR_I2C;
+    }
+    else
+    {
+        return comres;
+    }
+}
+static int bma255_set_slope_duration(struct i2c_client *client, unsigned char duration)
+{
+    int comres = 0;
+    unsigned char data[2] = {BMA2X2_SLOPE_DUR__REG};
+    struct bma255_i2c_data *obj = (struct bma255_i2c_data*)i2c_get_clientdata(client);
+
+    if (client == NULL)
+    {
+        return -1;
+    }
+
+    mutex_lock(&obj->lock);
+    comres = bma_i2c_read_block(client,
+            BMA2X2_SLOPE_DUR__REG, data+1, 1);
+
+    data[1]  = BMA255_SET_BITSLICE(data[1],
+            BMA2X2_SLOPE_DUR, duration);
+
+    comres = i2c_master_send(client, data, 2);
+    mutex_unlock(&obj->lock);
+    if(comres <= 0)
+    {
+        return BMA255_ERR_I2C;
+    }
+    else
+    {
+        return comres;
+    }
+}
+
+static int bma255_set_slope_threshold(struct i2c_client *client, unsigned char threshold)
+{
+    int comres = 0;
+    unsigned char data[2] = {BMA2X2_SLOPE_THRES_REG, threshold};
+    struct bma255_i2c_data *obj = (struct bma255_i2c_data*)i2c_get_clientdata(client);
+
+    if (client == NULL)
+    {
+        return -1;
+    }
+
+    mutex_lock(&obj->lock);
+    comres = i2c_master_send(client, data, 2);
+    mutex_unlock(&obj->lock);
+    if(comres <= 0)
+    {
+        return BMA255_ERR_I2C;
+    }
+    else
+    {
+        return comres;
+    }
+}
+static int bma255_set_slope_en(struct i2c_client *client, unsigned char value)
+{
+    int comres = 0;
+    unsigned char data[2] = {BMA2X2_INT_ENABLE1_REG};
+    struct bma255_i2c_data *obj = (struct bma255_i2c_data*)i2c_get_clientdata(client);
+
+    if (client == NULL)
+    {
+        return -1;
+    }
+
+    value = !!value;
+
+    mutex_lock(&obj->lock);
+    comres = bma_i2c_read_block(client,
+            BMA2X2_INT_ENABLE1_REG, data+1, 1);
+    /*set x, y, z componet for slope interrupt*/
+    data[1]  = BMA255_SET_BITSLICE(data[1],
+            BMA2X2_EN_SLOPE_X_INT, value);
+    data[1]  = BMA255_SET_BITSLICE(data[1],
+            BMA2X2_EN_SLOPE_Y_INT, value);
+    data[1]  = BMA255_SET_BITSLICE(data[1],
+            BMA2X2_EN_SLOPE_Z_INT, value);
+
+    comres = i2c_master_send(client, data, 2);
+    mutex_unlock(&obj->lock);
+    if(comres <= 0)
+    {
+        return BMA255_ERR_I2C;
+    }
+    else
+    {
+        return comres;
+    }
+}
+static int bma2x2_set_slope_int(struct i2c_client *client, unsigned char en)
+{
+    int err;
+    //GSE_LOG("[%s] en: %d\n", __func__,en);
+    if (en)
+    {
+        /*Enable the interrupt*/
+       err = bma255_set_slope_en(client, 1);
+    }
+    else
+    {
+        /*Disable the interrupt*/
+        err = bma255_set_slope_en(client, 0);
+    }
+    return err;
+}
+static bool bma255_get_slope_int_status(struct i2c_client *client)
+{
+    int comres = 0;
+    unsigned char data;
+
+    if (client == NULL)
+    {
+        return -1;
+    }
+
+    comres = bma_i2c_read_block(client, BMA2X2_SLOPE_INT_S__REG, &data, 1);
+    data = BMA255_GET_BITSLICE(data, BMA2X2_SLOPE_INT_S);/*0->inactive, 1->active*/
+
+    return (bool)data;
+}
+static void bmc156_eint_work(struct work_struct *work)
+{
+struct i2c_client *client = bma255_i2c_client;
+
+motion_detect = (int)bma255_get_slope_int_status(client);
+acc_report_motion_detect(motion_detect);
+GSE_LOG("[%s] motion:%d enable:%d power:%d common_use:%d sm_use:%d\n",__func__,motion_detect,enable_status,sensor_power,common_use,sm_use);
+mt_eint_unmask(CUST_EINT_GSE_2_NUM);
+}
+
+static void bmc156_eint_func(void)
+{
+    //GSE_ERR("[%s]\n",__func__);
+
+    struct bma255_i2c_data *obj = obj_i2c_data;
+    if(!obj)
+    {
+        return;
+    }
+    schedule_work(&obj->eint_work);
+}
+
+int bmc156_setup_eint(struct i2c_client *client)
+{
+    mt_set_gpio_dir(GPIO_GSE_2_EINT_PIN, GPIO_DIR_IN);
+    mt_set_gpio_mode(GPIO_GSE_2_EINT_PIN, GPIO_GSE_2_EINT_PIN_M_EINT);
+    mt_set_gpio_pull_enable(GPIO_GSE_2_EINT_PIN, TRUE);
+    mt_set_gpio_pull_select(GPIO_GSE_2_EINT_PIN, GPIO_PULL_DOWN);
+
+    mt_eint_set_hw_debounce(CUST_EINT_GSE_2_NUM, CUST_EINT_GSE_2_DEBOUNCE_CN);
+    mt_eint_registration(CUST_EINT_GSE_2_NUM, CUST_EINT_GSE_2_TYPE, bmc156_eint_func, 0);
+    mt_eint_mask(CUST_EINT_GSE_2_NUM);
+
+    return 0;
+}
+static int significant_motion_init(struct i2c_client *client)
+{
+    int res;
+    res = bma255_set_slope_int2_pad(client);
+    if (res < 0)
+        printk(KERN_ERR "Gsensor:[bma255_set_slope_int2_pad] res=%d fail\n", res);
+    res = bma255_set_slope_duration(client, 0x03);
+    if (res < 0)
+        printk(KERN_ERR "Gsensor:[bma255_set_slope_duration] res=%d fail\n", res);
+    res = bma255_set_slope_threshold(client, 0x28);
+    if (res < 0)
+        printk(KERN_ERR "Gsensor:[bma255_set_slope_threshold] res=%d fail\n", res);
+
+    res = bmc156_setup_eint(client);
+    if(res!=0)
+    {
+        GSE_ERR("setup eint: %d\n", res);
+        return res;
+    }
+
+
+}
 /*----------------------------------------------------------------------------*/
 static int bma255_init_client(struct i2c_client *client, int reset_cali)
 {
@@ -913,7 +1140,7 @@ static int bma255_init_client(struct i2c_client *client, int reset_cali)
     }
     printk("BMA255 disable interrupt function!\n");
 
-    res = BMA255_SetPowerMode(client, false);
+    res = BMA255_SetPowerMode(client, enable_status);
     if(res != BMA255_SUCCESS)
     {
         return res;
@@ -933,6 +1160,11 @@ static int bma255_init_client(struct i2c_client *client, int reset_cali)
 #ifdef CONFIG_BMA255_LOWPASS
     memset(&obj->fir, 0x00, sizeof(obj->fir));
 #endif
+    #ifdef GSENSOR_MOTION_DETECT
+    res = significant_motion_init(client);
+    if (res < 0)
+        return res;
+    #endif
 
     mdelay(20);
 
@@ -1349,166 +1581,7 @@ static int bma255_get_fifo_framecount(struct i2c_client *client, unsigned char *
     *framecount = BMA255_GET_BITSLICE(data, BMA255_FIFO_FRAME_COUNTER_S);
     return comres;
 }
-/*
-*BMC156 chip only has INT2 pin. Map slope interrupt to INT2 pin.
-*/
-static int bma255_set_slope_int2_pad(struct i2c_client *client)
-{
-    int comres = 0;
-    unsigned char data[2] = {BMA2X2_EN_INT2_PAD_SLOPE__REG};
-    unsigned char state = 0x01;/*map slope interrupt to INT2 pin: 0->disabled, 1->enabled*/
-    struct bma255_i2c_data *obj = (struct bma255_i2c_data*)i2c_get_clientdata(client);
 
-    if (client == NULL)
-    {
-        return -1;
-    }
-
-    mutex_lock(&obj->lock);
-    comres = bma_i2c_read_block(client,
-            BMA2X2_EN_INT2_PAD_SLOPE__REG, data+1, 1);
-
-    data[1]  = BMA255_SET_BITSLICE(data[1],
-            BMA2X2_EN_INT2_PAD_SLOPE, state);
-
-    comres = i2c_master_send(client, data, 2);
-    mutex_unlock(&obj->lock);
-    if(comres <= 0)
-    {
-        return BMA255_ERR_I2C;
-    }
-    else
-    {
-        return comres;
-    }
-}
-static int bma255_set_slope_duration(struct i2c_client *client, unsigned char duration)
-{
-    int comres = 0;
-    unsigned char data[2] = {BMA2X2_SLOPE_DUR__REG};
-    struct bma255_i2c_data *obj = (struct bma255_i2c_data*)i2c_get_clientdata(client);
-
-    if (client == NULL)
-    {
-        return -1;
-    }
-
-    mutex_lock(&obj->lock);
-    comres = bma_i2c_read_block(client,
-            BMA2X2_SLOPE_DUR__REG, data+1, 1);
-
-    data[1]  = BMA255_SET_BITSLICE(data[1],
-            BMA2X2_SLOPE_DUR, duration);
-
-    comres = i2c_master_send(client, data, 2);
-    mutex_unlock(&obj->lock);
-    if(comres <= 0)
-    {
-        return BMA255_ERR_I2C;
-    }
-    else
-    {
-        return comres;
-    }
-}
-
-static int bma255_set_slope_threshold(struct i2c_client *client, unsigned char threshold)
-{
-    int comres = 0;
-    unsigned char data[2] = {BMA2X2_SLOPE_THRES_REG, threshold};
-    struct bma255_i2c_data *obj = (struct bma255_i2c_data*)i2c_get_clientdata(client);
-
-    if (client == NULL)
-    {
-        return -1;
-    }
-
-    mutex_lock(&obj->lock);
-    comres = i2c_master_send(client, data, 2);
-    mutex_unlock(&obj->lock);
-    if(comres <= 0)
-    {
-        return BMA255_ERR_I2C;
-    }
-    else
-    {
-        return comres;
-    }
-}
-static int bma255_set_slope_en(struct i2c_client *client, unsigned char value)
-{
-    int comres = 0;
-    unsigned char data[2] = {BMA2X2_INT_ENABLE1_REG};
-    struct bma255_i2c_data *obj = (struct bma255_i2c_data*)i2c_get_clientdata(client);
-
-    if (client == NULL)
-    {
-        return -1;
-    }
-
-    value = !!value;
-
-    mutex_lock(&obj->lock);
-    comres = bma_i2c_read_block(client,
-            BMA2X2_INT_ENABLE1_REG, data+1, 1);
-    /*set x, y, z componet for slope interrupt*/
-    data[1]  = BMA255_SET_BITSLICE(data[1],
-            BMA2X2_EN_SLOPE_X_INT, value);
-    data[1]  = BMA255_SET_BITSLICE(data[1],
-            BMA2X2_EN_SLOPE_Y_INT, value);
-    data[1]  = BMA255_SET_BITSLICE(data[1],
-            BMA2X2_EN_SLOPE_Z_INT, value);
-
-    comres = i2c_master_send(client, data, 2);
-    mutex_unlock(&obj->lock);
-    if(comres <= 0)
-    {
-        return BMA255_ERR_I2C;
-    }
-    else
-    {
-        return comres;
-    }
-}
-static int bma2x2_set_slope_int(struct i2c_client *client, unsigned char en)
-{
-    int err;
-    if (en)
-    {
-        err = BMA255_SetPowerMode(client, true);
-        if(err != BMA255_SUCCESS)
-        {
-            return err;
-        }
-        /*dur: 192 samples ~= 3s*/
-        err += bma255_set_slope_duration(client, 0xc0);
-        err += bma255_set_slope_threshold(client, 0x16);
-
-        /*Enable the interrupt*/
-        bma255_set_slope_en(client, 1);
-    }
-    else
-    {
-        /*Disable the interrupt*/
-        bma255_set_slope_en(client, 0);
-    }
-}
-
-static bool bma255_get_slope_int_status(struct i2c_client *client, unsigned char duration)
-{
-    int comres = 0;
-    unsigned char data;
-
-    if (client == NULL)
-    {
-        return -1;
-    }
-
-    comres = bma_i2c_read_block(client, BMA2X2_SLOPE_INT_S__REG, &data, 1);
-    data = BMA255_GET_BITSLICE(data, BMA2X2_SLOPE_INT_S);/*0->inactive, 1->active*/
-
-    return (bool)data;
-}
 /*----------------------------------------------------------------------------*/
 
 static ssize_t show_chipinfo_value(struct device_driver *ddri, char *buf)
@@ -1903,11 +1976,10 @@ static ssize_t show_status_value(struct device_driver *ddri, char *buf)
 static ssize_t show_power_status_value(struct device_driver *ddri, char *buf)
 {
     if(sensor_power)
-        printk("G sensor is in work mode, sensor_power = %d\n", sensor_power);
+        return sprintf(buf, "G sensor is in work mode, sensor_power = %d\n", sensor_power);
     else
-        printk("G sensor is in standby mode, sensor_power = %d\n", sensor_power);
+        return sprintf(buf, "G sensor is in standby mode, sensor_power = %d\n", sensor_power);
 
-    return 0;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -2028,6 +2100,28 @@ static ssize_t show_fifo_data_out_frame_value(struct device_driver *ddri, char *
     return err;
 }
 
+static ssize_t show_slope_int_status_value(struct device_driver *ddri, char *buf)
+{
+        int comres = 0;
+        unsigned char data;
+
+        comres = bma_i2c_read_block(bma255_i2c_client, BMA2X2_SLOPE_INT_S__REG, &data, 1);
+        data = BMA255_GET_BITSLICE(data, BMA2X2_SLOPE_INT_S);/*0->inactive, 1->active*/
+
+        return sprintf(buf, "%d\n", data);
+
+}
+static ssize_t show_dump_info(struct device_driver *ddri, char *buf)
+{
+        int addr,i =0;
+        unsigned char data;
+        for(addr=0;addr<=0x3F;addr++ )
+       {
+       bma_i2c_read_block(bma255_i2c_client, addr, &data, 1);
+       printk(KERN_ERR "reg 0x%x = 0x%x \n",addr, data);
+        }
+        return sprintf(buf, "Done");
+}
 /*----------------------------------------------------------------------------*/
 static DRIVER_ATTR(chipinfo,   S_IWUSR | S_IRUGO, show_chipinfo_value,      NULL);
 static DRIVER_ATTR(cpsdata,      S_IWUSR | S_IRUGO, show_cpsdata_value,    NULL);
@@ -2043,6 +2137,8 @@ static DRIVER_ATTR(powerstatus,               S_IRUGO, show_power_status_value, 
 static DRIVER_ATTR(fifo_mode, S_IWUSR | S_IRUGO, show_fifo_mode_value,    store_fifo_mode_value);
 static DRIVER_ATTR(fifo_framecount, S_IWUSR | S_IRUGO, show_fifo_framecount_value,    store_fifo_framecount_value);
 static DRIVER_ATTR(fifo_data_frame, S_IRUGO, show_fifo_data_out_frame_value,    NULL);
+static DRIVER_ATTR(slope_int_status, S_IRUGO, show_slope_int_status_value,    NULL);
+static DRIVER_ATTR(dump, S_IRUGO, show_dump_info,    NULL);
 /*----------------------------------------------------------------------------*/
 static struct driver_attribute *bma255_attr_list[] = {
     &driver_attr_chipinfo,     /*chip information*/
@@ -2059,6 +2155,8 @@ static struct driver_attribute *bma255_attr_list[] = {
     &driver_attr_fifo_mode,
     &driver_attr_fifo_framecount,
     &driver_attr_fifo_data_frame,
+    &driver_attr_slope_int_status,
+    &driver_attr_dump,
 };
 /*----------------------------------------------------------------------------*/
 static int bma255_create_attr(struct device_driver *driver)
@@ -2407,7 +2505,7 @@ static int bma255_suspend(struct i2c_client *client, pm_message_t msg)
 {
     struct bma255_i2c_data *obj = i2c_get_clientdata(client);
     int err = 0;
-
+    int retry = 0;
     GSE_FUN();
     mutex_lock(&bma255_op_mutex);
     if(msg.event == PM_EVENT_SUSPEND)
@@ -2418,15 +2516,27 @@ static int bma255_suspend(struct i2c_client *client, pm_message_t msg)
             mutex_unlock(&bma255_op_mutex);
             return -EINVAL;
         }
-        atomic_set(&obj->suspend, 1);
-        if((err = BMA255_SetPowerMode(obj->client, false)))
+        if (!sm_use)
         {
-            GSE_ERR("write power control fail!!\n");
-            mutex_unlock(&bma255_op_mutex);
-            return err;
+            for(retry = 0; retry < 3; retry++)
+            {
+                err = BMA255_SetPowerMode(client, false);
+                if(err == 0)
+                {
+                    GSE_LOG("BMA255_SetPowerMode done\n");
+                    break;
+                }
+            }
+            if (retry >= 3)
+            {
+                GSE_ERR("write power control fail!!\n");
+                    mutex_unlock(&bma255_op_mutex);
+                return -EINVAL;
+            }
+            sensor_power = false;
+            BMA255_power(obj->hw, 0);
         }
-        sensor_power = false;
-        BMA255_power(obj->hw, 0);
+        atomic_set(&obj->suspend, 1);
     }
     mutex_unlock(&bma255_op_mutex);
     return err;
@@ -2436,6 +2546,7 @@ static int bma255_resume(struct i2c_client *client)
 {
     struct bma255_i2c_data *obj = i2c_get_clientdata(client);
     int err;
+    int retry;
 
     GSE_FUN();
     udelay(500);//for fix check device id error
@@ -2451,8 +2562,31 @@ static int bma255_resume(struct i2c_client *client)
         GSE_ERR("initialize client fail!!\n");
         mutex_unlock(&bma255_op_mutex);
         return err;
-    }
 
+    }
+    if (sm_use)
+    {
+        for(retry = 0; retry < 3; retry++)
+            {
+                err = BMA255_SetPowerMode(client, true);
+                if(err == 0)
+                {
+                    GSE_LOG("BMA255_SetPowerMode done\n");
+                    if (((err = significant_motion_init(client)) < 0))
+                        GSE_ERR(" significant_motion_init fail! \n");
+                    if (((err = bma2x2_set_slope_int(client, 1)) < 0))
+                        GSE_ERR(" bma2x2_set_slope_int fail! \n");
+                    mt_eint_unmask(CUST_EINT_GSE_2_NUM);
+                    break;
+                }
+            }
+            if (retry >= 3)
+            {
+                GSE_ERR("write power control fail!!\n");
+                    mutex_unlock(&bma255_op_mutex);
+                return -EINVAL;
+            }
+    }
     atomic_set(&obj->suspend, 0);
     mutex_unlock(&bma255_op_mutex);
     return 0;
@@ -2518,12 +2652,17 @@ static int bmc156_enable_nodata(int en)
     int retry = 0;
     bool power=false;
 
-    if(1==en)
+    if(en)
     {
+        common_use =1;
         power=true;
     }
-    if(0==en)
+    if(!en)
     {
+        common_use=0;
+        if (sm_use)
+        return 0;
+        else
         power =false;
     }
 
@@ -2584,6 +2723,43 @@ static int bmc156_get_data(int* x ,int* y,int* z, int* status)
 
     return 0;
 }
+static int enable_significant_motion(int en)
+{
+    int res =0,retry=0;
+    struct i2c_client *client = bma255_i2c_client;
+    GSE_LOG(" [%s] en=%d\n", __func__, en);
+
+    if (!common_use)
+    {
+        for(retry = 0; retry < 3; retry++){
+            res = BMA255_SetPowerMode(client, en);
+            if(res == 0)
+            {
+                GSE_LOG("BMA255_SetPowerMode done\n");
+                break;
+            }
+            GSE_LOG("BMA255_SetPowerMode fail\n");
+        }
+
+    }
+
+    res = bma2x2_set_slope_int(client, en);
+    if (res < 0)
+        GSE_ERR("Gsensor:[bma2x2_set_slope_int] res=%d fail\n", res);
+
+
+    if (en)
+    {
+        sm_use = 1;
+        mt_eint_unmask(CUST_EINT_GSE_2_NUM);
+    }
+    else
+    {
+        sm_use = 0;
+        mt_eint_mask(CUST_EINT_GSE_2_NUM);
+    }
+    return res;
+}
 static int bma255_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
     struct i2c_client *new_client;
@@ -2601,7 +2777,7 @@ static int bma255_i2c_probe(struct i2c_client *client, const struct i2c_device_i
         goto exit;
     }
 
-    memset(obj, 0, sizeof(struct bma255_i2c_data));
+    //memset(obj, 0, sizeof(struct bma255_i2c_data));
 
     obj->hw = get_cust_acc_hw();
 
@@ -2610,6 +2786,7 @@ static int bma255_i2c_probe(struct i2c_client *client, const struct i2c_device_i
         GSE_ERR("invalid direction: %d\n", obj->hw->direction);
         goto exit;
     }
+    INIT_WORK(&obj->eint_work, bmc156_eint_work);
 
     obj_i2c_data = obj;
     obj->client = client;
@@ -2673,6 +2850,7 @@ static int bma255_i2c_probe(struct i2c_client *client, const struct i2c_device_i
     ctl.enable_nodata = bmc156_enable_nodata;
     ctl.set_delay  = bmc156_set_delay;
     ctl.is_report_input_direct = false;
+    ctl.enable_significant_motion = enable_significant_motion;
 
     err = acc_register_control_path(&ctl);
     if(err)

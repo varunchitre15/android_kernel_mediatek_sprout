@@ -43,6 +43,7 @@
 #define ID_LIGHT						(ID_BASE+SENSOR_TYPE_LIGHT-1)
 #define ID_PRESSURE						(ID_BASE+SENSOR_TYPE_PRESSURE-1)
 #define ID_TEMPRERATURE					(ID_BASE+SENSOR_TYPE_TEMPERATURE-1)
+#define ID_SIGNIFICANT_MOTION                    (ID_BASE+SENSOR_TYPE_SIGNIFICANT_MOTION-1)
 #define ID_SENSOR_MAX_HANDLE			(ID_BASE+10)
 #define ID_NONE							(ID_BASE+16)
 
@@ -60,6 +61,7 @@
 #define SENSOR_GRAVITY					(1 << ID_GRAVITY)
 #define SENSOR_LINEAR_ACCELERATION		(1 << ID_LINEAR_ACCELERATION)
 #define SENSOR_ROTATION_VECTOR			(1 << ID_ROTATION_VECTOR)
+#define SENSOR_SIGNIFICANT_MOTION            (1 << ID_SIGNIFICANT_MOTION)
 
 /*----------------------------------------------------------------------------*/
 #define HWM_INPUTDEV_NAME               "hwmdata"
@@ -102,6 +104,7 @@
 #define EVENT_SENSOR_GRAVITY			SENSOR_PRESSURE
 #define EVENT_SENSOR_LINEAR_ACCELERATION		SENSOR_TEMPRERATURE
 #define EVENT_SENSOR_ROTATION_VECTOR	SENSOR_PROXIMITY
+#define EVENT_SENSOR_SIGNIFICANT_MOTION    SENSOR_SIGNIFICANT_MOTION
 /*-----------------------------------------------------------------------------*/
 
 enum {
