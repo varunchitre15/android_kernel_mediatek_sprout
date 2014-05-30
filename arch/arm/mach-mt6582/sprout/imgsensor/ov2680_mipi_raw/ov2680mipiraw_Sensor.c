@@ -63,7 +63,7 @@
 #endif
 
 //#define OV2680_TEST_PATTERN_CHECKSUM 0x86da3e5a
-#define OV2680_TEST_PATTERN_CHECKSUM 0x64d5ee2e
+#define OV2680_TEST_PATTERN_CHECKSUM 0x92dcaca1
 
 
 //kal_bool OV2680_during_testpattern = KAL_FALSE;
@@ -942,8 +942,8 @@ static void OV2680MIPI_Sensor_preview(void)
     OV2680_write_cmos_sensor(0x3813, 0x08);
     OV2680_write_cmos_sensor(0x3814, 0x11);
     OV2680_write_cmos_sensor(0x3815, 0x11);
-    OV2680_write_cmos_sensor(0x3820, 0xc0);
-    OV2680_write_cmos_sensor(0x3821, 0x00);
+    OV2680_write_cmos_sensor(0x3820, 0xc4);
+    OV2680_write_cmos_sensor(0x3821, 0x04);
     OV2680_write_cmos_sensor(0x4008, 0x02);
     OV2680_write_cmos_sensor(0x4009, 0x09);
     OV2680_write_cmos_sensor(0x4837, 0x18);
@@ -986,8 +986,8 @@ static void OV2680MIPI_Sensor_2M_15fps(void)
     OV2680_write_cmos_sensor(0x3813, 0x08);
     OV2680_write_cmos_sensor(0x3814, 0x11);
     OV2680_write_cmos_sensor(0x3815, 0x11);
-    OV2680_write_cmos_sensor(0x3820, 0xc0);
-    OV2680_write_cmos_sensor(0x3821, 0x00);
+    OV2680_write_cmos_sensor(0x3820, 0xc4);
+    OV2680_write_cmos_sensor(0x3821, 0x04);
     OV2680_write_cmos_sensor(0x4008, 0x02);
     OV2680_write_cmos_sensor(0x4009, 0x09);
     OV2680_write_cmos_sensor(0x4837, 0x30);
