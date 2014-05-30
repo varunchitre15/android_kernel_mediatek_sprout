@@ -294,14 +294,12 @@ kal_bool upmu_is_chr_det(void)
     tmp32=get_charger_detect_status();
     if(tmp32 == 0)
     {
-    	battery_xlog_printk(BAT_LOG_CRTI, "[upmu_is_chr_det] Charger doesn't exist\n");
         return KAL_FALSE;
     }
     else
     {
         if( mt_usb_is_device() )
         {
-        	battery_xlog_printk(BAT_LOG_CRTI, "[upmu_is_chr_det] Charger exist and USB is not host\n");
 
             return KAL_TRUE;
         }
@@ -384,11 +382,10 @@ static int wireless_get_property(struct power_supply *psy,
 {
     int ret = 0;
     struct wireless_data *data = container_of(psy, struct wireless_data, psy);    
-    battery_xlog_printk(BAT_LOG_CRTI, "[wireless_get_property] start\n");    
+ 
     switch (psp) {
     case POWER_SUPPLY_PROP_ONLINE:                           
-        val->intval = data->WIRELESS_ONLINE;
-        battery_xlog_printk(BAT_LOG_CRTI, "[wireless_get_property] data->WIRELESS_ONLINE %d\n", data->WIRELESS_ONLINE);    
+        val->intval = data->WIRELESS_ONLINE;    
         break;
     default:
         ret = -EINVAL;
@@ -1264,7 +1261,7 @@ static kal_bool mt_battery_100Percent_tracking_check(void)
                          resetBatteryMeter = KAL_TRUE;
 	        }
 		
-		battery_xlog_printk(BAT_LOG_CRTI, "[Battery] mt_battery_100percent_tracking(), Charging full first UI(%d), reset(%d) \r\n",
+		battery_xlog_printk(BAT_LOG_CRTI, "[100percent], UI_SOC(%d), reset(%d) \n",
 			BMT_status.UI_SOC,resetBatteryMeter);
 	 }
 	 else	
@@ -1276,7 +1273,7 @@ static kal_bool mt_battery_100Percent_tracking_check(void)
             BMT_status.UI_SOC=99;
 			resetBatteryMeter = KAL_FALSE;
        		
-			battery_xlog_printk(BAT_LOG_CRTI, "[Battery] mt_battery_100percent_tracking(), UI full first, keep (%d) \r\n", BMT_status.UI_SOC);
+			battery_xlog_printk(BAT_LOG_CRTI, "[100percent],UI_SOC = %d \n", BMT_status.UI_SOC);
  		}
 
 		timer_counter = (cust_sync_time/BAT_TASK_PERIOD);
@@ -1312,7 +1309,7 @@ static kal_bool mt_battery_nPercent_tracking_check(void)
 			  
   		  resetBatteryMeter = KAL_TRUE;
 
-		   battery_xlog_printk(BAT_LOG_CRTI, "[Battery]mt_battery_nPercent_tracking_check(), ZCV(%d) <= BMT_status.nPercent_ZCV(%d), UI_SOC=%d., tracking UI_SOC=%d \r\n", 
+		   battery_xlog_printk(BAT_LOG_CRTI, "[nPercent] ZCV %d <= nPercent_ZCV %d, UI_SOC=%d., tracking UI_SOC=%d \n", 
                 BMT_status.ZCV, BMT_status.nPercent_ZCV, BMT_status.UI_SOC, BMT_status.nPrecent_UI_SOC_check_point);
 	}
 	else if ( (BMT_status.ZCV > BMT_status.nPercent_ZCV)&&(BMT_status.UI_SOC==BMT_status.nPrecent_UI_SOC_check_point) )
@@ -1321,7 +1318,7 @@ static kal_bool mt_battery_nPercent_tracking_check(void)
     	timer_counter=(NPERCENT_TRACKING_TIME/BAT_TASK_PERIOD);
 		resetBatteryMeter = KAL_TRUE;
 		
-        battery_xlog_printk(BAT_LOG_CRTI, "[Battery]mt_battery_nPercent_tracking_check() ZCV(%d) > BMT_status.nPercent_ZCV(%d) and UI SOC (%d), then keep %d. \r\n", 
+        battery_xlog_printk(BAT_LOG_CRTI, "[nPercent] ZCV %d > BMT_status.nPercent_ZCV %d and UI SOC=%d, then keep %d. \n", 
             BMT_status.ZCV, BMT_status.nPercent_ZCV, BMT_status.UI_SOC, BMT_status.nPrecent_UI_SOC_check_point);
  	}
 	else
@@ -1350,7 +1347,7 @@ static kal_bool mt_battery_0Percent_tracking_check(void)
     }
     }
 	
-    battery_xlog_printk(BAT_LOG_CRTI, "[Battery] mt_battery_0Percent_tracking_check(), VBAT < %d UI_SOC = (%d)\r\n", SYSTEM_OFF_VOLTAGE, BMT_status.UI_SOC);                
+    battery_xlog_printk(BAT_LOG_CRTI, "0Percent, VBAT < %d UI_SOC=%d\r\n", SYSTEM_OFF_VOLTAGE, BMT_status.UI_SOC);                
 
 	return resetBatteryMeter;	
 }
@@ -1373,13 +1370,15 @@ static void mt_battery_Sync_UI_Percentage_to_Real(void)
 			timer_counter ++;
 		}
 
-		battery_xlog_printk(BAT_LOG_CRTI, "Sync UI percentage to Real one, BMT_status.UI_SOC=%d, BMT_status.SOC=%d, counter = %d\r\n", 
+		battery_xlog_printk(BAT_LOG_CRTI, "[Sync_Real] UI_SOC=%d, SOC=%d, counter = %d\n", 
                       BMT_status.UI_SOC, BMT_status.SOC, timer_counter);
 	}
 	else
 	{
 		timer_counter = 0;
 	    BMT_status.UI_SOC = BMT_status.SOC;
+	    battery_xlog_printk(BAT_LOG_CRTI, "[Sync_Real] UI_SOC=%d\n", 
+                      BMT_status.UI_SOC);
     }
 
 	if(BMT_status.UI_SOC <= 0 )
@@ -1437,7 +1436,7 @@ static void battery_update(struct battery_data *bat_data)
     	if(bat_is_recharging_phase() == KAL_TRUE)
 		{
 			BMT_status.UI_SOC = 100;
-			battery_xlog_printk(BAT_LOG_CRTI, "[Battery_Recharging_phase] Keep UI as 100. BMT_status.UI_SOC=%d, BMT_status.SOC=%ld\r\n", 
+			battery_xlog_printk(BAT_LOG_CRTI, "[recharging] UI_SOC=%d, SOC=%d\n", 
                         BMT_status.UI_SOC, BMT_status.SOC);
 		}
 		else
@@ -1445,8 +1444,6 @@ static void battery_update(struct battery_data *bat_data)
         	mt_battery_Sync_UI_Percentage_to_Real();
 		}	
     }
-
-	battery_xlog_printk(BAT_LOG_CRTI, "UI_SOC=(%d), resetBatteryMeter=(%d)\n", BMT_status.UI_SOC,resetBatteryMeter);	
 
 	//restore battery UI capacity to rtc
 	if (BMT_status.UI_SOC <= 1) {
@@ -1484,7 +1481,6 @@ static void wireless_update(struct wireless_data *wireless_data)
         {
             wireless_data->WIRELESS_ONLINE = 1;        
             wireless_psy->type = POWER_SUPPLY_TYPE_WIRELESS;
-            battery_xlog_printk(BAT_LOG_CRTI, "[wireless_update]\n");
         }
     }
     else
@@ -2048,7 +2044,7 @@ static void mt_battery_notify_VBatTemp_check(void)
 #endif
 #endif
 
-    battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] BATTERY_NOTIFY_CASE_0002_VBATTEMP (%x)\n", g_BatteryNotifyCode);
+    //battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] BATTERY_NOTIFY_CASE_0002_VBATTEMP (%x)\n", g_BatteryNotifyCode);
         
 #endif
 }
@@ -2066,7 +2062,7 @@ static void mt_battery_notify_VCharger_check(void)
     {
         g_BatteryNotifyCode &= ~(0x0001);
     }
-
+    if (g_BatteryNotifyCode !=0x0000)
     battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] BATTERY_NOTIFY_CASE_0001_VCHARGER (%x)\n", g_BatteryNotifyCode);
 #endif	
 }
@@ -2294,7 +2290,7 @@ static void mt_kpoc_power_off_check(void)
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	kal_int32 charger_vol = battery_meter_get_charger_voltage();
 
-	battery_xlog_printk(BAT_LOG_CRTI, "[mt_kpoc_power_off_check] , chr_vol=%d, boot_mode=%d\r\n",charger_vol,g_platform_boot_mode);
+	battery_xlog_printk(BAT_LOG_FULL, "[mt_kpoc_power_off_check] , chr_vol=%d, boot_mode=%d\r\n",charger_vol,g_platform_boot_mode);
 	if(g_platform_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT || g_platform_boot_mode == LOW_POWER_OFF_CHARGING_BOOT)
 	{
 		if( (upmu_is_chr_det() == KAL_FALSE)  && (BMT_status.charger_vol < 2500))	//vbus < 2.5V
@@ -2446,7 +2442,7 @@ int bat_thread_kthread(void *x)
 
 void bat_thread_wakeup(void)
 {
-    battery_xlog_printk(BAT_LOG_CRTI, "******** battery : bat_thread_wakeup  ********\n" );
+    battery_xlog_printk(BAT_LOG_FULL, "******** battery : bat_thread_wakeup  ********\n" );
     
     bat_thread_timeout = KAL_TRUE;
     bat_meter_timeout = KAL_TRUE;

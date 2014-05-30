@@ -174,7 +174,7 @@ kal_uint32 charging_value_to_parameter(const kal_uint32 *parameter, const kal_ui
 			 }	  
 		 }
 
-		 battery_xlog_printk(BAT_LOG_CRTI, "Can't find closest level \r\n");	
+		 battery_xlog_printk(BAT_LOG_FULL, "Can't find closest level \r\n");	
 		 return pList[0];
 		 //return CHARGE_CURRENT_0_00_MA;
 	 }
@@ -188,7 +188,7 @@ kal_uint32 charging_value_to_parameter(const kal_uint32 *parameter, const kal_ui
 			 }	  
 		 }
 
- 		 battery_xlog_printk(BAT_LOG_CRTI, "Can't find closest level \r\n");
+ 		 battery_xlog_printk(BAT_LOG_FULL, "Can't find closest level \r\n");
 		 return pList[number -1];
 		 //return CHARGE_CURRENT_0_00_MA;
 	 }

@@ -535,7 +535,7 @@ static void pchr_turn_on_charging (void)
     }
 
 	/* enable/disable charging */
-	battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] pchr_turn_on_charging(), enable =%d \r\n", charging_enable);
+	battery_xlog_printk(BAT_LOG_FULL, "[BATTERY] pchr_turn_on_charging(), enable =%d \r\n", charging_enable);
 	battery_charging_control(CHARGING_CMD_ENABLE,&charging_enable);
 
 	
@@ -546,7 +546,7 @@ PMU_STATUS BAT_PreChargeModeAction(void)
 {
 	kal_bool charging_enable = KAL_FALSE;
 
-    battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] Pre-CC mode charge, timer=%ld on %ld !!\n\r", BMT_status.PRE_charging_time, BMT_status.total_charging_time);    
+    battery_xlog_printk(BAT_LOG_FULL, "[BATTERY] Pre-CC mode charge, timer=%ld on %ld !!\n\r", BMT_status.PRE_charging_time, BMT_status.total_charging_time);    
 
     BMT_status.PRE_charging_time += BAT_TASK_PERIOD;
     BMT_status.CC_charging_time = 0;
@@ -581,7 +581,7 @@ PMU_STATUS BAT_ConstantCurrentModeAction(void)
 {
 	kal_bool charging_enable = KAL_FALSE;
 
-    battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] CC mode charge, timer=%ld on %ld !!\n\r", BMT_status.CC_charging_time, BMT_status.total_charging_time);    
+    battery_xlog_printk(BAT_LOG_FULL, "[BATTERY] CC mode charge, timer=%ld on %ld !!\n\r", BMT_status.CC_charging_time, BMT_status.total_charging_time);    
 
 	BMT_status.PRE_charging_time = 0;
     BMT_status.CC_charging_time += BAT_TASK_PERIOD;
@@ -610,7 +610,7 @@ PMU_STATUS BAT_TopOffModeAction(void)
 {
 	kal_uint32 charging_enable = KAL_FALSE;
 	
-    battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] Top Off mode charge, timer=%ld on %ld !!\n\r", BMT_status.TOPOFF_charging_time, BMT_status.total_charging_time);    
+    battery_xlog_printk(BAT_LOG_FULL, "[BATTERY] Top Off mode charge, timer=%ld on %ld !!\n", BMT_status.TOPOFF_charging_time, BMT_status.total_charging_time);    
 
     BMT_status.PRE_charging_time = 0;
     BMT_status.CC_charging_time = 0;
