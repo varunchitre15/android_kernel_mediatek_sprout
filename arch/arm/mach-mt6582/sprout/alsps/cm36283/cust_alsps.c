@@ -29,10 +29,10 @@ static struct alsps_hw cust_alsps_hw = {
     /* MTK: modified to support AAL */
     .als_level  = { 0, 45, 45, 45, 303, 303, 303, 1305, 1305, 2699, 2699, 7622, 38416, 46881, 65535},
     .als_value  = { 0, 80, 80, 80, 107, 107, 107,  650,  650, 1160, 1160, 3100,  5000,  8500, 10050, 10240},
-    //.ps_threshold_high = 80,
-    .ps_threshold_high = 65535,
-    //.ps_threshold_low = 50,
-    .ps_threshold_low = 0,
+    .ps_threshold_high = 82,
+    //.ps_threshold_high = 65535,
+    .ps_threshold_low = 68,
+    //.ps_threshold_low = 0,
 };
 struct alsps_hw *get_cust_alsps_hw(void) {
     return &cust_alsps_hw;
