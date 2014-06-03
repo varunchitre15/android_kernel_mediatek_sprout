@@ -139,6 +139,10 @@ EXPORT_SYMBOL(ccci_msg_mask);
 //#define DEBUG_SETTING_DEFAULT	(DBG_FLAG_DEBUG)
 static unsigned int debug_settting_flag = DEBUG_SETTING_DEFAULT;
 
+/* -------------ccci sbp feature define---------------------*/
+#ifdef CONFIG_MTK_MD_SBP_CUSTOM_VALUE
+static unsigned int md_sbp_value[MAX_MD_NUM];
+#endif // CONFIG_MTK_MD_SBP_CUSTOM_VALUE
 
 /*********************************************************************************/
 /*  API about getting md information                                                                                   */
@@ -207,6 +211,24 @@ int get_ccif_hw_info(int md_id, ccif_hw_info_t *ccif_hw_info)
 EXPORT_SYMBOL(get_ccif_hw_info);
 
 
+#ifdef CONFIG_MTK_MD_SBP_CUSTOM_VALUE
+int ccci_set_md_sbp(int md_id, unsigned int md_sbp)
+{
+    CCCI_MSG_INF(md_id, "ctl", "ccci_set_md_sbp(%d, 0x%x)\n", md_id, md_sbp);
+
+    switch(md_id)
+    {
+        case MD_SYS1: 
+            md_sbp_value[MD_SYS1] = md_sbp;
+            return 0;
+
+        default:
+            return -1;
+    }
+}
+EXPORT_SYMBOL(ccci_set_md_sbp);
+#endif // CONFIG_MTK_MD_SBP_CUSTOM_VALUE
+
 void config_misc_info(int md_id, unsigned int base[], unsigned int size)
 {
 	misc_info_t misc_info;
@@ -235,6 +257,17 @@ void config_misc_info(int md_id, unsigned int base[], unsigned int size)
 		#else
 		misc_info.support_mask |= (FEATURE_NOT_SUPPORT<<(MISC_32K_LESS*2));
 		#endif
+
+        //--- Feature SBP support
+#ifdef CONFIG_MTK_MD_SBP_CUSTOM_VALUE
+        CCCI_MSG_INF(md_id, "ctl", "config_misc_info() md_id:%d, sbp_code:0x%x\n", md_id, md_sbp_value[md_id]);
+        if (md_sbp_value[md_id] > 0) {
+            misc_info.feature_4_val[0] = md_sbp_value[md_id];
+            misc_info.support_mask |= (FEATURE_SUPPORT<<(MISC_MD_SBP_SETTING * 2));
+        }
+#else
+        CCCI_MSG_INF(md_id, "ctl", "config_misc_info() NOT support MISC_MD_SBP_SETTING\n");
+#endif // CONFIG_MTK_MD_SBP_CUSTOM_VALUE
 
 		memcpy(base, &misc_info, sizeof(misc_info_t));
 	}

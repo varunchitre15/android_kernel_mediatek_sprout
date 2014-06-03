@@ -149,6 +149,13 @@ config MTK_EEMCS_DRIVER # EEMCS_DRIVER
         ---help---
           This option enables EEMCS device driver support
 
+config MTK_MD_SBP_CUSTOM_VALUE
+	string "MTK_MD_SBP_CUSTOM_VALUE"
+	default "0"
+	help
+		Disable MD SBP(Single Binary Platform) feature or not.
+		Defined: enable MD SBP feature.
+
 config MTK_UMTS_TDD128_MODE
 	bool "MTK_UMTS_TDD128_MODE"
 	help

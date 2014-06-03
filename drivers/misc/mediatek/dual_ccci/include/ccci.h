@@ -71,6 +71,12 @@ typedef enum {
 #define CCCI_IOC_FORCE_FD				_IOW(CCCI_IOC_MAGIC, 35, unsigned int) // RILD(6577)
 #define CCCI_IOC_AP_ENG_BUILD			_IOW(CCCI_IOC_MAGIC, 36, unsigned int) // md_init(6577)
 #define CCCI_IOC_GET_MD_MEM_SIZE		_IOR(CCCI_IOC_MAGIC, 37, unsigned int) // md_init(6577)
+#define CCCI_IOC_UPDATE_SIM_SLOT_CFG    _IOW(CCCI_IOC_MAGIC, 38, unsigned int) // RILD
+#define CCCI_IOC_GET_CFG_SETTING        _IOW(CCCI_IOC_MAGIC, 39, unsigned int) // md_init
+
+#define CCCI_IOC_SET_MD_SBP_CFG         _IOW(CCCI_IOC_MAGIC, 40, unsigned int) // md_init
+#define CCCI_IOC_GET_MD_SBP_CFG         _IOW(CCCI_IOC_MAGIC, 41, unsigned int) // md_init
+
 //==================================================================================
 // API functions exported in ccci
 //==================================================================================

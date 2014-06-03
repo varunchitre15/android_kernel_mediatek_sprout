@@ -39,6 +39,11 @@ struct ccci_dev_client  *md_logger_client = NULL;
 static spinlock_t	md_logger_lock;
 static unsigned int	catch_more = 0;
 
+#ifdef CONFIG_MTK_MD_SBP_CUSTOM_VALUE
+static unsigned int md_sbp_code = 0;
+static unsigned int md_sbp_code_default = 0;
+#endif //CONFIG_MTK_MD_SBP_CUSTOM_VALUE
+
 //==============================================================
 // CCCI Standard charactor device function
 //==============================================================
@@ -460,9 +465,10 @@ static int ccci_dev_mmap(struct file *file, struct vm_area_struct *vma)
 		ccci_mdlog_base_req(md_id, NULL, &addr, &len);
 	}
 
-	CCCI_CHR_MSG(md_id, "remap addr:0x%lx len:%d  map-len:%lu\n",addr,len,vma->vm_end-vma->vm_start);
+	CCCI_MSG_INF(md_id, "chr", "remap addr:0x%lx len:%d  map-len:%lu\n",addr,len,vma->vm_end-vma->vm_start);
 	if ((vma->vm_end-vma->vm_start)> len) {
-		CCCI_DBG_MSG(md_id, "chr", "Get invalid mm size request from ch%d!\n", client->ch_num);
+		CCCI_MSG_INF(md_id, "chr", "Get invalid mm size request from ch%d!\n", client->ch_num);
+		return -1;
 	}
 
 	len=(vma->vm_end-vma->vm_start)<len?vma->vm_end-vma->vm_start:len;
@@ -1056,6 +1062,40 @@ static long ccci_vir_chr_ioctl( struct file *file, unsigned int cmd, unsigned lo
 		case CCCI_IOC_GET_MD_TYPE_SAVING:
 			ret = put_user(md_type_saving, (unsigned int __user *)arg);
 			break;
+
+#ifdef CONFIG_MTK_MD_SBP_CUSTOM_VALUE
+        case CCCI_IOC_GET_MD_SBP_CFG:
+            CCCI_MSG_INF(md_id, "chr", "SBP confg length:%d!\n", strlen(CONFIG_MTK_MD_SBP_CUSTOM_VALUE));
+            if (strlen(CONFIG_MTK_MD_SBP_CUSTOM_VALUE) > 0) {
+                if (!md_sbp_code_default) {
+                    int tmpret = kstrtouint(CONFIG_MTK_MD_SBP_CUSTOM_VALUE, 0, &md_sbp_code_default);
+                    if (!tmpret){
+                        CCCI_MSG_INF(md_id, "chr", "GET_MD_SBP_CFG: get config sbp code:%d!\n", md_sbp_code_default);
+                    } else {
+                        CCCI_MSG_INF(md_id, "chr", "GET_MD_SBP_CFG: get config sbp code fail! ret:%d, Config val:%s\n"
+                            , tmpret, CONFIG_MTK_MD_SBP_CUSTOM_VALUE);
+                    }
+                } else {
+                    CCCI_MSG_INF(md_id, "chr", "GET_MD_SBP_CFG: config sbp code:%d!\n", md_sbp_code_default);
+                }
+
+                ret = put_user(md_sbp_code_default, (unsigned int __user *)arg);
+
+            } else {
+                ret = -ENOTTY;
+            }
+            break;
+
+        case CCCI_IOC_SET_MD_SBP_CFG:
+            if(copy_from_user(&md_sbp_code, (void __user *)arg, sizeof(unsigned int))) {
+                CCCI_MSG_INF(md_id, "chr", "SET_MD_SBP_CFG: copy_from_user fail!\n");
+                ret = -EFAULT;
+            } else {
+                CCCI_MSG_INF(md_id, "chr", "SET_MD_SBP_CFG: set md sbp code:0x%x!\n", md_sbp_code);
+                ccci_set_md_sbp(md_id, md_sbp_code);
+            }
+            break;
+#endif // CONFIG_MTK_MD_SBP_CUSTOM_VALUE
 
 		default:
 			CCCI_MSG_INF(md_id, "chr", "illegal IOCTL %X called by %s\n", cmd, current->comm);
