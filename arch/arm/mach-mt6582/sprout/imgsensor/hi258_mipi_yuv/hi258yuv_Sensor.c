@@ -29,7 +29,19 @@
 #include "hi258yuv_Camera_Sensor_para.h"
 #include "hi258yuv_CameraCustomized.h"
 
-#define HI258_TEST_PATTERN_CHECKSUM (0x7ba87eae)
+#define HI258_TEST_PATTERN_CHECKSUM (0x7d732767)
+typedef struct
+{
+  UINT16  iSensorVersion;
+  UINT16  iNightMode;
+  UINT16  iWB;
+  UINT16  iEffect;
+  UINT16  iEV;
+  UINT16  iBanding;
+  UINT16  iMirror;
+  UINT16  iFrameRate;
+} HI258_MIPIStatus;
+HI258_MIPIStatus HI258_MIPICurrentStatus;
 
 #define HI258_DEBUG
 #ifdef HI258_DEBUG
@@ -1901,7 +1913,7 @@ UINT32 HI258Control(MSDK_SCENARIO_ID_ENUM ScenarioId, MSDK_SENSOR_EXPOSURE_WINDO
             return ERROR_INVALID_SCENARIO_ID;
     }
 
-    return TRUE;
+    return ERROR_NONE;
 }
 
 BOOL HI258_set_param_wb(UINT16 para)
@@ -1970,6 +1982,8 @@ BOOL HI258_set_param_wb(UINT16 para)
         default:
             return FALSE;
     }
+    
+    HI258_MIPICurrentStatus.iWB = para;
 
     return TRUE;
 }
@@ -2200,18 +2214,29 @@ UINT32 HI258YUVSetVideoMode(UINT16 u2FrameRate)
 
 UINT32 HI258SetTestPatternMode(kal_bool bEnable)
 {
-	SENSORDB("[HI258SetTestPatternMode]test pattern bEnable:=%d\n",bEnable);
-	if(bEnable)
-	{
-		HI258_write_cmos_sensor(0x03,0x00);
-		HI258_write_cmos_sensor(0x50,0x01);
-	}
-	else
-	{      
+    SENSORDB("[HI258SetTestPatternMode]test pattern bEnable:=%d\n",bEnable);
+    if(bEnable)
+    {
         HI258_write_cmos_sensor(0x03,0x00);
-		HI258_write_cmos_sensor(0x50,0x00);
-	}
-	return TRUE;
+        HI258_write_cmos_sensor(0x50,0x04);
+    }
+    else
+    {      
+        HI258_write_cmos_sensor(0x03,0x00);
+        HI258_write_cmos_sensor(0x50,0x00);
+    }
+    return TRUE;
+}
+
+void HI258YUV_GetExifInfo(UINT32 exifAddr)
+{
+    SENSOR_EXIF_INFO_STRUCT* pExifInfo = (SENSOR_EXIF_INFO_STRUCT*)exifAddr;
+    pExifInfo->FNumber = 28;
+    pExifInfo->AEISOSpeed = AE_ISO_100;
+    pExifInfo->AWBMode = HI258_MIPICurrentStatus.iWB;
+    pExifInfo->CapExposureTime = HI258_read_shutter();
+    pExifInfo->FlashLightTimeus = 0;
+    pExifInfo->RealISOValue = AE_ISO_100;
 }
 
 UINT32 HI258FeatureControl(MSDK_SENSOR_FEATURE_ENUM FeatureId,
@@ -2319,12 +2344,15 @@ UINT32 HI258FeatureControl(MSDK_SENSOR_FEATURE_ENUM FeatureId,
         case SENSOR_FEATURE_SET_VIDEO_MODE:
             HI258YUVSetVideoMode(*pFeatureData16);
             break;
-	    case SENSOR_FEATURE_GET_TEST_PATTERN_CHECKSUM_VALUE:
+        case SENSOR_FEATURE_GET_TEST_PATTERN_CHECKSUM_VALUE:
             *pFeatureReturnPara32=HI258_TEST_PATTERN_CHECKSUM;
             *pFeatureParaLen=4;
             break;
-        case SENSOR_FEATURE_SET_TEST_PATTERN: 		   
-            HI258SetTestPatternMode((BOOL)*pFeatureData16);			  
+        case SENSOR_FEATURE_SET_TEST_PATTERN:
+            HI258SetTestPatternMode((BOOL)*pFeatureData16);  
+            break;
+        case SENSOR_FEATURE_GET_EXIF_INFO:  
+            HI258YUV_GetExifInfo(*pFeatureData32);  
             break;
         default:
             break;
