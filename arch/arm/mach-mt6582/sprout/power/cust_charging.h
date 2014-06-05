@@ -96,7 +96,7 @@
 
 
 /* High battery support */
-//#define HIGH_BATTERY_VOLTAGE_SUPPORT
+#define HIGH_BATTERY_VOLTAGE_SUPPORT
 
 /* Disable Battery check for HQA */
 #ifdef CONFIG_MTK_DISABLE_POWER_ON_OFF_VOLTAGE_LIMITATION
