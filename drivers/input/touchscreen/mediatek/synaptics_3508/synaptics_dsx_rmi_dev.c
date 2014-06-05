@@ -1,6 +1,7 @@
 /*
-*  Copyright (C) 2014 MediaTek Inc. 
-*  Based on code by
+* Copyright (C) 2014 MediaTek Inc.
+* Modification based on code covered by the below mentioned copyright
+* and/or permission notice(s).
 */
 /*
  * Synaptics DSX touchscreen driver
@@ -79,7 +80,7 @@ struct rmidev_data {
 static struct bin_attribute attr_data = {
 	.attr = {
 		.name = "data",
-		.mode = (S_IRUGO | S_IWUGO),
+		.mode = 0660,
 	},
 	.size = 0,
 	.read = rmidev_sysfs_data_show,
@@ -87,10 +88,10 @@ static struct bin_attribute attr_data = {
 };
 
 static struct device_attribute attrs[] = {
-	__ATTR(open, S_IWUGO,
+	__ATTR(open, 0660,
 			synaptics_rmi4_show_error,
 			rmidev_sysfs_open_store),
-	__ATTR(release, S_IWUGO,
+	__ATTR(release, 0660,
 			synaptics_rmi4_show_error,
 			rmidev_sysfs_release_store),
 	__ATTR(attn_state, S_IRUGO,
