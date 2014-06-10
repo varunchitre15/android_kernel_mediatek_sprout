@@ -786,6 +786,8 @@ static int bmg_init_client(struct i2c_client *client, int reset_cali)
 
     return 0;
 }
+static int g_enable_flag =0;
+static int g_drop_count=5;
 
 /*
 *Returns compensated and mapped value. unit is :degree/second
@@ -811,6 +813,22 @@ static int bmg_read_sensor_data(struct i2c_client *client,
     }
 
     err = bmg_read_raw_data(client, databuf);
+    if(1==g_enable_flag)
+    {
+        if(g_drop_count>0)
+        {
+            sprintf(buf, "%04x %04x %04x",0, 0, 0);
+            g_drop_count--;
+        }
+        else
+        {
+            g_drop_count=5;
+            g_enable_flag =0;
+        }
+        sprintf(buf, "%04x %04x %04x",0, 0, 0);
+        //GYRO_ERR("fwq  drop data %d\n",g_drop_count);
+        return 0;
+    }
     if (err) {
         GYRO_ERR("bmg read raw data failed, err = %d\n", err);
         return -3;
@@ -829,9 +847,9 @@ static int bmg_read_sensor_data(struct i2c_client *client,
             obj->cvt.sign[BMG_AXIS_Z]*databuf[BMG_AXIS_Z];
 
         /* convert: LSB -> degree/second(o/s) */
-        gyro[BMG_AXIS_X] = gyro[BMG_AXIS_X] / obj->sensitivity;
-        gyro[BMG_AXIS_Y] = gyro[BMG_AXIS_Y] / obj->sensitivity;
-        gyro[BMG_AXIS_Z] = gyro[BMG_AXIS_Z] / obj->sensitivity;
+        gyro[BMG_AXIS_X] = gyro[BMG_AXIS_X] * BMG160_OUT_MAGNIFY / obj->sensitivity;
+        gyro[BMG_AXIS_Y] = gyro[BMG_AXIS_Y] * BMG160_OUT_MAGNIFY / obj->sensitivity;
+        gyro[BMG_AXIS_Z] = gyro[BMG_AXIS_Z] * BMG160_OUT_MAGNIFY / obj->sensitivity;
 
         sprintf(buf, "%04x %04x %04x",
             gyro[BMG_AXIS_X], gyro[BMG_AXIS_Y], gyro[BMG_AXIS_Z]);
@@ -1388,7 +1406,10 @@ int gyroscope_operate(void *self, uint32_t command, void *buff_in, int size_in,
         value = *(int *)buff_in;
         GYRO_LOG("sensor enable/disable command: %s\n",
             value ? "enable" : "disable");
-
+        if(1==value)
+        {
+            g_enable_flag =1;
+        }
         err = bmg_set_powermode(priv->client,
             (enum BMG_POWERMODE_ENUM)(!!value));
         if (err)
