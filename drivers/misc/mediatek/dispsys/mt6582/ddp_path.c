@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -110,12 +110,12 @@ static void dispsys_bypass_color(unsigned int width, unsigned int height)
 
 static void dispsys_bypass_bls(unsigned int width, unsigned int height)
 {
-    printk("dispsys_bypass_bls, width=%d, height=%d, reg=0x%x \n", 
+    printk("dispsys_bypass_bls, width=%d, height=%d, reg=0x%x \n",
         width, height, ((height<<16) + width));
-    
+
     *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x000b0) = 0x00000001;
     *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x000a0) = 0x000003ff;
-    *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x000b0) = 0x00000000;                      
+    *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x000b0) = 0x00000000;
 
     *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x00010) = 0x00010100;
     *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x00014) = 0x00000000;
@@ -181,17 +181,17 @@ static void dispsys_bypass_bls(unsigned int width, unsigned int height)
     *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x00e34) = 0x00000000;
     *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x00e3c) = 0x20200001;
     *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x00e40) = 0x20202020;
-    *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x00e00) = 0x00000000; 
-    
+    *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x00e00) = 0x00000000;
+
     *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x00004) = 0x00000001;
     *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x00004) = 0x00000000;
-    *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x000a0) = 0x800003ff;  
-    
+    *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x000a0) = 0x800003ff;
+
     *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x00008) = 0x0000001f;
     *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x00000) = 0x00010001;
 
     // test BLS pattern
-    //*(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x000b4) = 0x00000001; 
+    //*(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x000b4) = 0x00000001;
 
 }
 #endif
@@ -201,7 +201,7 @@ static void dispsys_bypass_bls(unsigned int width, unsigned int height)
 int disp_path_get_mutex_()
 {
     unsigned int cnt=0;
-    
+
     DISP_REG_SET(DISP_REG_CONFIG_MUTEX(gMutexID), 1);
     DISP_REG_SET_FIELD(REG_FLD(1, gMutexID), DISP_REG_CONFIG_MUTEX_INTSTA, 0);
 
@@ -235,38 +235,38 @@ static void _disp_path_mutex_reg_update_cb(unsigned int param)
         wake_up_interruptible(&g_disp_mutex_wq);
     }
     if (param & (DDP_MUTEX_INTR_BIT << gMutexID)) {
-    	DISP_ERR("mutex%d register update timeout! commit=0x%x, mod=0x%x \n",
-    			gMutexID, DISP_REG_GET(DISP_REG_CONFIG_REG_COMMIT),
-    			DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(gMutexID)));
-    	// clear intr status
-    	DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, 0);
-    	// dump reg info
-    	disp_dump_reg(DISP_MODULE_CONFIG);
-    	disp_dump_reg(DISP_MODULE_MUTEX);
-    	disp_dump_reg(DISP_MODULE_OVL);
-    	disp_dump_reg(DISP_MODULE_RDMA);
-    	disp_dump_reg(DISP_MODULE_COLOR);
-    	disp_dump_reg(DISP_MODULE_BLS);
+        DISP_ERR("mutex%d register update timeout! commit=0x%x, mod=0x%x \n",
+                gMutexID, DISP_REG_GET(DISP_REG_CONFIG_REG_COMMIT),
+                DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(gMutexID)));
+        // clear intr status
+        DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, 0);
+        // dump reg info
+        disp_dump_reg(DISP_MODULE_CONFIG);
+        disp_dump_reg(DISP_MODULE_MUTEX);
+        disp_dump_reg(DISP_MODULE_OVL);
+        disp_dump_reg(DISP_MODULE_RDMA);
+        disp_dump_reg(DISP_MODULE_COLOR);
+        disp_dump_reg(DISP_MODULE_BLS);
     }
 }
 
 #if 1
 #include "dsi_drv.h"
 void disp_path_reset(void) {
-	// Reset OVL    
- 	OVLReset();
+    // Reset OVL
+     OVLReset();
 
-	// Reset RDMA1
-	RDMAReset(0);
+    // Reset RDMA1
+    RDMAReset(0);
 
-	// Reset Color
-	DpEngine_COLORonInit();
-	DpEngine_COLORonConfig(fb_width, fb_height);
+    // Reset Color
+    DpEngine_COLORonInit();
+    DpEngine_COLORonConfig(fb_width, fb_height);
 
-	// Reset BLS
-	DISP_REG_SET(DISP_REG_BLS_RST, 0x1);
-	DISP_REG_SET(DISP_REG_BLS_RST, 0x0);
-	disp_bls_init(fb_width, fb_height);
+    // Reset BLS
+    DISP_REG_SET(DISP_REG_BLS_RST, 0x1);
+    DISP_REG_SET(DISP_REG_BLS_RST, 0x0);
+    disp_bls_init(fb_width, fb_height);
 
     // reset DSI
     DSI_Reset();
@@ -293,7 +293,7 @@ int disp_path_ovl_reset(void)
     }
     DISP_MSG("after sw reset in intr, flow_ctrl=0x%x \n", DISP_REG_GET(DISP_REG_OVL_FLOW_CTRL_DBG));
     if(((DISP_REG_GET(DISP_REG_OVL_FLOW_CTRL_DBG)&0x3ff) != 0x1) &&
-    		((DISP_REG_GET(DISP_REG_OVL_FLOW_CTRL_DBG)&0x3ff) != 0x2))
+            ((DISP_REG_GET(DISP_REG_OVL_FLOW_CTRL_DBG)&0x3ff) != 0x2))
     {
          delay_cnt = 100;
          while(delay_cnt && (((DISP_REG_GET(DDP_REG_BASE_SMI_LARB0)&0x1) == 0x1) ||
@@ -304,26 +304,26 @@ int disp_path_ovl_reset(void)
         }
         if(delay_cnt ==0 )
         {
-            DISP_MSG("wait smi idle timeout, smi_larb 0x%x, smi_comm 0x%x \n", 
+            DISP_MSG("wait smi idle timeout, smi_larb 0x%x, smi_comm 0x%x \n",
                  DISP_REG_GET(DDP_REG_BASE_SMI_LARB0),DISP_REG_GET(DDP_REG_BASE_SMI_COMMON+0x404));
         }
         else
         {
              // HW reset will reset all registers to power on state, so need to backup and restore
-            disp_reg_backup_module(DISP_MODULE_OVL);         
+            disp_reg_backup_module(DISP_MODULE_OVL);
             DISP_REG_SET(DISP_REG_CONFIG_MMSYS_SW_RST_B, ~(1<<8));
             DISP_REG_SET(DISP_REG_CONFIG_MMSYS_SW_RST_B, ~0);
-            
+
             disp_reg_restore_module(DISP_MODULE_OVL);
             DISP_MSG("after hw reset, flow_ctrl=0x%x \n", DISP_REG_GET(DISP_REG_OVL_FLOW_CTRL_DBG));
-            
+
             // if ovl hw reset dose not have effect, will reset whole path
             if((ovl_hw_reset > 0) && (DISP_IsDecoupleMode() == 0))
             {
                  DISP_MSG("disp_path_reset called! \n");
                  disp_path_reset();
             }
-            ovl_hw_reset++;      
+            ovl_hw_reset++;
         }
     }
     return 0;
@@ -335,20 +335,20 @@ extern unsigned int* pRegBackup;
 int disp_intr_restore(void);
 static void disp_path_recovery(unsigned int mutexID)
 {
-	if(gNeedToRecover || (DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(mutexID))==0))
-	{
-		DISP_ERR("mutex%d_mod invalid, try to recover!\n", mutexID);
-		gNeedToRecover = 0;
-		if (*pRegBackup != DDP_UNBACKED_REG_MEM)
-		{
-			disp_reg_restore();
-			disp_intr_restore();
-		}
-		else
-		{
-			DISP_ERR("recover failed!\n");
-		}
-	}
+    if(gNeedToRecover || (DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(mutexID))==0))
+    {
+        DISP_ERR("mutex%d_mod invalid, try to recover!\n", mutexID);
+        gNeedToRecover = 0;
+        if (*pRegBackup != DDP_UNBACKED_REG_MEM)
+        {
+            disp_reg_restore();
+            disp_intr_restore();
+        }
+        else
+        {
+            DISP_ERR("recover failed!\n");
+        }
+    }
 }
 #endif
 
@@ -378,18 +378,18 @@ int disp_path_get_mutex_(int mutexID)
     //mutex_lock(&DpEngineMutexLock);
     MMProfileLog(DDP_MMP_Events.Mutex[mutexID], MMProfileFlagStart);
     DISP_REG_SET(DISP_REG_CONFIG_MUTEX_EN(mutexID), 1);
-    
+
     DISP_REG_SET(DISP_REG_CONFIG_MUTEX(mutexID), 1);
     DISP_REG_SET_FIELD(REG_FLD(1, mutexID), DISP_REG_CONFIG_MUTEX_INTSTA, 0);
 
     while(((DISP_REG_GET(DISP_REG_CONFIG_MUTEX(mutexID))& DISP_INT_MUTEX_BIT_MASK) != DISP_INT_MUTEX_BIT_MASK))
     {
         cnt++;
-		udelay(1);
+        udelay(1);
         if(cnt>10000)
         {
             DISP_ERR("disp_path_get_mutex() %d timeout! \n", mutexID);
-			// how to do?
+            // how to do?
 
             disp_clock_check();
             ddp_dump_info(DISP_MODULE_CONFIG);
@@ -401,7 +401,7 @@ int disp_path_get_mutex_(int mutexID)
 
             disp_dump_reg(DISP_MODULE_MUTEX);
             disp_dump_reg(DISP_MODULE_OVL);
-            
+
             MMProfileLogEx(DDP_MMP_Events.Mutex[mutexID], MMProfileFlagPulse, 0, 0);
             break;
         }
@@ -454,7 +454,7 @@ int disp_path_release_mutex1(void)
 #define DDP_WDMA0_UPDATE_BIT   (1<<6)
 
 // Mutex0 reg update intr, reg update timeout intr
-#define DDP_MUTEX_INTEN_BIT	0x0101
+#define DDP_MUTEX_INTEN_BIT    0x0101
 // LSB 10bit
 #define DDP_OVL_IDLE_BIT       (1<<0)
 #define DDP_OVL_WAIT_BIT       (1<<1)
@@ -462,7 +462,7 @@ int disp_path_release_mutex1(void)
 int disp_check_engine_status(int mutexID)
 {
     int result = 0;
-    unsigned int engine = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(mutexID)); 
+    unsigned int engine = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(mutexID));
     unsigned int mutex_inten = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTEN);
 
     if((DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0)&DDP_SMI_LARB0_POWER_BIT) != 0)
@@ -472,71 +472,71 @@ int disp_check_engine_status(int mutexID)
     }
     if( (mutex_inten & DDP_MUTEX_INTEN_BIT) != DDP_MUTEX_INTEN_BIT )
     {
-    	DISP_ERR("mutex0 inten abnormal, inten=0x%x \n", mutex_inten);
-    	DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTEN, mutex_inten | DDP_MUTEX_INTEN_BIT);
+        DISP_ERR("mutex0 inten abnormal, inten=0x%x \n", mutex_inten);
+        DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTEN, mutex_inten | DDP_MUTEX_INTEN_BIT);
     }
 
     if(engine&DDP_OVL_UPDATE_BIT) //OVL
     {
-    	// clock on and enabled
-        if(DISP_REG_GET(DISP_REG_OVL_EN)==0 || 
+        // clock on and enabled
+        if(DISP_REG_GET(DISP_REG_OVL_EN)==0 ||
            (DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0)&DDP_OVL_POWER_BIT) != 0)
         {
             result = -1;
-            DISP_ERR("ovl abnormal, en=%d, clk=0x%x \n", 
-                DISP_REG_GET(DISP_REG_OVL_EN), 
+            DISP_ERR("ovl abnormal, en=%d, clk=0x%x \n",
+                DISP_REG_GET(DISP_REG_OVL_EN),
                 DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
         }
         // ROI w, h >= 2
         if( ((DISP_REG_GET(DISP_REG_OVL_ROI_SIZE) & 0x0fff) < 2) ||
-        		(((DISP_REG_GET(DISP_REG_OVL_ROI_SIZE) >> 16) & 0x0fff) < 2) )
+                (((DISP_REG_GET(DISP_REG_OVL_ROI_SIZE) >> 16) & 0x0fff) < 2) )
         {
-        	result = -1;
-        	DISP_ERR("ovl abnormal, roiW=%d, roiH=%d \n",
-        			DISP_REG_GET(DISP_REG_OVL_ROI_SIZE)&0x0fff,
-        			(DISP_REG_GET(DISP_REG_OVL_ROI_SIZE) >> 16)&0x0fff);
+            result = -1;
+            DISP_ERR("ovl abnormal, roiW=%d, roiH=%d \n",
+                    DISP_REG_GET(DISP_REG_OVL_ROI_SIZE)&0x0fff,
+                    (DISP_REG_GET(DISP_REG_OVL_ROI_SIZE) >> 16)&0x0fff);
         }
         // OVL at IDLE state(0x1), if en=0; OVL at WAIT state(0x2), if en=1
         if((DISP_IsVideoMode()==0 || DISP_IsDecoupleMode()) &&
            ((DISP_REG_GET(DISP_REG_OVL_FLOW_CTRL_DBG)&0x3ff) != 0x1) &&
            ((DISP_REG_GET(DISP_REG_OVL_FLOW_CTRL_DBG)&0x3ff) != 0x2))
         {
-        	// Reset hw if it happens, to prevent last frame error from affect the
-        	// next frame transfer
-        	result = -1;
-        	DISP_ERR("ovl abnormal, flow_ctrl=0x%x, add_con=0x%x \n", 
-        	    DISP_REG_GET(DISP_REG_OVL_FLOW_CTRL_DBG),
-        	    DISP_REG_GET(DISP_REG_OVL_ADDCON_DBG));
-        	disp_clock_check();
-        	ddp_dump_info(DISP_MODULE_CONFIG);
+            // Reset hw if it happens, to prevent last frame error from affect the
+            // next frame transfer
+            result = -1;
+            DISP_ERR("ovl abnormal, flow_ctrl=0x%x, add_con=0x%x \n",
+                DISP_REG_GET(DISP_REG_OVL_FLOW_CTRL_DBG),
+                DISP_REG_GET(DISP_REG_OVL_ADDCON_DBG));
+            disp_clock_check();
+            ddp_dump_info(DISP_MODULE_CONFIG);
             ddp_dump_info(DISP_MODULE_MUTEX);
             ddp_dump_info(DISP_MODULE_OVL);
-        	disp_path_ovl_reset();
+            disp_path_ovl_reset();
         }
     }
     if(engine&DDP_RDMA_UPDATE_BIT) //RDMA1
     {
-        if((DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON)&0x1) ==0 || 
+        if((DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON)&0x1) ==0 ||
            (DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0)&DDP_RDMA_POWER_BIT) != 0)
         {
             result = -1;
             DISP_ERR("rdma abnormal, en=%d, clk=0x%x \n",
-                DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON), 
+                DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON),
                 DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
         }
-    }    
+    }
     if(engine&DDP_COLOR_UPDATE_BIT) //COLOR
     {
 
     }
     if(engine&DDP_WDMA0_UPDATE_BIT) //WDMA0
     {
-        if(DISP_REG_GET(DISP_REG_WDMA_EN)==0 || 
+        if(DISP_REG_GET(DISP_REG_WDMA_EN)==0 ||
            (DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0)&DDP_WDMA0_POWER_BIT) != 0)
         {
             result = -1;
-            DISP_ERR("wdma0 abnormal, en=%d, clk=0x%x \n", 
-                DISP_REG_GET(DISP_REG_WDMA_EN), 
+            DISP_ERR("wdma0 abnormal, en=%d, clk=0x%x \n",
+                DISP_REG_GET(DISP_REG_WDMA_EN),
                 DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
         }
     }
@@ -564,12 +564,12 @@ int disp_check_engine_status(int mutexID)
 int disp_path_release_mutex_(int mutexID)
 {
 //  unsigned int reg = 0;
-//    unsigned int cnt = 0;    
+//    unsigned int cnt = 0;
     disp_check_engine_status(mutexID);
-    
+
     DISP_REG_SET(DISP_REG_CONFIG_MUTEX(mutexID), 0);
-    
-   
+
+
 #if 0
     while(((DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTSTA) & (1<<mutexID)) != (1<<mutexID)))
     {
@@ -586,8 +586,8 @@ int disp_path_release_mutex_(int mutexID)
                   if(reg&(1<<7))  { DISP_MSG(" COLOR update reg timeout! \n"); disp_dump_reg(DISP_MODULE_COLOR); }
                   if(reg&(1<<9))  { DISP_MSG(" BLS update reg timeout! \n"); disp_dump_reg(DISP_MODULE_BLS); }
                   if(reg&(1<<6))  { DISP_MSG(" WDMA0 update reg timeout! \n"); disp_dump_reg(DISP_MODULE_WDMA0); }
-            }  
-                     
+            }
+
             //reset mutex
             DISP_REG_SET(DISP_REG_CONFIG_MUTEX_RST(mutexID), 1);
             DISP_REG_SET(DISP_REG_CONFIG_MUTEX_RST(mutexID), 0);
@@ -646,12 +646,12 @@ int disp_path_wait_reg_update(void)
                     g_disp_mutex_wq,
                     g_disp_mutex_reg_update,
                     disp_ms2jiffies(1000) );
-                    
+
     /*wake-up from sleep*/
     if(ret==0) // timeout
     {
         DISP_ERR("disp_path_wait_reg_update timeout \n");
-        disp_dump_reg(DISP_MODULE_CONFIG); 
+        disp_dump_reg(DISP_MODULE_CONFIG);
         disp_dump_reg(DISP_MODULE_MUTEX);
         disp_dump_reg(DISP_MODULE_OVL);
         disp_dump_reg(DISP_MODULE_RDMA);
@@ -662,7 +662,7 @@ int disp_path_wait_reg_update(void)
     {
         DISP_ERR("disp_path_wait_reg_update  intr by a signal ret=%d \n", ret);
     }
-    
+
     return 0;
 }
 int disp_path_change_tdshp_status(unsigned int layer, unsigned int enable)
@@ -676,69 +676,69 @@ int disp_path_change_tdshp_status(unsigned int layer, unsigned int enable)
 void _disp_path_wdma_callback(unsigned int param);
 
 int disp_path_get_mem_read_mutex (void) {
-	disp_path_get_mutex_(gMutexID);
-	return 0;
+    disp_path_get_mutex_(gMutexID);
+    return 0;
 }
 
 int disp_path_release_mem_read_mutex (void) {
-	disp_path_release_mutex_(gMutexID);
-	return 0;
+    disp_path_release_mutex_(gMutexID);
+    return 0;
 }
 
 int disp_path_get_mem_write_mutex (void) {
-	disp_path_get_mutex_(gMemOutMutexID);
-	return 0;
+    disp_path_get_mutex_(gMemOutMutexID);
+    return 0;
 }
 
 int disp_path_release_mem_write_mutex (void) {
-	disp_path_release_mutex_(gMemOutMutexID);
-	return 0;
+    disp_path_release_mutex_(gMemOutMutexID);
+    return 0;
 }
 /* unused now
 static int disp_path_get_m4u_moduleId (DISP_MODULE_ENUM module) {
-	int m4u_module = M4U_PORT_UNKNOWN;
-	switch (module) {
-	case DISP_MODULE_OVL:
-		m4u_module = DISP_OVL_0;
-		break;
-	case DISP_MODULE_RDMA:
-		m4u_module = DISP_RDMA;
-		break;
-	case DISP_MODULE_RDMA1:
-		m4u_module = DISP_RDMA;
-		break;
-	case DISP_MODULE_WDMA0:
-		m4u_module = DISP_WDMA;
-		break;
-	default:
-		break;
-	}
+    int m4u_module = M4U_PORT_UNKNOWN;
+    switch (module) {
+    case DISP_MODULE_OVL:
+        m4u_module = DISP_OVL_0;
+        break;
+    case DISP_MODULE_RDMA:
+        m4u_module = DISP_RDMA;
+        break;
+    case DISP_MODULE_RDMA1:
+        m4u_module = DISP_RDMA;
+        break;
+    case DISP_MODULE_WDMA0:
+        m4u_module = DISP_WDMA;
+        break;
+    default:
+        break;
+    }
 
-	return m4u_module;
+    return m4u_module;
 }*/
 
 static int disp_path_init_m4u_port (DISP_MODULE_ENUM module) {
-	int m4u_module = M4U_PORT_UNKNOWN;
-	M4U_PORT_STRUCT portStruct;
-	
-	switch (module) {
-	case DISP_MODULE_OVL:
-		m4u_module = DISP_OVL_0;
-		break;
-	case DISP_MODULE_RDMA:
-		m4u_module = DISP_RDMA;
-		break;
-	case DISP_MODULE_RDMA1:
-		m4u_module = DISP_RDMA;
-		break;
-	case DISP_MODULE_WDMA0:
-		m4u_module = DISP_WDMA;
-		break;
-	default:
-		break;
-	}
-    
-    portStruct.ePortID = m4u_module;		   //hardware port ID, defined in M4U_PORT_ID_ENUM
+    int m4u_module = M4U_PORT_UNKNOWN;
+    M4U_PORT_STRUCT portStruct;
+
+    switch (module) {
+    case DISP_MODULE_OVL:
+        m4u_module = DISP_OVL_0;
+        break;
+    case DISP_MODULE_RDMA:
+        m4u_module = DISP_RDMA;
+        break;
+    case DISP_MODULE_RDMA1:
+        m4u_module = DISP_RDMA;
+        break;
+    case DISP_MODULE_WDMA0:
+        m4u_module = DISP_WDMA;
+        break;
+    default:
+        break;
+    }
+
+    portStruct.ePortID = m4u_module;           //hardware port ID, defined in M4U_PORT_ID_ENUM
     portStruct.Virtuality = 1;
     portStruct.Security = 0;
     portStruct.domain = 0;            //domain : 0 1 2 3
@@ -749,27 +749,27 @@ static int disp_path_init_m4u_port (DISP_MODULE_ENUM module) {
 }
 /* unuesed now
 static int disp_path_deinit_m4u_port (DISP_MODULE_ENUM module) {
-	int m4u_module = M4U_PORT_UNKNOWN;
-	M4U_PORT_STRUCT portStruct;
-	
-	switch (module) {
-	case DISP_MODULE_OVL:
-		m4u_module = DISP_OVL_0;
-		break;
-	case DISP_MODULE_RDMA:
-		m4u_module = DISP_RDMA;
-		break;
-	case DISP_MODULE_RDMA1:
-		m4u_module = DISP_RDMA;
-		break;
-	case DISP_MODULE_WDMA0:
-		m4u_module = DISP_WDMA;
-		break;
-	default:
-		break;
-	}
-    
-    portStruct.ePortID = m4u_module;		   //hardware port ID, defined in M4U_PORT_ID_ENUM
+    int m4u_module = M4U_PORT_UNKNOWN;
+    M4U_PORT_STRUCT portStruct;
+
+    switch (module) {
+    case DISP_MODULE_OVL:
+        m4u_module = DISP_OVL_0;
+        break;
+    case DISP_MODULE_RDMA:
+        m4u_module = DISP_RDMA;
+        break;
+    case DISP_MODULE_RDMA1:
+        m4u_module = DISP_RDMA;
+        break;
+    case DISP_MODULE_WDMA0:
+        m4u_module = DISP_WDMA;
+        break;
+    default:
+        break;
+    }
+
+    portStruct.ePortID = m4u_module;           //hardware port ID, defined in M4U_PORT_ID_ENUM
     portStruct.Virtuality = 0;
     portStruct.Security = 0;
     portStruct.domain = 0;            //domain : 0 1 2 3
@@ -784,23 +784,23 @@ static int disp_path_deinit_m4u_port (DISP_MODULE_ENUM module) {
  * next buffer to RDMA->LCM
  */
 int disp_path_config_rdma (RDMA_CONFIG_STRUCT* pRdmaConfig) {
-	DISP_DBG("[DDP] config_rdma(), idx=%d, mode=%d, in_fmt=%d, addr=0x%x, out_fmt=%d, pitch=%d, x=%d, y=%d, byteSwap=%d, rgbSwap=%d \n ",
-			pRdmaConfig->idx,
-			pRdmaConfig->mode,       	 // direct link mode
-			pRdmaConfig->inputFormat,    // inputFormat
-			pRdmaConfig->address,        // address
-			pRdmaConfig->outputFormat,   // output format
-			pRdmaConfig->pitch,       	 // pitch
-			pRdmaConfig->width,       	 // width
-			pRdmaConfig->height,      	 // height
-			pRdmaConfig->isByteSwap,  	 // byte swap
-			pRdmaConfig->isRGBSwap);
-	// TODO: just need to reconfig buffer address now! because others are configured before
-	//RDMASetAddress(pRdmaConfig->idx, pRdmaConfig->address);
-	RDMAConfig(pRdmaConfig->idx, pRdmaConfig->mode, pRdmaConfig->inputFormat, pRdmaConfig->address,
-			pRdmaConfig->outputFormat, pRdmaConfig->pitch, pRdmaConfig->width,
-			pRdmaConfig->height, pRdmaConfig->isByteSwap, pRdmaConfig->isRGBSwap);
-	return 0;
+    DISP_DBG("[DDP] config_rdma(), idx=%d, mode=%d, in_fmt=%d, addr=0x%x, out_fmt=%d, pitch=%d, x=%d, y=%d, byteSwap=%d, rgbSwap=%d \n ",
+            pRdmaConfig->idx,
+            pRdmaConfig->mode,            // direct link mode
+            pRdmaConfig->inputFormat,    // inputFormat
+            pRdmaConfig->address,        // address
+            pRdmaConfig->outputFormat,   // output format
+            pRdmaConfig->pitch,            // pitch
+            pRdmaConfig->width,            // width
+            pRdmaConfig->height,           // height
+            pRdmaConfig->isByteSwap,       // byte swap
+            pRdmaConfig->isRGBSwap);
+    // TODO: just need to reconfig buffer address now! because others are configured before
+    //RDMASetAddress(pRdmaConfig->idx, pRdmaConfig->address);
+    RDMAConfig(pRdmaConfig->idx, pRdmaConfig->mode, pRdmaConfig->inputFormat, pRdmaConfig->address,
+            pRdmaConfig->outputFormat, pRdmaConfig->pitch, pRdmaConfig->width,
+            pRdmaConfig->height, pRdmaConfig->isByteSwap, pRdmaConfig->isRGBSwap);
+    return 0;
 }
 
 /**
@@ -808,14 +808,14 @@ int disp_path_config_rdma (RDMA_CONFIG_STRUCT* pRdmaConfig) {
  * next output buffer to OVL-->WDMA
  */
 int disp_path_config_wdma (struct disp_path_config_mem_out_struct* pConfig) {
-	DISP_DBG("[DDP] config_wdma(), idx=%d, dstAddr=%x, out_fmt=%d\n",
-			0,
-			pConfig->dstAddr,
-			pConfig->outFormat);
-	// TODO: just need to reconfig buffer address now! because others are configured before
-	WDMAConfigAddress(0, pConfig->dstAddr);
+    DISP_DBG("[DDP] config_wdma(), idx=%d, dstAddr=%x, out_fmt=%d\n",
+            0,
+            pConfig->dstAddr,
+            pConfig->outFormat);
+    // TODO: just need to reconfig buffer address now! because others are configured before
+    WDMAConfigAddress(0, pConfig->dstAddr);
 
-	return 0;
+    return 0;
 }
 
 /**
@@ -831,59 +831,59 @@ int disp_path_switch_ovl_mode (struct disp_path_config_ovl_mode_t *pConfig) {
     //int reg_mutex_sof;
 
     if (DISP_IsDecoupleMode()) {
-    	//reg_mutex_sof = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_SOF(gMutexID));
-    	reg_mutex_mod = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(gMutexID));
+        //reg_mutex_sof = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_SOF(gMutexID));
+        reg_mutex_mod = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(gMutexID));
         // ovl mout
         DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1<<1);   // ovl_mout output to wdma0
-    	DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTEN , 0x0303);
-    	DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, (1<<gMemOutMutexID)|(1<<gMutexID));
+        DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTEN , 0x0303);
+        DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, (1<<gMemOutMutexID)|(1<<gMutexID));
         // mutex0
-        DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(gMutexID), reg_mutex_mod&~(1<<3)); 	//remove OVL
+        DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(gMutexID), reg_mutex_mod&~(1<<3));     //remove OVL
         // mutex1
-        DISP_REG_SET(DISP_REG_CONFIG_MUTEX_EN(gMemOutMutexID), 1); 					//enable mutex1
-        DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(gMemOutMutexID), (1<<3)|(1<<6)); 	//OVL, WDMA
-        DISP_REG_SET(DISP_REG_CONFIG_MUTEX_SOF(gMemOutMutexID), 0);					//single mode
+        DISP_REG_SET(DISP_REG_CONFIG_MUTEX_EN(gMemOutMutexID), 1);                     //enable mutex1
+        DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(gMemOutMutexID), (1<<3)|(1<<6));     //OVL, WDMA
+        DISP_REG_SET(DISP_REG_CONFIG_MUTEX_SOF(gMemOutMutexID), 0);                    //single mode
 
         disp_register_irq(DISP_MODULE_WDMA0, _disp_path_wdma_callback);
 
         // config wdma0
         WDMAReset(0);
         WDMAConfig(0,
-        		WDMA_INPUT_FORMAT_ARGB,
-        		pConfig->roi.width,
-        		pConfig->roi.height,
-        		pConfig->roi.x,
-        		pConfig->roi.y,
-        		pConfig->roi.width,
-        		pConfig->roi.height,
-        		pConfig->format,
-        		pConfig->address,
-        		pConfig->roi.width,
-        		1,
-        		0);
+                WDMA_INPUT_FORMAT_ARGB,
+                pConfig->roi.width,
+                pConfig->roi.height,
+                pConfig->roi.x,
+                pConfig->roi.y,
+                pConfig->roi.width,
+                pConfig->roi.height,
+                pConfig->format,
+                pConfig->address,
+                pConfig->roi.width,
+                1,
+                0);
         WDMAStart(0);
 
         // config rdma
         RDMAConfig(0,
-        		RDMA_MODE_MEMORY,       		// memory mode
-        		pConfig->format,    			// inputFormat
-        		pConfig->address,       		// address, will be reset later
-        		RDMA_OUTPUT_FORMAT_ARGB,     	// output format
-        		pConfig->pitch,         		// pitch
-        		pConfig->roi.width,
-        		pConfig->roi.height,
-        		0,                      		//byte swap
-        		0);                     		// is RGB swap
+                RDMA_MODE_MEMORY,               // memory mode
+                pConfig->format,                // inputFormat
+                pConfig->address,               // address, will be reset later
+                RDMA_OUTPUT_FORMAT_ARGB,         // output format
+                pConfig->pitch,                 // pitch
+                pConfig->roi.width,
+                pConfig->roi.height,
+                0,                              //byte swap
+                0);                             // is RGB swap
         RDMAStart(0);
         //disp_dump_reg(DISP_MODULE_WDMA0);
     } else {
-    	//reg_mutex_sof = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_SOF(gMemOutMutexID));
-    	reg_mutex_mod = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(gMutexID));
+        //reg_mutex_sof = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_SOF(gMemOutMutexID));
+        reg_mutex_mod = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(gMutexID));
         // ovl mout
         DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1<<0);   // ovl_mout output to rdma
-    	//DISP_REG_SET(DISP_REG_CONFIG_MUTEX_EN(gMutexID), 1);
-    	DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTEN , 0x0101);
-    	DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, 1<<gMutexID);
+        //DISP_REG_SET(DISP_REG_CONFIG_MUTEX_EN(gMutexID), 1);
+        DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTEN , 0x0101);
+        DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, 1<<gMutexID);
         // mutex0
         DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(gMutexID), reg_mutex_mod|(1<<3)); //Add OVL
         //DISP_REG_SET(DISP_REG_CONFIG_MUTEX_SOF(gMutexID), reg_mutex_sof);
@@ -893,15 +893,15 @@ int disp_path_switch_ovl_mode (struct disp_path_config_ovl_mode_t *pConfig) {
 
         // config rdma
         RDMAConfig(0,
-        		RDMA_MODE_DIRECT_LINK,       // direct link mode
-        		pConfig->format,    		 // inputFormat
-        		pConfig->address,            // address
-        		RDMA_OUTPUT_FORMAT_ARGB,     // output format
-        		pConfig->pitch,         	 // pitch
-        		pConfig->roi.width,
-        		pConfig->roi.height,
-        		0,                           // byte swap
-        		0);                          // is RGB swap
+                RDMA_MODE_DIRECT_LINK,       // direct link mode
+                pConfig->format,             // inputFormat
+                pConfig->address,            // address
+                RDMA_OUTPUT_FORMAT_ARGB,     // output format
+                pConfig->pitch,              // pitch
+                pConfig->roi.width,
+                pConfig->roi.height,
+                0,                           // byte swap
+                0);                          // is RGB swap
 
         disp_unregister_irq(DISP_MODULE_WDMA0, _disp_path_wdma_callback);
         RDMAStart(0);
@@ -942,12 +942,12 @@ int disp_path_config_layer(OVL_CONFIG_STRUCT* pOvlConfig)
 {
 //    unsigned int reg_addr;
 
-    DISP_DBG("[DDP] config_layer(), layer=%d, en=%d, src=%d, fmt=%d, addr=0x%x, x=%d, y=%d, pitch=%d, dst(%d, %d, %d, %d),keyEn=%d, key=%d, aen=%d, alpha=%d \n ", 
+    DISP_DBG("[DDP] config_layer(), layer=%d, en=%d, src=%d, fmt=%d, addr=0x%x, x=%d, y=%d, pitch=%d, dst(%d, %d, %d, %d),keyEn=%d, key=%d, aen=%d, alpha=%d \n ",
     pOvlConfig->layer,   // layer
-    pOvlConfig->layer_en,   
+    pOvlConfig->layer_en,
     pOvlConfig->source,   // data source (0=memory)
-    pOvlConfig->fmt, 
-    pOvlConfig->addr, // addr 
+    pOvlConfig->fmt,
+    pOvlConfig->addr, // addr
     pOvlConfig->src_x,  // x
     pOvlConfig->src_y,  // y
     pOvlConfig->src_pitch, //pitch, pixel number
@@ -966,8 +966,8 @@ int disp_path_config_layer(OVL_CONFIG_STRUCT* pOvlConfig)
     {
         OVLLayerConfig(pOvlConfig->layer,   // layer
                        pOvlConfig->source,   // data source (0=memory)
-                       pOvlConfig->fmt, 
-                       pOvlConfig->addr, // addr 
+                       pOvlConfig->fmt,
+                       pOvlConfig->addr, // addr
                        pOvlConfig->src_x,  // x
                        pOvlConfig->src_y,  // y
                        pOvlConfig->src_pitch, //pitch, pixel number
@@ -985,7 +985,7 @@ int disp_path_config_layer(OVL_CONFIG_STRUCT* pOvlConfig)
         OVLLayerConfig(pOvlConfig->layer,   // layer
                        OVL_LAYER_SOURCE_MEM,   // data source (0=memory)
                        eRGB888, //fmt
-                       1, // addr 
+                       1, // addr
                        0,  // x
                        0,  // y
                        0, //pitch, pixel number
@@ -1032,7 +1032,7 @@ int disp_path_config_layer_addr(unsigned int layer, unsigned int addr)
         default:
             DISP_ERR("unknow layer=%d \n", layer);
     }
-   
+
     return 0;
 }
 
@@ -1047,21 +1047,21 @@ void disp_path_wait_mem_out_done(void)
     int ret = 0;
 
     ret = wait_event_interruptible_timeout(
-                    mem_out_wq, 
-                    mem_out_done, 
+                    mem_out_wq,
+                    mem_out_done,
                     disp_ms2jiffies(100) );
-                    
+
 
     if(ret==0) // timeout
     {
         DISP_ERR("disp_path_wait_mem_out_done timeout \n");
-        ddp_dump_info(DISP_MODULE_CONFIG); 
-        ddp_dump_info(DISP_MODULE_MUTEX); 
-        ddp_dump_info(DISP_MODULE_OVL); 
-        ddp_dump_info(DISP_MODULE_WDMA0); 
+        ddp_dump_info(DISP_MODULE_CONFIG);
+        ddp_dump_info(DISP_MODULE_MUTEX);
+        ddp_dump_info(DISP_MODULE_OVL);
+        ddp_dump_info(DISP_MODULE_WDMA0);
 
         disp_dump_reg(DISP_MODULE_OVL);
-        disp_dump_reg(DISP_MODULE_WDMA0); 
+        disp_dump_reg(DISP_MODULE_WDMA0);
 
         // disp_path_ovl_reset();
         // WDMAReset(0);
@@ -1070,17 +1070,17 @@ void disp_path_wait_mem_out_done(void)
     {
         DISP_ERR("disp_path_wait_mem_out_done intr by a signal ret=%d \n", ret);
     }
-    
-    mem_out_done = 0;    
+
+    mem_out_done = 0;
 }
 
 // for video mode, if there are more than one frame between memory_out done and disable WDMA
-// mem_out_done will be set to 1, next time user trigger disp_path_wait_mem_out_done() will return 
-// directly, in such case, screen capture will dose not work for one time. 
+// mem_out_done will be set to 1, next time user trigger disp_path_wait_mem_out_done() will return
+// directly, in such case, screen capture will dose not work for one time.
 // so we add this func to make sure disp_path_wait_mem_out_done() will be execute everytime.
 void disp_path_clear_mem_out_done_flag(void)
 {
-    mem_out_done = 0;    
+    mem_out_done = 0;
 }
 
 int  disp_path_query()
@@ -1097,16 +1097,16 @@ int disp_path_config_mem_out_without_lcd(struct disp_path_config_mem_out_struct*
     static unsigned int reg_mutex_mod;
     static unsigned int reg_mutex_sof;
     static unsigned int reg_mout;
-    
+
     DISP_DBG(" disp_path_config_mem_out(), enable = %d, outFormat=%d, dstAddr=0x%x, ROI(%d,%d,%d,%d) \n",
             pConfig->enable,
-            pConfig->outFormat,            
-            pConfig->dstAddr,  
-            pConfig->srcROI.x, 
-            pConfig->srcROI.y, 
-            pConfig->srcROI.width, 
+            pConfig->outFormat,
+            pConfig->dstAddr,
+            pConfig->srcROI.x,
+            pConfig->srcROI.y,
+            pConfig->srcROI.width,
             pConfig->srcROI.height);
-            
+
     if(pConfig->enable==1 && pConfig->dstAddr==0)
     {
           DISP_ERR("pConfig->dstAddr==0! \n");
@@ -1119,19 +1119,19 @@ int disp_path_config_mem_out_without_lcd(struct disp_path_config_mem_out_struct*
 
         // config wdma0
         WDMAReset(0);
-        WDMAConfig(0, 
-                   WDMA_INPUT_FORMAT_ARGB, 
+        WDMAConfig(0,
+                   WDMA_INPUT_FORMAT_ARGB,
                    pConfig->srcROI.width,
                    pConfig->srcROI.height,
                    0,
                    0,
-                   pConfig->srcROI.width, 
-                   pConfig->srcROI.height, 
-                   pConfig->outFormat, 
-                   pConfig->dstAddr, 
                    pConfig->srcROI.width,
-                   1, 
-                   0);      
+                   pConfig->srcROI.height,
+                   pConfig->outFormat,
+                   pConfig->dstAddr,
+                   pConfig->srcROI.width,
+                   1,
+                   0);
         WDMAStart(0);
 
         // mutex module
@@ -1141,20 +1141,20 @@ int disp_path_config_mem_out_without_lcd(struct disp_path_config_mem_out_struct*
         // mutex sof
         reg_mutex_sof = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_SOF(gMutexID));
         DISP_REG_SET(DISP_REG_CONFIG_MUTEX_SOF(gMutexID), 0); //single mode
-                
+
         // ovl mout
         reg_mout = DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN);
         DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 0x2);   // ovl_mout output to wdma0
-        
+
         //disp_dump_reg(DISP_MODULE_WDMA0);
     }
     else
     {
         // mutex
         DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(gMutexID), reg_mutex_mod);
-        DISP_REG_SET(DISP_REG_CONFIG_MUTEX_SOF(gMutexID), reg_mutex_sof);         
+        DISP_REG_SET(DISP_REG_CONFIG_MUTEX_SOF(gMutexID), reg_mutex_sof);
         // ovl mout
-        DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, reg_mout);        
+        DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, reg_mout);
 
         disp_unregister_irq(DISP_MODULE_WDMA0, _disp_path_wdma_callback);
     }
@@ -1167,14 +1167,14 @@ int disp_path_config_mem_out_without_lcd(struct disp_path_config_mem_out_struct*
 int disp_path_config_mem_out(struct disp_path_config_mem_out_struct* pConfig)
 {
     unsigned int reg;
-#if 1    
+#if 1
     DISP_MSG(" disp_path_config_mem_out(), enable = %d, outFormat=%d, dstAddr=0x%x, ROI(%d,%d,%d,%d) \n",
             pConfig->enable,
-            pConfig->outFormat,            
-            pConfig->dstAddr,  
-            pConfig->srcROI.x, 
-            pConfig->srcROI.y, 
-            pConfig->srcROI.width, 
+            pConfig->outFormat,
+            pConfig->dstAddr,
+            pConfig->srcROI.x,
+            pConfig->srcROI.y,
+            pConfig->srcROI.width,
             pConfig->srcROI.height);
 #endif
     if(pConfig->enable==1 && pConfig->dstAddr==0)
@@ -1189,36 +1189,36 @@ int disp_path_config_mem_out(struct disp_path_config_mem_out_struct* pConfig)
 
         // config wdma0
         WDMAReset(0);
-        WDMAConfig(0, 
-                   WDMA_INPUT_FORMAT_ARGB, 
+        WDMAConfig(0,
+                   WDMA_INPUT_FORMAT_ARGB,
                    pConfig->srcROI.width,
                    pConfig->srcROI.height,
                    0,
                    0,
-                   pConfig->srcROI.width, 
-                   pConfig->srcROI.height, 
-                   pConfig->outFormat, 
-                   pConfig->dstAddr, 
                    pConfig->srcROI.width,
-                   1, 
-                   0);      
-		if(pConfig->outFormat==eYUV_420_3P)
-		{
-			WDMAConfigUV(0, 
-			pConfig->dstAddr+pConfig->srcROI.width*pConfig->srcROI.height, 
-			pConfig->dstAddr+pConfig->srcROI.width*pConfig->srcROI.height*5/4, 
-			pConfig->srcROI.width);
-		} 
+                   pConfig->srcROI.height,
+                   pConfig->outFormat,
+                   pConfig->dstAddr,
+                   pConfig->srcROI.width,
+                   1,
+                   0);
+        if(pConfig->outFormat==eYUV_420_3P)
+        {
+            WDMAConfigUV(0,
+            pConfig->dstAddr+pConfig->srcROI.width*pConfig->srcROI.height,
+            pConfig->dstAddr+pConfig->srcROI.width*pConfig->srcROI.height*5/4,
+            pConfig->srcROI.width);
+        }
         WDMAStart(0);
 
         // mutex
         reg = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(gMutexID));
         DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(gMutexID), reg|(1<<6)); //wdma0=6
-        
+
         // ovl mout
         reg = DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN);
         DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, reg|(0x2));   // ovl_mout output to rdma & wdma
-        
+
         //disp_dump_reg(DISP_MODULE_WDMA0);
     }
     else
@@ -1226,11 +1226,11 @@ int disp_path_config_mem_out(struct disp_path_config_mem_out_struct* pConfig)
         // mutex
         reg = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(gMutexID));
         DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(gMutexID), reg&(~(1<<6))); //wdma0=6
-        
+
         // ovl mout
         reg = DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN);
         DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, reg&(~0x2));   // ovl_mout output to bls
-        
+
         // config wdma0
         //WDMAReset(0);
         disp_unregister_irq(DISP_MODULE_WDMA0, _disp_path_wdma_callback);
@@ -1242,8 +1242,8 @@ int disp_path_config_mem_out(struct disp_path_config_mem_out_struct* pConfig)
 
 int disp_path_config(struct disp_path_config_struct* pConfig)
 {
-	fb_width = pConfig->srcROI.width;
-	fb_height = pConfig->srcROI.height;
+    fb_width = pConfig->srcROI.width;
+    fb_height = pConfig->srcROI.height;
     return disp_path_config_(pConfig, gMutexID);
 }
 
@@ -1252,7 +1252,7 @@ int disp_path_config_(struct disp_path_config_struct* pConfig, int mutexId)
 {
     unsigned int mutexMode;
     //unsigned int mutexValue;
-    
+
     DISP_DBG("[DDP] disp_path_config(), srcModule=%d, addr=0x%x, inFormat=%d, \n\
             pitch=%d, bgROI(%d,%d,%d,%d), bgColor=%d, outFormat=%d, dstModule=%d, dstAddr=0x%x, dstPitch=%d, mutexId=%d \n",
             pConfig->srcModule,
@@ -1296,34 +1296,34 @@ int disp_path_config_(struct disp_path_config_struct* pConfig, int mutexId)
 
             default:
                 mutexMode = 0;
-               DISP_ERR("unknown dstModule=%d \n", pConfig->dstModule); 
+               DISP_ERR("unknown dstModule=%d \n", pConfig->dstModule);
                return -1;
         }
 
-       
+
         {
-	        if(pConfig->dstModule==DISP_MODULE_WDMA0)
-	        {
-	            DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(mutexId), (1<<3)|(1<<6)); //ovl, wdma0
-	        }
-	        else if(pConfig->srcModule==DISP_MODULE_OVL)
-	        {
-	        
-	            DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(mutexId), (1<<3)|(1<<10)|(1<<7)|(1<<9)); //ovl, rdma1, color, bls
+            if(pConfig->dstModule==DISP_MODULE_WDMA0)
+            {
+                DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(mutexId), (1<<3)|(1<<6)); //ovl, wdma0
+            }
+            else if(pConfig->srcModule==DISP_MODULE_OVL)
+            {
 
-	        }
-	        else if(pConfig->srcModule==DISP_MODULE_RDMA)
-	        {
+                DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(mutexId), (1<<3)|(1<<10)|(1<<7)|(1<<9)); //ovl, rdma1, color, bls
 
-	            DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(mutexId), (1<<10)|(1<<7)|(1<<9)); //rdma, color, bls
+            }
+            else if(pConfig->srcModule==DISP_MODULE_RDMA)
+            {
 
-	        } 
-	        else if(pConfig->srcModule==DISP_MODULE_RDMA1)
-	        {
+                DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(mutexId), (1<<10)|(1<<7)|(1<<9)); //rdma, color, bls
 
-	            DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(mutexId), (1<<12)); // RDMA1-->DPI0 for HDMI
+            }
+            else if(pConfig->srcModule==DISP_MODULE_RDMA1)
+            {
 
-	        }
+                DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(mutexId), (1<<12)); // RDMA1-->DPI0 for HDMI
+
+            }
         }
         DISP_REG_SET(DISP_REG_CONFIG_MUTEX_SOF(mutexId), mutexMode);
         DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, (1 << mutexId));
@@ -1331,35 +1331,35 @@ int disp_path_config_(struct disp_path_config_struct* pConfig, int mutexId)
         DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTEN , 0x0101);
         DISP_REG_SET(DISP_REG_CONFIG_MUTEX_EN(mutexId), 1);
         if (DISP_IsDecoupleMode()) {
-        	disp_path_init_m4u_port(DISP_MODULE_RDMA);
-        	disp_path_init_m4u_port(DISP_MODULE_WDMA0);
-        	DISP_REG_SET(DISP_REG_CONFIG_MUTEX_EN(gMemOutMutexID), 1);
-        	DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTEN , 0x0303);
-        	/// config OVL-WDMA data path with mutex0
-        	DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(gMemOutMutexID), (1<<3)|(1<<6)); // OVL-->WDMA
-        	DISP_REG_SET(DISP_REG_CONFIG_MUTEX_SOF(gMemOutMutexID), 0x0);// single mode
-        	DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, (1 << gMemOutMutexID)|(1 << mutexId));
+            disp_path_init_m4u_port(DISP_MODULE_RDMA);
+            disp_path_init_m4u_port(DISP_MODULE_WDMA0);
+            DISP_REG_SET(DISP_REG_CONFIG_MUTEX_EN(gMemOutMutexID), 1);
+            DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTEN , 0x0303);
+            /// config OVL-WDMA data path with mutex0
+            DISP_REG_SET(DISP_REG_CONFIG_MUTEX_MOD(gMemOutMutexID), (1<<3)|(1<<6)); // OVL-->WDMA
+            DISP_REG_SET(DISP_REG_CONFIG_MUTEX_SOF(gMemOutMutexID), 0x0);// single mode
+            DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, (1 << gMemOutMutexID)|(1 << mutexId));
         }
         ///> config config reg
         switch(pConfig->dstModule)
         {
             case DISP_MODULE_DSI_VDO:
             case DISP_MODULE_DSI_CMD:
-            	if (DISP_IsDecoupleMode()) {
-            		DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1<<1);  // OVL-->WDMA0
-            	} else {
-            		DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1<<0);  // OVL-->RDMA
-            	}
+                if (DISP_IsDecoupleMode()) {
+                    DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1<<1);  // OVL-->WDMA0
+                } else {
+                    DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1<<0);  // OVL-->RDMA
+                }
                 DISP_REG_SET(DISP_REG_CONFIG_DISP_OUT_SEL, 0);        // Output to DSI
             break;
 
             case DISP_MODULE_DPI0:
-				printk("DISI_MODULE_DPI0\n");
-				if (DISP_IsDecoupleMode()) {
-            		DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1<<1);  // OVL-->WDMA0
-            	} else {
-            		DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1<<0);  // OVL-->RDMA
-            	}
+                printk("DISI_MODULE_DPI0\n");
+                if (DISP_IsDecoupleMode()) {
+                    DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1<<1);  // OVL-->WDMA0
+                } else {
+                    DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1<<0);  // OVL-->RDMA
+                }
                 DISP_REG_SET(DISP_REG_CONFIG_DISP_OUT_SEL, 1);         // Output to DPI0
             break;
 
@@ -1368,13 +1368,13 @@ int disp_path_config_(struct disp_path_config_struct* pConfig, int mutexId)
             break;
 
             default:
-               printk("[DDP] error! unknown dstModule=%d \n", pConfig->dstModule); 
-        }    
-        
+               printk("[DDP] error! unknown dstModule=%d \n", pConfig->dstModule);
+        }
+
         ///> config engines
         if(pConfig->srcModule!=DISP_MODULE_RDMA1)
         {
-        	// config OVL
+            // config OVL
             OVLROI(pConfig->bgROI.width, // width
                    pConfig->bgROI.height, // height
                    pConfig->bgColor);// background B
@@ -1394,16 +1394,16 @@ int disp_path_config_(struct disp_path_config_struct* pConfig, int mutexId)
                        pConfig->ovl_config.dst_h==0    )
                     {
                         DISP_ERR("ovl parameter invalidate, addr=0x%x, w=%d, h=%d \n",
-                               pConfig->ovl_config.addr, 
+                               pConfig->ovl_config.addr,
                                pConfig->ovl_config.dst_w,
                                pConfig->ovl_config.dst_h);
                         return -1;
                     }
-                
+
                     OVLLayerConfig(pConfig->ovl_config.layer,   // layer
                                    pConfig->ovl_config.source,   // data source (0=memory)
-                                   pConfig->ovl_config.fmt, 
-                                   pConfig->ovl_config.addr, // addr 
+                                   pConfig->ovl_config.fmt,
+                                   pConfig->ovl_config.addr, // addr
                                    pConfig->ovl_config.src_x,  // x
                                    pConfig->ovl_config.src_y,  // y
                                    pConfig->ovl_config.src_pitch, //pitch, pixel number
@@ -1431,25 +1431,25 @@ int disp_path_config_(struct disp_path_config_struct* pConfig, int mutexId)
                    pConfig->srcROI.height==0    )
                 {
                     DISP_ERR("wdma parameter invalidate, addr=0x%x, w=%d, h=%d \n",
-                           pConfig->dstAddr, 
+                           pConfig->dstAddr,
                            pConfig->srcROI.width,
                            pConfig->srcROI.height);
                     return -1;
                 }
 
-                WDMAConfig(0, 
-                           WDMA_INPUT_FORMAT_ARGB, 
-                           pConfig->srcROI.width, 
-                           pConfig->srcROI.height, 
-                           0, 
-                           0, 
-                           pConfig->srcROI.width, 
-                           pConfig->srcROI.height, 
-                           pConfig->outFormat, 
-                           pConfig->dstAddr, 
-                           pConfig->srcROI.width, 
-                           1, 
-                           0);      
+                WDMAConfig(0,
+                           WDMA_INPUT_FORMAT_ARGB,
+                           pConfig->srcROI.width,
+                           pConfig->srcROI.height,
+                           0,
+                           0,
+                           pConfig->srcROI.width,
+                           pConfig->srcROI.height,
+                           pConfig->outFormat,
+                           pConfig->dstAddr,
+                           pConfig->srcROI.width,
+                           1,
+                           0);
                 WDMAStart(0);
             }
             else    //2. ovl->bls->rdma1->lcd
@@ -1457,12 +1457,12 @@ int disp_path_config_(struct disp_path_config_struct* pConfig, int mutexId)
 
                 disp_bls_init(pConfig->srcROI.width, pConfig->srcROI.height);
 
-               //=============================config PQ start==================================				 
+               //=============================config PQ start==================================
                 DpEngine_COLORonInit();
                 DpEngine_COLORonConfig(pConfig->srcROI.width,  //width
                                                      pConfig->srcROI.height); //height
 
-								
+
                 //=============================config PQ end==================================
                 ///config RDMA
                 if(pConfig->dstModule!=DISP_MODULE_DSI_VDO && pConfig->dstModule!=DISP_MODULE_DPI0)
@@ -1480,60 +1480,60 @@ int disp_path_config_(struct disp_path_config_struct* pConfig, int mutexId)
                 }
 
                 if (DISP_IsDecoupleMode()) {
-                	printk("from de-couple\n");
-                	WDMAReset(0);
-                	if(decouple_addr==0 ||
-                			pConfig->srcROI.width==0    ||
-                			pConfig->srcROI.height==0    )
-                	{
-                		DISP_ERR("wdma parameter invalidate, addr=0x%x, w=%d, h=%d \n",
-                				decouple_addr,
-                				pConfig->srcROI.width,
-                				pConfig->srcROI.height);
-                		return -1;
-                	}
-                	WDMAConfig(0,
-                			WDMA_INPUT_FORMAT_ARGB,
-                			pConfig->srcROI.width,
-                			pConfig->srcROI.height,
-                			0,
-                			0,
-                			pConfig->srcROI.width,
-                			pConfig->srcROI.height,
-                			eRGB888,
-                			decouple_addr,
-                			pConfig->srcROI.width,
-                			1,
-                			0);
-                	WDMAStart(0);
-                	// Register WDMA intr
-                	mem_out_done = 0;
-                	disp_register_irq(DISP_MODULE_WDMA0, _disp_path_wdma_callback);
+                    printk("from de-couple\n");
+                    WDMAReset(0);
+                    if(decouple_addr==0 ||
+                            pConfig->srcROI.width==0    ||
+                            pConfig->srcROI.height==0    )
+                    {
+                        DISP_ERR("wdma parameter invalidate, addr=0x%x, w=%d, h=%d \n",
+                                decouple_addr,
+                                pConfig->srcROI.width,
+                                pConfig->srcROI.height);
+                        return -1;
+                    }
+                    WDMAConfig(0,
+                            WDMA_INPUT_FORMAT_ARGB,
+                            pConfig->srcROI.width,
+                            pConfig->srcROI.height,
+                            0,
+                            0,
+                            pConfig->srcROI.width,
+                            pConfig->srcROI.height,
+                            eRGB888,
+                            decouple_addr,
+                            pConfig->srcROI.width,
+                            1,
+                            0);
+                    WDMAStart(0);
+                    // Register WDMA intr
+                    mem_out_done = 0;
+                    disp_register_irq(DISP_MODULE_WDMA0, _disp_path_wdma_callback);
 
-                	RDMAConfig(0,
-                			RDMA_MODE_MEMORY,       	 // mem mode
-                			eRGB888,    				 // inputFormat
-                			decouple_addr,               // display lk logo when entering kernel
-                			RDMA_OUTPUT_FORMAT_ARGB,     // output format
-                			pConfig->srcROI.width*3,     // pitch, eRGB888
-                			pConfig->srcROI.width,       // width
-                			pConfig->srcROI.height,      // height
-                			0,                           // byte swap
-                			0);
-                	RDMAStart(0);
+                    RDMAConfig(0,
+                            RDMA_MODE_MEMORY,            // mem mode
+                            eRGB888,                     // inputFormat
+                            decouple_addr,               // display lk logo when entering kernel
+                            RDMA_OUTPUT_FORMAT_ARGB,     // output format
+                            pConfig->srcROI.width*3,     // pitch, eRGB888
+                            pConfig->srcROI.width,       // width
+                            pConfig->srcROI.height,      // height
+                            0,                           // byte swap
+                            0);
+                    RDMAStart(0);
                 } else {
-                	RDMAConfig(0,
-                			RDMA_MODE_DIRECT_LINK,       ///direct link mode
-                			eRGB888,    // inputFormat
-                			0,                        // address
-                			pConfig->outFormat,          // output format
-                			pConfig->pitch,              // pitch
-                			pConfig->srcROI.width,       // width
-                			pConfig->srcROI.height,      // height
-                			0,                           //byte swap
-                			0);                          // is RGB swap
+                    RDMAConfig(0,
+                            RDMA_MODE_DIRECT_LINK,       ///direct link mode
+                            eRGB888,    // inputFormat
+                            0,                        // address
+                            pConfig->outFormat,          // output format
+                            pConfig->pitch,              // pitch
+                            pConfig->srcROI.width,       // width
+                            pConfig->srcROI.height,      // height
+                            0,                           //byte swap
+                            0);                          // is RGB swap
 
-                	RDMAStart(0);
+                    RDMAStart(0);
                 }
             }
         }
@@ -1544,19 +1544,19 @@ int disp_path_config_(struct disp_path_config_struct* pConfig, int mutexId)
             RDMAStop(1);
             RDMAReset(1);
 
-            RDMAConfig(1, 
-                           RDMA_MODE_MEMORY,       		///direct link mode
-                           eARGB8888,    				// inputFormat
+            RDMAConfig(1,
+                           RDMA_MODE_MEMORY,               ///direct link mode
+                           eARGB8888,                    // inputFormat
                            pConfig->addr,               // address
-                           pConfig->outFormat,   		// output format
+                           pConfig->outFormat,           // output format
                            pConfig->pitch,              // pitch
                            pConfig->srcROI.width,       // width
                            pConfig->srcROI.height,      // height
                            0,                           //byte swap
-                           0);   
+                           0);
 
             RDMAStart(1);
-    
+
                     /////bypass BLS
                 //dispsys_bypass_bls(pConfig->srcROI.width, pConfig->srcROI.height);
 
@@ -1605,11 +1605,11 @@ void reg_backup(unsigned int reg_addr)
       printk("0x%08x(0x%08x), ", reg_addr, *(pRegBackup+reg_offset));
       if((reg_offset+1)%8==0)
           printk("\n");
-#endif      
+#endif
       reg_offset++;
       if(reg_offset>=DDP_BACKUP_REG_NUM)
       {
-          DISP_ERR("reg_backup fail, reg_offset=%d, regBackupSize=%d \n", reg_offset, DDP_BACKUP_REG_NUM);        
+          DISP_ERR("reg_backup fail, reg_offset=%d, regBackupSize=%d \n", reg_offset, DDP_BACKUP_REG_NUM);
       }
 }
 
@@ -1620,12 +1620,12 @@ void reg_restore(unsigned int reg_addr)
       printk("0x%08x(0x%08x), ", reg_addr, DISP_REG_GET(reg_addr));
       if((reg_offset+1)%8==0)
           printk("\n");
-#endif                
+#endif
       reg_offset++;
-      
+
       if(reg_offset>=DDP_BACKUP_REG_NUM)
       {
-          DISP_ERR("reg_backup fail, reg_offset=%d, regBackupSize=%d \n", reg_offset, DDP_BACKUP_REG_NUM);        
+          DISP_ERR("reg_backup fail, reg_offset=%d, regBackupSize=%d \n", reg_offset, DDP_BACKUP_REG_NUM);
       }
 }
 
@@ -1634,109 +1634,109 @@ static void disp_reg_backup_module(DISP_MODULE_ENUM module)
 {
     unsigned int index = 0;
     if(module==DISP_MODULE_OVL)
-    {    
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_STA                     );           
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_INTEN                   ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_INTSTA                  ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_EN                      ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_TRIG                    ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RST                     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_ROI_SIZE                ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_DATAPATH_CON            ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_ROI_BGCLR               ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_SRC_CON                 ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_CON                  ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_SRCKEY               ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_SRC_SIZE             ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_OFFSET               ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_ADDR                 ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_PITCH                ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_CON                  ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_SRCKEY               ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_SRC_SIZE             ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_OFFSET               ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_ADDR                 ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_PITCH                ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_CON                  ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_SRCKEY               ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_SRC_SIZE             ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_OFFSET               ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_ADDR                 ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_PITCH                ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_CON                  ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_SRCKEY               ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_SRC_SIZE             ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_OFFSET               ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_ADDR                 ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_PITCH                ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA0_CTRL              ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA0_MEM_START_TRIG    ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING   ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA0_MEM_SLOW_CON      ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA0_FIFO_CTRL         ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA1_CTRL              ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA1_MEM_START_TRIG    ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING   ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA1_MEM_SLOW_CON      ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA1_FIFO_CTRL         ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA2_CTRL              ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA2_MEM_START_TRIG    ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING   ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA2_MEM_SLOW_CON      ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA2_FIFO_CTRL         ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA3_CTRL              ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA3_MEM_START_TRIG    ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA3_MEM_GMC_SETTING   ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA3_MEM_SLOW_CON      ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA3_FIFO_CTRL         ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_R0          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_R1          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_G0          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_G1          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_B0          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_B1          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_YUV_A_0     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_YUV_A_1     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_RGB_A_0     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_RGB_A_1     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_R0          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_R1          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_G0          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_G1          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_B0          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_B1          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_YUV_A_0     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_YUV_A_1     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_RGB_A_0     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_RGB_A_1     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_R0          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_R1          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_G0          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_G1          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_B0          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_B1          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_YUV_A_0     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_YUV_A_1     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_RGB_A_0     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_RGB_A_1     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_R0          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_R1          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_G0          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_G1          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_B0          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_B1          ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_YUV_A_0     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_YUV_A_1     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_RGB_A_0     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_RGB_A_1     ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_DEBUG_MON_SEL           ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING2  ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING2  ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING2  ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA3_MEM_GMC_SETTING2  ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_FLOW_CTRL_DBG           ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_ADDCON_DBG              ); 
-        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_OUTMUX_DBG              ); 
+    {
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_STA                     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_INTEN                   );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_INTSTA                  );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_EN                      );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_TRIG                    );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RST                     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_ROI_SIZE                );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_DATAPATH_CON            );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_ROI_BGCLR               );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_SRC_CON                 );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_CON                  );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_SRCKEY               );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_SRC_SIZE             );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_OFFSET               );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_ADDR                 );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_PITCH                );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_CON                  );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_SRCKEY               );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_SRC_SIZE             );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_OFFSET               );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_ADDR                 );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_PITCH                );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_CON                  );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_SRCKEY               );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_SRC_SIZE             );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_OFFSET               );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_ADDR                 );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_PITCH                );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_CON                  );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_SRCKEY               );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_SRC_SIZE             );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_OFFSET               );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_ADDR                 );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_PITCH                );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA0_CTRL              );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA0_MEM_START_TRIG    );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING   );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA0_MEM_SLOW_CON      );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA0_FIFO_CTRL         );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA1_CTRL              );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA1_MEM_START_TRIG    );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING   );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA1_MEM_SLOW_CON      );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA1_FIFO_CTRL         );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA2_CTRL              );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA2_MEM_START_TRIG    );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING   );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA2_MEM_SLOW_CON      );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA2_FIFO_CTRL         );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA3_CTRL              );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA3_MEM_START_TRIG    );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA3_MEM_GMC_SETTING   );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA3_MEM_SLOW_CON      );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA3_FIFO_CTRL         );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_R0          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_R1          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_G0          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_G1          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_B0          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_B1          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_YUV_A_0     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_YUV_A_1     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_RGB_A_0     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L0_Y2R_PARA_RGB_A_1     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_R0          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_R1          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_G0          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_G1          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_B0          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_B1          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_YUV_A_0     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_YUV_A_1     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_RGB_A_0     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L1_Y2R_PARA_RGB_A_1     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_R0          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_R1          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_G0          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_G1          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_B0          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_B1          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_YUV_A_0     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_YUV_A_1     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_RGB_A_0     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L2_Y2R_PARA_RGB_A_1     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_R0          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_R1          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_G0          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_G1          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_B0          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_B1          );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_YUV_A_0     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_YUV_A_1     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_RGB_A_0     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_L3_Y2R_PARA_RGB_A_1     );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_DEBUG_MON_SEL           );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING2  );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING2  );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING2  );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_RDMA3_MEM_GMC_SETTING2  );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_FLOW_CTRL_DBG           );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_ADDCON_DBG              );
+        g_reg_backup[index++] = DISP_REG_GET(DISP_REG_OVL_OUTMUX_DBG              );
 
     }
 }
@@ -1745,109 +1745,109 @@ static void disp_reg_restore_module(DISP_MODULE_ENUM module)
 {
     unsigned int index = 0;
     if(module==DISP_MODULE_OVL)
-    {   
-        DISP_REG_SET(DISP_REG_OVL_STA                     , g_reg_backup[index++]);           
-        DISP_REG_SET(DISP_REG_OVL_INTEN                   , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_INTSTA                  , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_EN                      , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_TRIG                    , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RST                     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_ROI_SIZE                , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_DATAPATH_CON            , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_ROI_BGCLR               , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_SRC_CON                 , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L0_CON                  , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L0_SRCKEY               , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L0_SRC_SIZE             , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L0_OFFSET               , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L0_ADDR                 , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L0_PITCH                , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L1_CON                  , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L1_SRCKEY               , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L1_SRC_SIZE             , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L1_OFFSET               , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L1_ADDR                 , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L1_PITCH                , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L2_CON                  , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L2_SRCKEY               , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L2_SRC_SIZE             , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L2_OFFSET               , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L2_ADDR                 , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L2_PITCH                , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L3_CON                  , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L3_SRCKEY               , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L3_SRC_SIZE             , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L3_OFFSET               , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L3_ADDR                 , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L3_PITCH                , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA0_CTRL              , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA0_MEM_START_TRIG    , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING   , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA0_MEM_SLOW_CON      , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA0_FIFO_CTRL         , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA1_CTRL              , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA1_MEM_START_TRIG    , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING   , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA1_MEM_SLOW_CON      , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA1_FIFO_CTRL         , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA2_CTRL              , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA2_MEM_START_TRIG    , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING   , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA2_MEM_SLOW_CON      , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA2_FIFO_CTRL         , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA3_CTRL              , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA3_MEM_START_TRIG    , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA3_MEM_GMC_SETTING   , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA3_MEM_SLOW_CON      , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA3_FIFO_CTRL         , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_R0          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_R1          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_G0          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_G1          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_B0          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_B1          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_YUV_A_0     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_YUV_A_1     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_RGB_A_0     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_RGB_A_1     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_R0          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_R1          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_G0          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_G1          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_B0          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_B1          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_YUV_A_0     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_YUV_A_1     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_RGB_A_0     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_RGB_A_1     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_R0          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_R1          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_G0          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_G1          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_B0          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_B1          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_YUV_A_0     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_YUV_A_1     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_RGB_A_0     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_RGB_A_1     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_R0          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_R1          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_G0          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_G1          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_B0          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_B1          , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_YUV_A_0     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_YUV_A_1     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_RGB_A_0     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_RGB_A_1     , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_DEBUG_MON_SEL           , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING2  , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING2  , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING2  , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_RDMA3_MEM_GMC_SETTING2  , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_FLOW_CTRL_DBG           , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_ADDCON_DBG              , g_reg_backup[index++]); 
-        DISP_REG_SET(DISP_REG_OVL_OUTMUX_DBG              , g_reg_backup[index++]); 
+    {
+        DISP_REG_SET(DISP_REG_OVL_STA                     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_INTEN                   , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_INTSTA                  , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_EN                      , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_TRIG                    , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RST                     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_ROI_SIZE                , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_DATAPATH_CON            , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_ROI_BGCLR               , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_SRC_CON                 , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L0_CON                  , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L0_SRCKEY               , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L0_SRC_SIZE             , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L0_OFFSET               , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L0_ADDR                 , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L0_PITCH                , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L1_CON                  , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L1_SRCKEY               , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L1_SRC_SIZE             , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L1_OFFSET               , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L1_ADDR                 , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L1_PITCH                , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L2_CON                  , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L2_SRCKEY               , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L2_SRC_SIZE             , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L2_OFFSET               , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L2_ADDR                 , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L2_PITCH                , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L3_CON                  , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L3_SRCKEY               , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L3_SRC_SIZE             , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L3_OFFSET               , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L3_ADDR                 , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L3_PITCH                , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA0_CTRL              , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA0_MEM_START_TRIG    , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING   , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA0_MEM_SLOW_CON      , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA0_FIFO_CTRL         , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA1_CTRL              , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA1_MEM_START_TRIG    , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING   , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA1_MEM_SLOW_CON      , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA1_FIFO_CTRL         , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA2_CTRL              , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA2_MEM_START_TRIG    , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING   , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA2_MEM_SLOW_CON      , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA2_FIFO_CTRL         , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA3_CTRL              , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA3_MEM_START_TRIG    , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA3_MEM_GMC_SETTING   , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA3_MEM_SLOW_CON      , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA3_FIFO_CTRL         , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_R0          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_R1          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_G0          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_G1          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_B0          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_B1          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_YUV_A_0     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_YUV_A_1     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_RGB_A_0     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L0_Y2R_PARA_RGB_A_1     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_R0          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_R1          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_G0          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_G1          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_B0          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_B1          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_YUV_A_0     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_YUV_A_1     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_RGB_A_0     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L1_Y2R_PARA_RGB_A_1     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_R0          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_R1          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_G0          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_G1          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_B0          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_B1          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_YUV_A_0     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_YUV_A_1     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_RGB_A_0     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L2_Y2R_PARA_RGB_A_1     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_R0          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_R1          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_G0          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_G1          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_B0          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_B1          , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_YUV_A_0     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_YUV_A_1     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_RGB_A_0     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_L3_Y2R_PARA_RGB_A_1     , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_DEBUG_MON_SEL           , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING2  , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING2  , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING2  , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_RDMA3_MEM_GMC_SETTING2  , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_FLOW_CTRL_DBG           , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_ADDCON_DBG              , g_reg_backup[index++]);
+        DISP_REG_SET(DISP_REG_OVL_OUTMUX_DBG              , g_reg_backup[index++]);
 
     }
 
@@ -1863,9 +1863,9 @@ static int disp_mutex_backup(void)
 
     for (i=0; i<4; i++)
     {
-    	reg_backup(DISP_REG_CONFIG_MUTEX_EN(i));
-    	reg_backup(DISP_REG_CONFIG_MUTEX_MOD(i));
-    	reg_backup(DISP_REG_CONFIG_MUTEX_SOF(i));
+        reg_backup(DISP_REG_CONFIG_MUTEX_EN(i));
+        reg_backup(DISP_REG_CONFIG_MUTEX_MOD(i));
+        reg_backup(DISP_REG_CONFIG_MUTEX_SOF(i));
     }
 
     return 0;
@@ -1887,7 +1887,7 @@ static int disp_bls_backup()
     /* BLS Luminance LUT */
     for (i=0; i<=32; i++)
     {
-    	reg_backup(DISP_REG_BLS_LUMINANCE(i));
+        reg_backup(DISP_REG_BLS_LUMINANCE(i));
     }
 
     /* BLS Luminance 255 */
@@ -1896,7 +1896,7 @@ static int disp_bls_backup()
     /* Dither */
     for (i=0; i<18; i++)
     {
-    	reg_backup(DISP_REG_BLS_DITHER(i));
+        reg_backup(DISP_REG_BLS_DITHER(i));
     }
 
     reg_backup(DISP_REG_BLS_INTEN);
@@ -1915,7 +1915,7 @@ static int disp_mutex_restore(void)
 
     for (i=0; i<4; i++)
     {
-    	reg_restore(DISP_REG_CONFIG_MUTEX_EN(i));
+        reg_restore(DISP_REG_CONFIG_MUTEX_EN(i));
         reg_restore(DISP_REG_CONFIG_MUTEX_MOD(i));
         reg_restore(DISP_REG_CONFIG_MUTEX_SOF(i));
     }
@@ -1939,7 +1939,7 @@ static int disp_bls_restore()
     /* BLS Luminance LUT */
     for (i=0; i<=32; i++)
     {
-    	reg_restore(DISP_REG_BLS_LUMINANCE(i));
+        reg_restore(DISP_REG_BLS_LUMINANCE(i));
     }
 
     /* BLS Luminance 255 */
@@ -1948,7 +1948,7 @@ static int disp_bls_restore()
     /* Dither */
     for (i=0; i<18; i++)
     {
-    	reg_restore(DISP_REG_BLS_DITHER(i));
+        reg_restore(DISP_REG_BLS_DITHER(i));
     }
 
     reg_restore(DISP_REG_BLS_INTEN);
@@ -1960,408 +1960,408 @@ static int disp_bls_restore()
 
 static int disp_reg_backup(void)
 {
-	unsigned int index;
-	reg_offset = 0;
-	DISP_MSG("disp_reg_backup() start, *pRegBackup=0x%x, reg_offset=%d  \n", *pRegBackup, reg_offset);
+    unsigned int index;
+    reg_offset = 0;
+    DISP_MSG("disp_reg_backup() start, *pRegBackup=0x%x, reg_offset=%d  \n", *pRegBackup, reg_offset);
 
-	// Config
-	reg_backup(DISP_REG_CONFIG_DISP_OVL_MOUT_EN );
-	reg_backup(DISP_REG_CONFIG_DISP_OUT_SEL     );
+    // Config
+    reg_backup(DISP_REG_CONFIG_DISP_OVL_MOUT_EN );
+    reg_backup(DISP_REG_CONFIG_DISP_OUT_SEL     );
 
-	// Mutex & BLS
-	disp_mutex_backup();
-	// BLS
-	//disp_bls_backup();
+    // Mutex & BLS
+    disp_mutex_backup();
+    // BLS
+    //disp_bls_backup();
 
-	// OVL
-	reg_backup(DISP_REG_OVL_STA                     );
-	reg_backup(DISP_REG_OVL_INTEN                   );
-	reg_backup(DISP_REG_OVL_INTSTA                  );
-	reg_backup(DISP_REG_OVL_EN                      );
-	reg_backup(DISP_REG_OVL_TRIG                    );
-	reg_backup(DISP_REG_OVL_RST                     );
-	reg_backup(DISP_REG_OVL_ROI_SIZE                );
-	reg_backup(DISP_REG_OVL_DATAPATH_CON            );
-	reg_backup(DISP_REG_OVL_ROI_BGCLR               );
-	reg_backup(DISP_REG_OVL_SRC_CON                 );
-	reg_backup(DISP_REG_OVL_L0_CON                  );
-	reg_backup(DISP_REG_OVL_L0_SRCKEY               );
-	reg_backup(DISP_REG_OVL_L0_SRC_SIZE             );
-	reg_backup(DISP_REG_OVL_L0_OFFSET               );
-	reg_backup(DISP_REG_OVL_L0_ADDR                 );
-	reg_backup(DISP_REG_OVL_L0_PITCH                );
-	reg_backup(DISP_REG_OVL_L1_CON                  );
-	reg_backup(DISP_REG_OVL_L1_SRCKEY               );
-	reg_backup(DISP_REG_OVL_L1_SRC_SIZE             );
-	reg_backup(DISP_REG_OVL_L1_OFFSET               );
-	reg_backup(DISP_REG_OVL_L1_ADDR                 );
-	reg_backup(DISP_REG_OVL_L1_PITCH                );
-	reg_backup(DISP_REG_OVL_L2_CON                  );
-	reg_backup(DISP_REG_OVL_L2_SRCKEY               );
-	reg_backup(DISP_REG_OVL_L2_SRC_SIZE             );
-	reg_backup(DISP_REG_OVL_L2_OFFSET               );
-	reg_backup(DISP_REG_OVL_L2_ADDR                 );
-	reg_backup(DISP_REG_OVL_L2_PITCH                );
-	reg_backup(DISP_REG_OVL_L3_CON                  );
-	reg_backup(DISP_REG_OVL_L3_SRCKEY               );
-	reg_backup(DISP_REG_OVL_L3_SRC_SIZE             );
-	reg_backup(DISP_REG_OVL_L3_OFFSET               );
-	reg_backup(DISP_REG_OVL_L3_ADDR                 );
-	reg_backup(DISP_REG_OVL_L3_PITCH                );
-	reg_backup(DISP_REG_OVL_RDMA0_CTRL              );
-	reg_backup(DISP_REG_OVL_RDMA0_MEM_START_TRIG    );
-	reg_backup(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING   );
-	reg_backup(DISP_REG_OVL_RDMA0_MEM_SLOW_CON      );
-	reg_backup(DISP_REG_OVL_RDMA0_FIFO_CTRL         );
-	reg_backup(DISP_REG_OVL_RDMA1_CTRL              );
-	reg_backup(DISP_REG_OVL_RDMA1_MEM_START_TRIG    );
-	reg_backup(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING   );
-	reg_backup(DISP_REG_OVL_RDMA1_MEM_SLOW_CON      );
-	reg_backup(DISP_REG_OVL_RDMA1_FIFO_CTRL         );
-	reg_backup(DISP_REG_OVL_RDMA2_CTRL              );
-	reg_backup(DISP_REG_OVL_RDMA2_MEM_START_TRIG    );
-	reg_backup(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING   );
-	reg_backup(DISP_REG_OVL_RDMA2_MEM_SLOW_CON      );
-	reg_backup(DISP_REG_OVL_RDMA2_FIFO_CTRL         );
-	reg_backup(DISP_REG_OVL_RDMA3_CTRL              );
-	reg_backup(DISP_REG_OVL_RDMA3_MEM_START_TRIG    );
-	reg_backup(DISP_REG_OVL_RDMA3_MEM_GMC_SETTING   );
-	reg_backup(DISP_REG_OVL_RDMA3_MEM_SLOW_CON      );
-	reg_backup(DISP_REG_OVL_RDMA3_FIFO_CTRL         );
-	reg_backup(DISP_REG_OVL_L0_Y2R_PARA_R0          );
-	reg_backup(DISP_REG_OVL_L0_Y2R_PARA_R1          );
-	reg_backup(DISP_REG_OVL_L0_Y2R_PARA_G0          );
-	reg_backup(DISP_REG_OVL_L0_Y2R_PARA_G1          );
-	reg_backup(DISP_REG_OVL_L0_Y2R_PARA_B0          );
-	reg_backup(DISP_REG_OVL_L0_Y2R_PARA_B1          );
-	reg_backup(DISP_REG_OVL_L0_Y2R_PARA_YUV_A_0     );
-	reg_backup(DISP_REG_OVL_L0_Y2R_PARA_YUV_A_1     );
-	reg_backup(DISP_REG_OVL_L0_Y2R_PARA_RGB_A_0     );
-	reg_backup(DISP_REG_OVL_L0_Y2R_PARA_RGB_A_1     );
-	reg_backup(DISP_REG_OVL_L1_Y2R_PARA_R0          );
-	reg_backup(DISP_REG_OVL_L1_Y2R_PARA_R1          );
-	reg_backup(DISP_REG_OVL_L1_Y2R_PARA_G0          );
-	reg_backup(DISP_REG_OVL_L1_Y2R_PARA_G1          );
-	reg_backup(DISP_REG_OVL_L1_Y2R_PARA_B0          );
-	reg_backup(DISP_REG_OVL_L1_Y2R_PARA_B1          );
-	reg_backup(DISP_REG_OVL_L1_Y2R_PARA_YUV_A_0     );
-	reg_backup(DISP_REG_OVL_L1_Y2R_PARA_YUV_A_1     );
-	reg_backup(DISP_REG_OVL_L1_Y2R_PARA_RGB_A_0     );
-	reg_backup(DISP_REG_OVL_L1_Y2R_PARA_RGB_A_1     );
-	reg_backup(DISP_REG_OVL_L2_Y2R_PARA_R0          );
-	reg_backup(DISP_REG_OVL_L2_Y2R_PARA_R1          );
-	reg_backup(DISP_REG_OVL_L2_Y2R_PARA_G0          );
-	reg_backup(DISP_REG_OVL_L2_Y2R_PARA_G1          );
-	reg_backup(DISP_REG_OVL_L2_Y2R_PARA_B0          );
-	reg_backup(DISP_REG_OVL_L2_Y2R_PARA_B1          );
-	reg_backup(DISP_REG_OVL_L2_Y2R_PARA_YUV_A_0     );
-	reg_backup(DISP_REG_OVL_L2_Y2R_PARA_YUV_A_1     );
-	reg_backup(DISP_REG_OVL_L2_Y2R_PARA_RGB_A_0     );
-	reg_backup(DISP_REG_OVL_L2_Y2R_PARA_RGB_A_1     );
-	reg_backup(DISP_REG_OVL_L3_Y2R_PARA_R0          );
-	reg_backup(DISP_REG_OVL_L3_Y2R_PARA_R1          );
-	reg_backup(DISP_REG_OVL_L3_Y2R_PARA_G0          );
-	reg_backup(DISP_REG_OVL_L3_Y2R_PARA_G1          );
-	reg_backup(DISP_REG_OVL_L3_Y2R_PARA_B0          );
-	reg_backup(DISP_REG_OVL_L3_Y2R_PARA_B1          );
-	reg_backup(DISP_REG_OVL_L3_Y2R_PARA_YUV_A_0     );
-	reg_backup(DISP_REG_OVL_L3_Y2R_PARA_YUV_A_1     );
-	reg_backup(DISP_REG_OVL_L3_Y2R_PARA_RGB_A_0     );
-	reg_backup(DISP_REG_OVL_L3_Y2R_PARA_RGB_A_1     );
-	reg_backup(DISP_REG_OVL_DEBUG_MON_SEL           );
-	reg_backup(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING2  );
-	reg_backup(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING2  );
-	reg_backup(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING2  );
-	reg_backup(DISP_REG_OVL_RDMA3_MEM_GMC_SETTING2  );
-	reg_backup(DISP_REG_OVL_FLOW_CTRL_DBG           );
-	reg_backup(DISP_REG_OVL_ADDCON_DBG              );
-	reg_backup(DISP_REG_OVL_OUTMUX_DBG              );
-	// RDMA, RDMA1
-	for (index = 0; index < 2; index++) {
-		reg_backup(DISP_REG_RDMA_INT_ENABLE        + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_INT_STATUS        + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_GLOBAL_CON        + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_SIZE_CON_0        + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_SIZE_CON_1        + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_TARGET_LINE       + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_MEM_CON           + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_MEM_START_ADDR    + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_MEM_SRC_PITCH     + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_MEM_GMC_SETTING_0 + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_MEM_SLOW_CON      + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_MEM_GMC_SETTING_1 + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_FIFO_CON          + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_FIFO_LOG          + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_CF_00             + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_CF_01             + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_CF_02             + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_CF_10             + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_CF_11             + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_CF_12             + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_CF_20             + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_CF_21             + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_CF_22             + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_CF_PRE_ADD0       + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_CF_PRE_ADD1       + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_CF_PRE_ADD2       + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_CF_POST_ADD0      + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_CF_POST_ADD1      + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_CF_POST_ADD2      + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_DUMMY             + index*DISP_INDEX_OFFSET);
-		reg_backup(DISP_REG_RDMA_DEBUG_OUT_SEL     + index*DISP_INDEX_OFFSET);
-	}
-	// WDMA
-	reg_backup(DISP_REG_WDMA_INTEN          );
-	reg_backup(DISP_REG_WDMA_INTSTA         );
-	reg_backup(DISP_REG_WDMA_EN             );
-	reg_backup(DISP_REG_WDMA_RST            );
-	reg_backup(DISP_REG_WDMA_SMI_CON        );
-	reg_backup(DISP_REG_WDMA_CFG            );
-	reg_backup(DISP_REG_WDMA_SRC_SIZE       );
-	reg_backup(DISP_REG_WDMA_CLIP_SIZE      );
-	reg_backup(DISP_REG_WDMA_CLIP_COORD     );
-	reg_backup(DISP_REG_WDMA_DST_ADDR       );
-	reg_backup(DISP_REG_WDMA_DST_W_IN_BYTE  );
-	reg_backup(DISP_REG_WDMA_ALPHA          );
-	reg_backup(DISP_REG_WDMA_BUF_ADDR       );
-	reg_backup(DISP_REG_WDMA_STA            );
-	reg_backup(DISP_REG_WDMA_BUF_CON1       );
-	reg_backup(DISP_REG_WDMA_BUF_CON2       );
-	reg_backup(DISP_REG_WDMA_C00            );
-	reg_backup(DISP_REG_WDMA_C02            );
-	reg_backup(DISP_REG_WDMA_C10            );
-	reg_backup(DISP_REG_WDMA_C12            );
-	reg_backup(DISP_REG_WDMA_C20            );
-	reg_backup(DISP_REG_WDMA_C22            );
-	reg_backup(DISP_REG_WDMA_PRE_ADD0       );
-	reg_backup(DISP_REG_WDMA_PRE_ADD2       );
-	reg_backup(DISP_REG_WDMA_POST_ADD0      );
-	reg_backup(DISP_REG_WDMA_POST_ADD2      );
-	reg_backup(DISP_REG_WDMA_DST_U_ADDR     );
-	reg_backup(DISP_REG_WDMA_DST_V_ADDR     );
-	reg_backup(DISP_REG_WDMA_DST_UV_PITCH   );
-	reg_backup(DISP_REG_WDMA_DITHER_CON     );
-	reg_backup(DISP_REG_WDMA_FLOW_CTRL_DBG  );
-	reg_backup(DISP_REG_WDMA_EXEC_DBG       );
-	reg_backup(DISP_REG_WDMA_CLIP_DBG       );
+    // OVL
+    reg_backup(DISP_REG_OVL_STA                     );
+    reg_backup(DISP_REG_OVL_INTEN                   );
+    reg_backup(DISP_REG_OVL_INTSTA                  );
+    reg_backup(DISP_REG_OVL_EN                      );
+    reg_backup(DISP_REG_OVL_TRIG                    );
+    reg_backup(DISP_REG_OVL_RST                     );
+    reg_backup(DISP_REG_OVL_ROI_SIZE                );
+    reg_backup(DISP_REG_OVL_DATAPATH_CON            );
+    reg_backup(DISP_REG_OVL_ROI_BGCLR               );
+    reg_backup(DISP_REG_OVL_SRC_CON                 );
+    reg_backup(DISP_REG_OVL_L0_CON                  );
+    reg_backup(DISP_REG_OVL_L0_SRCKEY               );
+    reg_backup(DISP_REG_OVL_L0_SRC_SIZE             );
+    reg_backup(DISP_REG_OVL_L0_OFFSET               );
+    reg_backup(DISP_REG_OVL_L0_ADDR                 );
+    reg_backup(DISP_REG_OVL_L0_PITCH                );
+    reg_backup(DISP_REG_OVL_L1_CON                  );
+    reg_backup(DISP_REG_OVL_L1_SRCKEY               );
+    reg_backup(DISP_REG_OVL_L1_SRC_SIZE             );
+    reg_backup(DISP_REG_OVL_L1_OFFSET               );
+    reg_backup(DISP_REG_OVL_L1_ADDR                 );
+    reg_backup(DISP_REG_OVL_L1_PITCH                );
+    reg_backup(DISP_REG_OVL_L2_CON                  );
+    reg_backup(DISP_REG_OVL_L2_SRCKEY               );
+    reg_backup(DISP_REG_OVL_L2_SRC_SIZE             );
+    reg_backup(DISP_REG_OVL_L2_OFFSET               );
+    reg_backup(DISP_REG_OVL_L2_ADDR                 );
+    reg_backup(DISP_REG_OVL_L2_PITCH                );
+    reg_backup(DISP_REG_OVL_L3_CON                  );
+    reg_backup(DISP_REG_OVL_L3_SRCKEY               );
+    reg_backup(DISP_REG_OVL_L3_SRC_SIZE             );
+    reg_backup(DISP_REG_OVL_L3_OFFSET               );
+    reg_backup(DISP_REG_OVL_L3_ADDR                 );
+    reg_backup(DISP_REG_OVL_L3_PITCH                );
+    reg_backup(DISP_REG_OVL_RDMA0_CTRL              );
+    reg_backup(DISP_REG_OVL_RDMA0_MEM_START_TRIG    );
+    reg_backup(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING   );
+    reg_backup(DISP_REG_OVL_RDMA0_MEM_SLOW_CON      );
+    reg_backup(DISP_REG_OVL_RDMA0_FIFO_CTRL         );
+    reg_backup(DISP_REG_OVL_RDMA1_CTRL              );
+    reg_backup(DISP_REG_OVL_RDMA1_MEM_START_TRIG    );
+    reg_backup(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING   );
+    reg_backup(DISP_REG_OVL_RDMA1_MEM_SLOW_CON      );
+    reg_backup(DISP_REG_OVL_RDMA1_FIFO_CTRL         );
+    reg_backup(DISP_REG_OVL_RDMA2_CTRL              );
+    reg_backup(DISP_REG_OVL_RDMA2_MEM_START_TRIG    );
+    reg_backup(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING   );
+    reg_backup(DISP_REG_OVL_RDMA2_MEM_SLOW_CON      );
+    reg_backup(DISP_REG_OVL_RDMA2_FIFO_CTRL         );
+    reg_backup(DISP_REG_OVL_RDMA3_CTRL              );
+    reg_backup(DISP_REG_OVL_RDMA3_MEM_START_TRIG    );
+    reg_backup(DISP_REG_OVL_RDMA3_MEM_GMC_SETTING   );
+    reg_backup(DISP_REG_OVL_RDMA3_MEM_SLOW_CON      );
+    reg_backup(DISP_REG_OVL_RDMA3_FIFO_CTRL         );
+    reg_backup(DISP_REG_OVL_L0_Y2R_PARA_R0          );
+    reg_backup(DISP_REG_OVL_L0_Y2R_PARA_R1          );
+    reg_backup(DISP_REG_OVL_L0_Y2R_PARA_G0          );
+    reg_backup(DISP_REG_OVL_L0_Y2R_PARA_G1          );
+    reg_backup(DISP_REG_OVL_L0_Y2R_PARA_B0          );
+    reg_backup(DISP_REG_OVL_L0_Y2R_PARA_B1          );
+    reg_backup(DISP_REG_OVL_L0_Y2R_PARA_YUV_A_0     );
+    reg_backup(DISP_REG_OVL_L0_Y2R_PARA_YUV_A_1     );
+    reg_backup(DISP_REG_OVL_L0_Y2R_PARA_RGB_A_0     );
+    reg_backup(DISP_REG_OVL_L0_Y2R_PARA_RGB_A_1     );
+    reg_backup(DISP_REG_OVL_L1_Y2R_PARA_R0          );
+    reg_backup(DISP_REG_OVL_L1_Y2R_PARA_R1          );
+    reg_backup(DISP_REG_OVL_L1_Y2R_PARA_G0          );
+    reg_backup(DISP_REG_OVL_L1_Y2R_PARA_G1          );
+    reg_backup(DISP_REG_OVL_L1_Y2R_PARA_B0          );
+    reg_backup(DISP_REG_OVL_L1_Y2R_PARA_B1          );
+    reg_backup(DISP_REG_OVL_L1_Y2R_PARA_YUV_A_0     );
+    reg_backup(DISP_REG_OVL_L1_Y2R_PARA_YUV_A_1     );
+    reg_backup(DISP_REG_OVL_L1_Y2R_PARA_RGB_A_0     );
+    reg_backup(DISP_REG_OVL_L1_Y2R_PARA_RGB_A_1     );
+    reg_backup(DISP_REG_OVL_L2_Y2R_PARA_R0          );
+    reg_backup(DISP_REG_OVL_L2_Y2R_PARA_R1          );
+    reg_backup(DISP_REG_OVL_L2_Y2R_PARA_G0          );
+    reg_backup(DISP_REG_OVL_L2_Y2R_PARA_G1          );
+    reg_backup(DISP_REG_OVL_L2_Y2R_PARA_B0          );
+    reg_backup(DISP_REG_OVL_L2_Y2R_PARA_B1          );
+    reg_backup(DISP_REG_OVL_L2_Y2R_PARA_YUV_A_0     );
+    reg_backup(DISP_REG_OVL_L2_Y2R_PARA_YUV_A_1     );
+    reg_backup(DISP_REG_OVL_L2_Y2R_PARA_RGB_A_0     );
+    reg_backup(DISP_REG_OVL_L2_Y2R_PARA_RGB_A_1     );
+    reg_backup(DISP_REG_OVL_L3_Y2R_PARA_R0          );
+    reg_backup(DISP_REG_OVL_L3_Y2R_PARA_R1          );
+    reg_backup(DISP_REG_OVL_L3_Y2R_PARA_G0          );
+    reg_backup(DISP_REG_OVL_L3_Y2R_PARA_G1          );
+    reg_backup(DISP_REG_OVL_L3_Y2R_PARA_B0          );
+    reg_backup(DISP_REG_OVL_L3_Y2R_PARA_B1          );
+    reg_backup(DISP_REG_OVL_L3_Y2R_PARA_YUV_A_0     );
+    reg_backup(DISP_REG_OVL_L3_Y2R_PARA_YUV_A_1     );
+    reg_backup(DISP_REG_OVL_L3_Y2R_PARA_RGB_A_0     );
+    reg_backup(DISP_REG_OVL_L3_Y2R_PARA_RGB_A_1     );
+    reg_backup(DISP_REG_OVL_DEBUG_MON_SEL           );
+    reg_backup(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING2  );
+    reg_backup(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING2  );
+    reg_backup(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING2  );
+    reg_backup(DISP_REG_OVL_RDMA3_MEM_GMC_SETTING2  );
+    reg_backup(DISP_REG_OVL_FLOW_CTRL_DBG           );
+    reg_backup(DISP_REG_OVL_ADDCON_DBG              );
+    reg_backup(DISP_REG_OVL_OUTMUX_DBG              );
+    // RDMA, RDMA1
+    for (index = 0; index < 2; index++) {
+        reg_backup(DISP_REG_RDMA_INT_ENABLE        + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_INT_STATUS        + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_GLOBAL_CON        + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_SIZE_CON_0        + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_SIZE_CON_1        + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_TARGET_LINE       + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_MEM_CON           + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_MEM_START_ADDR    + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_MEM_SRC_PITCH     + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_MEM_GMC_SETTING_0 + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_MEM_SLOW_CON      + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_MEM_GMC_SETTING_1 + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_FIFO_CON          + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_FIFO_LOG          + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_CF_00             + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_CF_01             + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_CF_02             + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_CF_10             + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_CF_11             + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_CF_12             + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_CF_20             + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_CF_21             + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_CF_22             + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_CF_PRE_ADD0       + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_CF_PRE_ADD1       + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_CF_PRE_ADD2       + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_CF_POST_ADD0      + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_CF_POST_ADD1      + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_CF_POST_ADD2      + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_DUMMY             + index*DISP_INDEX_OFFSET);
+        reg_backup(DISP_REG_RDMA_DEBUG_OUT_SEL     + index*DISP_INDEX_OFFSET);
+    }
+    // WDMA
+    reg_backup(DISP_REG_WDMA_INTEN          );
+    reg_backup(DISP_REG_WDMA_INTSTA         );
+    reg_backup(DISP_REG_WDMA_EN             );
+    reg_backup(DISP_REG_WDMA_RST            );
+    reg_backup(DISP_REG_WDMA_SMI_CON        );
+    reg_backup(DISP_REG_WDMA_CFG            );
+    reg_backup(DISP_REG_WDMA_SRC_SIZE       );
+    reg_backup(DISP_REG_WDMA_CLIP_SIZE      );
+    reg_backup(DISP_REG_WDMA_CLIP_COORD     );
+    reg_backup(DISP_REG_WDMA_DST_ADDR       );
+    reg_backup(DISP_REG_WDMA_DST_W_IN_BYTE  );
+    reg_backup(DISP_REG_WDMA_ALPHA          );
+    reg_backup(DISP_REG_WDMA_BUF_ADDR       );
+    reg_backup(DISP_REG_WDMA_STA            );
+    reg_backup(DISP_REG_WDMA_BUF_CON1       );
+    reg_backup(DISP_REG_WDMA_BUF_CON2       );
+    reg_backup(DISP_REG_WDMA_C00            );
+    reg_backup(DISP_REG_WDMA_C02            );
+    reg_backup(DISP_REG_WDMA_C10            );
+    reg_backup(DISP_REG_WDMA_C12            );
+    reg_backup(DISP_REG_WDMA_C20            );
+    reg_backup(DISP_REG_WDMA_C22            );
+    reg_backup(DISP_REG_WDMA_PRE_ADD0       );
+    reg_backup(DISP_REG_WDMA_PRE_ADD2       );
+    reg_backup(DISP_REG_WDMA_POST_ADD0      );
+    reg_backup(DISP_REG_WDMA_POST_ADD2      );
+    reg_backup(DISP_REG_WDMA_DST_U_ADDR     );
+    reg_backup(DISP_REG_WDMA_DST_V_ADDR     );
+    reg_backup(DISP_REG_WDMA_DST_UV_PITCH   );
+    reg_backup(DISP_REG_WDMA_DITHER_CON     );
+    reg_backup(DISP_REG_WDMA_FLOW_CTRL_DBG  );
+    reg_backup(DISP_REG_WDMA_EXEC_DBG       );
+    reg_backup(DISP_REG_WDMA_CLIP_DBG       );
 
 
-	DISP_MSG("disp_reg_backup() end, *pRegBackup=0x%x, reg_offset=%d \n", *pRegBackup, reg_offset);
+    DISP_MSG("disp_reg_backup() end, *pRegBackup=0x%x, reg_offset=%d \n", *pRegBackup, reg_offset);
 
-	return 0;
+    return 0;
 }
 
 static int disp_reg_restore(void)
 {
-	unsigned int index;
+    unsigned int index;
     reg_offset = 0;
     DISP_MSG("disp_reg_restore(*) start, *pRegBackup=0x%x, reg_offset=%d  \n", *pRegBackup, reg_offset);
 
     // Config
-    reg_restore(DISP_REG_CONFIG_DISP_OVL_MOUT_EN );     
-    reg_restore(DISP_REG_CONFIG_DISP_OUT_SEL     );     
-    
+    reg_restore(DISP_REG_CONFIG_DISP_OVL_MOUT_EN );
+    reg_restore(DISP_REG_CONFIG_DISP_OUT_SEL     );
+
     // Mutex
     disp_mutex_restore();
     // BLS
     //disp_bls_restore();
 
     // OVL
-    reg_restore(DISP_REG_OVL_STA                     );           
-    reg_restore(DISP_REG_OVL_INTEN                   ); 
-    reg_restore(DISP_REG_OVL_INTSTA                  ); 
-    reg_restore(DISP_REG_OVL_EN                      ); 
-    reg_restore(DISP_REG_OVL_TRIG                    ); 
-    reg_restore(DISP_REG_OVL_RST                     ); 
-    reg_restore(DISP_REG_OVL_ROI_SIZE                ); 
-    reg_restore(DISP_REG_OVL_DATAPATH_CON            ); 
-    reg_restore(DISP_REG_OVL_ROI_BGCLR               ); 
-    reg_restore(DISP_REG_OVL_SRC_CON                 ); 
-    reg_restore(DISP_REG_OVL_L0_CON                  ); 
-    reg_restore(DISP_REG_OVL_L0_SRCKEY               ); 
-    reg_restore(DISP_REG_OVL_L0_SRC_SIZE             ); 
-    reg_restore(DISP_REG_OVL_L0_OFFSET               ); 
-    reg_restore(DISP_REG_OVL_L0_ADDR                 ); 
-    reg_restore(DISP_REG_OVL_L0_PITCH                ); 
-    reg_restore(DISP_REG_OVL_L1_CON                  ); 
-    reg_restore(DISP_REG_OVL_L1_SRCKEY               ); 
-    reg_restore(DISP_REG_OVL_L1_SRC_SIZE             ); 
-    reg_restore(DISP_REG_OVL_L1_OFFSET               ); 
-    reg_restore(DISP_REG_OVL_L1_ADDR                 ); 
-    reg_restore(DISP_REG_OVL_L1_PITCH                ); 
-    reg_restore(DISP_REG_OVL_L2_CON                  ); 
-    reg_restore(DISP_REG_OVL_L2_SRCKEY               ); 
-    reg_restore(DISP_REG_OVL_L2_SRC_SIZE             ); 
-    reg_restore(DISP_REG_OVL_L2_OFFSET               ); 
-    reg_restore(DISP_REG_OVL_L2_ADDR                 ); 
-    reg_restore(DISP_REG_OVL_L2_PITCH                ); 
-    reg_restore(DISP_REG_OVL_L3_CON                  ); 
-    reg_restore(DISP_REG_OVL_L3_SRCKEY               ); 
-    reg_restore(DISP_REG_OVL_L3_SRC_SIZE             ); 
-    reg_restore(DISP_REG_OVL_L3_OFFSET               ); 
-    reg_restore(DISP_REG_OVL_L3_ADDR                 ); 
-    reg_restore(DISP_REG_OVL_L3_PITCH                ); 
-    reg_restore(DISP_REG_OVL_RDMA0_CTRL              ); 
-    reg_restore(DISP_REG_OVL_RDMA0_MEM_START_TRIG    ); 
-    reg_restore(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING   ); 
-    reg_restore(DISP_REG_OVL_RDMA0_MEM_SLOW_CON      ); 
-    reg_restore(DISP_REG_OVL_RDMA0_FIFO_CTRL         ); 
-    reg_restore(DISP_REG_OVL_RDMA1_CTRL              ); 
-    reg_restore(DISP_REG_OVL_RDMA1_MEM_START_TRIG    ); 
-    reg_restore(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING   ); 
-    reg_restore(DISP_REG_OVL_RDMA1_MEM_SLOW_CON      ); 
-    reg_restore(DISP_REG_OVL_RDMA1_FIFO_CTRL         ); 
-    reg_restore(DISP_REG_OVL_RDMA2_CTRL              ); 
-    reg_restore(DISP_REG_OVL_RDMA2_MEM_START_TRIG    ); 
-    reg_restore(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING   ); 
-    reg_restore(DISP_REG_OVL_RDMA2_MEM_SLOW_CON      ); 
-    reg_restore(DISP_REG_OVL_RDMA2_FIFO_CTRL         ); 
-    reg_restore(DISP_REG_OVL_RDMA3_CTRL              ); 
-    reg_restore(DISP_REG_OVL_RDMA3_MEM_START_TRIG    ); 
-    reg_restore(DISP_REG_OVL_RDMA3_MEM_GMC_SETTING   ); 
-    reg_restore(DISP_REG_OVL_RDMA3_MEM_SLOW_CON      ); 
-    reg_restore(DISP_REG_OVL_RDMA3_FIFO_CTRL         ); 
-    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_R0          ); 
-    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_R1          ); 
-    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_G0          ); 
-    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_G1          ); 
-    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_B0          ); 
-    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_B1          ); 
-    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_YUV_A_0     ); 
-    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_YUV_A_1     ); 
-    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_RGB_A_0     ); 
-    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_RGB_A_1     ); 
-    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_R0          ); 
-    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_R1          ); 
-    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_G0          ); 
-    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_G1          ); 
-    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_B0          ); 
-    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_B1          ); 
-    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_YUV_A_0     ); 
-    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_YUV_A_1     ); 
-    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_RGB_A_0     ); 
-    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_RGB_A_1     ); 
-    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_R0          ); 
-    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_R1          ); 
-    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_G0          ); 
-    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_G1          ); 
-    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_B0          ); 
-    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_B1          ); 
-    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_YUV_A_0     ); 
-    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_YUV_A_1     ); 
-    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_RGB_A_0     ); 
-    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_RGB_A_1     ); 
-    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_R0          ); 
-    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_R1          ); 
-    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_G0          ); 
-    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_G1          ); 
-    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_B0          ); 
-    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_B1          ); 
-    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_YUV_A_0     ); 
-    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_YUV_A_1     ); 
-    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_RGB_A_0     ); 
-    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_RGB_A_1     ); 
-    reg_restore(DISP_REG_OVL_DEBUG_MON_SEL           ); 
-    reg_restore(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING2  ); 
-    reg_restore(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING2  ); 
-    reg_restore(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING2  ); 
-    reg_restore(DISP_REG_OVL_RDMA3_MEM_GMC_SETTING2  ); 
-    reg_restore(DISP_REG_OVL_FLOW_CTRL_DBG           ); 
-    reg_restore(DISP_REG_OVL_ADDCON_DBG              ); 
-    reg_restore(DISP_REG_OVL_OUTMUX_DBG              ); 
+    reg_restore(DISP_REG_OVL_STA                     );
+    reg_restore(DISP_REG_OVL_INTEN                   );
+    reg_restore(DISP_REG_OVL_INTSTA                  );
+    reg_restore(DISP_REG_OVL_EN                      );
+    reg_restore(DISP_REG_OVL_TRIG                    );
+    reg_restore(DISP_REG_OVL_RST                     );
+    reg_restore(DISP_REG_OVL_ROI_SIZE                );
+    reg_restore(DISP_REG_OVL_DATAPATH_CON            );
+    reg_restore(DISP_REG_OVL_ROI_BGCLR               );
+    reg_restore(DISP_REG_OVL_SRC_CON                 );
+    reg_restore(DISP_REG_OVL_L0_CON                  );
+    reg_restore(DISP_REG_OVL_L0_SRCKEY               );
+    reg_restore(DISP_REG_OVL_L0_SRC_SIZE             );
+    reg_restore(DISP_REG_OVL_L0_OFFSET               );
+    reg_restore(DISP_REG_OVL_L0_ADDR                 );
+    reg_restore(DISP_REG_OVL_L0_PITCH                );
+    reg_restore(DISP_REG_OVL_L1_CON                  );
+    reg_restore(DISP_REG_OVL_L1_SRCKEY               );
+    reg_restore(DISP_REG_OVL_L1_SRC_SIZE             );
+    reg_restore(DISP_REG_OVL_L1_OFFSET               );
+    reg_restore(DISP_REG_OVL_L1_ADDR                 );
+    reg_restore(DISP_REG_OVL_L1_PITCH                );
+    reg_restore(DISP_REG_OVL_L2_CON                  );
+    reg_restore(DISP_REG_OVL_L2_SRCKEY               );
+    reg_restore(DISP_REG_OVL_L2_SRC_SIZE             );
+    reg_restore(DISP_REG_OVL_L2_OFFSET               );
+    reg_restore(DISP_REG_OVL_L2_ADDR                 );
+    reg_restore(DISP_REG_OVL_L2_PITCH                );
+    reg_restore(DISP_REG_OVL_L3_CON                  );
+    reg_restore(DISP_REG_OVL_L3_SRCKEY               );
+    reg_restore(DISP_REG_OVL_L3_SRC_SIZE             );
+    reg_restore(DISP_REG_OVL_L3_OFFSET               );
+    reg_restore(DISP_REG_OVL_L3_ADDR                 );
+    reg_restore(DISP_REG_OVL_L3_PITCH                );
+    reg_restore(DISP_REG_OVL_RDMA0_CTRL              );
+    reg_restore(DISP_REG_OVL_RDMA0_MEM_START_TRIG    );
+    reg_restore(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING   );
+    reg_restore(DISP_REG_OVL_RDMA0_MEM_SLOW_CON      );
+    reg_restore(DISP_REG_OVL_RDMA0_FIFO_CTRL         );
+    reg_restore(DISP_REG_OVL_RDMA1_CTRL              );
+    reg_restore(DISP_REG_OVL_RDMA1_MEM_START_TRIG    );
+    reg_restore(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING   );
+    reg_restore(DISP_REG_OVL_RDMA1_MEM_SLOW_CON      );
+    reg_restore(DISP_REG_OVL_RDMA1_FIFO_CTRL         );
+    reg_restore(DISP_REG_OVL_RDMA2_CTRL              );
+    reg_restore(DISP_REG_OVL_RDMA2_MEM_START_TRIG    );
+    reg_restore(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING   );
+    reg_restore(DISP_REG_OVL_RDMA2_MEM_SLOW_CON      );
+    reg_restore(DISP_REG_OVL_RDMA2_FIFO_CTRL         );
+    reg_restore(DISP_REG_OVL_RDMA3_CTRL              );
+    reg_restore(DISP_REG_OVL_RDMA3_MEM_START_TRIG    );
+    reg_restore(DISP_REG_OVL_RDMA3_MEM_GMC_SETTING   );
+    reg_restore(DISP_REG_OVL_RDMA3_MEM_SLOW_CON      );
+    reg_restore(DISP_REG_OVL_RDMA3_FIFO_CTRL         );
+    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_R0          );
+    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_R1          );
+    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_G0          );
+    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_G1          );
+    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_B0          );
+    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_B1          );
+    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_YUV_A_0     );
+    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_YUV_A_1     );
+    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_RGB_A_0     );
+    reg_restore(DISP_REG_OVL_L0_Y2R_PARA_RGB_A_1     );
+    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_R0          );
+    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_R1          );
+    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_G0          );
+    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_G1          );
+    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_B0          );
+    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_B1          );
+    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_YUV_A_0     );
+    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_YUV_A_1     );
+    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_RGB_A_0     );
+    reg_restore(DISP_REG_OVL_L1_Y2R_PARA_RGB_A_1     );
+    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_R0          );
+    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_R1          );
+    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_G0          );
+    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_G1          );
+    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_B0          );
+    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_B1          );
+    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_YUV_A_0     );
+    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_YUV_A_1     );
+    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_RGB_A_0     );
+    reg_restore(DISP_REG_OVL_L2_Y2R_PARA_RGB_A_1     );
+    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_R0          );
+    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_R1          );
+    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_G0          );
+    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_G1          );
+    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_B0          );
+    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_B1          );
+    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_YUV_A_0     );
+    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_YUV_A_1     );
+    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_RGB_A_0     );
+    reg_restore(DISP_REG_OVL_L3_Y2R_PARA_RGB_A_1     );
+    reg_restore(DISP_REG_OVL_DEBUG_MON_SEL           );
+    reg_restore(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING2  );
+    reg_restore(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING2  );
+    reg_restore(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING2  );
+    reg_restore(DISP_REG_OVL_RDMA3_MEM_GMC_SETTING2  );
+    reg_restore(DISP_REG_OVL_FLOW_CTRL_DBG           );
+    reg_restore(DISP_REG_OVL_ADDCON_DBG              );
+    reg_restore(DISP_REG_OVL_OUTMUX_DBG              );
     // RDMA, RDMA1
     for (index = 0; index < 2; index++) {
-    	reg_restore(DISP_REG_RDMA_INT_ENABLE        + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_INT_STATUS        + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_GLOBAL_CON        + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_SIZE_CON_0        + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_SIZE_CON_1        + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_TARGET_LINE       + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_MEM_CON           + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_MEM_START_ADDR    + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_MEM_SRC_PITCH     + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_MEM_GMC_SETTING_0 + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_MEM_SLOW_CON      + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_MEM_GMC_SETTING_1 + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_FIFO_CON          + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_FIFO_LOG          + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_CF_00             + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_CF_01             + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_CF_02             + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_CF_10             + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_CF_11             + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_CF_12             + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_CF_20             + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_CF_21             + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_CF_22             + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_CF_PRE_ADD0       + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_CF_PRE_ADD1       + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_CF_PRE_ADD2       + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_CF_POST_ADD0      + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_CF_POST_ADD1      + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_CF_POST_ADD2      + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_DUMMY             + index*DISP_INDEX_OFFSET);
-    	reg_restore(DISP_REG_RDMA_DEBUG_OUT_SEL     + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_INT_ENABLE        + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_INT_STATUS        + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_GLOBAL_CON        + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_SIZE_CON_0        + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_SIZE_CON_1        + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_TARGET_LINE       + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_MEM_CON           + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_MEM_START_ADDR    + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_MEM_SRC_PITCH     + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_MEM_GMC_SETTING_0 + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_MEM_SLOW_CON      + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_MEM_GMC_SETTING_1 + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_FIFO_CON          + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_FIFO_LOG          + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_CF_00             + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_CF_01             + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_CF_02             + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_CF_10             + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_CF_11             + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_CF_12             + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_CF_20             + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_CF_21             + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_CF_22             + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_CF_PRE_ADD0       + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_CF_PRE_ADD1       + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_CF_PRE_ADD2       + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_CF_POST_ADD0      + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_CF_POST_ADD1      + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_CF_POST_ADD2      + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_DUMMY             + index*DISP_INDEX_OFFSET);
+        reg_restore(DISP_REG_RDMA_DEBUG_OUT_SEL     + index*DISP_INDEX_OFFSET);
     }
     // WDMA
-    reg_restore(DISP_REG_WDMA_INTEN          );             
-    reg_restore(DISP_REG_WDMA_INTSTA         );     
-    reg_restore(DISP_REG_WDMA_EN             );     
-    reg_restore(DISP_REG_WDMA_RST            );     
-    reg_restore(DISP_REG_WDMA_SMI_CON        );     
-    reg_restore(DISP_REG_WDMA_CFG            );     
-    reg_restore(DISP_REG_WDMA_SRC_SIZE       );     
-    reg_restore(DISP_REG_WDMA_CLIP_SIZE      );     
-    reg_restore(DISP_REG_WDMA_CLIP_COORD     );     
-    reg_restore(DISP_REG_WDMA_DST_ADDR       );     
-    reg_restore(DISP_REG_WDMA_DST_W_IN_BYTE  );     
-    reg_restore(DISP_REG_WDMA_ALPHA          );     
-    reg_restore(DISP_REG_WDMA_BUF_ADDR       );     
-    reg_restore(DISP_REG_WDMA_STA            );     
-    reg_restore(DISP_REG_WDMA_BUF_CON1       );     
-    reg_restore(DISP_REG_WDMA_BUF_CON2       );     
-    reg_restore(DISP_REG_WDMA_C00            );     
-    reg_restore(DISP_REG_WDMA_C02            );     
-    reg_restore(DISP_REG_WDMA_C10            );     
-    reg_restore(DISP_REG_WDMA_C12            );     
-    reg_restore(DISP_REG_WDMA_C20            );     
-    reg_restore(DISP_REG_WDMA_C22            );     
-    reg_restore(DISP_REG_WDMA_PRE_ADD0       );     
-    reg_restore(DISP_REG_WDMA_PRE_ADD2       );     
-    reg_restore(DISP_REG_WDMA_POST_ADD0      );     
-    reg_restore(DISP_REG_WDMA_POST_ADD2      );     
-    reg_restore(DISP_REG_WDMA_DST_U_ADDR     );     
-    reg_restore(DISP_REG_WDMA_DST_V_ADDR     );     
-    reg_restore(DISP_REG_WDMA_DST_UV_PITCH   );     
-    reg_restore(DISP_REG_WDMA_DITHER_CON     );     
-    reg_restore(DISP_REG_WDMA_FLOW_CTRL_DBG  );     
-    reg_restore(DISP_REG_WDMA_EXEC_DBG       );     
-    reg_restore(DISP_REG_WDMA_CLIP_DBG       );     
+    reg_restore(DISP_REG_WDMA_INTEN          );
+    reg_restore(DISP_REG_WDMA_INTSTA         );
+    reg_restore(DISP_REG_WDMA_EN             );
+    reg_restore(DISP_REG_WDMA_RST            );
+    reg_restore(DISP_REG_WDMA_SMI_CON        );
+    reg_restore(DISP_REG_WDMA_CFG            );
+    reg_restore(DISP_REG_WDMA_SRC_SIZE       );
+    reg_restore(DISP_REG_WDMA_CLIP_SIZE      );
+    reg_restore(DISP_REG_WDMA_CLIP_COORD     );
+    reg_restore(DISP_REG_WDMA_DST_ADDR       );
+    reg_restore(DISP_REG_WDMA_DST_W_IN_BYTE  );
+    reg_restore(DISP_REG_WDMA_ALPHA          );
+    reg_restore(DISP_REG_WDMA_BUF_ADDR       );
+    reg_restore(DISP_REG_WDMA_STA            );
+    reg_restore(DISP_REG_WDMA_BUF_CON1       );
+    reg_restore(DISP_REG_WDMA_BUF_CON2       );
+    reg_restore(DISP_REG_WDMA_C00            );
+    reg_restore(DISP_REG_WDMA_C02            );
+    reg_restore(DISP_REG_WDMA_C10            );
+    reg_restore(DISP_REG_WDMA_C12            );
+    reg_restore(DISP_REG_WDMA_C20            );
+    reg_restore(DISP_REG_WDMA_C22            );
+    reg_restore(DISP_REG_WDMA_PRE_ADD0       );
+    reg_restore(DISP_REG_WDMA_PRE_ADD2       );
+    reg_restore(DISP_REG_WDMA_POST_ADD0      );
+    reg_restore(DISP_REG_WDMA_POST_ADD2      );
+    reg_restore(DISP_REG_WDMA_DST_U_ADDR     );
+    reg_restore(DISP_REG_WDMA_DST_V_ADDR     );
+    reg_restore(DISP_REG_WDMA_DST_UV_PITCH   );
+    reg_restore(DISP_REG_WDMA_DITHER_CON     );
+    reg_restore(DISP_REG_WDMA_FLOW_CTRL_DBG  );
+    reg_restore(DISP_REG_WDMA_EXEC_DBG       );
+    reg_restore(DISP_REG_WDMA_CLIP_DBG       );
 
     //DISP_MSG("disp_reg_restore() release mutex \n");
     //disp_path_release_mutex();
     DISP_MSG("disp_reg_restore() done \n");
-    
+
     disp_bls_init(fb_width, fb_height);
 
     DpEngine_COLORonInit();
     DpEngine_COLORonConfig(fb_width,fb_height);
 
-    return 0;        
+    return 0;
 }
 
 unsigned int disp_intr_status[DISP_MODULE_MAX] = {0};
 int disp_intr_restore(void)
 {
-    // restore intr enable reg 
-    //DISP_REG_SET(DISP_REG_ROT_INTERRUPT_ENABLE,   disp_intr_status[DISP_MODULE_ROT]  );  
-    //DISP_REG_SET(DISP_REG_SCL_INTEN,              disp_intr_status[DISP_MODULE_SCL]  ); 
-    DISP_REG_SET(DISP_REG_OVL_INTEN,              disp_intr_status[DISP_MODULE_OVL]  ); 
-    //DISP_REG_SET(DISP_REG_WDMA_INTEN,             disp_intr_status[DISP_MODULE_WDMA0]); 
-    DISP_REG_SET(DISP_REG_WDMA_INTEN,      disp_intr_status[DISP_MODULE_WDMA0]); 
+    // restore intr enable reg
+    //DISP_REG_SET(DISP_REG_ROT_INTERRUPT_ENABLE,   disp_intr_status[DISP_MODULE_ROT]  );
+    //DISP_REG_SET(DISP_REG_SCL_INTEN,              disp_intr_status[DISP_MODULE_SCL]  );
+    DISP_REG_SET(DISP_REG_OVL_INTEN,              disp_intr_status[DISP_MODULE_OVL]  );
+    //DISP_REG_SET(DISP_REG_WDMA_INTEN,             disp_intr_status[DISP_MODULE_WDMA0]);
+    DISP_REG_SET(DISP_REG_WDMA_INTEN,      disp_intr_status[DISP_MODULE_WDMA0]);
     DISP_REG_SET(DISP_REG_RDMA_INT_ENABLE,        disp_intr_status[DISP_MODULE_RDMA]);
     //DISP_REG_SET(DISP_REG_RDMA_INT_ENABLE+DISP_INDEX_OFFSET,        disp_intr_status[DISP_MODULE_RDMA1]);
-    DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTEN,     disp_intr_status[DISP_MODULE_MUTEX]); 
+    DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTEN,     disp_intr_status[DISP_MODULE_MUTEX]);
 
     return 0;
 }
@@ -2379,7 +2379,7 @@ int disp_intr_disable_and_clear(void)
     disp_intr_status[DISP_MODULE_RDMA] = DISP_REG_GET(DISP_REG_RDMA_INT_ENABLE);
     //disp_intr_status[DISP_MODULE_RDMA1] = DISP_REG_GET(DISP_REG_RDMA_INT_ENABLE+DISP_INDEX_OFFSET);
     disp_intr_status[DISP_MODULE_MUTEX] = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTEN);
-    
+
     // disable intr
     //DISP_REG_SET(DISP_REG_ROT_INTERRUPT_ENABLE, 0);
     //DISP_REG_SET(DISP_REG_SCL_INTEN, 0);
@@ -2389,18 +2389,18 @@ int disp_intr_disable_and_clear(void)
     DISP_REG_SET(DISP_REG_RDMA_INT_ENABLE, 0);
     DISP_REG_SET(DISP_REG_RDMA_INT_ENABLE+DISP_INDEX_OFFSET, 0);
     DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTEN, 0);
-    
+
     // clear intr status
-    //DISP_REG_SET(DISP_REG_ROT_INTERRUPT_STATUS, 0);  
-    //DISP_REG_SET(DISP_REG_SCL_INTSTA, 0);               
-    DISP_REG_SET(DISP_REG_OVL_INTSTA, 0);    
-    //DISP_REG_SET(DISP_REG_WDMA_INTSTA, 0);    
-    DISP_REG_SET(DISP_REG_WDMA_INTSTA+0x1000, 0);    
-    DISP_REG_SET(DISP_REG_RDMA_INT_STATUS, 0);    
+    //DISP_REG_SET(DISP_REG_ROT_INTERRUPT_STATUS, 0);
+    //DISP_REG_SET(DISP_REG_SCL_INTSTA, 0);
+    DISP_REG_SET(DISP_REG_OVL_INTSTA, 0);
+    //DISP_REG_SET(DISP_REG_WDMA_INTSTA, 0);
+    DISP_REG_SET(DISP_REG_WDMA_INTSTA+0x1000, 0);
+    DISP_REG_SET(DISP_REG_RDMA_INT_STATUS, 0);
     DISP_REG_SET(DISP_REG_RDMA_INT_STATUS+DISP_INDEX_OFFSET, 0);
     DISP_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, 0);
 
-    return 0;	  
+    return 0;
 }
 
 int disp_path_clock_on(char* name)
@@ -2416,8 +2416,8 @@ int disp_path_clock_on(char* name)
     enable_clock(MT_CG_DISP0_MUTEX_32K   , "DDP");
     //enable_clock(MT_CG_DISP0_MM_CMDQ , "DDP");
 //    //enable_clock(MT_CG_DISP0_CMDQ_SMI    , "DDP");
-    
-//    enable_clock(MT_CG_DISP0_ROT_ENGINE  , "DDP");    
+
+//    enable_clock(MT_CG_DISP0_ROT_ENGINE  , "DDP");
 //    enable_clock(MT_CG_DISP0_ROT_SMI     , "DDP");
 //    enable_clock(MT_CG_DISP0_SCL         , "DDP");
 //    enable_clock(MT_CG_DISP0_DISP_WDMA, "DDP");
@@ -2433,45 +2433,45 @@ int disp_path_clock_on(char* name)
     //enable_clock(MT_CG_DISP0_RDMA0_ENGINE, "DDP");
     //enable_clock(MT_CG_DISP0_RDMA0_SMI   , "DDP");
     //enable_clock(MT_CG_DISP0_RDMA0_OUTPUT, "DDP");
-    
+
     enable_clock(MT_CG_DISP0_DISP_RDMA, "DDP");
     ///enable_clock(MT_CG_DISP0_RDMA1, "DDP");
     //enable_clock(MT_CG_DISP0_RDMA1_SMI   , "DDP");
     //enable_clock(MT_CG_DISP0_RDMA1_OUTPUT, "DDP");
     //enable_clock(MT_CG_DISP0_GAMMA_ENGINE, "DDP");
-    //enable_clock(MT_CG_DISP0_GAMMA_PIXEL , "DDP");    
+    //enable_clock(MT_CG_DISP0_GAMMA_PIXEL , "DDP");
 
     //enable_clock(MT_CG_DISP0_G2D_ENGINE  , "DDP");
     //enable_clock(MT_CG_DISP0_G2D_SMI     , "DDP");
 
-	
+
 // Let BLS PWM clock on/off together with dispsy since backlight is configured by event merge thread
 // Ennable BLS PWM clock before BLE_EN is set
-//#if defined(MTK_AAL_SUPPORT) 
+//#if defined(MTK_AAL_SUPPORT)
     enable_clock(MT_CG_DISP0_MDP_BLS_26M         , "DDP");
 //#endif
 
     // restore ddp related registers
-    if (strncmp(name, "ipoh_mtkfb", 10))
+    if (strncmp(name, "mtkfb", 10) == 0)
     {
-    	if(*pRegBackup != DDP_UNBACKED_REG_MEM)
-    	{
-    		disp_reg_restore();
+        if(*pRegBackup != DDP_UNBACKED_REG_MEM)
+        {
+            disp_reg_restore();
 
-    		// restore intr enable registers
-    		disp_intr_restore();
-    	}
-    	else
-    	{
-    		DISP_MSG("disp_path_clock_on(), dose not call disp_reg_restore, cause mem not inited! \n");
-    	}
+            // restore intr enable registers
+            disp_intr_restore();
+        }
+        else
+        {
+            DISP_MSG("disp_path_clock_on(), dose not call disp_reg_restore, cause mem not inited! \n");
+        }
     }
     else
     {
         // reset AAL flags
         disp_aal_reset();
     }
-    
+
     DISP_MSG("DISP CG:%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
     return 0;
 }
@@ -2483,23 +2483,26 @@ int disp_path_clock_off(char* name)
     {
         DISP_MSG("disp_path_power_off, caller:%s \n", name);
     }
-    
-    // disable intr and clear intr status
-    disp_intr_disable_and_clear();
-    
-    // backup ddp related registers
-    disp_reg_backup();
+
+    if (strncmp(name, "mtkfb", 10) == 0)
+    {
+        // disable intr and clear intr status
+        disp_intr_disable_and_clear();
+
+        // backup ddp related registers
+        disp_reg_backup();
+    }
 
 // Let BLS PWM clock on/off together with dispsy since backlight is configured by event merge thread
-// Disable BLS PWM clock before other dispsys clock    
-//#if defined(MTK_AAL_SUPPORT) 
+// Disable BLS PWM clock before other dispsys clock
+//#if defined(MTK_AAL_SUPPORT)
     disable_clock(MT_CG_DISP0_MDP_BLS_26M         , "DDP");
 //#endif
 
     //disable_clock(MT_CG_DISP0_MM_CMDQ , "DDP");
 //    //disable_clock(MT_CG_DISP0_CMDQ_SMI    , "DDP");
-    
-//    disable_clock(MT_CG_DISP0_ROT_ENGINE  , "DDP");    
+
+//    disable_clock(MT_CG_DISP0_ROT_ENGINE  , "DDP");
 //    disable_clock(MT_CG_DISP0_ROT_SMI     , "DDP");
 //    disable_clock(MT_CG_DISP0_SCL         , "DDP");
 //    disable_clock(MT_CG_DISP0_DISP_WDMA, "DDP");
@@ -2525,15 +2528,15 @@ int disp_path_clock_off(char* name)
     //disable_clock(MT_CG_DISP0_RDMA0_ENGINE, "DDP");
     //disable_clock(MT_CG_DISP0_RDMA0_SMI   , "DDP");
     //disable_clock(MT_CG_DISP0_RDMA0_OUTPUT, "DDP");
-    
+
     disable_clock(MT_CG_DISP0_DISP_RDMA, "DDP");
     ///disable_clock(MT_CG_DISP0_RDMA1, "DDP");
     //disable_clock(MT_CG_DISP0_RDMA1_SMI   , "DDP");
     //disable_clock(MT_CG_DISP0_RDMA1_OUTPUT, "DDP");
     //disable_clock(MT_CG_DISP0_GAMMA_ENGINE, "DDP");
-    //disable_clock(MT_CG_DISP0_GAMMA_PIXEL , "DDP");    
+    //disable_clock(MT_CG_DISP0_GAMMA_PIXEL , "DDP");
 
-    
+
     if(0) // if(g_dst_module==DISP_MODULE_DPI0)
     {
         DISP_MSG("warning: do not power off MT_CG_DISP0_SMI_LARB0 for DPI resume issue\n");
@@ -2544,7 +2547,7 @@ int disp_path_clock_off(char* name)
         disable_clock(MT_CG_DISP0_MUTEX_32K   , "DDP");
         disable_clock(MT_CG_DISP0_SMI_LARB0   , "DDP");
         disable_clock(MT_CG_DISP0_SMI_COMMON   , "DDP");
-    } 
+    }
     //disable_clock(MT_CG_DISP0_G2D_ENGINE  , "DDP");
     //disable_clock(MT_CG_DISP0_G2D_SMI     , "DDP");
 
