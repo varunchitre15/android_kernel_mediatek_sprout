@@ -1608,8 +1608,7 @@ int group_leader_is_empty(struct task_struct *p){
 
 	struct task_struct *tg = p->group_leader;
 
-	if((SIGNAL_GROUP_EXIT & p->signal->flags) && 
-	   ((SIGKILL == p->signal->group_exit_code) || (0 == p->signal->group_exit_code))){
+	if (SIGNAL_GROUP_EXIT & p->signal->flags) {
 	//	pr_warn("[%s] (0x%p/0x%p)(#%d/%s) leader: pid(%d) state(%d) exit_state(%d)signal_flags=%x p->signal->flags=%x group_exit_code=%x\n", __func__,
 	//	p, tg, get_nr_threads(p), thread_group_empty(p) ? "empty" : "not empty",
 	//	p->tgid, tg->state, tg->exit_state, tg->state, p->signal->flags, p->signal->group_exit_code);
