@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -47,6 +47,7 @@
 #include <asm/semaphore.h>
 #endif
 #endif
+
 
 
 
@@ -103,35 +104,20 @@ static DECLARE_MUTEX(g_strobeSem);
 #endif
 
 
-#define STROBE_DEVICE_ID 0x60
+#define STROBE_DEVICE_ID 0xC6
 
 
 static struct work_struct workTimeOut;
 
+#define FLASH_GPIO_ENF GPIO_CAMERA_FLASH_EN_PIN
+#define FLASH_GPIO_ENT GPIO_CAMERA_FLASH_MODE_PIN
+
 /*****************************************************************************
 Functions
 *****************************************************************************/
-#define GPIO_ENF GPIO_CAMERA_FLASH_EN_PIN
-#define GPIO_ENT GPIO_CAMERA_FLASH_MODE_PIN
-
-
-    /*CAMERA-FLASH-EN */
-
-
 extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
 extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 static void work_timeOutFunc(struct work_struct *data);
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -139,50 +125,51 @@ int FL_Enable(void)
 {
 	if(g_duty==0)
 	{
-		mt_set_gpio_out(GPIO_ENT,GPIO_OUT_ONE);
-		mt_set_gpio_out(GPIO_ENF,GPIO_OUT_ZERO);
+		mt_set_gpio_out(FLASH_GPIO_ENT,GPIO_OUT_ONE);
+		mt_set_gpio_out(FLASH_GPIO_ENF,GPIO_OUT_ZERO);
 		PK_DBG(" FL_Enable line=%d\n",__LINE__);
 	}
 	else
 	{
-		mt_set_gpio_out(GPIO_ENT,GPIO_OUT_ZERO);
-		mt_set_gpio_out(GPIO_ENF,GPIO_OUT_ONE);
+		mt_set_gpio_out(FLASH_GPIO_ENT,GPIO_OUT_ONE);
+		mt_set_gpio_out(FLASH_GPIO_ENF,GPIO_OUT_ONE);
 		PK_DBG(" FL_Enable line=%d\n",__LINE__);
 	}
 
     return 0;
 }
 
+
+
 int FL_Disable(void)
 {
-
-	mt_set_gpio_out(GPIO_ENT,GPIO_OUT_ZERO);
-	mt_set_gpio_out(GPIO_ENF,GPIO_OUT_ZERO);
+	mt_set_gpio_out(FLASH_GPIO_ENF,GPIO_OUT_ZERO);
+	mt_set_gpio_out(FLASH_GPIO_ENT,GPIO_OUT_ZERO);
 	PK_DBG(" FL_Disable line=%d\n",__LINE__);
     return 0;
 }
 
 int FL_dim_duty(kal_uint32 duty)
 {
-	g_duty=duty;
 	PK_DBG(" FL_dim_duty line=%d\n",__LINE__);
+	g_duty =  duty;
     return 0;
 }
 
 
 int FL_Init(void)
 {
+	if(mt_set_gpio_mode(FLASH_GPIO_ENT,GPIO_MODE_00)){PK_DBG("[constant_flashlight] set gpio mode failed!! \n");}
+    if(mt_set_gpio_dir(FLASH_GPIO_ENT,GPIO_DIR_OUT)){PK_DBG("[constant_flashlight] set gpio dir failed!! \n");}
+    if(mt_set_gpio_out(FLASH_GPIO_ENT,GPIO_OUT_ZERO)){PK_DBG("[constant_flashlight] set gpio failed!! \n");}
+
+    	if(mt_set_gpio_mode(FLASH_GPIO_ENF,GPIO_MODE_00)){PK_DBG("[constant_flashlight] set gpio mode failed!! \n");}
+    if(mt_set_gpio_dir(FLASH_GPIO_ENF,GPIO_DIR_OUT)){PK_DBG("[constant_flashlight] set gpio dir failed!! \n");}
+    if(mt_set_gpio_out(FLASH_GPIO_ENF,GPIO_OUT_ZERO)){PK_DBG("[constant_flashlight] set gpio failed!! \n");}
 
 
-	if(mt_set_gpio_mode(GPIO_ENF,GPIO_MODE_00)){PK_DBG("[constant_flashlight] set gpio mode failed!! \n");}
-    if(mt_set_gpio_dir(GPIO_ENF,GPIO_DIR_OUT)){PK_DBG("[constant_flashlight] set gpio dir failed!! \n");}
-    if(mt_set_gpio_out(GPIO_ENF,GPIO_OUT_ZERO)){PK_DBG("[constant_flashlight] set gpio failed!! \n");}
-    /*Init. to disable*/
-    if(mt_set_gpio_mode(GPIO_ENT,GPIO_MODE_00)){PK_DBG("[constant_flashlight] set gpio mode failed!! \n");}
-    if(mt_set_gpio_dir(GPIO_ENT,GPIO_DIR_OUT)){PK_DBG("[constant_flashlight] set gpio dir failed!! \n");}
-    if(mt_set_gpio_out(GPIO_ENT,GPIO_OUT_ZERO)){PK_DBG("[constant_flashlight] set gpio failed!! \n");}
 
-    INIT_WORK(&workTimeOut, work_timeOutFunc);
+	INIT_WORK(&workTimeOut, work_timeOutFunc);
     PK_DBG(" FL_Init line=%d\n",__LINE__);
     return 0;
 }
@@ -235,8 +222,7 @@ static int constant_flashlight_ioctl(MUINT32 cmd, MUINT32 arg)
 	PK_DBG("constant_flashlight_ioctl() line=%d ior_shift=%d, iow_shift=%d iowr_shift=%d arg=%d\n",__LINE__, ior_shift, iow_shift, iowr_shift, arg);
     switch(cmd)
     {
-
-        case FLASHLIGHTIOC_G_FLASHTYPE:
+		 case FLASHLIGHTIOC_G_FLASHTYPE:
             {
                 int iFlashType;
                 PK_DBG("FLASHLIGHTIOC_G_FLASHTYPE: constant\n");
