@@ -1,3 +1,8 @@
+/*
+* Copyright (C) 2014 MediaTek Inc.
+* Modification based on code covered by the below mentioned copyright
+* and/or permission notice(s).
+*/
 /* binder.c
  *
  * Android IPC Subsystem
@@ -1002,17 +1007,10 @@ static int binder_check_is_javap(struct task_struct *tsk)
 }
 
 /**
- * binder_call_jbt - Dump java backtrace
+ * binder_call_nbt - Dump backtrace of native process
  * @pid:	pid of target process
+ * @name:	name of target process
  */
-static void binder_call_jbt(pid_t pid)
-{
-	char tmp[100];
-
-	sprintf(tmp, "/system/bin/kill -16 %d", pid);
-	binder_usermodehelper(tmp, UMH_WAIT_EXEC);
-}
-
 static void binder_call_nbt(pid_t pid, char* name)
 {
 	char tmp[100];
@@ -1154,14 +1152,14 @@ static void binder_print_buf(struct binder_buffer *buffer, char *dest, int succe
 			rec_tsk = find_process_by_pid(log_entry->to_proc);
 			len_s = binder_proc_pid_cmdline(sender_tsk, sender_name);
 			len_r = binder_proc_pid_cmdline(rec_tsk, rec_name);
-			snprintf(str, TRANS_LOG_LEN,
+			snprintf(str, sizeof(str),
 					"binder:check=%d,success=%d,id=%d,call=%s,type=%s,"
 					"from=%d,tid=%d,name=%s,to=%d,name=%s,tid=%d,name=%s,"
 					"size=%d,node=%d,handle=%d,dex=%u,auf=%d,start=%lu.%03ld,"
 					"android=%d-%02d-%02d %02d:%02d:%02d.%03lu\n",
 					check, success, buffer->debug_id,
 					buffer->async_transaction ? "async" : "sync",
-					(2 == log_entry->call_type) ? "reply" : 
+					(2 == log_entry->call_type) ? "reply" :
 					((1 == log_entry->call_type) ? "async" : "call"),
 					log_entry->from_proc, log_entry->from_thread,
 					len_s ? sender_name : ((sender_tsk != NULL) ? sender_tsk->comm : ""),
@@ -1178,7 +1176,7 @@ static void binder_print_buf(struct binder_buffer *buffer, char *dest, int succe
 					(unsigned long)(log_entry->tv.tv_usec / USEC_PER_MSEC));
 		}
 		else
-			snprintf(str, TRANS_LOG_LEN, "binder:check=%d,success=%d,id=%d,call=%s, ,"
+			snprintf(str, sizeof(str), "binder:check=%d,success=%d,id=%d,call=%s, ,"
 					",,,,,,,size=%d,,,,"
 					"auf=%d,,\n",
 					check, success, buffer->debug_id,
@@ -1193,7 +1191,7 @@ static void binder_print_buf(struct binder_buffer *buffer, char *dest, int succe
 		rec_tsk = find_process_by_pid(t->tproc);
 		len_s = binder_proc_pid_cmdline(sender_tsk, sender_name);
 		len_r = binder_proc_pid_cmdline(rec_tsk, rec_name);
-		snprintf(str, TRANS_LOG_LEN,
+		snprintf(str, sizeof(str),
 				"binder:check=%d,success=%d,id=%d,call=%s,type=%s,"
 				"from=%d,tid=%d,name=%s,to=%d,name=%s,tid=%d,name=%s,"
 				"size=%d,,,dex=%u,auf=%d,start=%lu.%03ld,android="
@@ -1253,6 +1251,7 @@ static void binder_check_buf(struct binder_proc *target_proc,
 	struct timeval tv;
 	struct rtc_time tm;
 	int db_flag = DB_OPT_BINDER_INFO;
+	int need_wait = 0;
 	int len_s, len_r;
 
 	printk(KERN_INFO "binder: buffer allocation failed on %d:0 "
@@ -1274,7 +1273,7 @@ static void binder_check_buf(struct binder_proc *target_proc,
 	printk(KERN_INFO "binder: %d:0 pending transactions:\n", target_proc->pid);
 	threshold = target_proc->buffer_size/16;
 	for (n = rb_last(&target_proc->allocated_buffers), i = 0;
-			n; n = rb_prev(n), i++) 
+			n; n = rb_prev(n), i++)
 	{
 		buffer = rb_entry(n, struct binder_buffer, rb_node);
 		tmp_size = binder_buffer_size(target_proc, buffer);
@@ -1316,20 +1315,20 @@ static void binder_check_buf(struct binder_proc *target_proc,
 					target_proc->pid);
 			binder_print_buf(target_proc->large_buffer, large_msg, 1, 0);
 		}		
-		sprintf(aee_word,"check %s: large binder trans fail on %d:0 size %d",
+		snprintf(aee_word, sizeof(aee_word), "check %s: large binder trans fail on %d:0 size %d",
 				len_s ? sender_name : ((sender != NULL) ? sender->comm : ""),
 				target_proc->pid, size);
-		snprintf(aee_msg, 512, "BINDER_BUF_DEBUG\n%s"
+		snprintf(aee_msg, sizeof(aee_msg), "BINDER_BUF_DEBUG\n%s"
 				"binder:check=%d,success=%d,,call=%s,,from=%d,tid=%d,"
 				"name=%s,to=%d,name=%s,,,size=%d,,,,"
 				",start=%lu.%03ld,android="
 				"%d-%02d-%02d %02d:%02d:%02d.%03lu\n"
 				"large data size,check sender %d(%s)!\n"
-				"check kernel log for more info\n", 
-				large_msg, 1, 0, is_async ? "async" : "sync", 
-				binder_check_buf_pid, binder_check_buf_tid, 
+				"check kernel log for more info\n",
+				large_msg, 1, 0, is_async ? "async" : "sync",
+				binder_check_buf_pid, binder_check_buf_tid,
 				len_s ? sender_name : ((sender != NULL) ? sender->comm : ""),
-				target_proc->pid, 
+				target_proc->pid,
 				len_r ? rec_name :
 				((target_proc->tsk != NULL) ? target_proc->tsk->comm : ""),
 				size,
@@ -1339,14 +1338,9 @@ static void binder_check_buf(struct binder_proc *target_proc,
 				tm.tm_hour, tm.tm_min, tm.tm_sec,
 				(unsigned long)(tv.tv_usec / USEC_PER_MSEC),
 				binder_check_buf_pid, sender ? sender->comm : "");
-		if (binder_check_is_javap(sender) > 0)
+		if (binder_check_is_javap(sender) == 0)
 		{
-			db_flag = db_flag | DB_OPT_SWT_JBT_TRACES;
-			binder_call_jbt(binder_check_buf_pid);
-		}
-		else
-		{
-			db_flag = db_flag | DB_OPT_SWT_JBT_TRACES;
+			need_wait = 1;
 			binder_call_nbt(binder_check_buf_pid, "1");
 			printk(KERN_INFO "binder:sender pid %d (%s) is not javap, pls check SYS_BINDER_BACKTRACE!\n",
 					binder_check_buf_pid,
@@ -1361,9 +1355,9 @@ static void binder_check_buf(struct binder_proc *target_proc,
 					target_proc->pid);
 			binder_print_buf(target_proc->large_buffer, large_msg, 1, 1);
 			larger = binder_find_buffer_sender(target_proc->large_buffer);
-			sprintf(aee_word, "check %s: large binder trans",
+			snprintf(aee_word, sizeof(aee_word), "check %s: large binder trans",
 					(larger != NULL) ? larger->comm : "");
-			snprintf(aee_msg, 512, "BINDER_BUF_DEBUG:\n%s"
+			snprintf(aee_msg, sizeof(aee_msg), "BINDER_BUF_DEBUG:\n%s"
 					"binder:check=%d,success=%d,,call=%s,,from=%d,tid=%d,name=%s,"
 					"to=%d,name=%s,,,size=%d,,,,"
 					",start=%lu.%03ld,android="
@@ -1388,10 +1382,10 @@ static void binder_check_buf(struct binder_proc *target_proc,
 		}
 		else
 		{
-			sprintf(aee_word, "check %s: binder buffer exhaust ",
+			snprintf(aee_word, sizeof(aee_word), "check %s: binder buffer exhaust ",
 					len_r ? rec_name :
 					((target_proc->tsk != NULL) ? target_proc->tsk->comm : ""));
-			snprintf(aee_msg, 512, "BINDER_BUF_DEBUG\n"
+			snprintf(aee_msg, sizeof(aee_msg), "BINDER_BUF_DEBUG\n"
 					"binder:check=%d,success=%d,,call=%s,,from=%d,tid=%d,name=%s,"
 					"to=%d,name=%s,,,size=%d,,,,"
 					",start=%lu.%03ld,android="
@@ -1412,14 +1406,9 @@ static void binder_check_buf(struct binder_proc *target_proc,
 					(unsigned long)(tv.tv_usec / USEC_PER_MSEC),
 					i, target_proc->pid,
 					target_proc->tsk ? target_proc->tsk->comm : "");
-			if (binder_check_is_javap(sender) > 0)
+			if (binder_check_is_javap(sender) == 0)
 			{
-				db_flag = db_flag | DB_OPT_SWT_JBT_TRACES;
-				binder_call_jbt(binder_check_buf_pid);
-			}
-			else
-			{
-				db_flag = db_flag | DB_OPT_SWT_JBT_TRACES;
+				need_wait = 1;
 				binder_call_nbt(binder_check_buf_pid, "1");
 				printk(KERN_INFO "binder:sender pid %d (%s) is not javap, pls check SYS_BINDER_BACKTRACE\n",
 						binder_check_buf_pid,
@@ -1431,20 +1420,15 @@ static void binder_check_buf(struct binder_proc *target_proc,
 
 	binder_check_buf_pid = -1;
 	binder_check_buf_tid = -1;
-	if (binder_check_is_javap(target_proc->tsk) > 0)
+	if (binder_check_is_javap(target_proc->tsk) == 0)
 	{
-		db_flag = db_flag | DB_OPT_SWT_JBT_TRACES;
-		binder_call_jbt(target_proc->pid);
-	}
-	else
-	{
-		db_flag = db_flag | DB_OPT_SWT_JBT_TRACES;
+		need_wait = 1;
 		binder_call_nbt(target_proc->pid, "2");
 		printk(KERN_INFO "binder:target_proc %p pid %d (%s) is not javap, pls check SYS_BINDER_BACKTRACE!\n",
 				target_proc, target_proc->pid,
 				(target_proc->tsk != NULL) ? target_proc->tsk->comm : "");
 	}
-	if (db_flag & DB_OPT_SWT_JBT_TRACES)
+	if (need_wait)
 	{
 		binder_unlock(__func__);
 		msleep(500);
