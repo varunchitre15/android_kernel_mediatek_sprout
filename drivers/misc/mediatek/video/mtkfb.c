@@ -2146,23 +2146,37 @@ unsigned int mtkfb_fm_auto_test()
 static int mtkfb_blank(int blank_mode, struct fb_info *info)
 {
 #ifdef CONFIG_HAS_EARLYSUSPEND
-	switch (blank_mode) {
-	case FB_BLANK_UNBLANK:
-	case FB_BLANK_NORMAL:
-		mtkfb_late_resume(NULL);
-		break;
-	case FB_BLANK_VSYNC_SUSPEND:
-	case FB_BLANK_HSYNC_SUSPEND:
-		break;
-	case FB_BLANK_POWERDOWN:
-		mtkfb_early_suspend(NULL);
-		break;
-	default:
-		return -EINVAL;
+    switch (blank_mode) {
+    case FB_BLANK_UNBLANK:
+    case FB_BLANK_NORMAL:
+        mtkfb_late_resume(NULL);
+        if (!lcd_fps)
+        {
+            msleep(30);
         }
-	return 0;
+        else
+        {
+            msleep(2*100000/lcd_fps); // Delay 2 frames.
+        }
+#if defined(CONFIG_MTK_LEDS)
+#ifndef MTKFB_FPGA_ONLY
+        mt65xx_leds_brightness_set(MT65XX_LED_TYPE_LCD, 127);
+#endif
+#endif
+
+        break;
+    case FB_BLANK_VSYNC_SUSPEND:
+    case FB_BLANK_HSYNC_SUSPEND:
+        break;
+    case FB_BLANK_POWERDOWN:
+        mtkfb_early_suspend(NULL);
+        break;
+    default:
+        return -EINVAL;
+        }
+    return 0;
 #else
-	return -EINVAL;
+    return -EINVAL;
 #endif
 }
 
