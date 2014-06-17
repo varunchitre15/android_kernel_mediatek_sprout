@@ -353,9 +353,9 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 //    {0x35,    1,    {0x00}},   */
 
     {0x11,1,   {0x00}},
-    {REGFLAG_DELAY, 200, {}},
+    {REGFLAG_DELAY, 120, {}},
     {0x29,1,    {0x00}},
-    {REGFLAG_DELAY, 20, {}},
+    {REGFLAG_DELAY, 10, {}},
 
 //    {0x2C,    1,    {0x00}},    // Setting ending by predefined flag
     {REGFLAG_END_OF_TABLE, 0x00, {}}
@@ -532,9 +532,9 @@ static void lcm_init(void)
     LCM_DBG(" Magnum lcm_init...\n");
     SET_RESET_PIN(1);
     SET_RESET_PIN(0);
-    MDELAY(50);
+    MDELAY(10);
     SET_RESET_PIN(1);
-    MDELAY(100);
+    MDELAY(20);
 
     push_table(lcm_initialization_setting, sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
 }
