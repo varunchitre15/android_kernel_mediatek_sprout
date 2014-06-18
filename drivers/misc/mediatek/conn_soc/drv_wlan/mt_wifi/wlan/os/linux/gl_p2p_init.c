@@ -485,7 +485,8 @@ p2pEalySuspendReg (
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	if (prGlueInfo->prAdapter->fgIsP2PRegistered == TRUE)
 	{
-		if(fgIsEnable) {
+		if(fgIsEnable && mt6620_p2p_early_suspend_desc.suspend == NULL &&
+			mt6620_p2p_early_suspend_desc.resume == NULL) {
 			/* Here, we register the early suspend and resume callback  */
 			glRegisterEarlySuspend(&mt6620_p2p_early_suspend_desc, p2p_early_suspend, p2p_late_resume);
 		}
