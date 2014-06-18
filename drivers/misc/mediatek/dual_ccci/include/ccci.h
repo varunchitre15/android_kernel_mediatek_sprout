@@ -75,7 +75,7 @@ typedef enum {
 #define CCCI_IOC_GET_CFG_SETTING        _IOW(CCCI_IOC_MAGIC, 39, unsigned int) // md_init
 
 #define CCCI_IOC_SET_MD_SBP_CFG         _IOW(CCCI_IOC_MAGIC, 40, unsigned int) // md_init
-#define CCCI_IOC_GET_MD_SBP_CFG         _IOW(CCCI_IOC_MAGIC, 41, unsigned int) // md_init
+#define CCCI_IOC_GET_MD_SBP_CFG         _IOR(CCCI_IOC_MAGIC, 41, unsigned int) // md_init
 
 //==================================================================================
 // API functions exported in ccci
