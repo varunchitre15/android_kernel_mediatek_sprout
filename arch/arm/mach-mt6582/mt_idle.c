@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -36,7 +36,7 @@
 
 #define USING_XLOG
 
-#ifdef USING_XLOG 
+#ifdef USING_XLOG
 #include <linux/xlog.h>
 
 #define TAG     "Power/swap"
@@ -58,7 +58,7 @@
 
 #define idle_err(fmt, args...)       \
     printk(KERN_ERR TAG);           \
-    printk(KERN_CONT fmt, ##args) 
+    printk(KERN_CONT fmt, ##args)
 #define idle_warn(fmt, args...)      \
     printk(KERN_WARNING TAG);       \
     printk(KERN_CONT fmt, ##args)
@@ -93,7 +93,7 @@ extern int localtimer_set_next_event(unsigned long evt);
 
 
 #define INVALID_GRP_ID(grp) (grp < 0 || grp >= NR_GRPS)
-bool __attribute__((weak)) 
+bool __attribute__((weak))
 clkmgr_idle_can_enter(unsigned int *condition_mask, unsigned int *block_mask)
 {
     return false;
@@ -132,7 +132,7 @@ static const char *reason_name[NR_REASONS] = {
 };
 
 static int idle_switch[NR_TYPES] = {
-    1,  //mcidle switch 
+    1,  //mcidle switch
     1,  //dpidle switch
     1,  //slidle switch
     1,  //rgidle switch
@@ -143,25 +143,26 @@ static int idle_switch[NR_TYPES] = {
  ************************************************/
 #ifdef SPM_SODI_ENABLED
 extern u32 gSPM_SODI_EN;
+extern bool gSpm_IsLcmVideoMode;
 
 static unsigned int mcidle_gpt_percpu[NR_CPUS] = {
     GPT4,
-    GPT1,    
+    GPT1,
     GPT4,
     GPT5,
 };
 
 static unsigned int mcidle_condition_mask[NR_GRPS] = {
-    0x00fe05c1, //PERI0:  
+    0x00fe05c1, //PERI0:
     0x00000000, //INFRA:
     0x00000000, //TOPCK:
-    0x00024c04, //DISP0: 
+    0x00024c04, //DISP0:
     0x00000000, //DISP1:
-    0x000003e1, //IMAGE: 
+    0x000003e1, //IMAGE:
     0x00000001, //MFG:
-    0x00000000, //AUDIO: 
-    0x00000001, //VDEC0: 
-    0x00000001, //VDEC1: 
+    0x00000000, //AUDIO:
+    0x00000001, //VDEC0:
+    0x00000001, //VDEC1:
 };
 
 static unsigned int mcidle_block_mask[NR_GRPS] = {0x0};
@@ -213,9 +214,20 @@ EXPORT_SYMBOL(disable_mcidle_by_bit);
 bool mcidle_can_enter(int cpu)
 {
     int reason = NR_REASONS;
-    
+
+    if (TRUE == gSpm_IsLcmVideoMode) {
+        reason = BY_OTH;
+        goto out;
+    }
+
     if (gSPM_SODI_EN != 0) {
         reason = BY_OTH;
+        goto out;
+    }
+
+    /*if hotplug-ing, can't enter sodi avoid bootslave corrupt*/
+    if (atomic_read(&is_in_hotplug) >= 1) {
+        reason = BY_CPU;
         goto out;
     }
 
@@ -233,7 +245,7 @@ bool mcidle_can_enter(int cpu)
     }
 
     mcidle_timer_left[cpu] = localtimer_get_counter();
-    if (mcidle_timer_left[cpu] < mcidle_time_critera || 
+    if (mcidle_timer_left[cpu] < mcidle_time_critera ||
             ((int)mcidle_timer_left[cpu]) < 0) {
         reason = BY_TMR;
         goto out;
@@ -252,24 +264,24 @@ void mcidle_before_wfi(int cpu)
 {
     int err = 0;
     unsigned int id = mcidle_gpt_percpu[cpu];
-    
+
         free_gpt(id);
-        err = request_gpt(id, GPT_ONE_SHOT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1, 
+        err = request_gpt(id, GPT_ONE_SHOT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
                     0, NULL, GPT_NOAUTOEN);
         if (err) {
             idle_info("[%s]fail to request GPT4\n", __func__);
         }
-    
-        mcidle_timer_left2[cpu] = localtimer_get_counter(); 
+
+        mcidle_timer_left2[cpu] = localtimer_get_counter();
 
 
         if( (int)mcidle_timer_left2[cpu] <=0 )
         {
             gpt_set_cmp(id, 1);//Trigger GPT4 Timerout imediately
         }
-        else    
+        else
             gpt_set_cmp(id, mcidle_timer_left2[cpu]);
-        
+
         start_gpt(id);
 
 }
@@ -286,11 +298,11 @@ void mcidle_after_wfi(int cpu)
             gpt_get_cnt(id, &cnt);
             gpt_get_cmp(id, &cmp);
             if (unlikely(cmp < cnt)) {
-                idle_err("[%s]GPT%d: counter = %10u, compare = %10u\n", __func__, 
+                idle_err("[%s]GPT%d: counter = %10u, compare = %10u\n", __func__,
                         id + 1, cnt, cmp);
                 BUG();
             }
-        
+
             localtimer_set_next_event(cmp-cnt);
             stop_gpt(id);
         }
@@ -315,15 +327,15 @@ static void go_to_mcidle(int cpu)
  * deep idle part
  ************************************************/
 static unsigned int dpidle_condition_mask[NR_GRPS] = {
-    0x02fe87fd, //PERI0: 
+    0x02fe87fd, //PERI0:
     0x0000a080, //INFRA:
     0x00000000, //TOPCK:
-    0x0007ffff, //DISP0: 
-    0x0000000f, //DISP1: 
-    0x000003e1, //IMAGE: 
-    0x00000001, //MFG:   
-    0x00000000, //AUDIO: 
-    0x00000001, //VDEC0: 
+    0x0007ffff, //DISP0:
+    0x0000000f, //DISP1:
+    0x000003e1, //IMAGE:
+    0x00000001, //MFG:
+    0x00000000, //AUDIO:
+    0x00000001, //VDEC0:
     0x00000001, //VDEC1:
 };
 
@@ -383,10 +395,10 @@ static bool dpidle_can_enter(void)
     }
 #endif
 
-	if (!mt_cpufreq_earlysuspend_status_get()){
-		reason = BY_VTG;
+    if (!mt_cpufreq_earlysuspend_status_get()){
+        reason = BY_VTG;
         goto out;
-	}
+    }
 
     //if ((smp_processor_id() != 0) || (num_online_cpus() != 1)) {
     if (atomic_read(&hotplug_cpu_count) != 1) {
@@ -401,17 +413,17 @@ static bool dpidle_can_enter(void)
     }
 
     dpidle_timer_left = localtimer_get_counter();
-    if (dpidle_timer_left < dpidle_time_critera || 
+    if (dpidle_timer_left < dpidle_time_critera ||
             ((int)dpidle_timer_left) < 0) {
         reason = BY_TMR;
         goto out;
     }
 
-out:	
+out:
     if (reason < NR_REASONS) {
         dpidle_block_cnt[reason]++;
         return false;
-    } else {		
+    } else {
         return true;
     }
 }
@@ -432,7 +444,7 @@ do {    \
 
 void spm_dpidle_before_wfi(void)
 {
-    
+
     mt_power_gs_dump_dpidle();
 
     bus_dcm_enable();
@@ -453,7 +465,7 @@ void spm_dpidle_before_wfi(void)
 void spm_dpidle_after_wfi(void)
 {
 #if 0
-    idle_info("[%s]timer_left=%u, timer_left2=%u, delta=%u\n", 
+    idle_info("[%s]timer_left=%u, timer_left2=%u, delta=%u\n",
         dpidle_timer_left, dpidle_timer_left2, dpidle_timer_left-dpidle_timer_left2);
 #endif
 
@@ -467,7 +479,7 @@ void spm_dpidle_after_wfi(void)
         gpt_get_cnt(GPT4, &cnt);
         gpt_get_cmp(GPT4, &cmp);
         if (unlikely(cmp < cnt)) {
-            idle_err("[%s]GPT%d: counter = %10u, compare = %10u\n", __func__, 
+            idle_err("[%s]GPT%d: counter = %10u, compare = %10u\n", __func__,
                     GPT4 + 1, cnt, cmp);
             BUG();
         }
@@ -480,7 +492,7 @@ void spm_dpidle_after_wfi(void)
     faudintbus_sq2pll();
 
     bus_dcm_disable();
-    
+
     dpidle_cnt[0]++;
 }
 
@@ -542,7 +554,7 @@ void disable_slidle_by_bit(int id)
 EXPORT_SYMBOL(disable_slidle_by_bit);
 
 #if EN_PTP_OD
-extern u32 ptp_data[3]; 
+extern u32 ptp_data[3];
 #endif
 static bool slidle_can_enter(void)
 {
@@ -559,12 +571,12 @@ static bool slidle_can_enter(void)
         goto out;
     }
 
-#if EN_PTP_OD    
+#if EN_PTP_OD
     if (ptp_data[0]) {
         reason = BY_OTH;
         goto out;
     }
-#endif    
+#endif
 
 out:
     if (reason < NR_REASONS) {
@@ -583,7 +595,7 @@ static void slidle_before_wfi(int cpu)
 static void slidle_after_wfi(int cpu)
 {
     bus_dcm_disable();
- 
+
     slidle_cnt[cpu]++;
 }
 
@@ -640,7 +652,7 @@ static inline int mcidle_handler(int cpu)
             spm_go_to_sodi(sodi_cpu_pdn);
             return 1;
         }
-    } 
+    }
 
     return 0;
 }
@@ -722,7 +734,7 @@ static struct kobj_attribute _name##_attr = {   \
 extern struct kobject *power_kobj;
 
 #ifdef SPM_SODI_ENABLED
-static ssize_t mcidle_state_show(struct kobject *kobj, 
+static ssize_t mcidle_state_show(struct kobject *kobj,
                 struct kobj_attribute *attr, char *buf)
 {
     int len = 0;
@@ -736,7 +748,7 @@ static ssize_t mcidle_state_show(struct kobject *kobj,
     for (cpus = 0; cpus < nr_cpu_ids; cpus++) {
         p += sprintf(p, "cpu:%d\n", cpus);
         for (reason = 0; reason < NR_REASONS; reason++) {
-            p += sprintf(p, "[%d]mcidle_block_cnt[%s]=%lu\n", reason, 
+            p += sprintf(p, "[%d]mcidle_block_cnt[%s]=%lu\n", reason,
                     reason_name[reason], mcidle_block_cnt[cpus][reason]);
         }
         p += sprintf(p, "\n");
@@ -744,7 +756,7 @@ static ssize_t mcidle_state_show(struct kobject *kobj,
 
 for (i = 0; i < NR_GRPS; i++) {
         p += sprintf(p, "[%02d]mcidle_condition_mask[%-8s]=0x%08x\t\t"
-                "mcidle_block_mask[%-8s]=0x%08x\n", i, 
+                "mcidle_block_mask[%-8s]=0x%08x\n", i,
                 grp_get_name(i), mcidle_condition_mask[i],
                 grp_get_name(i), mcidle_block_mask[i]);
     }
@@ -760,7 +772,7 @@ for (i = 0; i < NR_GRPS; i++) {
     return len;
 }
 
-static ssize_t mcidle_state_store(struct kobject *kobj, 
+static ssize_t mcidle_state_store(struct kobject *kobj,
                 struct kobj_attribute *attr, const char *buf, size_t n)
 {
     char cmd[32];
@@ -787,7 +799,7 @@ static ssize_t mcidle_state_store(struct kobject *kobj,
 idle_attr(mcidle_state);
 #endif
 
-static ssize_t dpidle_state_show(struct kobject *kobj, 
+static ssize_t dpidle_state_show(struct kobject *kobj,
                 struct kobj_attribute *attr, char *buf)
 {
     int len = 0;
@@ -800,7 +812,7 @@ static ssize_t dpidle_state_show(struct kobject *kobj,
     p += sprintf(p, "dpidle_time_critera=%u\n", dpidle_time_critera);
 
     for (i = 0; i < NR_REASONS; i++) {
-        p += sprintf(p, "[%d]dpidle_block_cnt[%s]=%lu\n", i, reason_name[i], 
+        p += sprintf(p, "[%d]dpidle_block_cnt[%s]=%lu\n", i, reason_name[i],
                 dpidle_block_cnt[i]);
     }
 
@@ -808,11 +820,11 @@ static ssize_t dpidle_state_show(struct kobject *kobj,
 
     for (i = 0; i < NR_GRPS; i++) {
         p += sprintf(p, "[%02d]dpidle_condition_mask[%-8s]=0x%08x\t\t"
-                "dpidle_block_mask[%-8s]=0x%08x\n", i, 
+                "dpidle_block_mask[%-8s]=0x%08x\n", i,
                 grp_get_name(i), dpidle_condition_mask[i],
                 grp_get_name(i), dpidle_block_mask[i]);
     }
-    
+
     p += sprintf(p, "\n*********** dpidle command help  ************\n");
     p += sprintf(p, "dpidle help:   cat /sys/power/dpidle_state\n");
     p += sprintf(p, "switch on/off: echo [dpidle] 1/0 > /sys/power/dpidle_state\n");
@@ -825,7 +837,7 @@ static ssize_t dpidle_state_show(struct kobject *kobj,
     return len;
 }
 
-static ssize_t dpidle_state_store(struct kobject *kobj, 
+static ssize_t dpidle_state_store(struct kobject *kobj,
                 struct kobj_attribute *attr, const char *buf, size_t n)
 {
     char cmd[32];
@@ -853,7 +865,7 @@ static ssize_t dpidle_state_store(struct kobject *kobj,
 }
 idle_attr(dpidle_state);
 
-static ssize_t slidle_state_show(struct kobject *kobj, 
+static ssize_t slidle_state_show(struct kobject *kobj,
                 struct kobj_attribute *attr, char *buf)
 {
     int len = 0;
@@ -863,7 +875,7 @@ static ssize_t slidle_state_show(struct kobject *kobj,
 
     p += sprintf(p, "*********** slow idle state ************\n");
     for (i = 0; i < NR_REASONS; i++) {
-        p += sprintf(p, "[%d]slidle_block_cnt[%s]=%lu\n", 
+        p += sprintf(p, "[%d]slidle_block_cnt[%s]=%lu\n",
                 i, reason_name[i], slidle_block_cnt[i]);
     }
 
@@ -871,7 +883,7 @@ static ssize_t slidle_state_show(struct kobject *kobj,
 
     for (i = 0; i < NR_GRPS; i++) {
         p += sprintf(p, "[%02d]slidle_condition_mask[%-8s]=0x%08x\t\t"
-                "slidle_block_mask[%-8s]=0x%08x\n", i, 
+                "slidle_block_mask[%-8s]=0x%08x\n", i,
                 grp_get_name(i), slidle_condition_mask[i],
                 grp_get_name(i), slidle_block_mask[i]);
     }
@@ -885,7 +897,7 @@ static ssize_t slidle_state_show(struct kobject *kobj,
     return len;
 }
 
-static ssize_t slidle_state_store(struct kobject *kobj, 
+static ssize_t slidle_state_store(struct kobject *kobj,
                 struct kobj_attribute *attr, const char *buf, size_t n)
 {
     char cmd[32];
@@ -909,7 +921,7 @@ static ssize_t slidle_state_store(struct kobject *kobj,
 }
 idle_attr(slidle_state);
 
-static ssize_t rgidle_state_show(struct kobject *kobj, 
+static ssize_t rgidle_state_show(struct kobject *kobj,
                 struct kobj_attribute *attr, char *buf)
 {
     int len = 0;
@@ -924,7 +936,7 @@ static ssize_t rgidle_state_show(struct kobject *kobj,
     return len;
 }
 
-static ssize_t rgidle_state_store(struct kobject *kobj, 
+static ssize_t rgidle_state_store(struct kobject *kobj,
                 struct kobj_attribute *attr, const char *buf, size_t n)
 {
     char cmd[32];
@@ -944,29 +956,29 @@ static ssize_t rgidle_state_store(struct kobject *kobj,
 }
 idle_attr(rgidle_state);
 
-static ssize_t idle_state_show(struct kobject *kobj, 
+static ssize_t idle_state_show(struct kobject *kobj,
                 struct kobj_attribute *attr, char *buf)
 {
     int len = 0;
     char *p = buf;
-    
+
     int i;
 
     p += sprintf(p, "********** idle state dump **********\n");
 #ifdef SPM_SODI_ENABLED
     for (i = 0; i < nr_cpu_ids; i++) {
         p += sprintf(p, "mcidle_cnt[%d]=%lu, dpidle_cnt[%d]=%lu, "
-                "slidle_cnt[%d]=%lu, rgidle_cnt[%d]=%lu\n", 
-                i, mcidle_cnt[i], i, dpidle_cnt[i], 
+                "slidle_cnt[%d]=%lu, rgidle_cnt[%d]=%lu\n",
+                i, mcidle_cnt[i], i, dpidle_cnt[i],
                 i, slidle_cnt[i], i, rgidle_cnt[i]);
     }
 #else
     for (i = 0; i < nr_cpu_ids; i++) {
-        p += sprintf(p, "dpidle_cnt[%d]=%lu, slidle_cnt[%d]=%lu, rgidle_cnt[%d]=%lu\n", 
+        p += sprintf(p, "dpidle_cnt[%d]=%lu, slidle_cnt[%d]=%lu, rgidle_cnt[%d]=%lu\n",
                 i, dpidle_cnt[i], i, slidle_cnt[i], i, rgidle_cnt[i]);
     }
 #endif
-    
+
     p += sprintf(p, "\n********** variables dump **********\n");
     for (i = 0; i < NR_TYPES; i++) {
         p += sprintf(p, "%s_switch=%d, ", idle_name[i], idle_switch[i]);
@@ -990,7 +1002,7 @@ static ssize_t idle_state_show(struct kobject *kobj,
     return len;
 }
 
-static ssize_t idle_state_store(struct kobject *kobj, 
+static ssize_t idle_state_store(struct kobject *kobj,
                 struct kobj_attribute *attr, const char *buf, size_t n)
 {
     char cmd[32];
@@ -1019,7 +1031,7 @@ idle_attr(idle_state);
 void mt_idle_init(void)
 {
     int err = 0;
-    
+
     idle_info("[%s]entry!!\n", __func__);
     arm_pm_idle = arch_idle;
 
@@ -1031,20 +1043,20 @@ void mt_idle_init(void)
     if (err) {
         idle_info("[%s]fail to free GPT1\n", __func__);
     }
-    
-    err = request_gpt(GPT1, GPT_ONE_SHOT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1, 
+
+    err = request_gpt(GPT1, GPT_ONE_SHOT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
                 0, NULL, GPT_NOAUTOEN);
     if (err) {
         idle_info("[%s]fail to request GPT1\n", __func__);
     }
 
-    err = request_gpt(GPT4, GPT_ONE_SHOT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1, 
+    err = request_gpt(GPT4, GPT_ONE_SHOT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
                 0, NULL, GPT_NOAUTOEN);
     if (err) {
         idle_info("[%s]fail to request GPT4\n", __func__);
     }
 
-    err = request_gpt(GPT5, GPT_ONE_SHOT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1, 
+    err = request_gpt(GPT5, GPT_ONE_SHOT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
                 0, NULL, GPT_NOAUTOEN);
     if (err) {
         idle_info("[%s]fail to request GPT5\n", __func__);

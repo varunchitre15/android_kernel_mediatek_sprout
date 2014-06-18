@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -30,6 +30,7 @@
 
 #include "lcm_drv.h"
 #include "disp_hal.h"
+#include "mach/mt_spm_idle.h"
 #endif
 // ---------------------------------------------------------------------------
 //  Private Variables
@@ -83,7 +84,7 @@ static __inline LCD_FB_FORMAT get_tmp_buffer_lcd_format(void)
         LCD_FB_FORMAT_RGB565,
         LCD_FB_FORMAT_RGB888
     };
-    
+
     return TO_LCD_FORMAT[dpiTmpBufFormat];
 }
 
@@ -94,9 +95,9 @@ static BOOL disp_drv_dpi_init_context(void)
     lcdTmpBufFormat = get_tmp_buffer_lcd_format();
     dpiTmpBufBpp    = get_tmp_buffer_bpp();
 
-    if (lcm_drv != NULL && lcm_params!= NULL) 
+    if (lcm_drv != NULL && lcm_params!= NULL)
         return TRUE;
-    else 
+    else
         printk("%s, lcm_drv=0x%08x, lcm_params=0x%08x\n", __func__, (unsigned int)lcm_drv, (unsigned int)lcm_params);
 
     if (NULL == lcm_drv) {
@@ -105,7 +106,7 @@ static BOOL disp_drv_dpi_init_context(void)
         return FALSE;
     }
 
- 
+
     return TRUE;
 }
 
@@ -118,11 +119,11 @@ static void init_intermediate_buffers(UINT32 fbPhysAddr)
     UINT32 tmpFbSizeInBytes  = tmpFbPitchInBytes * DISP_GetScreenHeight();
 
     UINT32 i;
-    
+
     for (i = 0; i < lcm_params->dpi.intermediat_buffer_num; ++ i)
     {
         TempBuffer *b = &s_tmpBuffers[i];
-        
+
 #ifdef BUILD_UBOOT
         // clean the intermediate buffers as black to prevent from noise display
         memset(tmpFbStartPA, 0, tmpFbSizeInBytes);
@@ -139,19 +140,19 @@ static void init_intermediate_buffers(UINT32 fbPhysAddr)
 void init_mipi_pll(void)
 {
     DPI_CHECK_RET(DPI_Init_PLL(lcm_params->dpi.mipi_pll_clk_ref,
-	           lcm_params->dpi.mipi_pll_clk_div1,lcm_params->dpi.mipi_pll_clk_div2));
+               lcm_params->dpi.mipi_pll_clk_div1,lcm_params->dpi.mipi_pll_clk_div2));
 }
 
 
 void init_io_pad(void)
 {
     LCD_CHECK_RET(LCD_Init_IO_pad(lcm_params));
-    
+
 }
 
 void init_io_driving_current(void)
 {
-	DPI_CHECK_RET(DPI_Set_DrivingCurrent(lcm_params));
+    DPI_CHECK_RET(DPI_Set_DrivingCurrent(lcm_params));
 }
 
 void init_lcd(void)
@@ -160,7 +161,7 @@ void init_lcd(void)
 
     LCD_CHECK_RET(LCD_LayerEnable(LCD_LAYER_ALL, FALSE));
     LCD_CHECK_RET(LCD_LayerSetTriggerMode(LCD_LAYER_ALL, LCD_SW_TRIGGER));
-		
+
     LCD_CHECK_RET(LCD_EnableHwTrigger(FALSE));
 
     LCD_CHECK_RET(LCD_SetBackgroundColor(0));
@@ -176,7 +177,7 @@ void init_lcd(void)
 
         LCD_CHECK_RET(LCD_FBEnable(LCD_FB_0 + i, TRUE));
     }
-    
+
     LCD_CHECK_RET(LCD_SetOutputMode(LCD_OUTPUT_TO_MEM));
     /**
        "LCD Delay Enable" function should be used when there is only
@@ -215,11 +216,11 @@ void init_dpi(BOOL isDpiPoweredOn)
                                   dpi->vsync_front_porch));
 
 #ifdef MT65XX_NEW_DISP
-	DPI_CHECK_RET(DPI_ConfigLVDS(lcm_params));
+    DPI_CHECK_RET(DPI_ConfigLVDS(lcm_params));
 #endif
 
     DPI_CHECK_RET(DPI_FBSetSize(DISP_GetScreenWidth(), DISP_GetScreenHeight()));
-    
+
     for (i = 0; i < dpi->intermediat_buffer_num; ++ i)
     {
         DPI_CHECK_RET(DPI_FBSetAddress(DPI_FB_0 + i, s_tmpBuffers[i].pa));
@@ -258,7 +259,7 @@ void init_dpi_new(BOOL isDpiPoweredOn)
                                   dpi->vsync_back_porch,
                                   dpi->vsync_front_porch));
 #ifdef MT65XX_NEW_DISP
-	DPI_CHECK_RET(DPI_ConfigLVDS(lcm_params));
+    DPI_CHECK_RET(DPI_ConfigLVDS(lcm_params));
 #endif
     DPI_CHECK_RET(DPI_FBSetSize(DISP_GetScreenWidth(), DISP_GetScreenHeight()));
     for (i = 0; i < dpi->intermediat_buffer_num; ++ i)
@@ -286,55 +287,55 @@ static int fbpa_stored = 0;
 
 static DISP_STATUS dpi_init(UINT32 fbVA, UINT32 fbPA, BOOL isLcmInited)
 {
-    if (!disp_drv_dpi_init_context()) 
+    if (!disp_drv_dpi_init_context())
         return DISP_STATUS_NOT_IMPLEMENTED;
-		
-		fbva_stored = fbVA;
-		fbpa_stored = fbPA;
-		
-		printk("[DPI]fbVA=0x%x, fbPA=0x%x\n", fbVA, fbPA);
+
+        fbva_stored = fbVA;
+        fbpa_stored = fbPA;
+
+        printk("[DPI]fbVA=0x%x, fbPA=0x%x\n", fbVA, fbPA);
 
 #if 1   // use lk setting to avoid flicker at system booting
-		//init_mipi_pll();
-		//init_io_pad();
-		//init_io_driving_current();
+        //init_mipi_pll();
+        //init_io_pad();
+        //init_io_driving_current();
 
-		//init_lcd();
-		init_dpi(isLcmInited);
+        //init_lcd();
+        init_dpi(isLcmInited);
 #endif
 
-		if (NULL != lcm_drv->init && !isLcmInited) {
-			lcm_drv->init();
-			}
+        if (NULL != lcm_drv->init && !isLcmInited) {
+            lcm_drv->init();
+            }
 
-#if 1   // maybe to save power       
-		DSI_PowerOn();
-		DSI_PowerOff();
+#if 1   // maybe to save power
+        DSI_PowerOn();
+        DSI_PowerOff();
 #endif
 
-        
+
 #ifndef MT65XX_NEW_DISP
     init_intermediate_buffers(fbPA);
 #else
-	{
-		struct disp_path_config_struct config = {0};
+    {
+        struct disp_path_config_struct config = {0};
 
-		if (DISP_IsDecoupleMode()) {
-			config.srcModule = DISP_MODULE_RDMA;
-		} else {
-			config.srcModule = DISP_MODULE_OVL;
-		}
-	        config.bgROI.x = 0;
-	        config.bgROI.y = 0;
-	        config.bgROI.width = DISP_GetScreenWidth();
-	        config.bgROI.height = DISP_GetScreenHeight();
-	        config.bgColor = 0x0;  // background color
+        if (DISP_IsDecoupleMode()) {
+            config.srcModule = DISP_MODULE_RDMA;
+        } else {
+            config.srcModule = DISP_MODULE_OVL;
+        }
+            config.bgROI.x = 0;
+            config.bgROI.y = 0;
+            config.bgROI.width = DISP_GetScreenWidth();
+            config.bgROI.height = DISP_GetScreenHeight();
+            config.bgColor = 0x0;  // background color
 
-			config.srcROI.x = 0;config.srcROI.y = 0;
-			config.srcROI.height= DISP_GetScreenHeight();config.srcROI.width= DISP_GetScreenWidth();
-			config.ovl_config.source = OVL_LAYER_SOURCE_MEM;
-#if 0   
-		// Disable 0/1/2 layer.
+            config.srcROI.x = 0;config.srcROI.y = 0;
+            config.srcROI.height= DISP_GetScreenHeight();config.srcROI.width= DISP_GetScreenWidth();
+            config.ovl_config.source = OVL_LAYER_SOURCE_MEM;
+#if 0
+        // Disable 0/1/2 layer.
         // First disable FB_Layer.
         disp_path_get_mutex();
         config.ovl_config.layer = 0;
@@ -353,10 +354,10 @@ static DISP_STATUS dpi_init(UINT32 fbVA, UINT32 fbPA, BOOL isLcmInited)
         // Config FB_Layer port to be virtual.
         {
             M4U_PORT_STRUCT portStruct;
-            portStruct.ePortID = DISP_OVL_0;		   //hardware port ID, defined in M4U_PORT_ID_ENUM
+            portStruct.ePortID = DISP_OVL_0;           //hardware port ID, defined in M4U_PORT_ID_ENUM
             portStruct.Virtuality = 1;
             portStruct.Security = 0;
-            portStruct.domain = 3;			  //domain : 0 1 2 3
+            portStruct.domain = 3;              //domain : 0 1 2 3
             portStruct.Distance = 1;
             portStruct.Direction = 0;
             m4u_config_port(&portStruct);
@@ -370,14 +371,14 @@ static DISP_STATUS dpi_init(UINT32 fbVA, UINT32 fbPA, BOOL isLcmInited)
         config.ovl_config.source = OVL_LAYER_SOURCE_MEM;
         config.ovl_config.src_x = 0;
         config.ovl_config.src_y = 0;
-        config.ovl_config.dst_x = 0;	   // ROI
+        config.ovl_config.dst_x = 0;       // ROI
         config.ovl_config.dst_y = 0;
         config.ovl_config.dst_w = DISP_GetScreenWidth();
         config.ovl_config.dst_h = DISP_GetScreenHeight();
         config.ovl_config.src_pitch = ALIGN_TO(DISP_GetScreenWidth(),32)*2; //pixel number
         config.ovl_config.keyEn = 0;
-        config.ovl_config.key = 0xFF;	   // color key
-        config.ovl_config.aen = 0;			  // alpha enable
+        config.ovl_config.key = 0xFF;       // color key
+        config.ovl_config.aen = 0;              // alpha enable
         config.ovl_config.alpha = 0;
         LCD_LayerSetAddress(FB_LAYER, fbPA);
         LCD_LayerSetFormat(FB_LAYER, LCD_LAYER_FORMAT_RGB565);
@@ -392,25 +393,28 @@ static DISP_STATUS dpi_init(UINT32 fbVA, UINT32 fbPA, BOOL isLcmInited)
         disp_path_config(&config);
         disp_path_release_mutex();
         disp_path_wait_reg_update();
-	}
+    }
 #endif
-    
+#ifdef SPM_SODI_ENABLED
+    spm_sodi_lcm_video_mode(TRUE);
+#endif
+
     return DISP_STATUS_OK;
 }
 
 void hdmi_reinit_dpi(void)
-{	
-	printk("[DPI]hdmi_reinit_dpi. \n");
+{
+    printk("[DPI]hdmi_reinit_dpi. \n");
 
-	LCD_WaitForNotBusy();
-	reinitializing = TRUE;
-	dpi_init(fbva_stored, fbpa_stored, 1);
-	reinitializing = FALSE;
+    LCD_WaitForNotBusy();
+    reinitializing = TRUE;
+    dpi_init(fbva_stored, fbpa_stored, 1);
+    reinitializing = FALSE;
 }
 
 int dpi_get_immediate_buffer_num(void)
-{	
-	return lcm_params->dpi.intermediat_buffer_num;
+{
+    return lcm_params->dpi.intermediat_buffer_num;
 }
 
 static DISP_STATUS dpi_enable_power(BOOL enable)
@@ -419,7 +423,7 @@ static DISP_STATUS dpi_enable_power(BOOL enable)
         DPI_CHECK_RET(DPI_PowerOn());
 
         init_mipi_pll();//for MT6573 and later chip, Must re-init mipi pll for dpi, because pll register have located in
-		                //MMSYS1 except MT6516
+                        //MMSYS1 except MT6516
         init_io_pad();
         LCD_CHECK_RET(LCD_PowerOn());
         DPI_CHECK_RET(DPI_EnableClk());
@@ -441,9 +445,9 @@ static DISP_STATUS dpi_update_screen(BOOL isMuextLocked)
     LCD_CHECK_RET(LCD_StartTransfer(FALSE));
 #else
     if (!isMuextLocked) {
-    	disp_path_get_mutex();
-    	LCD_CHECK_RET(LCD_ConfigOVL());
-    	disp_path_release_mutex();
+        disp_path_get_mutex();
+        LCD_CHECK_RET(LCD_ConfigOVL());
+        disp_path_release_mutex();
     }
 #endif
     return DISP_STATUS_OK;
@@ -458,7 +462,7 @@ static UINT32 dpi_get_working_buffer_size(void)
 
     framePixels = DISP_GetScreenWidth() * DISP_GetScreenHeight();
 
-    size = framePixels * dpiTmpBufBpp * 
+    size = framePixels * dpiTmpBufBpp *
            lcm_params->dpi.intermediat_buffer_num;
 
     return size;
@@ -490,7 +494,7 @@ DISP_STATUS dpi_capture_framebuffer(UINT32 pvbuf, UINT32 bpp)
 {
     LCD_CHECK_RET(DPI_Capture_Framebuffer(pvbuf, bpp));
 
-	return DISP_STATUS_OK;	
+    return DISP_STATUS_OK;
 }
 
 #ifdef MIN
@@ -499,7 +503,7 @@ DISP_STATUS dpi_capture_framebuffer(UINT32 pvbuf, UINT32 bpp)
 #define MIN(x,y) ((x)>(y)?(y):(x))
 static UINT32 dpi_get_dithering_bpp(void)
 {
-	return MIN(get_tmp_buffer_bpp() * 8,PANEL_COLOR_FORMAT_TO_BPP(dpi_get_panel_color_format()));
+    return MIN(get_tmp_buffer_bpp() * 8,PANEL_COLOR_FORMAT_TO_BPP(dpi_get_panel_color_format()));
 }
 
 const DISP_IF_DRIVER *DISP_GetDriverDPI(void)
@@ -509,12 +513,12 @@ const DISP_IF_DRIVER *DISP_GetDriverDPI(void)
         .init                   = dpi_init,
         .enable_power           = dpi_enable_power,
         .update_screen          = dpi_update_screen,
-        
+
         .get_working_buffer_size = dpi_get_working_buffer_size,
         .get_working_buffer_bpp = dpi_get_working_buffer_bpp,
         .get_panel_color_format = dpi_get_panel_color_format,
-        .get_dithering_bpp		= dpi_get_dithering_bpp,
-		.capture_framebuffer	= dpi_capture_framebuffer, 
+        .get_dithering_bpp        = dpi_get_dithering_bpp,
+        .capture_framebuffer    = dpi_capture_framebuffer,
     };
 
     return &DPI_DISP_DRV;

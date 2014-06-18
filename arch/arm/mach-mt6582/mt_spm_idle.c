@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -22,7 +22,7 @@
 #include <linux/sched.h>
 #include <linux/kthread.h>
 #include <linux/err.h>
-#include <linux/delay.h>  
+#include <linux/delay.h>
 #include <linux/aee.h>
 
 #include <mach/irqs.h>
@@ -43,8 +43,10 @@
 #define SPM_MCDI_BYPASS_SYSPWREQ 1
 
 
-DEFINE_SPINLOCK(spm_sodi_lock);
+//DEFINE_SPINLOCK(spm_sodi_lock);
 
+s32 gSpm_Sodi_Disable_Counter = 0;
+bool gSpm_IsLcmVideoMode = TRUE;
 u32 gSPM_SODI_EN = 0;  // flag for idle task
 
 #define PCM_WDT_TIMEOUT         (30 * 32768)    /* 30s */
@@ -60,11 +62,11 @@ do {                                            \
 
 
 //TODO: need check
-#if SPM_MCDI_BYPASS_SYSPWREQ    
+#if SPM_MCDI_BYPASS_SYSPWREQ
     #define WAKE_SRC_FOR_MCDI                     \
     (WAKE_SRC_GPT | WAKE_SRC_THERM | WAKE_SRC_CIRQ | WAKE_SRC_CPU0_IRQ | WAKE_SRC_CPU1_IRQ | WAKE_SRC_SYSPWREQ )
      //(WAKE_SRC_PCM_TIMER | WAKE_SRC_GPT | WAKE_SRC_THERM | WAKE_SRC_CIRQ | WAKE_SRC_CPU0_IRQ | WAKE_SRC_CPU1_IRQ | WAKE_SRC_SYSPWREQ )
-#else    
+#else
     #define WAKE_SRC_FOR_MCDI                     \
     (WAKE_SRC_GPT | WAKE_SRC_THERM | WAKE_SRC_CIRQ | WAKE_SRC_CPU0_IRQ | WAKE_SRC_CPU1_IRQ )
     //   (WAKE_SRC_PCM_TIMER | WAKE_SRC_GPT | WAKE_SRC_THERM | WAKE_SRC_CIRQ | WAKE_SRC_CPU0_IRQ | WAKE_SRC_CPU1_IRQ )
@@ -162,7 +164,7 @@ static u32 __pcm_sodidle[] = {
 
 #define MCDI_PCM_PC_0      0
 #define MCDI_PCM_PC_1      15
-    
+
 static const pcm_desc_t pcm_sodidle = {
     .base   = __pcm_sodidle,
     .size   = 445,
@@ -234,12 +236,12 @@ static void spm_mcdi_dump_regs(void)
     clc_notice("SLEEP_TIMER_STA 0x%x = 0x%x\n", SPM_SLEEP_TIMER_STA        , spm_read(SPM_SLEEP_TIMER_STA));
     clc_notice("WAKE_EVENT_MASK 0x%x = 0x%x\n", SPM_SLEEP_WAKEUP_EVENT_MASK, spm_read(SPM_SLEEP_WAKEUP_EVENT_MASK));
     clc_notice("SPM_SLEEP_CPU_WAKEUP_EVENT 0x%x = 0x%x\n", SPM_SLEEP_CPU_WAKEUP_EVENT, spm_read(SPM_SLEEP_CPU_WAKEUP_EVENT));
-    clc_notice("SPM_PCM_RESERVE   0x%x = 0x%x\n", SPM_PCM_RESERVE          , spm_read(SPM_PCM_RESERVE));  
-    clc_notice("SPM_AP_STANBY_CON   0x%x = 0x%x\n", SPM_AP_STANBY_CON          , spm_read(SPM_AP_STANBY_CON));  
+    clc_notice("SPM_PCM_RESERVE   0x%x = 0x%x\n", SPM_PCM_RESERVE          , spm_read(SPM_PCM_RESERVE));
+    clc_notice("SPM_AP_STANBY_CON   0x%x = 0x%x\n", SPM_AP_STANBY_CON          , spm_read(SPM_AP_STANBY_CON));
     clc_notice("SPM_PCM_TIMER_OUT   0x%x = 0x%x\n", SPM_PCM_TIMER_OUT          , spm_read(SPM_PCM_TIMER_OUT));
     clc_notice("SPM_PCM_CON1   0x%x = 0x%x\n", SPM_PCM_CON1          , spm_read(SPM_PCM_CON1));
-    
-    
+
+
     // PCM register
     clc_notice("PCM_REG0_DATA   0x%x = 0x%x\n", SPM_PCM_REG0_DATA          , spm_read(SPM_PCM_REG0_DATA));
 //    clc_notice("PCM_REG1_DATA   0x%x = 0x%x\n", SPM_PCM_REG1_DATA          , spm_read(SPM_PCM_REG1_DATA));
@@ -256,22 +258,22 @@ static void spm_mcdi_dump_regs(void)
     clc_notice("PCM_REG12_DATA   0x%x = 0x%x\n", SPM_PCM_REG12_DATA          , spm_read(SPM_PCM_REG12_DATA));
     clc_notice("PCM_REG13_DATA   0x%x = 0x%x\n", SPM_PCM_REG13_DATA          , spm_read(SPM_PCM_REG13_DATA));
 //    clc_notice("PCM_REG14_DATA   0x%x = 0x%x\n", SPM_PCM_REG14_DATA          , spm_read(SPM_PCM_REG14_DATA));
-    clc_notice("PCM_REG15_DATA   0x%x = 0x%x\n", SPM_PCM_REG15_DATA          , spm_read(SPM_PCM_REG15_DATA));  
-    
+    clc_notice("PCM_REG15_DATA   0x%x = 0x%x\n", SPM_PCM_REG15_DATA          , spm_read(SPM_PCM_REG15_DATA));
+
 }
 #endif
 
-#if 0
+
 static void spm_direct_disable_sodi(void)
 {
     u32 clc_temp;
 
     clc_temp = spm_read(SPM_CLK_CON);
     clc_temp |= (0x1<<13);
-    
-    spm_write(SPM_CLK_CON, clc_temp);  
+
+    spm_write(SPM_CLK_CON, clc_temp);
 }
-#endif
+
 
 static void spm_direct_enable_sodi(void)
 {
@@ -280,7 +282,7 @@ static void spm_direct_enable_sodi(void)
     clc_temp = spm_read(SPM_CLK_CON);
     clc_temp &= 0xffffdfff; // ~(0x1<<13);
 
-    spm_write(SPM_CLK_CON, clc_temp);  
+    spm_write(SPM_CLK_CON, clc_temp);
 }
 
 
@@ -346,7 +348,7 @@ static void spm_init_event_vector(const pcm_desc_t *pcmdesc)
     /* init event vector register */
     spm_write(SPM_PCM_EVENT_VECTOR0, pcmdesc->vec0);
     spm_write(SPM_PCM_EVENT_VECTOR1, pcmdesc->vec1);
-#if 0    
+#if 0
     spm_write(SPM_PCM_EVENT_VECTOR2, pcmdesc->vec2);
     spm_write(SPM_PCM_EVENT_VECTOR3, pcmdesc->vec3);
     spm_write(SPM_PCM_EVENT_VECTOR4, pcmdesc->vec4);
@@ -381,7 +383,7 @@ static void spm_set_ap_standbywfi(bool IsMcdi)
         spm_write(SPM_CORE0_WFI_SEL, 0x0);
         //spm_write(SPM_CORE1_WFI_SEL, 0x0);
         //spm_write(SPM_CORE2_WFI_SEL, 0x0);
-        //spm_write(SPM_CORE3_WFI_SEL, 0x0);    
+        //spm_write(SPM_CORE3_WFI_SEL, 0x0);
     #endif
     }
 
@@ -395,7 +397,7 @@ static void spm_set_ap_standbywfi(bool IsMcdi)
 static void spm_set_wakeup_event(u32 wake_src)
 {
     u32 isr;
-    
+
     /* unmask wakeup source */
 #if SPM_MCDI_BYPASS_SYSPWREQ
     wake_src &= ~WAKE_SRC_SYSPWREQ;     /* make 26M off when attach ICE */
@@ -405,7 +407,7 @@ static void spm_set_wakeup_event(u32 wake_src)
     /* unmask SPM ISR (keep TWAM setting) */
     isr = spm_read(SPM_SLEEP_ISR_MASK) & ISR_TWAM;
     spm_write(SPM_SLEEP_ISR_MASK, isr | ISRM_PCM_IRQ_AUX);
-    
+
 
     //mask CPU IRQ
     spm_write(SPM_SLEEP_CPU_IRQ_MASK,0xf);
@@ -417,8 +419,8 @@ static void spm_kick_pcm_to_run(bool cpu_pdn, bool infra_pdn)
     u32 clk, con0;
 
     /*enable SODI*/
-    spm_direct_enable_sodi();
-    
+    //spm_direct_enable_sodi();
+
     /* keep CPU or INFRA/DDRPHY power if needed and lock INFRA DCM */
     clk = spm_read(SPM_CLK_CON) & ~(CC_DISABLE_DORM_PWR | CC_DISABLE_INFRA_PWR);
     if (!cpu_pdn)
@@ -528,14 +530,14 @@ void spm_go_to_sodi(bool cpu_pdn)
     struct mtk_irq_mask mask;
     wake_reason_t wr = WR_NONE;
     const pcm_desc_t *pcmdesc = &pcm_sodidle;
-    
+
     spin_lock_irqsave(&spm_lock, flags);
 
     gSPM_SODI_EN =1;
 
     mt_irq_mask_all(&mask);
     mt_irq_unmask_for_sleep(MT_SPM_IRQ_ID);
-    
+
     mt_cirq_clone_gic();
     mt_cirq_enable();
 
@@ -550,14 +552,14 @@ void spm_go_to_sodi(bool cpu_pdn)
     spm_set_ap_standbywfi(FALSE);
 
     spm_set_wakeup_event(WAKE_SRC_FOR_SODI);
-    
+
     spm_kick_pcm_to_run(cpu_pdn, false);     /* keep INFRA/DDRPHY power */
 
 #if SPM_MCDI_DEBUG
     //clc_notice("============SODI Before============\n");
     //spm_mcdi_dump_regs(); //dump debug info
 #endif
-    
+
     mcidle_before_wfi(0);
 
     spm_trigger_wfi_for_mcdi(cpu_pdn);
@@ -579,12 +581,57 @@ void spm_go_to_sodi(bool cpu_pdn)
     mt_irq_mask_restore(&mask);
 
     gSPM_SODI_EN =0;
-        
+
     spin_unlock_irqrestore(&spm_lock, flags);
 
     //return wr;
 }
 
+void spm_sodi_lcm_video_mode(bool IsLcmVideoMode)
+{
+    gSpm_IsLcmVideoMode = IsLcmVideoMode;
+
+#if SPM_SODI_DEBUG
+    printk("spm_sodi_lcm_video_mode() : gSpm_IsLcmVideoMode = %x\n", gSpm_IsLcmVideoMode);
+#endif
+
+}
+
+void spm_disable_sodi(void)
+{
+    //spin_lock(&spm_sodi_lock);
+
+    gSpm_Sodi_Disable_Counter++;
+
+#if SPM_SODI_DEBUG
+    printk("spm_disable_sodi() : spm_sodi_disable_counter = 0x%x\n", gSpm_Sodi_Disable_Counter);
+#endif
+
+    if(gSpm_Sodi_Disable_Counter > 0)
+    {
+        spm_direct_disable_sodi();
+    }
+
+    //spin_unlock(&spm_sodi_lock);
+}
+
+void spm_enable_sodi(void)
+{
+    //spin_lock(&spm_sodi_lock);
+
+    gSpm_Sodi_Disable_Counter--;
+
+#if SPM_SODI_DEBUG
+    printk("spm_enable_sodi() : spm_sodi_disable_counter = 0x%x\n", gSpm_Sodi_Disable_Counter);
+#endif
+
+    if(gSpm_Sodi_Disable_Counter <= 0)
+    {
+        spm_direct_enable_sodi();
+    }
+
+    //spin_unlock(&spm_sodi_lock);
+}
 #endif //SPM_SODI_ENABLED
 
 
