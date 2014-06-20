@@ -155,6 +155,7 @@ void OV5648MIPI_write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 
 
 //OTP Code Start
+/*
 #ifdef OV5648MIPI_USE_OTP
 //index: index of otp group.(1, 2)
 //return:     ERROR: group index have invalid data
@@ -410,7 +411,297 @@ kal_uint16 update_otp(void)
 }
 
 #endif
+*/
 //OTP Code End
+#define OV5648_WB_OTP
+
+#ifdef OV5648_WB_OTP
+
+static int module_id;
+static int RG_Ratio_Typical = 0x1A8;//0x19f;
+static int BG_Ratio_Typical = 0x165;//0x163;
+
+struct otp_struct {
+	kal_uint16 module_integrator_id;
+	kal_uint16 lens_id;
+	kal_uint16 rg_ratio;
+	kal_uint16 bg_ratio;
+	kal_uint16 user_data[2];
+	kal_uint16 light_rg;
+	kal_uint16 light_bg;
+};
+
+/* index: index of otp group. (1, 2) 
+** return:	
+** 	0, group index is empty
+** 	1, group index has invalid data
+**	2, group index has valid data
+*/
+static kal_uint16 check_otp(kal_uint16 index)
+{
+	kal_uint16 flag, i;
+	kal_uint16 rg, bg;
+
+	if (index == 1)
+	{
+		// read otp --Bank 0
+		OV5648MIPI_write_cmos_sensor(0x3d84, 0xc0);
+		OV5648MIPI_write_cmos_sensor(0x3d85, 0x00);
+		OV5648MIPI_write_cmos_sensor(0x3d86, 0x0f);
+		OV5648MIPI_write_cmos_sensor(0x3d81, 0x01);
+		mdelay(5);
+		flag = OV5648MIPI_read_cmos_sensor(0x3d05);
+		rg = OV5648MIPI_read_cmos_sensor(0x3d07);
+		bg = OV5648MIPI_read_cmos_sensor(0x3d08);
+	}
+	else if (index == 2)
+	{
+		// read otp --Bank 0
+		OV5648MIPI_write_cmos_sensor(0x3d84, 0xc0);
+		OV5648MIPI_write_cmos_sensor(0x3d85, 0x00);
+		OV5648MIPI_write_cmos_sensor(0x3d86, 0x0f);
+		OV5648MIPI_write_cmos_sensor(0x3d81, 0x01);
+		mdelay(5);
+		flag = OV5648MIPI_read_cmos_sensor(0x3d0e);
+		// read otp --Bank 1
+		OV5648MIPI_write_cmos_sensor(0x3d84, 0xc0);
+		OV5648MIPI_write_cmos_sensor(0x3d85, 0x10);
+		OV5648MIPI_write_cmos_sensor(0x3d86, 0x1f);
+		OV5648MIPI_write_cmos_sensor(0x3d81, 0x01);
+		mdelay(5);
+		rg = OV5648MIPI_read_cmos_sensor(0x3d00);
+		bg = OV5648MIPI_read_cmos_sensor(0x3d01);
+	}
+	flag = flag & 0x80;
+
+	// clear otp buffer
+	for (i = 0; i < 16; i++) {
+		OV5648MIPI_write_cmos_sensor(0x3d00 + i, 0x00);
+	}
+
+	SENSORDB("check_otp() = 0x%x, 0x%x, 0x%x\r\n", flag, rg, bg);
+
+	if (flag) {
+		return 1;
+	}
+	else
+	{
+		if (0 == rg && 0 == bg) 
+		{
+			return 0;
+		}
+		else
+		{
+			return 2;
+		}
+	}
+}
+
+/* index: index of otp group. (1, 2) 
+** return:	0, 
+*/
+static kal_uint16 read_otp(kal_uint16 index, struct otp_struct *otp_ptr)
+{
+	kal_uint16 i, temp;
+
+	// read otp into buffer 
+	if (index == 1)
+	{
+		// read otp --Bank 0
+		OV5648MIPI_write_cmos_sensor(0x3d84, 0xc0);
+		OV5648MIPI_write_cmos_sensor(0x3d85, 0x00);
+		OV5648MIPI_write_cmos_sensor(0x3d86, 0x0f);
+		OV5648MIPI_write_cmos_sensor(0x3d81, 0x01);
+		mdelay(5);
+		(*otp_ptr).module_integrator_id = (OV5648MIPI_read_cmos_sensor(0x3d05) & 0x7f);
+		(*otp_ptr).lens_id = OV5648MIPI_read_cmos_sensor(0x3d06);
+		temp = OV5648MIPI_read_cmos_sensor(0x3d0b);
+		(*otp_ptr).rg_ratio = (OV5648MIPI_read_cmos_sensor(0x3d07)<<2) + ((temp>>6) & 0x03);
+		(*otp_ptr).bg_ratio = (OV5648MIPI_read_cmos_sensor(0x3d08)<<2) + ((temp>>4) & 0x03);
+		(*otp_ptr).light_rg = (OV5648MIPI_read_cmos_sensor(0x3d0c)<<2) + ((temp>>2) & 0x03);
+		(*otp_ptr).light_bg = (OV5648MIPI_read_cmos_sensor(0x3d0d)<<2) + (temp & 0x03);
+		(*otp_ptr).user_data[0] = OV5648MIPI_read_cmos_sensor(0x3d09);
+		(*otp_ptr).user_data[1] = OV5648MIPI_read_cmos_sensor(0x3d0a);
+	}
+	else if (index == 2)
+	{
+		// read otp --Bank 0
+		OV5648MIPI_write_cmos_sensor(0x3d84, 0xc0);
+		OV5648MIPI_write_cmos_sensor(0x3d85, 0x00);
+		OV5648MIPI_write_cmos_sensor(0x3d86, 0x0f);
+		OV5648MIPI_write_cmos_sensor(0x3d81, 0x01);
+		mdelay(5);
+		(*otp_ptr).module_integrator_id = (OV5648MIPI_read_cmos_sensor(0x3d0e) & 0x7f);
+		(*otp_ptr).lens_id = OV5648MIPI_read_cmos_sensor(0x3d0f);
+		// read otp --Bank 1
+		OV5648MIPI_write_cmos_sensor(0x3d84, 0xc0);
+		OV5648MIPI_write_cmos_sensor(0x3d85, 0x10);
+		OV5648MIPI_write_cmos_sensor(0x3d86, 0x1f);
+		OV5648MIPI_write_cmos_sensor(0x3d81, 0x01);
+		mdelay(5);
+		temp = OV5648MIPI_read_cmos_sensor(0x3d04);
+		(*otp_ptr).rg_ratio = (OV5648MIPI_read_cmos_sensor(0x3d00)<<2) + ((temp>>6) & 0x03);
+		(*otp_ptr).bg_ratio = (OV5648MIPI_read_cmos_sensor(0x3d01)<<2) + ((temp>>4) & 0x03);
+		(*otp_ptr).light_rg = (OV5648MIPI_read_cmos_sensor(0x3d05)<<2) + ((temp>>2) & 0x03);
+		(*otp_ptr).light_bg = (OV5648MIPI_read_cmos_sensor(0x3d06)<<2) + (temp & 0x03);
+		(*otp_ptr).user_data[0] = OV5648MIPI_read_cmos_sensor(0x3d02);
+		(*otp_ptr).user_data[1] = OV5648MIPI_read_cmos_sensor(0x3d03);
+	}
+	module_id = (*otp_ptr).module_integrator_id;
+
+	// clear otp buffer
+	for (i = 0; i < 16; i++) {
+		OV5648MIPI_write_cmos_sensor(0x3d00 + i, 0x00);
+	}
+
+	return 0; 
+}
+
+/* R_gain, sensor red gain of AWB, 0x400 =1
+** G_gain, sensor green gain of AWB, 0x400 =1
+** B_gain, sensor blue gain of AWB, 0x400 =1
+** return 0;
+*/
+
+static kal_uint32 update_awb_gain(kal_uint32 R_gain, kal_uint32 G_gain, kal_uint32 B_gain)
+{
+	if (R_gain>0x400) {
+		OV5648MIPI_write_cmos_sensor(0x5186, R_gain>>8);
+		OV5648MIPI_write_cmos_sensor(0x5187, R_gain & 0x00ff);
+	}
+
+	if (G_gain>0x400) {
+		OV5648MIPI_write_cmos_sensor(0x5188, G_gain>>8);
+		OV5648MIPI_write_cmos_sensor(0x5189, G_gain & 0x00ff);
+	}
+
+	if (B_gain>0x400) {
+		OV5648MIPI_write_cmos_sensor(0x518a, B_gain>>8);
+		OV5648MIPI_write_cmos_sensor(0x518b, B_gain & 0x00ff);
+	}
+	return 0;
+}
+
+
+/* call this function after OV5648 initialization
+** return:	
+** 		0, update success
+**	       1, no OTP
+*/
+static kal_uint32 update_otp(void)
+{
+	struct otp_struct current_otp;
+	kal_uint8 i;
+	kal_uint8 otp_index;
+	kal_uint8 temp;
+	kal_uint32 R_gain, G_gain, B_gain, G_gain_R, G_gain_B;
+	kal_uint32 rg,bg;
+
+	// R/G and B/G of current camera module is read out from sensor OTP
+	// check first OTP with valid data
+	for( i = 1; i <= 2; i++) {
+		temp = check_otp(i);
+		if (temp == 2) {
+			otp_index = i;
+			break;
+		}
+	}
+
+	if (i > 2) {
+		// no valid wb OTP data
+		return 1;
+	}
+
+	read_otp(otp_index, &current_otp);
+
+	if(current_otp.light_rg==0) {
+		// no light source information in OTP
+		rg = current_otp.rg_ratio;
+	}
+	else {
+		// light source information found in OTP
+		rg = current_otp.rg_ratio * (current_otp.light_rg + 512) / 1024;
+	}
+
+	if(current_otp.light_bg==0) {
+		// no light source information in OTP
+		bg = current_otp.bg_ratio;
+	}
+	else {
+		// light source information found in OTP
+		bg = current_otp.bg_ratio * (current_otp.light_bg + 512) / 1024;
+	}
+
+	//calculate G gain
+	//0x400 = 1x gain
+	if(bg < BG_Ratio_Typical) {
+		if (rg< RG_Ratio_Typical) {
+			// current_otp.bg_ratio < BG_Ratio_typical &&? 
+			// current_otp.rg_ratio < RG_Ratio_typical
+			G_gain = 0x400;
+			B_gain = 0x400 * BG_Ratio_Typical / bg;
+			R_gain = 0x400 * RG_Ratio_Typical / rg; 
+		}
+		else {
+			// current_otp.bg_ratio < BG_Ratio_typical &&? 
+			// current_otp.rg_ratio >= RG_Ratio_typical
+			R_gain = 0x400;
+			G_gain = 0x400 * rg / RG_Ratio_Typical;
+			B_gain = G_gain * BG_Ratio_Typical /bg;
+		}
+	}
+	else {
+		if (rg < RG_Ratio_Typical) {
+			// current_otp.bg_ratio >= BG_Ratio_typical &&? 
+			// current_otp.rg_ratio < RG_Ratio_typical
+			B_gain = 0x400;
+			G_gain = 0x400 * bg / BG_Ratio_Typical;
+			R_gain = G_gain * RG_Ratio_Typical / rg;
+		}
+		else {
+			// current_otp.bg_ratio >= BG_Ratio_typical &&? 
+			// current_otp.rg_ratio >= RG_Ratio_typical
+			G_gain_B = 0x400 * bg / BG_Ratio_Typical;
+			G_gain_R = 0x400 * rg / RG_Ratio_Typical;
+
+			if(G_gain_B > G_gain_R ) {
+				B_gain = 0x400;
+				G_gain = G_gain_B;
+				R_gain = G_gain * RG_Ratio_Typical /rg;
+			}
+			else {
+				R_gain = 0x400;
+				G_gain = G_gain_R;
+				B_gain = G_gain * BG_Ratio_Typical / bg;
+			}
+		}
+	}
+	//before OTP update
+	SENSORDB("reg[0x5186] = %x\r\n", OV5648MIPI_read_cmos_sensor(0x5186));
+	SENSORDB("reg[0x5187] = %x\r\n", OV5648MIPI_read_cmos_sensor(0x5187));
+	SENSORDB("reg[0x5188] = %x\r\n", OV5648MIPI_read_cmos_sensor(0x5188));
+	SENSORDB("reg[0x5189] = %x\r\n", OV5648MIPI_read_cmos_sensor(0x5189));
+	SENSORDB("reg[0x518a] = %x\r\n", OV5648MIPI_read_cmos_sensor(0x518a));
+	SENSORDB("reg[0x518b] = %x\r\n", OV5648MIPI_read_cmos_sensor(0x518b));
+	SENSORDB("RG_Ratio_Typical = %x\r\n", RG_Ratio_Typical);
+	SENSORDB("BG_Ratio_Typical = %x\r\n", BG_Ratio_Typical);
+	SENSORDB("RG = %x\r\n", rg);//rg
+	SENSORDB("BG = %x\r\n", bg);//bg
+	
+	
+	update_awb_gain(R_gain, G_gain, B_gain);
+    //after OTP update
+	SENSORDB("reg[0x5186] = %x\r\n", OV5648MIPI_read_cmos_sensor(0x5186));
+	SENSORDB("reg[0x5187] = %x\r\n", OV5648MIPI_read_cmos_sensor(0x5187));
+	SENSORDB("reg[0x5188] = %x\r\n", OV5648MIPI_read_cmos_sensor(0x5188));
+	SENSORDB("reg[0x5189] = %x\r\n", OV5648MIPI_read_cmos_sensor(0x5189));
+	SENSORDB("reg[0x518a] = %x\r\n", OV5648MIPI_read_cmos_sensor(0x518a));
+	SENSORDB("reg[0x518b] = %x\r\n", OV5648MIPI_read_cmos_sensor(0x518b));
+	
+	return 0;
+}
+
+#endif
 
 
 
@@ -1325,10 +1616,13 @@ static void OV5648MIPI_Sensor_Init(void)
     OV5648MIPI_write_cmos_sensor(0x0100, 0x01); // wake up from software sleep
 
 //OTP Code Start
+/*
 #ifdef OV5648MIPI_USE_OTP
     //wb otp update
     update_otp();
+ 
 #endif
+*/
 //OTP Code End
 
 
@@ -1538,6 +1832,22 @@ UINT32 OV5648MIPIOpen(void)
     /* initail sequence write in  */
     OV5648MIPI_Sensor_Init();
 
+#ifdef OV5648_WB_OTP
+    update_otp();
+#endif
+	SENSORDB("Module ID: 0x%x ", module_id);  // sunny's module id is 0x01
+	
+#ifdef OV5648_WB_OTP
+	/* if you want to distiguish module vendor, do it here through  module_id */
+    /*
+    	if(module_id != 0x01){ 
+        return ERROR_SENSOR_CONNECT_FAIL;
+    }
+    	
+	/* if you want to distiguish module vendor, do it here through  module_id */
+#endif
+
+
     spin_lock(&ov5648mipi_drv_lock);
     OV5648MIPIDuringTestPattern = KAL_FALSE;
     OV5648MIPIAutoFlickerMode = KAL_FALSE;
@@ -1583,6 +1893,21 @@ UINT32 OV5648GetSensorID(UINT32 *sensorID)
         *sensorID = 0xFFFFFFFF;
         return ERROR_SENSOR_CONNECT_FAIL;
     }
+
+	
+	/* if you want to distiguish module vendor, do it here through	module_id */
+	/*
+	#ifdef OV5648_WB_OTP
+	
+    OV5648MIPI_Sensor_Init();
+	update_otp();
+		else if(module_id != 0x01){ 
+	        *sensorID = 0xFFFFFFFF;
+	        return ERROR_SENSOR_CONNECT_FAIL;
+	    }
+	#endif
+	*/
+	/* if you want to distiguish module vendor, do it here through	module_id */
 
     return ERROR_NONE;
 }

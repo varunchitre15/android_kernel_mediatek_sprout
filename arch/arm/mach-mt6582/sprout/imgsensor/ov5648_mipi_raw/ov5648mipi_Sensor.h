@@ -115,6 +115,7 @@ typedef struct _sensor_data_struct
 
 
 //OTP Code Start
+/*
 #ifdef OV5648MIPI_USE_OTP
 struct OV5648MIPI_otp_struct
 {
@@ -136,6 +137,7 @@ struct OV5648MIPI_otp_struct
 #define BG_Typical 0x2F4
 #define GB_GR_Typical 0x3FC
 #endif
+*/
 //OTP Code End
 
 
