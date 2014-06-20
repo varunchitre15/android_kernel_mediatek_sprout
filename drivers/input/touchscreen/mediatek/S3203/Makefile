@@ -26,5 +26,6 @@ ifeq ($(CONFIG_MTK_PLATFORM),"mt6572")
     ccflags-y += -DMT6572
 endif
 
-obj-y  +=  s3203_driver.o
-
+obj-y  +=  rmi_dev.o
+obj-y  +=  rmi_fw_update.o
+obj-y  +=  synaptics_rmi4_driver.o
