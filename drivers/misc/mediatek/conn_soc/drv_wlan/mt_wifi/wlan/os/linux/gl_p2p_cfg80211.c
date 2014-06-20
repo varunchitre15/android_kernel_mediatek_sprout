@@ -400,6 +400,9 @@ mtk_p2p_cfg80211_scan (
     P_P2P_SSID_STRUCT_T prSsidStruct = (P_P2P_SSID_STRUCT_T)NULL;
     struct ieee80211_channel *prChannel = NULL;
     struct cfg80211_ssid *prSsid = NULL;
+	
+    P_ADAPTER_T prAdapter = NULL;
+    P_P2P_FSM_INFO_T prP2pFsmInfo = (P_P2P_FSM_INFO_T)NULL;
 
     /* [---------Channel---------] [---------SSID---------][---------IE---------] */
 	DBGLOG(INIT, TRACE, ("mtk_p2p_cfg80211_scan\n"));
@@ -413,7 +416,9 @@ mtk_p2p_cfg80211_scan (
         prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
         prP2pGlueInfo = prGlueInfo->prP2PInfo;
-
+        
+        prAdapter = prGlueInfo->prAdapter;		
+        prP2pFsmInfo = prAdapter->rWifiVar.prP2pFsmInfo;
         if (prP2pGlueInfo == NULL) {
             ASSERT(FALSE);
             break;
@@ -494,6 +499,19 @@ mtk_p2p_cfg80211_scan (
         if (request->n_ssids) {
             ASSERT((UINT_32)prSsidStruct == (UINT_32)&(prMsgScanRequest->arChannelListInfo[u4Idx]));
             prMsgScanRequest->prSSID = prSsidStruct;
+	    /* supplicant will not update bss IE within timeout(190 seconds if not trigger another scan),
+	       so here we just cheat
+	       supplicant that he wanted to scan the WFD DONGLE in the pre-scan; after cheat supplicant two times
+	       supplicant will remove the WFD DONGE bss in bss list according to wpa_s->conf->bss_expiration_scan_count*/
+            if (request->n_ssids == 1 &&
+                request->ssids[0].ssid_len == 7 &&
+                kalMemCmp(request->ssids[0].ssid,"DIRECT-", 7) == 0 &&
+                prP2pFsmInfo->u4DelscanCount < 2) {
+		request->ssids[0].ssid_len = 0;
+                prP2pFsmInfo->u4DelscanCount++;
+            }
+            if (prP2pFsmInfo->u4DelscanCount > 2)
+                prP2pFsmInfo->u4DelscanCount = 2;
         }
 
         for (u4Idx = 0; u4Idx < request->n_ssids; u4Idx++) {

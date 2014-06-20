@@ -2584,8 +2584,12 @@ p2pFsmRunEventJoinComplete (
                     //4 <1.6> Indicate Connected Event to Host immediately.
                     /* Require BSSID, Association ID, Beacon Interval.. from AIS_BSS_INFO_T */
                     //p2pIndicationOfMediaStateToHost(prAdapter, PARAM_MEDIA_STATE_CONNECTED, prStaRec->aucMacAddr);
-                    if(prP2pFsmInfo->prTargetBss)
-					scanReportBss2Cfg80211(prAdapter,OP_MODE_P2P_DEVICE,prP2pFsmInfo->prTargetBss);
+                    if(prP2pFsmInfo->prTargetBss) {
+                        scanReportBss2Cfg80211(prAdapter,OP_MODE_P2P_DEVICE,prP2pFsmInfo->prTargetBss);
+						
+                        prP2pFsmInfo->u4DelscanCount = 0;
+                    }
+				
                     kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
                                                                     &prP2pFsmInfo->rConnReqInfo,
                                                                     prJoinInfo->aucIEBuf,

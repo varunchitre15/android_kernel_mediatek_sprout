@@ -723,6 +723,7 @@ struct _P2P_FSM_INFO_T {
 
 #if CFG_SUPPORT_WFD
     WFD_CFG_SETTINGS_T rWfdConfigureSettings;
+    UINT_32 u4DelscanCount;
 #endif
 
     BOOLEAN fgIsWPSMode;
