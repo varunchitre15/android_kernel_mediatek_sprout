@@ -513,7 +513,7 @@ static char *rmi_char_devnode(struct device *dev, mode_t *mode)
     if (!mode)
         return NULL;
 
-    *mode = (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    *mode = (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 
     return kasprintf(GFP_KERNEL, "rmi/%s", dev_name(dev));
 }
