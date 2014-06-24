@@ -1655,6 +1655,7 @@ MTK_WCN_BOOL stp_psm_is_quick_ps_support (VOID)
     return _stp_psm_is_quick_ps_support();
 }
 
+#if PSM_USE_COUNT_PACKAGE
 INT32 stp_psm_disable_by_tx_rx_density(MTKSTP_PSM_T *stp_psm, INT32 dir){
 
     //easy the variable maintain beween stp tx, rx thread.
@@ -1735,6 +1736,50 @@ INT32 stp_psm_disable_by_tx_rx_density(MTKSTP_PSM_T *stp_psm, INT32 dir){
 
     return 0;
 }
+
+#else
+
+static struct timeval tv_now, tv_end;
+static INT32 sample_start = 0;
+static INT32 tx_sum_len = 0;
+static INT32 rx_sum_len = 0;
+
+INT32 stp_psm_disable_by_tx_rx_density(MTKSTP_PSM_T *stp_psm, INT32 dir,INT32 length)
+{
+	if (sample_start) {
+		if (dir) {
+			rx_sum_len += length;
+		} else {
+			tx_sum_len += length;
+		}
+		do_gettimeofday(&tv_now);
+		//STP_PSM_INFO_FUNC("tv_now:%d.%d tv_end:%d.%d\n",tv_now.tv_sec,tv_now.tv_usec,tv_end.tv_sec,tv_end.tv_usec);
+		if (((tv_now.tv_sec == tv_end.tv_sec) && (tv_now.tv_usec > tv_end.tv_usec))||
+			(tv_now.tv_sec > tv_end.tv_sec)) {
+			STP_PSM_INFO_FUNC("STP speed rx:%d tx:%d\n",rx_sum_len,tx_sum_len);
+			if((rx_sum_len + tx_sum_len) > RTX_SPEED_THRESHOLD ){
+				//STP_PSM_INFO_FUNC("High speed,Disable monitor\n");
+				osal_set_bit(STP_PSM_WMT_EVENT_DISABLE_MONITOR_TX_HIGH_DENSITY,&stp_psm->flag);
+				stp_psm_start_monitor(stp_psm);
+			}else{
+				//STP_PSM_INFO_FUNC("Low speed,Enable monitor\n");
+				osal_clear_bit(STP_PSM_WMT_EVENT_DISABLE_MONITOR_TX_HIGH_DENSITY,&stp_psm->flag);
+			}
+			sample_start = 0;
+			rx_sum_len = 0;
+			tx_sum_len = 0;
+		}
+	}else{
+		sample_start = 1;
+		do_gettimeofday(&tv_now);
+		tv_end = tv_now;
+		tv_end.tv_sec += SAMPLE_DURATION;
+	}
+
+    return 0;
+}
+
+#endif
 
 /*external function for WMT module to do sleep/wakeup*/
 INT32 stp_psm_set_state(MTKSTP_PSM_T *stp_psm, MTKSTP_PSM_STATE_T state)

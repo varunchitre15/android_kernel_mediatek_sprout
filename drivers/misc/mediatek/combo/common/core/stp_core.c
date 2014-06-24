@@ -2539,7 +2539,11 @@ INT32 mtk_wcn_stp_send_data(const UINT8 *buffer, const UINT32 length, const UINT
     {
 	    if(type != WMT_TASK_INDX)
 	    {
-	        stp_psm_disable_by_tx_rx_density(STP_PSM_CORE(stp_core_ctx), 0);
+#if PSM_USE_COUNT_PACKAGE
+			stp_psm_disable_by_tx_rx_density(STP_PSM_CORE(stp_core_ctx), 0);
+#else
+			stp_psm_disable_by_tx_rx_density(STP_PSM_CORE(stp_core_ctx), 0, length);
+#endif
 	    }
 
 	    //if(stp_is_apply_powersaving()) 
@@ -2862,10 +2866,6 @@ INT32 mtk_wcn_stp_receive_data(UINT8 *buffer, UINT32 length, UINT8 type)
     /* GeorgeKuo modify: reduce "if" branch */
     UINT16 copyLen = 0;
     UINT16 tailLen = 0;
-    if ((MTK_WCN_BOOL_TRUE == stp_psm_is_quick_ps_support()) && (type != WMT_TASK_INDX))
-    {
-        stp_psm_disable_by_tx_rx_density(STP_PSM_CORE(stp_core_ctx), 1);
-    }
 
     stp_ctx_lock(&stp_core_ctx);
     while (stp_core_ctx.ring[type].read_p != stp_core_ctx.ring[type].write_p)
@@ -2918,6 +2918,15 @@ INT32 mtk_wcn_stp_receive_data(UINT8 *buffer, UINT32 length, UINT8 type)
     }
 
     stp_ctx_unlock(&stp_core_ctx);
+
+	if ((MTK_WCN_BOOL_TRUE == stp_psm_is_quick_ps_support()) && (type != WMT_TASK_INDX))
+	{
+#if PSM_USE_COUNT_PACKAGE
+		stp_psm_disable_by_tx_rx_density(STP_PSM_CORE(stp_core_ctx), 1);
+#else
+		stp_psm_disable_by_tx_rx_density(STP_PSM_CORE(stp_core_ctx), 1, copyLen);
+#endif
+	}
 
     return copyLen;
 }

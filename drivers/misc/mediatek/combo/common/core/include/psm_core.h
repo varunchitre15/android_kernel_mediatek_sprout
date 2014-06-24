@@ -76,8 +76,18 @@
 #define STP_PSM_WMT_EVENT_DISABLE_MONITOR_TX_HIGH_DENSITY   (0x1UL << 7) 
 #define STP_PSM_WMT_EVENT_DISABLE_MONITOR_RX_HIGH_DENSITY   (0x1UL << 8)
 
+#define PSM_USE_COUNT_PACKAGE 0
+
+#if PSM_USE_COUNT_PACKAGE
 #define MTK_COMBO_PSM_RX_TH_DEFAULT (2000)
 #define MTK_COMBO_PSM_TX_TH_DEFAULT (400)
+INT32 stp_psm_disable_by_tx_rx_density(MTKSTP_PSM_T *stp_psm, INT32 dir);
+#else
+#define	SAMPLE_DURATION 1 /*1 second*/
+#define RTX_SPEED_THRESHOLD	50000	/*50KB/s*/
+INT32 stp_psm_disable_by_tx_rx_density(MTKSTP_PSM_T *stp_psm, INT32 dir,INT32 length);
+#endif
+
 
 /* OP command ring buffer : must be power of 2 */
 #define STP_OP_BUF_SIZE (16)
@@ -200,7 +210,6 @@ INT32 stp_psm_hold_data (
     const UINT8 type
     );
 INT32 stp_psm_do_wakeup(MTKSTP_PSM_T *stp_psm);
-INT32 stp_psm_disable_by_tx_rx_density(MTKSTP_PSM_T *stp_psm, INT32 dir);
 INT32 stp_psm_reset(MTKSTP_PSM_T *stp_psm);
 INT32 stp_psm_disable(MTKSTP_PSM_T *stp_psm);
 INT32 stp_psm_enable(MTKSTP_PSM_T *stp_psm, INT32 idle_time_to_sleep);
