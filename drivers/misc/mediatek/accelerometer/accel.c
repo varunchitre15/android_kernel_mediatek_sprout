@@ -207,7 +207,9 @@ static int acc_enable_data(int enable)
           if(false == cxt->acc_ctl.is_report_input_direct)
           {
               cxt->is_polling_run = false;
+              smp_mb();
               del_timer_sync(&cxt->timer);
+              smp_mb();
               cancel_work_sync(&cxt->report);
             cxt->drv_data.acc_data.values[0] = ACC_INVALID_VALUE;
                cxt->drv_data.acc_data.values[1] = ACC_INVALID_VALUE;
@@ -522,7 +524,7 @@ static int acc_real_driver_init(void)
 
     for(i =0; i < MAX_CHOOSE_G_NUM; i++ )
     {
-        if(i == 0){
+        if((i == 0)&& (NULL == gsensor_init_list[0])){
             ACC_LOG("register gensor driver for the first time\n");
             if(platform_driver_register(&gsensor_driver))
             {

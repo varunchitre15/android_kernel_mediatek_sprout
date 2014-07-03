@@ -39,7 +39,7 @@
 
 #define C_MAX_FIR_LENGTH            (32)
 #define MAX_SENSOR_NAME                (32)
-
+#define BMG160_SUCCESS        0
 /* common definition */
 #define BMG_GET_BITSLICE(regvar, bitname)\
     ((regvar & bitname##__MSK) >> bitname##__POS)

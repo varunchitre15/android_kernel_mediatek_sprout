@@ -10,3 +10,6 @@ endif
 ifeq ($(CONFIG_MTK_CM36283),y)
 obj-y	+=  cm36283/
 endif
+ifeq ($(CONFIG_MTK_TMD2771),y)
+obj-y	+=  tmd2771/
+endif

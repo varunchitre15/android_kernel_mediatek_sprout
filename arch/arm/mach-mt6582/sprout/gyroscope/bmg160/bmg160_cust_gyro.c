@@ -38,7 +38,7 @@ static struct gyro_hw cust_gyro_hw = {
    // .power = cust_gyro_power,
 };
 /*---------------------------------------------------------------------------*/
-struct gyro_hw* get_cust_gyro_hw(void)
+struct gyro_hw* bmg160_get_cust_gyro_hw(void)
 {
     return &cust_gyro_hw;
 }

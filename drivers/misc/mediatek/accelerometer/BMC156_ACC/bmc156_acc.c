@@ -44,6 +44,7 @@
 #ifdef      GSENSOR_MOTION_DETECT
 #include <cust_eint.h>
 #include <cust_gpio_usage.h>
+extern struct acc_hw* bmc156_get_cust_acc_hw(void);
 static int common_use = 0;
 static int sm_use = 0;
 static int motion_detect = 0;
@@ -273,7 +274,7 @@ static GSENSOR_VECTOR3D gsensor_gain;
 //static char selftestRes[8]= {0};
 static struct mutex i2c_lock;
 /*----------------------------------------------------------------------------*/
-#define GSE_TAG                  "[Gsensor] "
+#define GSE_TAG                  "[ACCELEROMETER] "
 #define GSE_FUN(f)               printk(GSE_TAG"%s\n", __FUNCTION__)
 #define GSE_ERR(fmt, args...)    printk(GSE_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
 #define GSE_LOG(fmt, args...)    printk(GSE_TAG fmt, ##args)
@@ -2779,7 +2780,7 @@ static int bma255_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
     //memset(obj, 0, sizeof(struct bma255_i2c_data));
 
-    obj->hw = get_cust_acc_hw();
+    obj->hw = bmc156_get_cust_acc_hw();
 
     if((err = hwmsen_get_convert(obj->hw->direction, &obj->cvt)))
     {
@@ -2927,7 +2928,7 @@ static int bma255_i2c_remove(struct i2c_client *client)
 /*----------------------------------------------------------------------------*/
 static int bmc156_remove(void)
 {
-    struct acc_hw *hw = get_cust_acc_hw();
+    struct acc_hw *hw = bmc156_get_cust_acc_hw();
     GSE_FUN();
     BMA255_power(hw, 0);
     i2c_del_driver(&bma255_i2c_driver);
@@ -2937,7 +2938,7 @@ static int bmc156_remove(void)
 
 static int  bmc156_acc_local_init(void)
 {
-    struct acc_hw *hw = get_cust_acc_hw();
+    struct acc_hw *hw = bmc156_get_cust_acc_hw();
 
     BMA255_power(hw, 1);
     if(i2c_add_driver(&bma255_i2c_driver))
@@ -2955,7 +2956,7 @@ static int  bmc156_acc_local_init(void)
 /*----------------------------------------------------------------------------*/
 static int __init bmc156_init(void)
 {
-    struct acc_hw *hw = get_cust_acc_hw();
+    struct acc_hw *hw = bmc156_get_cust_acc_hw();
     GSE_FUN();
     i2c_register_board_info(hw->i2c_num, &bmc156_i2c_info, 1);
     acc_driver_add(&bmc156_acc_init_info);

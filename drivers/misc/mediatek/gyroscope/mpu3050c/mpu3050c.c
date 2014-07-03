@@ -25,20 +25,19 @@
 #include <linux/earlysuspend.h>
 #include <linux/platform_device.h>
 
-#include <cust_gyro.h>
 #include <linux/hwmsensor.h>
 #include <linux/hwmsen_dev.h>
 #include <linux/sensors_io.h>
-#include "mpu3050c.h"
 #include <linux/hwmsen_helper.h>
 #include <linux/kernel.h>
-
-
 #include <mach/mt_typedefs.h>
 #include <mach/mt_gpio.h>
 #include <mach/mt_pm_ldo.h>
-
 #include <mach/mt_boot.h>
+#include <cust_gyro.h>
+#include <gyroscope.h>
+#include <linux/batch.h>
+#include "mpu3050c.h"
 
 /*-------------------------MT6516&MT6573 define-------------------------------*/
 
@@ -69,7 +68,7 @@ static struct i2c_board_info __initdata i2c_mpu3000={ I2C_BOARD_INFO("MPU3000", 
 //static const unsigned short *const mpu3000_forces[] = { mpu3000_force, NULL };
 //static struct i2c_client_address_data mpu3000_addr_data = { .forces = mpu3000_forces,};
 
-int packet_thresh = 75; // 600 ms / 8ms/sample
+static int packet_thresh = 75; // 600 ms / 8ms/sample
 
 /*----------------------------------------------------------------------------*/
 static int mpu3000_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id); 
@@ -77,6 +76,15 @@ static int mpu3000_i2c_remove(struct i2c_client *client);
 //static int mpu3000_i2c_detect(struct i2c_client *client, int kind, struct i2c_board_info *info);
 //static int mpu3000_suspend(struct i2c_client *client, pm_message_t msg) ;
 //static int mpu3000_resume(struct i2c_client *client);
+extern struct gyro_hw* mpu3050_get_cust_gyro_hw(void);
+static int mpu3050_local_init(void);
+static int  mpu3050_remove(void);
+static int mpu3050_init_flag =-1;
+static struct gyro_init_info mpu3050_init_info = {
+        .name = "mpu3050",
+        .init = mpu3050_local_init,
+        .uninit = mpu3050_remove,
+};
 /*----------------------------------------------------------------------------*/
 typedef enum {
     GYRO_TRC_FILTER  = 0x01,
@@ -152,17 +160,16 @@ static struct i2c_driver mpu3000_i2c_driver = {
 
 /*----------------------------------------------------------------------------*/
 static struct i2c_client *mpu3000_i2c_client = NULL;
-static struct platform_driver mpu3000_gyro_driver;
 static struct mpu3000_i2c_data *obj_i2c_data = NULL;
 static bool sensor_power = false;
 
 
 
 /*----------------------------------------------------------------------------*/
-#define GYRO_TAG                  "[Gyroscope] "
-#define GYRO_FUN(f)               printk(KERN_INFO GYRO_TAG"%s\n", __FUNCTION__)
-#define GYRO_ERR(fmt, args...)    printk(KERN_ERR GYRO_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
-#define GYRO_LOG(fmt, args...)    printk(KERN_INFO GYRO_TAG fmt, ##args)
+//#define GYRO_TAG                  "[Gyroscope] "
+//#define GYRO_FUN(f)               printk(KERN_INFO GYRO_TAG"%s\n", __FUNCTION__)
+//#define GYRO_ERR(fmt, args...)    printk(KERN_ERR GYRO_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
+//#define GYRO_LOG(fmt, args...)    printk(KERN_INFO GYRO_TAG fmt, ##args)
 /*----------------------------------------------------------------------------*/
 /*
 
@@ -1465,195 +1472,252 @@ static void mpu3000_late_resume(struct early_suspend *h)
 }
 /*----------------------------------------------------------------------------*/
 #endif /*CONFIG_HAS_EARLYSUSPEND*/
-/*----------------------------------------------------------------------------*/
-/*static int mpu3000_i2c_detect(struct i2c_client *client, int kind, struct i2c_board_info *info) 
-{    
-	strcpy(info->type, MPU3000_DEV_NAME);
-	return 0;
+
+
+static int mpu3050_open_report_data(int open)
+{
+    return 0;
 }
-*/
+
+static int mpu3050_enable_nodata(int en)
+{
+    int res =0;
+    int retry = 0;
+    bool power=false;
+
+    if(1==en)
+    {
+        power=true;
+    }
+    if(0==en)
+    {
+        power =false;
+    }
+
+    for(retry = 0; retry < 3; retry++){
+        res = MPU3000_SetPowerMode(obj_i2c_data->client, power);
+        if(res == 0)
+        {
+            GYRO_LOG("MPU3000_SetPowerMode done\n");
+            break;
+        }
+        GYRO_LOG("MPU3000_SetPowerMode fail\n");
+    }
+
+
+    if(res != MPU3000_SUCCESS)
+    {
+        GYRO_LOG("MPU3000_SetPowerMode fail!\n");
+        return -1;
+    }
+    GYRO_LOG("mpu3050_enable_nodata OK!\n");
+    return 0;
+
+}
+
+static int mpu3050_set_delay(u64 ns)
+{
+    return 0;
+}
+
+static int mpu3050_get_data(int* x ,int* y,int* z, int* status)
+{
+    char buff[MPU3000_BUFSIZE];
+    MPU3000_ReadGyroData(obj_i2c_data->client, buff, MPU3000_BUFSIZE);
+    sscanf(buff, "%x %x %x", x, y, z);
+    *status = SENSOR_STATUS_ACCURACY_MEDIUM;
+
+    return 0;
+}
+
+
 /*----------------------------------------------------------------------------*/
 static int mpu3000_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct i2c_client *new_client;
-	struct mpu3000_i2c_data *obj;
-	struct hwmsen_object sobj;
-	int err = 0;
-	GYRO_FUN();
+    struct i2c_client *new_client;
+    struct mpu3000_i2c_data *obj;
+    //struct hwmsen_object sobj;
+        struct gyro_control_path ctl={0};
+    struct gyro_data_path data={0};
+    int err = 0;
+    GYRO_FUN();
 
-	if(!(obj = kzalloc(sizeof(*obj), GFP_KERNEL)))
-	{
-		err = -ENOMEM;
-		goto exit;
-	}
-	
-	memset(obj, 0, sizeof(struct mpu3000_i2c_data));
+    if(!(obj = kzalloc(sizeof(*obj), GFP_KERNEL)))
+    {
+        err = -ENOMEM;
+        goto exit;
+    }
 
-	obj->hw = get_cust_gyro_hw();
-	err = hwmsen_get_convert(obj->hw->direction, &obj->cvt);
-	if(err)
-	{
-		GYRO_ERR("invalid direction: %d\n", obj->hw->direction);
-		goto exit;
-	}
+    memset(obj, 0, sizeof(struct mpu3000_i2c_data));
 
-	
+    obj->hw = mpu3050_get_cust_gyro_hw();
+    err = hwmsen_get_convert(obj->hw->direction, &obj->cvt);
+    if(err)
+    {
+        GYRO_ERR("invalid direction: %d\n", obj->hw->direction);
+        goto exit;
+    }
+
+
     GYRO_LOG("gyro_default_i2c_addr: %x\n", client->addr);
-	GYRO_LOG("gyro_custom_i2c_addr: %x\n", obj->hw->addr);
-	if(0!=obj->hw->addr)
-	{
-	  client->addr = obj->hw->addr >> 1;
-	  GYRO_LOG("gyro_use_i2c_addr: %x\n", client->addr);
-	}
-	
-	obj_i2c_data = obj;
-	obj->client = client;
-	new_client = obj->client;
-	i2c_set_clientdata(new_client,obj);
-	
-	atomic_set(&obj->trace, 0);
-	atomic_set(&obj->suspend, 0);
-	
+    GYRO_LOG("gyro_custom_i2c_addr: %x\n", obj->hw->addr);
+    if(0!=obj->hw->addr)
+    {
+      client->addr = obj->hw->addr >> 1;
+      GYRO_LOG("gyro_use_i2c_addr: %x\n", client->addr);
+    }
+
+    obj_i2c_data = obj;
+    obj->client = client;
+    new_client = obj->client;
+    i2c_set_clientdata(new_client,obj);
+
+    atomic_set(&obj->trace, 0);
+    atomic_set(&obj->suspend, 0);
 
 
-	mpu3000_i2c_client = new_client;	
-	err = mpu3000_init_client(new_client, false);
-	if(err)
-	{
-		goto exit_init_failed;
-	}
-	
 
-	err = misc_register(&mpu3000_device);
-	if(err)
-	{
-		GYRO_ERR("mpu3000_device misc register failed!\n");
-		goto exit_misc_device_register_failed;
-	}
+    mpu3000_i2c_client = new_client;
+    err = mpu3000_init_client(new_client, false);
+    if(err)
+    {
+        goto exit_init_failed;
+    }
 
-	err = mpu3000_create_attr(&mpu3000_gyro_driver.driver);
-	if(err)
-	{
-		GYRO_ERR("mpu3000 create attribute err = %d\n", err);
-		goto exit_create_attr_failed;
-	}
-	
 
-	sobj.self = obj;
-    sobj.polling = 1;
-    sobj.sensor_operate = mpu3000_operate;
-	err = hwmsen_attach(ID_GYROSCOPE, &sobj);
-	if(err)
-	{
-		GYRO_ERR("hwmsen_attach fail = %d\n", err);
-		goto exit_kfree;
-	}
-	
+    err = misc_register(&mpu3000_device);
+    if(err)
+    {
+        GYRO_ERR("mpu3000_device misc register failed!\n");
+        goto exit_misc_device_register_failed;
+    }
+
+    err = mpu3000_create_attr(&(mpu3050_init_info.platform_diver_addr->driver));
+    if(err)
+    {
+        GYRO_ERR("mpu3000 create attribute err = %d\n", err);
+        goto exit_create_attr_failed;
+    }
+
+
+    ctl.open_report_data= mpu3050_open_report_data;
+    ctl.enable_nodata = mpu3050_enable_nodata;
+    ctl.set_delay  = mpu3050_set_delay;
+    ctl.is_report_input_direct = false;
+    ctl.is_support_batch = obj->hw->is_batch_supported;
+
+    err = gyro_register_control_path(&ctl);
+    if(err)
+    {
+         GYRO_ERR("register gyro control path err\n");
+        goto exit_kfree;
+    }
+
+    data.get_data = mpu3050_get_data;
+    data.vender_div = DEGREE_TO_RAD;
+    err = gyro_register_data_path(&data);
+    if(err)
+        {
+           GYRO_ERR("gyro_register_data_path fail = %d\n", err);
+           goto exit_kfree;
+        }
+    err = batch_register_support_info(ID_GYROSCOPE,obj->hw->is_batch_supported);
+    if(err)
+    {
+        GYRO_ERR("register gyro batch support err = %d\n", err);
+        goto exit_kfree;
+    }
+
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-	obj->early_drv.level    = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 2,
-	obj->early_drv.suspend  = mpu3000_early_suspend,
-	obj->early_drv.resume   = mpu3000_late_resume,    
-	register_early_suspend(&obj->early_drv);
-#endif 
+    obj->early_drv.level    = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 2,
+    obj->early_drv.suspend  = mpu3000_early_suspend,
+    obj->early_drv.resume   = mpu3000_late_resume,
+    register_early_suspend(&obj->early_drv);
+#endif
 
-	GYRO_LOG("%s: OK\n", __func__);    
-	return 0;
+    mpu3050_init_flag = 0;
+    GYRO_LOG("%s: OK\n", __func__);
+    return 0;
 
-	exit_create_attr_failed:
-	misc_deregister(&mpu3000_device);
-	exit_misc_device_register_failed:
-	exit_init_failed:
-	//i2c_detach_client(new_client);
-	exit_kfree:
-	kfree(obj);
-	exit:
-	GYRO_ERR("%s: err = %d\n", __func__, err);        
-	return err;
+    exit_create_attr_failed:
+    misc_deregister(&mpu3000_device);
+    exit_misc_device_register_failed:
+    exit_init_failed:
+    exit_kfree:
+    kfree(obj);
+    exit:
+    mpu3050_init_flag = -1;
+    GYRO_ERR("%s: err = %d\n", __func__, err);
+    return err;
 }
 
-/*----------------------------------------------------------------------------*/
 static int mpu3000_i2c_remove(struct i2c_client *client)
 {
-	int err = 0;	
-	
-	err = mpu3000_delete_attr(&mpu3000_gyro_driver.driver);
-	if(err)
-	{
-		GYRO_ERR("mpu3000_delete_attr fail: %d\n", err);
-	}
-	
-	err = misc_deregister(&mpu3000_device);
-	if(err)
-	{
-		GYRO_ERR("misc_deregister fail: %d\n", err);
-	}
+    int err = 0;
 
-	err = hwmsen_detach(ID_ACCELEROMETER);
-	if(err)
-	{
-		GYRO_ERR("hwmsen_detach fail: %d\n", err);
-	}
+    err = mpu3000_delete_attr(&(mpu3050_init_info.platform_diver_addr->driver));
+    if(err)
+    {
+        GYRO_ERR("mpu3000_delete_attr fail: %d\n", err);
+    }
 
-	mpu3000_i2c_client = NULL;
-	i2c_unregister_device(client);
-	kfree(i2c_get_clientdata(client));
-	return 0;
-}
-/*----------------------------------------------------------------------------*/
-static int mpu3000_probe(struct platform_device *pdev) 
-{
-	struct gyro_hw *hw = get_cust_gyro_hw();
-	GYRO_FUN();
+    err = misc_deregister(&mpu3000_device);
+    if(err)
+    {
+        GYRO_ERR("misc_deregister fail: %d\n", err);
+    }
 
-	MPU3000_power(hw, 1);
-	//mpu3000_force[0] = hw->i2c_num;
-	if(i2c_add_driver(&mpu3000_i2c_driver))
-	{
-		GYRO_ERR("add driver error\n");
-		return -1;
-	}
-	return 0;
-}
-/*----------------------------------------------------------------------------*/
-static int mpu3000_remove(struct platform_device *pdev)
-{
-    struct gyro_hw *hw = get_cust_gyro_hw();
-
-    GYRO_FUN();    
-    MPU3000_power(hw, 0);    
-    i2c_del_driver(&mpu3000_i2c_driver);
+    mpu3000_i2c_client = NULL;
+    i2c_unregister_device(client);
+    kfree(i2c_get_clientdata(client));
     return 0;
 }
-/*----------------------------------------------------------------------------*/
-static struct platform_driver mpu3000_gyro_driver = {
-	.probe      = mpu3000_probe,
-	.remove     = mpu3000_remove,    
-	.driver     = {
-		.name  = "gyroscope",
-//		.owner = THIS_MODULE,//modified
-	}
-};
+
+
+
 
 /*----------------------------------------------------------------------------*/
+static int mpu3050_remove(void)
+{
+    struct gyro_hw *hw = mpu3050_get_cust_gyro_hw();
+    GYRO_FUN();
+    MPU3000_power(hw, 0);
+    i2c_del_driver(&mpu3000_i2c_driver);
+
+    return 0;
+}
+
+static int mpu3050_local_init(void)
+{
+    struct gyro_hw *hw = mpu3050_get_cust_gyro_hw();
+
+    MPU3000_power(hw, 1);
+    if(i2c_add_driver(&mpu3000_i2c_driver))
+    {
+        GYRO_ERR("add driver error\n");
+        return -1;
+    }
+    if(-1 == mpu3050_init_flag)
+    {
+       return -1;
+    }
+    return 0;
+}
+
 static int __init mpu3000_init(void)
 {
-	struct gyro_hw *hw = get_cust_gyro_hw();
-	GYRO_FUN();	
-	GYRO_LOG("%s: i2c_number=%d\n", __func__,hw->i2c_num);
-	i2c_register_board_info(hw->i2c_num, &i2c_mpu3000, 1);	
-	if(platform_driver_register(&mpu3000_gyro_driver))
-	{
-		GYRO_ERR("failed to register driver");
-		return -ENODEV;
-	}
-	return 0;    
+    struct gyro_hw *hw = mpu3050_get_cust_gyro_hw();
+    GYRO_LOG("%s: i2c_number=%d\n", __func__,hw->i2c_num);
+    i2c_register_board_info(hw->i2c_num, &i2c_mpu3000, 1);
+    gyro_driver_add(&mpu3050_init_info);
+
+    return 0;
 }
 /*----------------------------------------------------------------------------*/
 static void __exit mpu3000_exit(void)
 {
-	GYRO_FUN();
-	platform_driver_unregister(&mpu3000_gyro_driver);
+    GYRO_FUN();
 }
 /*----------------------------------------------------------------------------*/
 module_init(mpu3000_init);

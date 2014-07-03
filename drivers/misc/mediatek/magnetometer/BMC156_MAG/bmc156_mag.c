@@ -38,8 +38,22 @@
 #include <linux/hwmsen_dev.h>
 #include <linux/sensors_io.h>
 #include "bmc156_mag.h"
+#include <mag.h>
 
 #define POWER_NONE_MACRO MT65XX_POWER_NONE
+static int    bmm050_local_init(void);
+static int bmm050_remove(void);
+extern struct mag_hw* bmc156_get_cust_mag_hw(void);
+
+static int bmm050_init_flag =-1; // 0<==>OK -1 <==> fail
+
+static struct mag_init_info bmm050_init_info = {
+        .name = "bmc156_mag",
+        .init = bmm050_local_init,
+        .uninit = bmm050_remove,
+
+};
+static atomic_t open_flag = ATOMIC_INIT(0);
 /*----------------------------------------------------------------------------*/
 /*
 * Enable the driver to block e-compass daemon on suspend
@@ -50,24 +64,24 @@
 * Enable gyroscope feature with BMC050
 */
 #define BMC050_M4G
-//#undef BMC050_M4G
+#undef BMC050_M4G
 /*
 * Enable rotation vecter feature with BMC050
 */
 #define BMC050_VRV
-//#undef BMC050_VRV
+#undef BMC050_VRV
 
 /*
 * Enable virtual linear accelerometer feature with BMC050
 */
 #define BMC050_VLA
-//#undef BMC050_VLA
+#undef BMC050_VLA
 
 /*
 * Enable virtual gravity feature with BMC050
 */
 #define BMC050_VG
-//#undef BMC050_VG
+#undef BMC050_VG
 
 #ifdef BMC050_M4G
 /* !!! add a new definition in linux/sensors_io.h if possible !!! */
@@ -1815,10 +1829,10 @@ BMM050_RETURN_FUNCTION_TYPE bmm050api_get_raw_xyz(struct bmm050api_mdata *mdata)
 #define BMM050_DEFAULT_DELAY    100
 #define BMM050_BUFSIZE  0x20
 
-#define MSE_TAG                    "[Msensor] "
-#define MSE_FUN(f)                printk(KERN_INFO MSE_TAG"%s\n", __FUNCTION__)
+#define MSE_TAG                    "[MAGNETIC] "
+#define MSE_FUN(f)                printk(MSE_TAG"%s\n", __FUNCTION__)
 #define MSE_ERR(fmt, args...)        printk(KERN_ERR MSE_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
-#define MSE_LOG(fmt, args...)        printk(KERN_INFO MSE_TAG fmt, ##args)
+#define MSE_LOG(fmt, args...)        printk(MSE_TAG fmt, ##args)
 
 static struct i2c_client *this_client = NULL;
 
@@ -1935,9 +1949,8 @@ struct bmm050_i2c_data {
 #endif
 };
 /*----------------------------------------------------------------------------*/
-static void bmm050_restore_hw_cfg(struct i2c_client *client);
-static int bmm050_probe(struct platform_device *pdev);
-static int bmm050_remove(struct platform_device *pdev);
+static int bmm050_restore_hw_cfg(struct i2c_client *client);
+
 /*----------------------------------------------------------------------------*/
 static void bmm050_power(struct mag_hw *hw, unsigned int on)
 {
@@ -2084,18 +2097,25 @@ static int bmm050_ReadChipInfo(char *buf, int bufsize)
     return 0;
 }
 /*----------------------------------------------------------------------------*/
-static void bmm050_SetPowerMode(struct i2c_client *client, bool enable)
+static int bmm050_SetPowerMode(struct i2c_client *client, bool enable)
 {
     struct bmm050_i2c_data *obj = i2c_get_clientdata(client);
-
+    int state = 0;
+    int i;
     if (enable == FALSE)
     {
-        if (bmm050api_set_functional_state(BMM050_SUSPEND_MODE) != 0)
-        {
+    for (i=0; i<10; i++) {
+       state =bmm050api_set_functional_state(BMM050_SUSPEND_MODE);
+       if (state == 0)
+             break;
+        }
+       if(i>=10)
+           {
             MSE_ERR("fail to suspend sensor");
-            return;
+            return -1;
         }
         obj->op_mode = BMM050_SUSPEND_MODE;
+        return 0;
     }
     else
     {
@@ -2103,7 +2123,17 @@ static void bmm050_SetPowerMode(struct i2c_client *client, bool enable)
         {
             obj->op_mode = BMM050_SLEEP_MODE;
         }
-        bmm050_restore_hw_cfg(client);
+    for (i=0; i<10; i++) {
+        state = bmm050_restore_hw_cfg(client);
+        if (state == 0)
+             break;
+        }
+    if(i>=10)
+           {
+            MSE_ERR("fail to SetPowerMode");
+            return -1;
+        }
+        return state;
     }
 }
 
@@ -3041,8 +3071,14 @@ static int bmm050_operate(void* self, uint32_t command, void* buff_in, int size_
             else
             {
                 value = *(int *)buff_in;
-
-                bmm050d_delay = value;
+                if(value <= 20)
+                {
+                    bmm050d_delay = 20;
+                }
+                else
+                {
+                    bmm050d_delay = value;
+                }
                 /* set the flag */
                 mutex_lock(&uplink_event_flag_mutex);
                 uplink_event_flag |= BMMDRV_ULEVT_FLAG_M_DELAY;
@@ -3150,7 +3186,14 @@ int bmm050_orientation_operate(void* self, uint32_t command, void* buff_in, int 
             else
             {
                 value = *(int *)buff_in;
-                bmm050d_delay = value;
+                if(value <= 20)
+                {
+                    bmm050d_delay = 20;
+                }
+                else
+                {
+                    bmm050d_delay = value;
+                }
                 /* set the flag */
                 mutex_lock(&uplink_event_flag_mutex);
                 uplink_event_flag |= BMMDRV_ULEVT_FLAG_O_DELAY;
@@ -3256,7 +3299,14 @@ int bmm050_m4g_operate(void* self, uint32_t command, void* buff_in, int size_in,
             else
             {
                 value = *(int *)buff_in;
-                m4g_delay = value;
+                if(value <= 20)
+                {
+                    m4g_delay = 20;
+                }
+                else
+                {
+                    m4g_delay = value;
+                }
                 /* set the flag */
                 mutex_lock(&uplink_event_flag_mutex);
                 uplink_event_flag |= BMMDRV_ULEVT_FLAG_G_DELAY;
@@ -3363,7 +3413,14 @@ int bmm050_vrv_operate(void* self, uint32_t command, void* buff_in, int size_in,
             else
             {
                 value = *(int *)buff_in;
-                vrv_delay = value;
+                if(value <= 20)
+                {
+                    vrv_delay = 20;
+                }
+                else
+                {
+                    vrv_delay = value;
+                }
                 /* set the flag */
                 mutex_lock(&uplink_event_flag_mutex);
                 uplink_event_flag |= BMMDRV_ULEVT_FLAG_VRV_DELAY;
@@ -3662,24 +3719,32 @@ int bmm050_vg_operate(void* self, uint32_t command, void* buff_in, int size_in,
 }
 #endif //BMC050_VG
 /*----------------------------------------------------------------------------*/
-static void bmm050_restore_hw_cfg(struct i2c_client *client)
+static int bmm050_restore_hw_cfg(struct i2c_client *client)
 {
+    int state;
     struct bmm050_i2c_data *obj = i2c_get_clientdata(client);
 
     if (obj->op_mode > 3)
     {
         obj->op_mode = BMM050_SLEEP_MODE;
     }
-    bmm050api_set_functional_state(obj->op_mode);
+    state = bmm050api_set_functional_state(obj->op_mode);
+    if (state != 0)
+        return -1;
 
-    bmm050api_set_datarate(obj->odr);
+    state = bmm050api_set_datarate(obj->odr);
     //mdelay(BMM_I2C_WRITE_DELAY_TIME);
+    if (state != 0)
+        return -1;
 
-    bmm050api_set_repetitions_XY(obj->rept_xy);
-    //mdelay(BMM_I2C_WRITE_DELAY_TIME);
+    state = bmm050api_set_repetitions_XY(obj->rept_xy);
+    if (state != 0)
+        return -1;
 
-    bmm050api_set_repetitions_Z(obj->rept_z);
+    state = bmm050api_set_repetitions_Z(obj->rept_z);
     //mdelay(BMM_I2C_WRITE_DELAY_TIME);
+     if (state != 0)
+        return -1;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -3971,9 +4036,21 @@ static int bmm050_wakeup(struct i2c_client *client)
 
     while (try_times) {
         err = i2c_master_send(client, data, 2);
+        if(err <= 0)
+        {
+            MSE_ERR("send error: %d\n", err);
+            //try_times--;
+            //continue;
+        }
+
         mdelay(BMM_I2C_WRITE_DELAY_TIME);
         dummy = 0;
-        err = hwmsen_read_block(client, BMM050_POWER_CNTL, &dummy, 1);
+        if((err = hwmsen_read_block(client, BMM050_POWER_CNTL, &dummy, 1)))
+        {
+            MSE_ERR("read block error: %d\n", err);
+            //try_times--;
+            //continue;
+        }
         if (data[1] == dummy)
         {
             break;
@@ -3992,9 +4069,15 @@ static int bmm050_wakeup(struct i2c_client *client)
 /*----------------------------------------------------------------------------*/
 static int bmm050_checkchipid(struct i2c_client *client)
 {
+    int err = 0;
     u8 chip_id = 0;
+    MSE_FUN();
 
-    hwmsen_read_block(client, BMM050_CHIP_ID, &chip_id, 1);
+    if((err = hwmsen_read_block(client, BMM050_CHIP_ID, &chip_id, 1)))
+    {
+        MSE_ERR("bmm050_checkchipid read block error: %d\n", err);
+        return -1;
+    }
     MSE_LOG("read chip id result: %#x", chip_id);
 
     if ((chip_id & 0xff) != SENSOR_CHIP_ID_BMM)
@@ -4044,6 +4127,7 @@ static int bmm050_init_client(struct i2c_client *client)
     struct bmm050_i2c_data *obj = i2c_get_clientdata(client);
     int res = 0;
 
+    MSE_FUN();
     res = bmm050_wakeup(client);
     if (res < 0)
     {
@@ -4077,14 +4161,109 @@ static int bmm050_init_client(struct i2c_client *client)
     return 0;
 }
 /*----------------------------------------------------------------------------*/
-static struct platform_driver bmm050_sensor_driver = {
-    .probe      = bmm050_probe,
-    .remove     = bmm050_remove,
-    .driver     = {
-        .name  = "msensor",
-        //.owner = THIS_MODULE,
+static int bmm050_m_enable(int en)
+{
+
+    int value =en;
+
+    if(value == 1)
+    {
+        atomic_set(&m_flag, 1);
     }
-};
+    else
+    {
+        atomic_set(&m_flag, 0);
+    }
+
+    bmm050_SetPowerMode(this_client, (value == 1));
+
+    /* set the flag */
+    mutex_lock(&uplink_event_flag_mutex);
+    uplink_event_flag |= BMMDRV_ULEVT_FLAG_M_ACTIVE;
+    mutex_unlock(&uplink_event_flag_mutex);
+    /* wake up the wait queue */
+    wake_up(&uplink_event_flag_wq);
+    printk("bmm050_m_enable--\n");
+    return 0;
+
+}
+
+static int bmm050_m_set_delay(u64 ns)
+{
+    int value=0;
+    value = (int)ns/1000/1000;
+    if(value <= 20)
+    {
+        bmm050d_delay = 20;
+    }
+    else
+    {
+        bmm050d_delay = value;
+    }
+    /* set the flag */
+    mutex_lock(&uplink_event_flag_mutex);
+    uplink_event_flag |= BMMDRV_ULEVT_FLAG_M_DELAY;
+    mutex_unlock(&uplink_event_flag_mutex);
+    /* wake up the wait queue */
+    wake_up(&uplink_event_flag_wq);
+    printk("bmm050_m_set_delay--\n");
+    return 0;
+}
+static int bmm050_m_open_report_data(int open)
+{
+    return 0;
+}
+
+static int bmm050_o_enable(int en)
+{
+      int value =en;
+    bmm050_m_enable(value);
+    if(value == 1)
+    {
+        atomic_set(&o_flag, 1);
+    }
+    else
+    {
+        atomic_set(&o_flag, 0);
+    }
+
+    /* set the flag */
+    mutex_lock(&uplink_event_flag_mutex);
+    uplink_event_flag |= BMMDRV_ULEVT_FLAG_O_ACTIVE;
+    mutex_unlock(&uplink_event_flag_mutex);
+    /* wake up the wait queue */
+    wake_up(&uplink_event_flag_wq);
+    printk("bmm050_o_enable--\n");
+    return 0;
+}
+
+static int bmm050_o_set_delay(u64 ns)
+{
+    int value=0;
+    value = (int)ns/1000/1000;
+    if(value <= 20)
+    {
+        bmm050d_delay = 20;
+    }
+    else
+    {
+        bmm050d_delay = value;
+    }
+    /* set the flag */
+    mutex_lock(&uplink_event_flag_mutex);
+    uplink_event_flag |= BMMDRV_ULEVT_FLAG_O_DELAY;
+    mutex_unlock(&uplink_event_flag_mutex);
+    /* wake up the wait queue */
+    wake_up(&uplink_event_flag_wq);
+    printk("bmm050_o_set_delay--\n");
+    return 0;
+
+}
+static int bmm050_o_open_report_data(int open)
+{
+    return 0;
+}
+
 
 /*----------------------------------------------------------------------------*/
 static int bmm050_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
@@ -4092,18 +4271,22 @@ static int bmm050_i2c_probe(struct i2c_client *client, const struct i2c_device_i
     struct i2c_client *new_client;
     struct bmm050_i2c_data *data;
     int err = 0;
-    struct hwmsen_object sobj_m, sobj_o;
+    struct mag_drv_obj sobj_m, sobj_o;
+    struct mag_control_path ctl={0};
+    struct mag_data_path mag_data={0};
+    MSE_ERR("\n");
+
 #ifdef BMC050_M4G
-    struct hwmsen_object sobj_g;
+    struct mag_drv_obj sobj_g;
 #endif //BMC050_M4G
 #ifdef BMC050_VRV
-    struct hwmsen_object sobj_vrv;
+    struct mag_drv_obj sobj_vrv;
 #endif //BMC050_VRV
 #ifdef BMC050_VLA
-    struct hwmsen_object sobj_vla;
+    struct mag_drv_obj sobj_vla;
 #endif //BMC050_VLA
 #ifdef BMC050_VG
-    struct hwmsen_object sobj_vg;
+    struct mag_drv_obj sobj_vg;
 #endif //BMC050_VG
 
 #ifdef BMC056_SHARE_I2C_ADDRESS
@@ -4111,14 +4294,14 @@ static int bmm050_i2c_probe(struct i2c_client *client, const struct i2c_device_i
         return -1;
 #endif
 
-    if(!(data = kmalloc(sizeof(struct bmm050_i2c_data), GFP_KERNEL)))
+
+    if(!(data = kzalloc(sizeof(struct bmm050_i2c_data), GFP_KERNEL)))
     {
         err = -ENOMEM;
         goto exit;
     }
-    memset(data, 0, sizeof(struct bmm050_i2c_data));
 
-    data->hw = get_cust_mag_hw();
+    data->hw = bmc156_get_cust_mag_hw();
     if((err = hwmsen_get_convert(data->hw->direction, &data->cvt)))
     {
         MSE_ERR("invalid direction: %d\n", data->hw->direction);
@@ -4129,7 +4312,6 @@ static int bmm050_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
     mutex_init(&sensor_data_mutex);
     mutex_init(&uplink_event_flag_mutex);
-
     init_waitqueue_head(&uplink_event_flag_wq);
 
     data->client = client;
@@ -4146,7 +4328,7 @@ static int bmm050_i2c_probe(struct i2c_client *client, const struct i2c_device_i
     }
 
     /* Register sysfs attribute */
-    if((err = bmm050_create_attr(&bmm050_sensor_driver.driver)))
+    if((err = bmm050_create_attr(&(bmm050_init_info.platform_diver_addr->driver))))
     {
         MSE_ERR("create attribute err = %d\n", err);
         goto exit_sysfs_create_group_failed;
@@ -4160,39 +4342,29 @@ static int bmm050_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
     sobj_m.self = data;
     sobj_m.polling = 1;
-    sobj_m.sensor_operate = bmm050_operate;
-    if((err = hwmsen_attach(ID_MAGNETIC, &sobj_m)))
+    sobj_m.mag_operate = bmm050_operate;
+    if((err = mag_attach(ID_M_V_MAGNETIC, &sobj_m)))
     {
         MSE_ERR( "attach fail = %d\n", err);
         goto exit_kfree;
     }
 
+
     sobj_o.self = data;
     sobj_o.polling = 1;
-    sobj_o.sensor_operate = bmm050_orientation_operate;
-    if((err = hwmsen_attach(ID_ORIENTATION, &sobj_o)))
+    sobj_o.mag_operate = bmm050_orientation_operate;
+    if((err = mag_attach(ID_M_V_ORIENTATION, &sobj_o)))
     {
         MSE_ERR( "attach fail = %d\n", err);
         goto exit_kfree;
     }
-/*
-#ifdef BMC050_M4G
-    sobj_g.self = data;
-    sobj_g.polling = 1;
-    sobj_g.sensor_operate = bmm050_m4g_operate;
-    if((err = hwmsen_attach(ID_MAGNETIC, &sobj_g)))
-    {
-        MSE_ERR( "attach fail = %d\n", err);
-        goto exit_kfree;
-    }
-#endif //BMC050_M4G
-*/
+
 
 #ifdef BMC050_VRV
     sobj_vrv.self = data;
     sobj_vrv.polling = 1;
-    sobj_vrv.sensor_operate = bmm050_vrv_operate;
-    if((err = hwmsen_attach(ID_ROTATION_VECTOR, &sobj_vrv)))
+    sobj_vrv.mag_operate = bmm050_vrv_operate;
+    if((err = mag_attach(ID_ROTATION_VECTOR, &sobj_vrv)))
     {
         MSE_ERR( "attach fail = %d\n", err);
         goto exit_kfree;
@@ -4202,8 +4374,8 @@ static int bmm050_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 #ifdef BMC050_VLA
     sobj_vla.self = data;
     sobj_vla.polling = 1;
-    sobj_vla.sensor_operate = bmm050_vla_operate;
-    if((err = hwmsen_attach(ID_LINEAR_ACCELERATION, &sobj_vla)))
+    sobj_vla.mag_operate = bmm050_vla_operate;
+    if((err = mag_attach(ID_LINEAR_ACCELERATION, &sobj_vla)))
     {
         MSE_ERR( "attach fail = %d\n", err);
         goto exit_kfree;
@@ -4213,13 +4385,39 @@ static int bmm050_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 #ifdef BMC050_VG
     sobj_vg.self = data;
     sobj_vg.polling = 1;
-    sobj_vg.sensor_operate = bmm050_vg_operate;
-    if((err = hwmsen_attach(ID_GRAVITY, &sobj_vg)))
+    sobj_vg.mag_operate = bmm050_vg_operate;
+    if((err = mag_attach(ID_GRAVITY, &sobj_vg)))
     {
         MSE_ERR( "attach fail = %d\n", err);
         goto exit_kfree;
     }
 #endif //BMC050_VG
+
+ctl.m_enable = bmm050_m_enable;
+ctl.m_set_delay  = bmm050_m_set_delay;
+ctl.m_open_report_data = bmm050_m_open_report_data;
+ctl.o_enable = bmm050_o_enable;
+ctl.o_set_delay  = bmm050_o_set_delay;
+ctl.o_open_report_data = bmm050_o_open_report_data;
+ctl.is_report_input_direct = false;
+
+err = mag_register_control_path(&ctl);
+if(err)
+{
+    MAG_ERR("register mag control path err\n");
+    goto exit_kfree;
+}
+
+mag_data.div_m = CONVERT_M_DIV;
+mag_data.div_o = CONVERT_O_DIV;
+
+err = mag_register_data_path(&mag_data);
+if(err)
+{
+    MAG_ERR("register data control path err\n");
+    goto exit_kfree;
+}
+
 
 #if CONFIG_HAS_EARLYSUSPEND
     data->early_drv.level    = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1,
@@ -4227,7 +4425,7 @@ static int bmm050_i2c_probe(struct i2c_client *client, const struct i2c_device_i
     data->early_drv.resume   = bmm050_late_resume,
     register_early_suspend(&data->early_drv);
 #endif
-
+    bmm050_init_flag = 0;
     MSE_LOG("%s: OK\n", __func__);
     return 0;
 
@@ -4237,6 +4435,7 @@ static int bmm050_i2c_probe(struct i2c_client *client, const struct i2c_device_i
     exit_kfree:
     kfree(data);
     exit:
+    bmm050_init_flag =-1;
     MSE_ERR( "%s: err = %d\n", __func__, err);
     return err;
 }
@@ -4245,7 +4444,7 @@ static int bmm050_i2c_remove(struct i2c_client *client)
 {
     struct bmm050_i2c_data *obj = i2c_get_clientdata(client);
 
-    if(bmm050_delete_attr(&bmm050_sensor_driver.driver))
+    if(bmm050_delete_attr(&(bmm050_init_info.platform_diver_addr->driver)))
     {
         MSE_ERR( "bmm050_delete_attr fail");
     }
@@ -4277,9 +4476,19 @@ static struct i2c_driver bmm050_i2c_driver = {
 };
 
 /*----------------------------------------------------------------------------*/
-static int bmm050_probe(struct platform_device *pdev)
+
+static int bmm050_remove(void)
 {
-    struct mag_hw *hw = get_cust_mag_hw();
+    struct mag_hw *hw = bmc156_get_cust_mag_hw();
+
+    i2c_del_driver(&bmm050_i2c_driver);
+    bmm050_power(hw, 0);
+    return 0;
+}
+
+static int    bmm050_local_init(void)
+{
+    struct mag_hw *hw = bmc156_get_cust_mag_hw();
 
     bmm050_power(hw, 1);
     if(i2c_add_driver(&bmm050_i2c_driver))
@@ -4287,35 +4496,27 @@ static int bmm050_probe(struct platform_device *pdev)
         MSE_ERR("add driver error\n");
         return -1;
     }
-
+    if(-1 == bmm050_init_flag)
+    {
+       return -1;
+    }
     return 0;
 }
-/*----------------------------------------------------------------------------*/
-static int bmm050_remove(struct platform_device *pdev)
-{
-    struct mag_hw *hw = get_cust_mag_hw();
 
-    i2c_del_driver(&bmm050_i2c_driver);
-    bmm050_power(hw, 0);
-    return 0;
-}
+
 /*----------------------------------------------------------------------------*/
 static int __init bmm050_init(void)
 {
-    struct mag_hw *hw = get_cust_mag_hw();
-
+    struct mag_hw *hw = bmc156_get_cust_mag_hw();
+    MSE_LOG("%s: i2c_number=%d\n", __func__,hw->i2c_num);
     i2c_register_board_info(hw->i2c_num, &bmm050_i2c_info, 1);
-    if(platform_driver_register(&bmm050_sensor_driver))
-    {
-        MSE_ERR("failed to register driver");
-        return -ENODEV;
-    }
+    mag_driver_add(&bmm050_init_info);
     return 0;
 }
 /*----------------------------------------------------------------------------*/
 static void __exit bmm050_exit(void)
 {
-    platform_driver_unregister(&bmm050_sensor_driver);
+    MSE_FUN();
 }
 /*----------------------------------------------------------------------------*/
 module_init(bmm050_init);

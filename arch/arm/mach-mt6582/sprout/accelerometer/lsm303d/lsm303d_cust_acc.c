@@ -13,17 +13,20 @@
 */
 
 #include <linux/types.h>
+#include <cust_acc.h>
 #include <mach/mt_pm_ldo.h>
-#include <cust_mag.h>
 
 
-static struct mag_hw cust_mag_hw = {
+/*---------------------------------------------------------------------------*/
+static struct acc_hw cust_acc_hw = {
     .i2c_num = 2,
     .direction = 2,
     .power_id = MT65XX_POWER_NONE,  /*!< LDO is not used */
     .power_vol= VOL_DEFAULT,        /*!< LDO is not used */
+    .firlen = 0, //old value 16                /*!< don't enable low pass fileter */
 };
-struct mag_hw* bmc156_get_cust_mag_hw(void)
+/*---------------------------------------------------------------------------*/
+struct acc_hw* lsm303d_get_cust_acc_hw(void)
 {
-    return &cust_mag_hw;
+    return &cust_acc_hw;
 }

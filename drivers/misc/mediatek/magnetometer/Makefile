@@ -1,5 +1,5 @@
 include $(srctree)/drivers/misc/mediatek/Makefile.custom
-obj-y   +=  magnetometer_dummy.o
+obj-y   +=  mag.o
 ifeq ($(CONFIG_MTK_HSCDTD006),y)
 obj-y	+=  hscdtd006/
 endif
@@ -14,4 +14,7 @@ endif
 
 ifeq ($(CONFIG_MTK_BMC156_MAG),y)
 obj-y   +=  BMC156_MAG/
+endif
+ifeq ($(CONFIG_MTK_LSM303D),y)
+obj-y   +=  lsm303d/
 endif

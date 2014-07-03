@@ -23,7 +23,7 @@ static struct mag_hw cust_mag_hw = {
     .power_id = MT65XX_POWER_NONE,  /*!< LDO is not used */
     .power_vol= VOL_DEFAULT,        /*!< LDO is not used */
 };
-struct mag_hw* bmc156_get_cust_mag_hw(void)
+struct mag_hw* lsm303d_get_cust_mag_hw(void)
 {
     return &cust_mag_hw;
 }

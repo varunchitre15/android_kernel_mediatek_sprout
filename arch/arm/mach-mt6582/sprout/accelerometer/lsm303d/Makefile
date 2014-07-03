@@ -1,3 +1,4 @@
 include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
-obj-y    :=  cm36283_cust_alsps.o
+obj-y    :=  lsm303d_cust_acc.o
+

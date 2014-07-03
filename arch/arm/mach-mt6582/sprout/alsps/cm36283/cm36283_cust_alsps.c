@@ -34,7 +34,7 @@ static struct alsps_hw cust_alsps_hw = {
     .ps_threshold_low = 68,
     //.ps_threshold_low = 0,
 };
-struct alsps_hw *get_cust_alsps_hw(void) {
+struct alsps_hw *cm36283_get_cust_alsps_hw(void) {
     return &cust_alsps_hw;
 }
 

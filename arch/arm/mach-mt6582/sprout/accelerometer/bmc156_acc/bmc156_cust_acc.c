@@ -26,7 +26,7 @@ static struct acc_hw cust_acc_hw = {
     .firlen = 0, //old value 16                /*!< don't enable low pass fileter */
 };
 /*---------------------------------------------------------------------------*/
-struct acc_hw* get_cust_acc_hw(void)
+struct acc_hw* bmc156_get_cust_acc_hw(void)
 {
     return &cust_acc_hw;
 }

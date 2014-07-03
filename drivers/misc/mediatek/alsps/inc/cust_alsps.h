@@ -45,8 +45,8 @@ struct alsps_hw {
     int ps_power_vio_id;                                   /*!< the VIO power id of the ps chip */
     int ps_power_vio_vol;                                  /*!< the VIO power voltage of the ps chip */
     int power_lp_mode_ctrl;                                 /*!< 1: disable ldo low power mode when p sensor enabled ; 0: no action*/
-    bool is_batch_supported_ps;
-    bool is_batch_supported_als;
+    int is_batch_supported_ps;
+    int is_batch_supported_als;
 };
 
 extern struct alsps_hw* get_cust_alsps_hw(void);

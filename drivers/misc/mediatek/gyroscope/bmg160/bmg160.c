@@ -32,16 +32,26 @@
 #include <mach/mt_typedefs.h>
 #include <mach/mt_gpio.h>
 #include <mach/mt_pm_ldo.h>
-
-#define POWER_NONE_MACRO MT65XX_POWER_NONE
-
-
-#include <cust_gyro.h>
 #include <linux/hwmsensor.h>
 #include <linux/hwmsen_dev.h>
 #include <linux/sensors_io.h>
 #include <linux/hwmsen_helper.h>
+#include <linux/batch.h>
+#include <cust_gyro.h>
+#include <gyroscope.h>
 #include "bmg160.h"
+
+
+#define POWER_NONE_MACRO MT65XX_POWER_NONE
+extern struct gyro_hw* bmg160_get_cust_gyro_hw(void);
+static int bmg160_local_init(void);
+static int  bmg160_remove(void);
+static int bmg160_init_flag =-1; // 0<==>OK -1 <==> fail
+static struct gyro_init_info bmg160_init_info = {
+        .name = "bmg160",
+        .init = bmg160_local_init,
+        .uninit =bmg160_remove,
+};
 
 /* sensor type */
 enum SENSOR_TYPE_ENUM {
@@ -143,7 +153,7 @@ struct bmg_i2c_data {
     printk(KERN_ERR GYRO_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define GYRO_LOG(fmt, args...)    printk(GYRO_TAG fmt, ##args)
 
-static struct platform_driver bmg_gyroscope_driver;
+//static struct platform_driver bmg_gyroscope_driver;
 static struct i2c_driver bmg_i2c_driver;
 static struct bmg_i2c_data *obj_i2c_data;
 static const struct i2c_device_id bmg_i2c_id[] = {
@@ -1539,9 +1549,9 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd,
         err = -EINVAL;
     } else {
         /* convert: degree/second -> LSB */
-        cali[BMG_AXIS_X] = sensor_data.x * obj->sensitivity;
-        cali[BMG_AXIS_Y] = sensor_data.y * obj->sensitivity;
-        cali[BMG_AXIS_Z] = sensor_data.z * obj->sensitivity;
+        cali[BMG_AXIS_X] = (sensor_data.x * obj->sensitivity) / BMG160_OUT_MAGNIFY;
+        cali[BMG_AXIS_Y] = (sensor_data.y * obj->sensitivity) / BMG160_OUT_MAGNIFY;
+        cali[BMG_AXIS_Z] = (sensor_data.z * obj->sensitivity) / BMG160_OUT_MAGNIFY;
         err = bmg_write_calibration(client, cali);
     }
     break;
@@ -1558,9 +1568,9 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd,
     if (err)
         break;
 
-    sensor_data.x = cali[BMG_AXIS_X] * obj->sensitivity;
-    sensor_data.y = cali[BMG_AXIS_Y] * obj->sensitivity;
-    sensor_data.z = cali[BMG_AXIS_Z] * obj->sensitivity;
+    sensor_data.x = (cali[BMG_AXIS_X] * BMG160_OUT_MAGNIFY) /obj->sensitivity;
+    sensor_data.y = (cali[BMG_AXIS_Y] * BMG160_OUT_MAGNIFY) /obj->sensitivity;
+    sensor_data.z = (cali[BMG_AXIS_Z] * BMG160_OUT_MAGNIFY) /obj->sensitivity;
     if (copy_to_user(data, &sensor_data, sizeof(sensor_data))) {
         err = -EFAULT;
         break;
@@ -1697,11 +1707,70 @@ static int bmg_i2c_detect(struct i2c_client *client,
     return 0;
 }
 
+static int bmg160_open_report_data(int open)
+{
+    return 0;
+}
+
+static int bmg160_enable_nodata(int en)
+{
+    int res =0;
+    int retry = 0;
+    bool power=false;
+
+    if(1==en)
+    {
+        power=true;
+    }
+    if(0==en)
+    {
+        power =false;
+    }
+
+    for(retry = 0; retry < 3; retry++){
+        res = bmg_set_powermode(obj_i2c_data->client, power);
+        if(res == 0)
+        {
+            GYRO_LOG("bmg_set_powermode done\n");
+            break;
+        }
+        GYRO_LOG("bmg_set_powermode fail\n");
+    }
+
+
+    if(res != BMG160_SUCCESS)
+    {
+        GYRO_LOG("bmg_set_powermode fail!\n");
+        return -1;
+    }
+    GYRO_LOG("bmg160_enable_nodata OK!\n");
+    return 0;
+
+}
+
+static int bmg160_set_delay(u64 ns)
+{
+    return 0;
+}
+
+static int bmg160_get_data(int* x ,int* y,int* z, int* status)
+{
+    char buff[BMG_BUFSIZE];
+    bmg_read_sensor_data(obj_i2c_data->client, buff, BMG_BUFSIZE);
+
+    sscanf(buff, "%x %x %x", x, y, z);
+    *status = SENSOR_STATUS_ACCURACY_MEDIUM;
+
+    return 0;
+}
+
+
 static int bmg_i2c_probe(struct i2c_client *client,
         const struct i2c_device_id *id)
 {
     struct bmg_i2c_data *obj;
-    struct hwmsen_object sobj;
+    struct gyro_control_path ctl={0};
+    struct gyro_data_path data={0};
     int err = 0;
     GYRO_FUN();
 
@@ -1711,7 +1780,7 @@ static int bmg_i2c_probe(struct i2c_client *client,
         goto exit;
     }
 
-    obj->hw = get_cust_gyro_hw();
+    obj->hw = bmg160_get_cust_gyro_hw();
     err = hwmsen_get_convert(obj->hw->direction, &obj->cvt);
     if (err) {
         GYRO_ERR("invalid direction: %d\n", obj->hw->direction);
@@ -1751,20 +1820,38 @@ static int bmg_i2c_probe(struct i2c_client *client,
         goto exit_misc_device_register_failed;
     }
 
-    err = bmg_create_attr(&bmg_gyroscope_driver.driver);
+    err = bmg_create_attr(&(bmg160_init_info.platform_diver_addr->driver));
     if (err) {
         GYRO_ERR("create attribute failed, err = %d\n", err);
         goto exit_create_attr_failed;
     }
 
-    sobj.self = obj;
-    sobj.polling = 1;
-    sobj.sensor_operate = gyroscope_operate;
+    ctl.open_report_data= bmg160_open_report_data;
+    ctl.enable_nodata = bmg160_enable_nodata;
+    ctl.set_delay  = bmg160_set_delay;
+    ctl.is_report_input_direct = false;
+    ctl.is_support_batch = obj->hw->is_batch_supported;
 
-    err = hwmsen_attach(ID_GYROSCOPE, &sobj);
-    if (err) {
-        GYRO_ERR("hwmsen attach failed, err = %d\n", err);
-        goto exit_hwmsen_attach_failed;
+    err = gyro_register_control_path(&ctl);
+    if(err)
+    {
+         GYRO_ERR("register gyro control path err\n");
+        goto exit_kfree;
+    }
+
+    data.get_data = bmg160_get_data;
+    data.vender_div = DEGREE_TO_RAD;
+    err = gyro_register_data_path(&data);
+    if(err)
+        {
+           GYRO_ERR("gyro_register_data_path fail = %d\n", err);
+           goto exit_kfree;
+    }
+    err = batch_register_support_info(ID_GYROSCOPE,obj->hw->is_batch_supported);
+    if(err)
+    {
+        GYRO_ERR("register gyro batch support err = %d\n", err);
+        goto exit_kfree;
     }
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -1773,19 +1860,19 @@ static int bmg_i2c_probe(struct i2c_client *client,
     obj->early_drv.resume   = bmg_late_resume,
     register_early_suspend(&obj->early_drv);
 #endif
-
+    bmg160_init_flag = 0;
     GYRO_LOG("%s: OK\n", __func__);
     return 0;
 
-exit_hwmsen_attach_failed:
-    bmg_delete_attr(&bmg_gyroscope_driver.driver);
 exit_create_attr_failed:
     misc_deregister(&bmg_device);
 exit_misc_device_register_failed:
 exit_init_client_failed:
 exit_hwmsen_get_convert_failed:
+exit_kfree:
     kfree(obj);
 exit:
+    bmg160_init_flag = -1;
     GYRO_ERR("err = %d\n", err);
     return err;
 }
@@ -1799,11 +1886,7 @@ static int bmg_i2c_remove(struct i2c_client *client)
     unregister_early_suspend(&obj->early_drv);
 #endif
 
-    err = hwmsen_detach(ID_GYROSCOPE);
-    if (err)
-        GYRO_ERR("hwmsen_detach failed, err = %d\n", err);
-
-    err = bmg_delete_attr(&bmg_gyroscope_driver.driver);
+    err = bmg_delete_attr(&(bmg160_init_info.platform_diver_addr->driver));
     if (err)
         GYRO_ERR("bmg_delete_attr failed, err = %d\n", err);
 
@@ -1814,31 +1897,6 @@ static int bmg_i2c_remove(struct i2c_client *client)
     obj_i2c_data = NULL;
     i2c_unregister_device(client);
     kfree(i2c_get_clientdata(client));
-
-    return 0;
-}
-
-static int bmg_probe(struct platform_device *pdev)
-{
-    struct gyro_hw *hw = get_cust_gyro_hw();
-    GYRO_FUN();
-    GYRO_ERR("xiaqm debug");
-    bmg_power(hw, 1);
-    if (i2c_add_driver(&bmg_i2c_driver)) {
-        GYRO_ERR("add i2c driver failed\n");
-        return -1;
-    }
-
-    return 0;
-}
-
-static int bmg_remove(struct platform_device *pdev)
-{
-    struct gyro_hw *hw = get_cust_gyro_hw();
-    GYRO_FUN();
-
-    bmg_power(hw, 0);
-    i2c_del_driver(&bmg_i2c_driver);
 
     return 0;
 }
@@ -1857,35 +1915,45 @@ static struct i2c_driver bmg_i2c_driver = {
     .id_table = bmg_i2c_id,
 };
 
-static struct platform_driver bmg_gyroscope_driver = {
-    .probe      = bmg_probe,
-    .remove     = bmg_remove,
-    .driver     = {
-        .name   = "gyroscope",
-        //.owner  = THIS_MODULE,
+/*----------------------------------------------------------------------------*/
+static int bmg160_remove(void)
+{
+    struct gyro_hw *hw = bmg160_get_cust_gyro_hw();
+    GYRO_FUN();
+    bmg_power(hw, 0);
+    i2c_del_driver(&bmg_i2c_driver);
+    return 0;
+}
+static int bmg160_local_init(void)
+{
+    struct gyro_hw *hw = bmg160_get_cust_gyro_hw();
+
+    bmg_power(hw, 1);
+    if(i2c_add_driver(&bmg_i2c_driver))
+    {
+        GYRO_ERR("add driver error\n");
+        return -1;
     }
-};
+    if(-1 == bmg160_init_flag)
+    {
+       return -1;
+    }
+    return 0;
+}
 
 static int __init bmg_init(void)
 {
-    struct gyro_hw *hw = get_cust_gyro_hw();
-
-    GYRO_LOG("%s: bosch gyroscope driver version: %s\n",
-    __func__, BMG_DRIVER_VERSION);
-
+    struct gyro_hw *hw = bmg160_get_cust_gyro_hw();
+    GYRO_LOG("%s: i2c_number=%d\n", __func__,hw->i2c_num);
     i2c_register_board_info(hw->i2c_num, &bmg_i2c_info, 1);
+    gyro_driver_add(&bmg160_init_info);
 
-    if (platform_driver_register(&bmg_gyroscope_driver)) {
-        GYRO_ERR("register gyroscope platform driver failed\n");
-        return -ENODEV;
-    }
     return 0;
 }
 
 static void __exit bmg_exit(void)
 {
     GYRO_FUN();
-    platform_driver_unregister(&bmg_gyroscope_driver);
 }
 
 module_init(bmg_init);

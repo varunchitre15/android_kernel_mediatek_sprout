@@ -314,10 +314,10 @@ static int als_enable_data(int enable)
            {
                   if(false == cxt->als_ctl.is_report_input_direct )
                   {
-                      mutex_lock(&alsps_context_obj->alsps_op_mutex);
                       cxt->is_als_polling_run = false;
-                      mutex_unlock(&alsps_context_obj->alsps_op_mutex);
+                      smp_mb();
                       del_timer_sync(&cxt->timer_als);
+                      smp_mb();
                       cancel_work_sync(&cxt->report_als);
                 cxt->drv_data.als_data.values[0] = ALSPS_INVALID_VALUE;
                   }
@@ -390,25 +390,23 @@ static int ps_enable_data(int enable)
                   if(false == cxt->ps_ctl.is_report_input_direct)
                   {
                       mod_timer(&cxt->timer_ps, jiffies + atomic_read(&cxt->delay_ps)/(1000/HZ));
-                      mutex_lock(&alsps_context_obj->alsps_op_mutex);
                       cxt->is_ps_polling_run = true;
-                      mutex_unlock(&alsps_context_obj->alsps_op_mutex);
                   }
            }
         }
     if(0 == enable)
     {
            ALSPS_LOG("PS disable \n");
-           mutex_lock(&alsps_context_obj->alsps_op_mutex);
            cxt->is_ps_active_data =false;
-           mutex_unlock(&alsps_context_obj->alsps_op_mutex);
            cxt->ps_ctl.open_report_data(0);
            if(true == cxt->is_ps_polling_run)
            {
                   if(false == cxt->ps_ctl.is_report_input_direct )
                   {
                       cxt->is_ps_polling_run = false;
+                      smp_mb();
                       del_timer_sync(&cxt->timer_ps);
+                      smp_mb();
                       cancel_work_sync(&cxt->report_ps);
                 cxt->drv_data.ps_data.values[0] = ALSPS_INVALID_VALUE;
                   }
@@ -756,11 +754,11 @@ static int alsps_real_driver_init(void)
 
     for(i =0; i < MAX_CHOOSE_ALSPS_NUM; i++ )
     {
-        if(i == 0){
+        if((i == 0) && (NULL == alsps_init_list[0])){
             ALSPS_LOG("register alsps driver for the first time\n");
             if(platform_driver_register(&als_ps_driver))
             {
-                ALSPS_ERR("failed to register gensor driver already exist\n");
+                ALSPS_ERR("failed to register alsps driver already exist\n");
             }
         }
 

@@ -23,6 +23,7 @@ struct gyro_hw {
     int power_vol;  /*!< the Power Voltage used by the chip */
     int firlen;     /*!< the length of low pass filter */
     int (*power)(struct gyro_hw *hw, unsigned int on, char *devname);
+    int is_batch_supported;
 };
 
 extern struct gyro_hw* get_cust_gyro_hw(void);

@@ -22,6 +22,7 @@ struct acc_hw {
     int power_vol;  /*!< the Power Voltage used by the chip */
     int firlen;     /*!< the length of low pass filter */
     int (*power)(struct acc_hw *hw, unsigned int on, char *devname);
+    int is_batch_supported;
 };
 
 extern struct acc_hw* get_cust_acc_hw(void);

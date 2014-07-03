@@ -821,6 +821,9 @@ config MTK_GP2AP002S00F
         bool "GP2AP002S00F for MediaTek package"
         default n
 
+config MTK_TMD2771
+        bool "TMD2771 for MediaTek package"
+        default n
 # Accelerometer sensor
 config MTK_KXTJ2_1009
         bool "KXTJ2 1009 for MediaTek package"
@@ -836,6 +839,9 @@ config MTK_K2DH
 config MTK_BMC156_ACC
         bool "BMC156 ACCELEROMETER for MediaTek package"
         default n
+config MTK_LSM303D
+        bool "LSM303D 6-Axis ACCELEROMETER & MAGNETOMETER for MediaTek package"
+        default n
 # Gyro sensor
 config MTK_MPU3050C
         bool "MPU3050C for MediaTek package"
@@ -843,6 +849,9 @@ config MTK_MPU3050C
         
 config MTK_BMG160
         bool "BMG160 gyroscope for MediaTek package"
+        default n
+config MTK_L3GD20
+        bool "L3GD20 gyroscope for MediaTek package"
         default n
 # Magnet sensor
 config MTK_AKM8963
