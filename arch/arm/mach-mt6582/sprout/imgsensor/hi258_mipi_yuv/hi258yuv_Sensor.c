@@ -147,7 +147,7 @@ static kal_uint32 HI258_GetSensorID(kal_uint32 *sensorID)
      //mt_set_gpio_pull_enable(GPIO_SUB_CAM_ID, GPIO_PULL_ENABLE);
         //hw_id=mt_get_gpio_in(GPIO_SUB_CAM_ID);
         //mdelay(1);
-        hw_id=mt_get_gpio_in(GPIO_SUB_CAM_ID);
+        hw_id=0;//mt_get_gpio_in(GPIO_SUB_CAM_ID);
 
     //mdelay(3000);
         printk("[HI258] sensor id = 0x%x,====hw_id=%d\n", sensor_id,hw_id);

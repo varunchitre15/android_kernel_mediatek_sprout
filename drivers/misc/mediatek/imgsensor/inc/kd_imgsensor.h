@@ -156,6 +156,7 @@
 #define OV8825_SENSOR_ID            			0x8825
 #define OV12830_SENSOR_ID			  0xC830
 #define OV5648MIPI_SENSOR_ID                    0x5648
+#define OV5648MIPI_SENSOR_ID_TRULY              0x564A
 #define OV5693_SENSOR_ID                        0x5690
 
 #define PO6030K_SENSOR_ID                       0x0060
@@ -237,6 +238,7 @@
 #define S5K5EAYX_YUV_SENSOR_ID             	0x5EA1
 #define HI258MIPI_YUV_SENSOR_ID             0x00d1
 #define OV2680MIPI_SENSOR_ID					      0x2680
+#define OV2680MIPI_SENSOR_ID_KAIMUJIN			  0x2682
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME            "kd_camera_hw"
 
@@ -263,6 +265,7 @@
 
 #define SENSOR_DRVNAME_OV5647_RAW   	"ov5647"
 #define SENSOR_DRVNAME_OV5648_MIPI_RAW   	"ov5648mipi"
+#define SENSOR_DRVNAME_OV5648_MIPI_RAW_TRULY   	"ov5648mipitruly"
 #define SENSOR_DRVNAME_OV5693_MIPI_RAW     "ov5693mipi"
 #define SENSOR_DRVNAME_OV5642_MIPI_YUV    "ov5642mipiyuv"
 #define SENSOR_DRVNAME_OV5642_MIPI_RGB    "ov5642mipirgb"
@@ -310,6 +313,7 @@
 #define SENSOR_DRVNAME_S5K5EAYX_YUV   "s5k5eayxyuv"
 #define SENSOR_DRVNAME_HI258_MIPI_YUV    	"hi258mipiyuv"
 #define SENSOR_DRVNAME_OV2680_MIPI_RAW   	"ov2680mipiraw"
+#define SENSOR_DRVNAME_OV2680_MIPI_RAW_KAIMUJIN   	"ov2680mipirawkaimujin"
 /*******************************************************************************
 *
 ********************************************************************************/

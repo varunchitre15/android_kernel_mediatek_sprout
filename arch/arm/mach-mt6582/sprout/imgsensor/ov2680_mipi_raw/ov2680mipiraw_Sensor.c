@@ -1119,9 +1119,10 @@ UINT32 OV2680GetSensorID(UINT32 *sensorID)
 {
 
    int i;
+   kal_uint16 hw_id=0;
    const kal_uint16 sccb_writeid[] = {OV2680_SLAVE_WRITE_ID_1, OV2680_SLAVE_WRITE_ID_2};
 
- SENSORDB("OV2680GetSensorID enter,\n");
+   SENSORDB("OV2680GetSensorID enter,\n");
     for(i = 0; i <(sizeof(sccb_writeid)/sizeof(sccb_writeid[0])); i++)
     {
         spin_lock(&OV2680_drv_lock);
@@ -1142,9 +1143,17 @@ UINT32 OV2680GetSensorID(UINT32 *sensorID)
     }
 
     // check if sensor ID correct
-    if (*sensorID != OV2680MIPI_SENSOR_ID)
+    hw_id=mt_get_gpio_in(GPIO_UART_UCTS2_PIN); // GPIO 19
+    mdelay(1);
+    //SENSORDB("OV2680 hw_id:%x \n",hw_id);
+    if ((*sensorID == OV2680MIPI_SENSOR_ID) && (0x01 == hw_id))
     {
-            SENSORDB("[Warning]OV2680GetSensorID, sensor_id:%x \n",*sensorID);
+        *sensorID = OV2680MIPI_SENSOR_ID;
+        SENSORDB("This his is ov2680 Sanyingxing camera module.");
+    }
+    else
+    {
+            SENSORDB("[Warning]OV2680GetSensorID, sensor_id:%x(hw_id=%d) \n",*sensorID,hw_id);
             *sensorID = 0xFFFFFFFF;
             return ERROR_SENSOR_CONNECT_FAIL;
     }
