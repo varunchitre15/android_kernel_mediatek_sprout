@@ -1332,13 +1332,12 @@ static void tpd_down(int x, int y, int p,int id)
     input_report_abs(tpd->dev, ABS_MT_POSITION_Y, y);
     input_mt_sync(tpd->dev);
 #else
-    input_report_abs(tpd->dev, ABS_PRESSURE, p);
     input_report_abs(tpd->dev, ABS_MT_PRESSURE, p);
-    input_report_key(tpd->dev, BTN_TOUCH, 1);
     input_report_abs(tpd->dev, ABS_MT_TOUCH_MAJOR, 1);
+    input_report_abs(tpd->dev, ABS_MT_TRACKING_ID, id);
+    input_report_key(tpd->dev, BTN_TOUCH, 1);
     input_report_abs(tpd->dev, ABS_MT_POSITION_X, x);
     input_report_abs(tpd->dev, ABS_MT_POSITION_Y, y);
-    input_report_abs(tpd->dev, ABS_MT_TRACKING_ID, id);
     input_mt_sync(tpd->dev);
 #endif
     #ifdef TPD_HAVE_BUTTON
@@ -1386,12 +1385,7 @@ static void tpd_up(int x, int y ,int id)
     //input_report_abs(tpd->dev, ABS_MT_POSITION_Y, y);
     input_mt_sync(tpd->dev);
 #else
-        input_report_abs(tpd->dev, ABS_PRESSURE, 0);
-        input_report_abs(tpd->dev, ABS_MT_PRESSURE, 0);
         input_report_key(tpd->dev, BTN_TOUCH, 0);
-        input_report_abs(tpd->dev, ABS_MT_POSITION_X, x);
-        input_report_abs(tpd->dev, ABS_MT_POSITION_Y, y);
-        input_report_abs(tpd->dev, ABS_MT_TRACKING_ID, id);
         input_mt_sync(tpd->dev);
 #endif
     #ifdef TPD_HAVE_BUTTON
@@ -1769,8 +1763,6 @@ static int tpd_clear_interrupt(struct i2c_client *client)
     }
     return retval;
 }
-#define GPIO_CTP_EN1_PIN GPIO81
-#define GPIO_CTP_EN2_PIN GPIO82
 
 void Config_Touch_GPIO(bool  work_or_stop)
 {
@@ -1787,8 +1779,6 @@ void Config_Touch_GPIO(bool  work_or_stop)
     mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM);
     mt_set_gpio_mode(GPIO_CTP_EINT_PIN, GPIO_CTP_EINT_PIN_M_GPIO);
     mt_set_gpio_dir(GPIO_CTP_EINT_PIN, GPIO_DIR_OUT);
-    mt_set_gpio_out(GPIO_CTP_EN1_PIN, GPIO_OUT_ZERO);
-    mt_set_gpio_out(GPIO_CTP_EN2_PIN, GPIO_OUT_ZERO);
    }
 
 }
@@ -1797,34 +1787,12 @@ void synaptics_chip_reset()
 {
     mt_set_gpio_mode(GPIO_CTP_EINT_PIN, GPIO_CTP_EINT_PIN_M_GPIO);
     mt_set_gpio_dir(GPIO_CTP_EINT_PIN, GPIO_DIR_OUT);
-    mt_set_gpio_out(GPIO_CTP_EN1_PIN, GPIO_OUT_ZERO);
-    mt_set_gpio_out(GPIO_CTP_EN2_PIN, GPIO_OUT_ZERO);
 
     //mt_set_gpio_mode(GPIO_CTP_RST_PIN, GPIO_CTP_RST_PIN_M_GPIO);
     //mt_set_gpio_dir(GPIO_CTP_RST_PIN, GPIO_DIR_OUT);
     //mt_set_gpio_out(GPIO_CTP_RST_PIN, GPIO_OUT_ONE);
 
-
-    msleep(1);
-    //mt_set_gpio_out(GPIO_CTP_RST_PIN, GPIO_OUT_ZERO);
-    msleep(1);
-      mt_set_gpio_out(GPIO_CTP_EN1_PIN, GPIO_OUT_ONE);
-      mt_set_gpio_out(GPIO_CTP_EN2_PIN, GPIO_OUT_ONE);
-         msleep(10);
-
-    //mt_set_gpio_out(GPIO_CTP_RST_PIN, GPIO_OUT_ONE);
-       mt_set_gpio_out(GPIO_CTP_EN1_PIN, GPIO_OUT_ZERO);
-       mt_set_gpio_out(GPIO_CTP_EN2_PIN, GPIO_OUT_ZERO);
-         msleep(5);
-
-    mt_set_gpio_out(GPIO_CTP_EN1_PIN, GPIO_OUT_ONE);
-    mt_set_gpio_out(GPIO_CTP_EN2_PIN, GPIO_OUT_ONE);
-    msleep(10);
-    mt_set_gpio_out(GPIO_CTP_EN1_PIN, GPIO_OUT_ZERO);
-    mt_set_gpio_out(GPIO_CTP_EN2_PIN, GPIO_OUT_ZERO);
-    msleep(10);
-
-         mt_set_gpio_mode(GPIO_CTP_EINT_PIN, GPIO_CTP_EINT_PIN_M_EINT);
+    mt_set_gpio_mode(GPIO_CTP_EINT_PIN, GPIO_CTP_EINT_PIN_M_EINT);
     mt_set_gpio_dir(GPIO_CTP_EINT_PIN, GPIO_DIR_IN);
     mt_set_gpio_pull_enable(GPIO_CTP_EINT_PIN, GPIO_PULL_ENABLE);
     mt_set_gpio_pull_select(GPIO_CTP_EINT_PIN, GPIO_PULL_UP);
