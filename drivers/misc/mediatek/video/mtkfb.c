@@ -3123,6 +3123,15 @@ static void mtkfb_late_resume(struct early_suspend *h)
     }
     else
     {
+        if(is_early_suspended == FALSE){
+            is_early_suspended = FALSE;
+            sem_early_suspend_cnt++;
+            up(&sem_early_suspend);
+            MTKFB_WRAN("[FB driver] has been resumed\n");
+            mutex_unlock(&ScreenCaptureMutex);
+            return;
+        }
+
         disp_path_clock_on("mtkfb");
     }
     MTKFB_INFO("[FB LR] 1\n");
