@@ -39,18 +39,6 @@ int m4u_power_off(int m4u_index)
     return 0;
 }
 
-// query mva by va
-int m4u_query_mva(M4U_MODULE_ID_ENUM eModuleID, 
-								  const unsigned int BufAddr, 
-								  const unsigned int BufSize, 
-								  unsigned int *pRetMVABuf,
-								  struct file * a_pstFile) 
-{
-    return __m4u_query_mva(eModuleID, BufAddr, BufSize, pRetMVABuf, a_pstFile);
-}
-
-
-
 int m4u_alloc_mva(M4U_MODULE_ID_ENUM eModuleID, 
 								  const unsigned int BufAddr, 
 								  const unsigned int BufSize, 
@@ -144,16 +132,6 @@ int m4u_invalid_seq_range(M4U_MODULE_ID_ENUM eModuleID, unsigned int MVAStart, u
 
 }
 
-
-
-int m4u_insert_wrapped_range(M4U_MODULE_ID_ENUM eModuleID, 
-                             M4U_PORT_ID_ENUM portID, 
-                             unsigned int MVAStart, 
-                             unsigned int MVAEnd)
-{
-    return 0;
-}
-
 int m4u_invalid_wrapped_range(M4U_MODULE_ID_ENUM eModuleID, 
                               M4U_PORT_ID_ENUM portID,
                               unsigned int MVAStart, 
@@ -168,14 +146,6 @@ int m4u_config_port(M4U_PORT_STRUCT* pM4uPort) //native
 {
     return m4u_do_config_port(pM4uPort);
 }
-
-
-int m4u_config_port_rotator(M4U_PORT_STRUCT_ROTATOR *pM4uPort)
-{ 
-
-    return 0;
-}
-
 
 int m4u_monitor_start(int m4u_id)
 {

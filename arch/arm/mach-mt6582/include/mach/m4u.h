@@ -106,11 +106,6 @@ int m4u_dealloc_mva_sg(M4U_MODULE_ID_ENUM eModuleID,
 									const unsigned int BufSize, 
 									const unsigned int MVA);
 
-int m4u_insert_wrapped_range(M4U_MODULE_ID_ENUM eModuleID, 
-                             M4U_PORT_ID_ENUM portID, 
-                             unsigned int MVAStart, 
-                             unsigned int MVAEnd);
-
 int m4u_invalid_wrapped_range(M4U_MODULE_ID_ENUM eModuleID, 
                               M4U_PORT_ID_ENUM portID,
                               unsigned int MVAStart, 
@@ -124,9 +119,7 @@ int m4u_insert_seq_range(M4U_MODULE_ID_ENUM eModuleID,
                       
 int m4u_invalid_seq_range(M4U_MODULE_ID_ENUM eModuleID,
                     unsigned int MVAStart,
-                    unsigned int MVAEnd);
-                    
-int m4u_config_port_rotator(M4U_PORT_STRUCT_ROTATOR *pM4uPort);
+                    unsigned int MVAEnd);  
 
 int m4u_config_port(M4U_PORT_STRUCT* pM4uPort); //native
 //int m4u_config_port_rotator(M4U_PORT_STRUCT_ROTATOR *pM4uPort);
@@ -141,15 +134,6 @@ int m4u_dma_cache_maint(M4U_MODULE_ID_ENUM eModuleID,
 
 int m4u_mau_check_pagetable(unsigned int start_addr, unsigned int end_addr);
 int m4u_mau_get_physical_port(unsigned int* engineMask);
-
-// used for those looply used buffer
-// will check link list for mva rather than re-build pagetable by get_user_pages()
-// if can not find the VA in link list, will call m4u_alloc_mva() internally
-int m4u_query_mva(M4U_MODULE_ID_ENUM eModuleID, 
-								  const unsigned int BufAddr, 
-								  const unsigned int BufSize, 
-								  unsigned int *pRetMVABuf,
-								  struct file * a_pstFile);
 								  
 int m4u_log_on(void);
 int m4u_log_off(void);
