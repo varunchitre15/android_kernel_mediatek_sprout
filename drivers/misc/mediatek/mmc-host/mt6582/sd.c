@@ -96,6 +96,9 @@
 u32 g_emmc_mode_switch = 0;
 #define MTK_EMMC_ETT_TO_DRIVER  /* for eMMC off-line apply to driver */
 #endif
+unsigned long long msdc_print_start_time;
+unsigned long long msdc_print_end_time;
+unsigned int print_nums;
 
 #define UNSTUFF_BITS(resp,start,size)          \
 ({                \
@@ -6563,15 +6566,26 @@ static void msdc_dump_trans_error(struct msdc_host   *host,
     ERR_MSG("XXX CMD<%d><0x%x> Error<%d> Resp<0x%x>", cmd->opcode, cmd->arg, cmd->error, cmd->resp[0]);
 
     if (data) {
+        if (host->suspend == 1) {
         ERR_MSG("XXX DAT block<%d> Error<%d>", data->blocks, data->error);
+        } else {
+            INFO_MSG("XXX DAT block<%d> Error<%d>", data->blocks, data->error);     
     }
-
+    }   
     if (stop) {
+        if (host->suspend == 1) {
         ERR_MSG("XXX STOP<%d><0x%x> Error<%d> Resp<0x%x>", stop->opcode, stop->arg, stop->error, stop->resp[0]);
+        } else { 
+            INFO_MSG("XXX STOP<%d><0x%x> Error<%d> Resp<0x%x>", stop->opcode, stop->arg, stop->error, stop->resp[0]);    
+        }
     }
 
     if (sbc) {
+        if (host->suspend == 1) {
         ERR_MSG("XXX SBC<%d><0x%x> Error<%d> Resp<0x%x>", sbc->opcode, sbc->arg, sbc->error, sbc->resp[0]);
+        } else {
+            INFO_MSG("XXX SBC<%d><0x%x> Error<%d> Resp<0x%x>", sbc->opcode, sbc->arg, sbc->error, sbc->resp[0]);  
+        }
     }
 
     if((host->hw->host_function == MSDC_SD) &&

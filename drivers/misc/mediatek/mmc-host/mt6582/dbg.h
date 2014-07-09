@@ -147,22 +147,46 @@ do {    \
             host->id,  ##args , __FUNCTION__, __LINE__, current->comm, current->pid); \
     }   \
 } while(0)
-#if 1
+#if 0
 #define ERR_MSG(fmt, args...) \
 do { \
     xlog_printk(ANDROID_LOG_ERROR,"MSDC",TAG"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
         host->id,  ##args , __FUNCTION__, __LINE__, current->comm, current->pid); \
 } while(0); 
 #else
+#define MAX_PRINT_PERIOD            (500000000)  // 500ms
+#define MAX_PRINT_NUMS_OVER_PERIOD  (50)
 #define ERR_MSG(fmt, args...) \
 do { \
-    printk(KERN_ERR TAG"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
+       if (print_nums == 0){  \
+           print_nums++; \
+           msdc_print_start_time = sched_clock();  \
+           xlog_printk(ANDROID_LOG_ERROR,"MSDC",TAG"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
         host->id,  ##args , __FUNCTION__, __LINE__, current->comm, current->pid); \
+       } else {   \
+           msdc_print_end_time = sched_clock();    \
+           if ((msdc_print_end_time - msdc_print_start_time) >= MAX_PRINT_PERIOD){    \
+               xlog_printk(ANDROID_LOG_ERROR,"MSDC",TAG"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
+                    host->id,  ##args , __FUNCTION__, __LINE__, current->comm, current->pid); \
+               print_nums = 0;  \        
+           } else {	  \
+               if (print_nums <= MAX_PRINT_NUMS_OVER_PERIOD){   \             
+                    xlog_printk(ANDROID_LOG_ERROR,"MSDC",TAG"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
+                        host->id,  ##args , __FUNCTION__, __LINE__, current->comm, current->pid); \
+                    print_nums++;    \
+               }   \
+           }   \
+       }       \
 } while(0); 
 #endif
 #define INIT_MSG(fmt, args...) \
 do { \
     printk(KERN_ERR TAG"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
+        host->id,  ##args , __FUNCTION__, __LINE__, current->comm, current->pid); \
+} while(0);
+#define INFO_MSG(fmt, args...) \
+do { \
+    printk(KERN_INFO TAG"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
         host->id,  ##args , __FUNCTION__, __LINE__, current->comm, current->pid); \
 } while(0);
 

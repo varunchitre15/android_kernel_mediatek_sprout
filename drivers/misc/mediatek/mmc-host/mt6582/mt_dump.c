@@ -46,7 +46,6 @@ MODULE_LICENSE("GPL");
 /*--------------------------------------------------------------------------*/
 /* some marco will be reuse with mmc subsystem */
 
-#define MTK_MMC_DUMP_DBG  (1)
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 #endif
 char test_kdump[]={6,5,8,2,'k','d','u','m','p','t','e','s','t'};
