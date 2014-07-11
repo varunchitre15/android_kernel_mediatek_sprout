@@ -4282,6 +4282,12 @@ static long ISP_ioctl(struct file *pFile,MUINT32 Cmd,unsigned long Param)
         {
             if(copy_from_user(&WaitIrq, (void*)Param, sizeof(ISP_WAIT_IRQ_STRUCT)) == 0)
             {
+                if((WaitIrq.Type >= ISP_IRQ_TYPE_AMOUNT) ||(WaitIrq.Type<0))
+                {
+                    Ret = -EFAULT;
+                    LOG_ERR("invalid type(%d)",WaitIrq.Type);
+                    goto EXIT;
+                }
                 Ret = ISP_WaitIrq(WaitIrq);
             }
             else
@@ -4295,6 +4301,15 @@ static long ISP_ioctl(struct file *pFile,MUINT32 Cmd,unsigned long Param)
         {
             if(copy_from_user(&ReadIrq, (void*)Param, sizeof(ISP_READ_IRQ_STRUCT)) == 0)
             {
+                LOG_DBG("ISP_READ_IRQ Type(%d)",ReadIrq.Type);
+            
+                if((ReadIrq.Type >= ISP_IRQ_TYPE_AMOUNT) ||(ReadIrq.Type<0))
+                {
+                    Ret = -EFAULT;
+                    LOG_ERR("invalid type(%d)",ReadIrq.Type);
+                    goto EXIT;
+                }
+            
                 #if ISP_IRQ_POLLING
                 
                 spin_lock_irqsave(&(g_IspInfo.SpinLockIrq), flags);
@@ -4338,6 +4353,15 @@ static long ISP_ioctl(struct file *pFile,MUINT32 Cmd,unsigned long Param)
         {
             if(copy_from_user(&ClearIrq, (void*)Param, sizeof(ISP_CLEAR_IRQ_STRUCT)) == 0)
             {
+                LOG_DBG("ISP_CLEAR_IRQ Type(%d)",ClearIrq.Type);
+                
+                if((ClearIrq.Type >= ISP_IRQ_TYPE_AMOUNT) ||(ClearIrq.Type<0))
+                {
+                    Ret = -EFAULT;
+                    LOG_ERR("invalid type(%d)",ClearIrq.Type);
+                    goto EXIT;
+                }
+            
                 spin_lock_irqsave(&(g_IspInfo.SpinLockIrq), flags);
                 
                 #if ISP_IRQ_POLLING
@@ -4444,7 +4468,7 @@ static long ISP_ioctl(struct file *pFile,MUINT32 Cmd,unsigned long Param)
             break;
         }
     }
-    
+    EXIT:
     if(Ret != 0)
     {
         LOG_ERR("Fail, Cmd(%d), Pid(%d), (process, pid, tgid)=(%s, %d, %d)",Cmd, pUserInfo->Pid, current->comm, current->pid, current->tgid);

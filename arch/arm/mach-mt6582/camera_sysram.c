@@ -989,6 +989,13 @@ static long SYSRAM_Ioctl(
         {
             if(copy_from_user(&Alloc, (void*)Param, sizeof(SYSRAM_ALLOC_STRUCT)) == 0)
             {
+                if(SYSRAM_IsBadOwner(Alloc.User))
+                {
+                    LOG_ERR("User(%d) out of range(%d)",Alloc.User,SYSRAM_USER_AMOUNT);
+                    Ret = -EFAULT;
+                    goto EXIT;
+                }
+                //
                 Alloc.Addr = SYSRAM_IOC_Alloc(
                                 Alloc.User,
                                 Alloc.Size,
@@ -1038,6 +1045,13 @@ static long SYSRAM_Ioctl(
         {
             if(copy_from_user(&User, (void*)Param, sizeof(SYSRAM_USER_ENUM)) == 0)
             {
+                if(SYSRAM_IsBadOwner(User))
+                {
+                    LOG_ERR("User(%d) out of range(%d)",User,SYSRAM_USER_AMOUNT);
+                    Ret = -EFAULT;
+                    goto EXIT;
+                }
+                //
                 SYSRAM_SpinLock();
                 if((pProc->Table) & (1 << User))
                 {
