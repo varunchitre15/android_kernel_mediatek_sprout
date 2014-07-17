@@ -422,7 +422,9 @@ mtk_cfg80211_get_station (
     WLAN_STATUS rStatus;
     PARAM_MAC_ADDRESS arBssid;
     UINT_32 u4BufLen, u4Rate;
+    UINT_32 u8diffTxBad,u8diffRetry;
     INT_32 i4Rssi;
+    PARAM_802_11_STATISTICS_STRUCT_T rStatistics;
 
     prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
     ASSERT(prGlueInfo);
@@ -491,41 +493,75 @@ mtk_cfg80211_get_station (
     }
 
     sinfo->rx_packets = prGlueInfo->rNetDevStats.rx_packets;
+        
+        /* 4. Fill Tx OK and Tx Bad */
+        
     sinfo->filled |= STATION_INFO_TX_PACKETS;
-    sinfo->tx_packets = prGlueInfo->rNetDevStats.tx_packets;
     sinfo->filled |= STATION_INFO_TX_FAILED;
-
-#if 1
    {
             WLAN_STATUS rStatus;
-            UINT_32 u4XmitError = 0;
-//           UINT_32 u4XmitOk = 0;
-//          UINT_32 u4RecvError = 0;
-//           UINT_32 u4RecvOk = 0;
-//           UINT_32 u4BufLen;
-
-           /* @FIX ME: need a more clear way to do this */
-
-
+            kalMemZero(&rStatistics, sizeof(rStatistics));
+            /* Get Tx OK/Fail cnt from AIS statistic counter */    
             rStatus = kalIoctl(prGlueInfo,
-                    wlanoidQueryXmitError,
-                    &u4XmitError,
-                    sizeof(UINT_32),
+                    wlanoidQueryStatisticsPL,
+                    &rStatistics,
+                    sizeof(rStatistics),
                     TRUE,
                     TRUE,
                     TRUE,
                     FALSE,
                     &u4BufLen);
 
-           prGlueInfo->rNetDevStats.tx_errors = u4XmitError;
+            if (rStatus != WLAN_STATUS_SUCCESS) {
+                DBGLOG(REQ, WARN, ("unable to retrieive statistic\n"));
+		printk("unable to retrieve statics");
+            }
+            else {
+		INT_32 i4RssiThreshold = -85; /* set rssi threshold -85dBm */
+		UINT_32 u4LinkspeedThreshold = 55; /* set link speed threshold 5.5Mbps */
+		BOOLEAN fgWeighted = 0;
 
-   }
-#else
-         prGlueInfo->rNetDevStats.tx_errors = 0;
-#endif
+		/* calculate difference */
+		u8diffTxBad =  rStatistics.rFailedCount.QuadPart - prGlueInfo->u8Statistic[0];
+		u8diffRetry =  rStatistics.rRetryCount.QuadPart - prGlueInfo->u8Statistic[1];
+		/* restore counters */
+		prGlueInfo->u8Statistic[0] = rStatistics.rFailedCount.QuadPart;
+		prGlueInfo->u8Statistic[1] = rStatistics.rRetryCount.QuadPart;
 
+		/* check threshold is valid */
+		if(prGlueInfo->fgPoorlinkValid){
+		  if(prGlueInfo->i4RssiThreshold)
+	  		i4RssiThreshold = prGlueInfo->i4RssiThreshold;
+		  if(prGlueInfo->u4LinkspeedThreshold)
+			u4LinkspeedThreshold = prGlueInfo->u4LinkspeedThreshold;
+                }
+		/* add weighted to fail counter */	
+                if(sinfo->txrate.legacy < u4LinkspeedThreshold || sinfo->signal < i4RssiThreshold ){
+	    		prGlueInfo->u8TotalFailCnt += (u8diffTxBad*16 + u8diffRetry);
+			fgWeighted = 1;
+		}else{
+	    		prGlueInfo->u8TotalFailCnt += u8diffTxBad;
+		}
+		/* report counters */
+                prGlueInfo->rNetDevStats.tx_packets = rStatistics.rTransmittedFragmentCount.QuadPart ; 
+                prGlueInfo->rNetDevStats.tx_errors = prGlueInfo->u8TotalFailCnt;
+
+                sinfo->tx_packets = prGlueInfo->rNetDevStats.tx_packets;
     sinfo->tx_failed = prGlueInfo->rNetDevStats.tx_errors;
 
+		printk("poorlink get state G(%d)F(%d)dbad(%d)dretry(%d)LT(%d)RT(%d)W(%d)(%d)\n",
+		sinfo->tx_packets,
+		sinfo->tx_failed,
+                (int)u8diffTxBad,
+		(int)u8diffRetry,
+		sinfo->txrate.legacy,
+		sinfo->signal,
+		(int)fgWeighted,
+		(int)rStatistics.rMultipleRetryCount.QuadPart);
+            }                
+
+
+    }
     return 0;
 }
 
@@ -2276,7 +2312,39 @@ mtk_cfg80211_testmode_hs20_cmd(
 
 #endif
 
+int
+mtk_cfg80211_testmode_set_poorlink_param(
+    IN struct wiphy *wiphy,
+    IN void *data,
+    IN int len,
+    IN P_GLUE_INFO_T prGlueInfo)
+{
+	  int     fgIsValid = 0;
+    P_NL80211_DRIVER_POORLINK_PARAMS prParams = NULL;
 
+	ASSERT(wiphy);
+	ASSERT(prGlueInfo);
+   
+  	if(data && len) {
+        prParams = (P_NL80211_DRIVER_POORLINK_PARAMS)data;
+    }
+if(prParams->ucLinkSpeed)
+	prGlueInfo->u4LinkspeedThreshold = prParams->ucLinkSpeed*10;
+if(prParams->cRssi)
+	prGlueInfo->i4RssiThreshold = prParams->cRssi;
+if(!prGlueInfo->fgPoorlinkValid)
+	prGlueInfo->fgPoorlinkValid = 1;
+#if 0
+printk("poorlink set param valid(%d)rssi(%d)linkspeed(%d)\n",
+prGlueInfo->fgPoorlinkValid,
+prGlueInfo->i4RssiThreshold,
+prGlueInfo->u4LinkspeedThreshold
+);
+#endif
+
+return fgIsValid;
+
+}
 int mtk_cfg80211_testmode_cmd(
     IN struct wiphy *wiphy,
     IN void *data,
@@ -2318,6 +2386,9 @@ int mtk_cfg80211_testmode_cmd(
 			case 0x10:
 				i4Status = mtk_cfg80211_testmode_get_sta_statistics(wiphy, data, len, prGlueInfo);
                 break;
+			case 0x04:
+				i4Status = mtk_cfg80211_testmode_set_poorlink_param(wiphy, data, len, prGlueInfo);
+		break;
 #if CFG_SUPPORT_HOTSPOT_2_0
 			case TESTMODE_CMD_ID_HS20:
 				if(mtk_cfg80211_testmode_hs20_cmd(wiphy, data, len))

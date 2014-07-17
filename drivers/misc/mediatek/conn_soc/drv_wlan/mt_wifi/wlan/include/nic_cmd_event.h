@@ -749,7 +749,8 @@ typedef enum _ENUM_CMD_ID_T {
     CMD_ID_GET_CONNECTION_STATUS,       /* 0x83 (Query) */
     CMD_ID_GET_ASSOC_INFO,              /* 0x84 (Query) (obsolete) */
     CMD_ID_GET_STA_STATISTICS = 0x85,   /* 0x85 (Query) */
-	CMD_ID_GET_DEBUG_CODE = 0x86,		/* 0x86 (Query) */
+    CMD_ID_GET_DEBUG_CODE = 0x86,		/* 0x86 (Query) */
+    CMD_ID_GET_STATISTICS_PL = 0x89,    /* 0x87 (Query) */
 
     CMD_ID_BASIC_CONFIG = 0xc1,         /* 0xc1 (Set / Query) */
     CMD_ID_ACCESS_REG,                  /* 0xc2 (Set / Query) */

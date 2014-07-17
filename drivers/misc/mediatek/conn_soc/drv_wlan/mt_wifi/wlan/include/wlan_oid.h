@@ -1568,6 +1568,14 @@ wlanoidQueryStatistics (
     OUT PUINT_32        pu4QueryInfoLen
     );
 
+WLAN_STATUS
+wlanoidQueryStatisticsPL (
+    IN  P_ADAPTER_T     prAdapter,
+    IN  PVOID           pvQueryBuffer,
+    IN  UINT_32         u4QueryBufferLen,
+    OUT PUINT_32        pu4QueryInfoLen
+    );
+
 #ifdef LINUX
 
 WLAN_STATUS

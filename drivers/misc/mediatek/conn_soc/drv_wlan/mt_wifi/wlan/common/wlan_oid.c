@@ -4784,7 +4784,128 @@ wlanoidQueryRcvCrcError (
             );
     }
 }   /* wlanoidQueryRcvCrcError */
+/*----------------------------------------------------------------------------*/
+/*! \brief  This routine is called to query the current 802.11 statistics.
+*
+* \param[in] pvAdapter Pointer to the Adapter structure
+* \param[in] pvQueryBuf A pointer to the buffer that holds the result of the
+*                          query buffer
+* \param[in] u4QueryBufLen The length of the query buffer
+* \param[out] pu4QueryInfoLen If the call is successful, returns the number of
+*                            bytes written into the query buffer. If the call
+*                            failed due to invalid length of the query buffer,
+*                            returns the amount of storage needed.
+*
+* \retval WLAN_STATUS_SUCCESS
+* \retval WLAN_STATUS_INVALID_LENGTH
+*/
+/*----------------------------------------------------------------------------*/
 
+WLAN_STATUS
+wlanoidQueryStatisticsPL (
+    IN  P_ADAPTER_T       prAdapter,
+    IN  PVOID             pvQueryBuffer,
+    IN  UINT_32           u4QueryBufferLen,
+    OUT PUINT_32          pu4QueryInfoLen
+    )
+{
+    DBGLOG(REQ, LOUD, ("\n"));
+
+    ASSERT(prAdapter);
+    if (u4QueryBufferLen) {
+        ASSERT(pvQueryBuffer);
+    }
+    ASSERT(pu4QueryInfoLen);
+
+    *pu4QueryInfoLen = sizeof(PARAM_802_11_STATISTICS_STRUCT_T);
+
+    if (prAdapter->rAcpiState == ACPI_STATE_D3) {
+        DBGLOG(REQ, WARN, ("Fail in query receive error! (Adapter not ready). ACPI=D%d, Radio=%d\n",
+                    prAdapter->rAcpiState, prAdapter->fgIsRadioOff));
+        *pu4QueryInfoLen = sizeof(UINT_32);
+        return WLAN_STATUS_ADAPTER_NOT_READY;
+    }
+    else if (u4QueryBufferLen < sizeof(PARAM_802_11_STATISTICS_STRUCT_T)) {
+        DBGLOG(REQ, WARN, ("Too short length %ld\n", u4QueryBufferLen));
+        return WLAN_STATUS_INVALID_LENGTH;
+    }
+
+#if CFG_ENABLE_STATISTICS_BUFFERING
+    if(IsBufferedStatisticsUsable(prAdapter) == TRUE) {
+        P_PARAM_802_11_STATISTICS_STRUCT_T prStatistics;
+
+        *pu4QueryInfoLen = sizeof(PARAM_802_11_STATISTICS_STRUCT_T);
+        prStatistics = (P_PARAM_802_11_STATISTICS_STRUCT_T) pvQueryBuffer;
+
+        prStatistics->u4Length = sizeof(PARAM_802_11_STATISTICS_STRUCT_T);
+        prStatistics->rTransmittedFragmentCount
+            = prAdapter->rStatStruct.rTransmittedFragmentCount;
+        prStatistics->rMulticastTransmittedFrameCount
+            = prAdapter->rStatStruct.rMulticastTransmittedFrameCount;
+        prStatistics->rFailedCount
+            = prAdapter->rStatStruct.rFailedCount;
+        prStatistics->rRetryCount
+            = prAdapter->rStatStruct.rRetryCount;
+        prStatistics->rMultipleRetryCount
+            = prAdapter->rStatStruct.rMultipleRetryCount;
+        prStatistics->rRTSSuccessCount
+            = prAdapter->rStatStruct.rRTSSuccessCount;
+        prStatistics->rRTSFailureCount
+            = prAdapter->rStatStruct.rRTSFailureCount;
+        prStatistics->rACKFailureCount
+            = prAdapter->rStatStruct.rACKFailureCount;
+        prStatistics->rFrameDuplicateCount
+            = prAdapter->rStatStruct.rFrameDuplicateCount;
+        prStatistics->rReceivedFragmentCount
+            = prAdapter->rStatStruct.rReceivedFragmentCount;
+        prStatistics->rMulticastReceivedFrameCount
+            = prAdapter->rStatStruct.rMulticastReceivedFrameCount;
+        prStatistics->rFCSErrorCount
+            = prAdapter->rStatStruct.rFCSErrorCount;
+        prStatistics->rTKIPLocalMICFailures.QuadPart
+            = 0;
+        prStatistics->rTKIPICVErrors.QuadPart
+            = 0;
+        prStatistics->rTKIPCounterMeasuresInvoked.QuadPart
+            = 0;
+        prStatistics->rTKIPReplays.QuadPart
+            = 0;
+        prStatistics->rCCMPFormatErrors.QuadPart
+            = 0;
+        prStatistics->rCCMPReplays.QuadPart
+            = 0;
+        prStatistics->rCCMPDecryptErrors.QuadPart
+            = 0;
+        prStatistics->rFourWayHandshakeFailures.QuadPart
+            = 0;
+        prStatistics->rWEPUndecryptableCount.QuadPart
+            = 0;
+        prStatistics->rWEPICVErrorCount.QuadPart
+            = 0;
+        prStatistics->rDecryptSuccessCount.QuadPart
+            = 0;
+        prStatistics->rDecryptFailureCount.QuadPart
+            = 0;
+        return WLAN_STATUS_SUCCESS;
+    }
+    else
+#endif
+    {
+    return wlanSendSetQueryCmd(prAdapter,
+            CMD_ID_GET_STATISTICS_PL,
+            FALSE,
+            TRUE,
+            TRUE,
+            nicCmdEventQueryStatistics,
+            nicOidCmdTimeoutCommon,
+            0,
+            NULL,
+            pvQueryBuffer,
+            u4QueryBufferLen
+            );
+
+    }
+}   /* wlanoidQueryStatistics */
 
 /*----------------------------------------------------------------------------*/
 /*! \brief  This routine is called to query the current 802.11 statistics.

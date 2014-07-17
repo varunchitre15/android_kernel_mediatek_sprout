@@ -900,6 +900,11 @@ struct _GLUE_INFO_T {
     BOOLEAN                 fgIs6Dad;
     UINT_8                  aucDADipv6[16];
 #endif
+    BOOLEAN                 fgPoorlinkValid;
+    UINT_64                 u8Statistic[2];
+    UINT_64                 u8TotalFailCnt;
+    UINT_32                 u4LinkspeedThreshold;
+    INT_32                  i4RssiThreshold;
 
 };
 
