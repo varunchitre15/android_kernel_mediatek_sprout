@@ -615,7 +615,11 @@ void adf_device_destroy(struct adf_device *dev)
 	}
 	mutex_destroy(&dev->post_lock);
 	mutex_destroy(&dev->client_lock);
-	adf_obj_destroy(&dev->base, NULL);
+
+	if (dev->timeline)
+		sync_timeline_destroy(&dev->timeline->obj);
+
+	adf_obj_destroy(&dev->base, &adf_devices);
 }
 EXPORT_SYMBOL(adf_device_destroy);
 
