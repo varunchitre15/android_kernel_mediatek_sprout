@@ -19,7 +19,7 @@
 // after 5s disable accdet
 #define ACCDET_LOW_POWER
 
-#define ACCDET_PIN_RECOGNIZATION
+//#define ACCDET_PIN_RECOGNIZATION
 #define ACCDET_28V_MODE
 
 #define ACCDET_SHORT_PLUGOUT_DEBOUNCE
