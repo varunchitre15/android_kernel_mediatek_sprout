@@ -1051,7 +1051,7 @@ UINT32 OV2680KAIOpen(void)
 #ifdef OV2680KAI_DRIVER_TRACE
         SENSORDB("OV2680KAIOpen, sensor_id:%x \n",sensor_id);
 #endif
-        if(OV2680MIPI_SENSOR_ID_KAIMUJIN == sensor_id)
+        if(OV2680MIPI_SENSOR_ID == sensor_id)
         {
             SENSORDB("OV2680KAI slave write id:%x \n",OV2680KAI_sensor.write_id);
             break;
@@ -1059,7 +1059,7 @@ UINT32 OV2680KAIOpen(void)
     }
 
     // check if sensor ID correct
-    if (sensor_id != OV2680MIPI_SENSOR_ID_KAIMUJIN)
+    if (sensor_id != OV2680MIPI_SENSOR_ID)
     {
         SENSORDB("OV2680KAI Check ID fails! \n");
 
