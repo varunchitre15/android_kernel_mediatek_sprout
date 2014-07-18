@@ -42,7 +42,7 @@ boot_reason_t g_boot_reason __nosavedata = BR_UNKNOWN;
 /* return boot reason */
 boot_reason_t get_boot_reason(void)
 {
-    return g_boot_mode;
+    return g_boot_reason;
 }
 
 /* set boot reason */

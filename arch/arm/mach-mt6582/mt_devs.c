@@ -1111,6 +1111,51 @@ static int __init parse_tag_devinfo_data_fixup(const struct tag *tags)
 
 extern unsigned int mtkfb_parse_dfo_setting(void *dfo_tbl, int num);
 
+static void parse_boot_reason(char** cmdline) /*parse boot reason*/
+{
+    char *br_ptr = NULL, *ptr = NULL;
+    int i;
+    
+    if ((br_ptr = strstr(*cmdline, "bootreason=")) != 0) 
+	{
+        /* get boot reason */		
+		typedef struct 
+		{
+			char* str;
+			boot_reason_t boot_reason;
+		} boot_item;
+		boot_item map_table[] = 
+		{
+			{"power_key ", BR_POWER_KEY},
+			{"usb ", BR_USB},
+			{"rtc ", BR_RTC},
+			{"wdt ", BR_WDT},
+			{"wdt_by_pass_pwk ", BR_WDT_BY_PASS_PWK},
+			{"tool_by_pass_pwk ", BR_TOOL_BY_PASS_PWK},
+			{"2sec_reboot ", BR_2SEC_REBOOT},
+			{"unknown ", BR_UNKNOWN},
+			{"kernel_panic ", BR_KERNEL_PANIC},
+			{"reboot ", BR_WDT_SW},
+			{"watchdog ", BR_WDT_HW},
+		};
+
+		ptr = &br_ptr[11];
+		for (i = 0; i < sizeof(map_table)/sizeof(map_table[0]); i++)
+		{
+			if (!strncmp(ptr, map_table[i].str, strlen(map_table[i].str)))
+			{
+				g_boot_reason = map_table[i].boot_reason;
+				break;
+			}
+		}
+        printk("[dev] boot reason: %s[%d])", ptr, g_boot_reason);            
+    }
+    else
+    {
+        printk("[dev] boot reason not found in (%s)", *cmdline);
+    }
+}
+
 void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
 {
     struct tag *cmdline_tag = NULL;
@@ -1271,7 +1316,6 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
         char *console_ptr;
         int uart_port;
 #endif
-	char *br_ptr;
         // This function may modify ttyMT3 to ttyMT0 if needed
         adjust_kernel_cmd_line_setting_for_console(cmdline_tag->u.cmdline.cmdline, *cmdline);
 #ifdef CONFIG_FIQ_DEBUGGER
@@ -1286,10 +1330,8 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
 #endif
 
         cmdline_filter(cmdline_tag, *cmdline);
-		if ((br_ptr = strstr(*cmdline, "boot_reason=")) != 0) {
-			/* get boot reason */
-			g_boot_reason = br_ptr[12] - '0';
-		}
+        parse_boot_reason(cmdline);
+        
         /* Use the default cmdline */
         memcpy((void*)cmdline_tag,
                (void*)tag_next(cmdline_tag),

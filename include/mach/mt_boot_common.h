@@ -41,7 +41,11 @@ typedef enum {
     BR_WDT_BY_PASS_PWK,
     BR_TOOL_BY_PASS_PWK,
     BR_2SEC_REBOOT,
-    BR_UNKNOWN
+    BR_UNKNOWN,
+    BR_KERNEL_PANIC,
+    BR_WDT_SW,
+    BR_WDT_HW 
+    
 } boot_reason_t;
 
 extern BOOTMODE g_boot_mode;

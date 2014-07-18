@@ -43,6 +43,7 @@
 #include "cust_battery_meter.h"
 #include "cust_battery_meter_table.h"
 #include "mach/mtk_rtc.h"
+#include "mach/mt_boot_common.h"
 
 // ============================================================ //
 // define
@@ -864,6 +865,7 @@ void fg_qmax_update_for_aging(void)
 
 void dod_init(void)
 {
+	boot_reason_t boot_reason = get_boot_reason();
     #if defined(SOC_BY_HW_FG)
     int ret = 0;    
     //use get_hw_ocv-----------------------------------------------------------------        
@@ -886,10 +888,12 @@ void dod_init(void)
     #else
     g_rtc_fg_soc = get_rtc_spare_fg_value();
     #endif
+    
+    bm_print(BM_LOG_CRTI, "[FGADC] g_boot_reason=%d\n", get_boot_reason());
     if(g_rtc_fg_soc >= gFG_capacity_by_v)
     {
-        if(((g_rtc_fg_soc != 0) && ((g_rtc_fg_soc-gFG_capacity_by_v) < CUST_POWERON_DELTA_CAPACITY_TOLRANCE) &&(( gFG_capacity_by_v > CUST_POWERON_LOW_CAPACITY_TOLRANCE || bat_is_charger_exist() == KAL_TRUE)))
-			|| ((g_rtc_fg_soc != 0) &&(g_boot_reason == BR_WDT_BY_PASS_PWK || g_boot_reason == BR_WDT || g_boot_reason == BR_TOOL_BY_PASS_PWK || g_boot_reason == BR_2SEC_REBOOT || g_boot_mode == RECOVERY_BOOT)))
+        if( ((g_rtc_fg_soc != 0) && ((g_rtc_fg_soc-gFG_capacity_by_v) < CUST_POWERON_DELTA_CAPACITY_TOLRANCE) &&(( gFG_capacity_by_v > CUST_POWERON_LOW_CAPACITY_TOLRANCE || bat_is_charger_exist() == KAL_TRUE)))
+			|| ((g_rtc_fg_soc != 0) && (boot_reason == BR_WDT_BY_PASS_PWK || boot_reason == BR_WDT || boot_reason == BR_WDT_SW || boot_reason == BR_WDT_HW || boot_reason == BR_KERNEL_PANIC || boot_reason == BR_TOOL_BY_PASS_PWK || boot_reason == BR_2SEC_REBOOT || g_boot_mode == RECOVERY_BOOT)))
             
         {
             gFG_capacity_by_v = g_rtc_fg_soc;            
@@ -898,9 +902,9 @@ void dod_init(void)
     else
     {
     	if(((g_rtc_fg_soc != 0) && ((gFG_capacity_by_v-g_rtc_fg_soc) < CUST_POWERON_DELTA_CAPACITY_TOLRANCE) &&(( gFG_capacity_by_v > CUST_POWERON_LOW_CAPACITY_TOLRANCE || bat_is_charger_exist() == KAL_TRUE)))
-			|| ((g_rtc_fg_soc != 0) &&(g_boot_reason == BR_WDT_BY_PASS_PWK || g_boot_reason == BR_WDT || g_boot_reason == BR_TOOL_BY_PASS_PWK || g_boot_reason == BR_2SEC_REBOOT || g_boot_mode == RECOVERY_BOOT)))
+			|| ((g_rtc_fg_soc != 0) &&(boot_reason == BR_WDT_BY_PASS_PWK || boot_reason == BR_WDT || boot_reason == BR_WDT_SW || boot_reason == BR_WDT_HW || boot_reason == BR_KERNEL_PANIC || boot_reason == BR_TOOL_BY_PASS_PWK || boot_reason == BR_2SEC_REBOOT || g_boot_mode == RECOVERY_BOOT)))
         {
-            gFG_capacity_by_v = g_rtc_fg_soc;            
+            gFG_capacity_by_v = g_rtc_fg_soc;
         }
     }        
 
@@ -1062,7 +1066,7 @@ void oam_run(void)
 	last_oam_run_time.tv_sec, now_time.tv_sec, delta_time);
 	
 	last_oam_run_time = now_time;
-		
+	bm_print(BM_LOG_CRTI, "[FGADC] g_boot_reason=%d\n", get_boot_reason());	
     vol_bat = 15; //set avg times
     ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_ADC_V_BAT_SENSE, &vol_bat);
 
