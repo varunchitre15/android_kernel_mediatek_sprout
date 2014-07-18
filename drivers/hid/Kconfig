@@ -104,7 +104,7 @@ config HID_ACRUX_FF
 
 config HID_APPLE
 	tristate "Apple {i,Power,Mac}Books" if EXPERT
-	depends on (USB_HID || BT_HIDP)
+	depends on HID
 	default !EXPERT
 	---help---
 	Support for some Apple devices which less or more break
