@@ -766,7 +766,7 @@ int freqhopping_config(unsigned int pll_id, unsigned long vco_freq, unsigned int
 	unsigned long 			flags=0;
 	unsigned int			skip_flag=0;
 	
-	FH_MSG("conf() id: %d f: %d, e: %d",(int)pll_id, (int)vco_freq, (int)enable);
+	//FH_MSG("conf() id: %d f: %d, e: %d",(int)pll_id, (int)vco_freq, (int)enable);
 	
 	if( (g_p_fh_hal_drv->mt_fh_get_init()) == 0){
 		FH_MSG("Not init yet, init first.");
