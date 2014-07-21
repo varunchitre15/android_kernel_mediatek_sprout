@@ -264,11 +264,12 @@ static int __init mtk_cooler_shutdown_init(void)
     {
         struct proc_dir_entry *entry;
         
-        entry = create_proc_entry("driver/mtk_cl_sd_pid", S_IRUGO | S_IWUSR, NULL);
+        entry = create_proc_entry("driver/mtk_cl_sd_pid", S_IRUGO | S_IWUSR | S_IWGRP, NULL);
         if (NULL != entry)
         {
             entry->read_proc = _mtk_cl_sd_pid_read;
             entry->write_proc = _mtk_cl_sd_pid_write;
+            entry->gid = 1000;
         }
     }
     
