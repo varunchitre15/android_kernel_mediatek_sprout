@@ -299,7 +299,7 @@ static ssize_t synaptics_rmi4_f51_enables_show(struct device *dev,
             f51->proximity_enables_addr,
             &proximity_enables,
             sizeof(proximity_enables));
-    if (retval < 0) {
+    if (retval <= 0) {
         dev_err(dev,
                 "%s: Failed to read proximity enables, error = %d\n",
                 __func__, retval);
@@ -906,7 +906,7 @@ static int synaptics_rmi4_f51_init(struct synaptics_rmi4_data *rmi4_data,
             fhandler->full_addr.query_base,
             query_register.data,
             sizeof(query_register.data));
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     fhandler->data_size = sizeof(data_register->data);
@@ -918,7 +918,7 @@ static int synaptics_rmi4_f51_init(struct synaptics_rmi4_data *rmi4_data,
             query_register.control_register_count - 1,
             &proximity_enable_mask,
             sizeof(proximity_enable_mask));
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     f51 = kmalloc(sizeof(*f51), GFP_KERNEL);
@@ -926,7 +926,7 @@ static int synaptics_rmi4_f51_init(struct synaptics_rmi4_data *rmi4_data,
     f51->proximity_enables_addr = fhandler->full_addr.ctrl_base +
             query_register.control_register_count - 1;
 
-    return 0;
+    return 1;
 }
 
 int synaptics_rmi4_proximity_enables(unsigned char enables)
@@ -977,7 +977,7 @@ static int tpd_rmi4_read_pdt(struct tpd_data *ts)
                     pdt_entry_addr,
                     (unsigned char *)&rmi_fd,
                     sizeof(rmi_fd));
-            if (retval < 0)
+            if (retval <= 0)
                 return retval;
 
             if (rmi_fd.fn_number == 0) {
@@ -1021,7 +1021,7 @@ static int tpd_rmi4_read_pdt(struct tpd_data *ts)
                     ts->fn11_mask |= 1 <<ii;
 
                 retval = tpd_i2c_read_data(ts->client,ts->f11.query_base,f11_query,sizeof(f11_query));
-                if (retval < 0)
+                if (retval <= 0)
                     return retval;
                 TPD_DMESG("f11 query base=%d\n",ts->f11.query_base);
                 /* Maximum number of fingers supported */
@@ -1034,7 +1034,7 @@ static int tpd_rmi4_read_pdt(struct tpd_data *ts)
                     TPD_DMESG("points_supported=%d\n",ts->points_supported);
                     }
                 retval = tpd_i2c_read_data(ts->client,ts->f11.ctrl_base+6, (char *)(&f11_max_xy), sizeof(f11_max_xy));
-                if (retval < 0)
+                if (retval <= 0)
                     return retval;
 
                 /* Maximum x and y */
@@ -1199,7 +1199,7 @@ flash_prog_mode:
     }
 #endif
 
-    return 0;
+    return 1;
 }
 
 
@@ -1421,7 +1421,7 @@ static int tpd_process()
 
     //clear interrupt bit
     retval = tpd_i2c_read_data(ts->client, ts->f01.data_base + 1, &status, 1);
-    if (retval < 0)
+    if (retval <= 0)
     {
         TPD_DMESG("tpd_i2c_read_data retval error\n");
         ret=0;
@@ -1701,7 +1701,7 @@ static int tpd_sw_power(struct i2c_client *client, int on)
                 ts->f01.ctrl_base,
                 &device_ctrl,
                 sizeof(device_ctrl));
-    if (retval < 0) {
+    if (retval <= 0) {
         TPD_DMESG("Error sensor can not wake up\n");
         goto out;
     }
@@ -1715,7 +1715,7 @@ static int tpd_sw_power(struct i2c_client *client, int on)
                 ts->f01.ctrl_base,
                 &device_ctrl,
                 sizeof(device_ctrl));
-        if (retval < 0) {
+        if (retval <= 0) {
             TPD_DMESG("Error touch can not leave very-low power state\n");
             goto out;
         }
@@ -1729,7 +1729,7 @@ static int tpd_sw_power(struct i2c_client *client, int on)
                 ts->f01.ctrl_base,
                 &device_ctrl,
                 sizeof(device_ctrl));
-        if (retval < 0) {
+        if (retval <= 0) {
             TPD_DMESG("Error touch can not enter very-low power state\n");
             goto out;
         }
@@ -1756,7 +1756,7 @@ static int tpd_clear_interrupt(struct i2c_client *client)
     int retval = 0;
     u8 status = 0;
     retval = tpd_i2c_read_data(client, ts->f01.data_base + 1, &status, 1);
-    if (retval < 0){
+    if (retval <= 0){
         dev_err(&client->dev,
                 "%s: Failed to enable attention interrupt\n",
                 __func__);
@@ -1842,7 +1842,7 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
     mutex_init(&(ts->io_ctrl_mutex));
 
     retval = tpd_rmi4_read_pdt(ts);
-    if (retval < 0) {
+    if (retval <= 0) {
         TPD_DMESG("Failed to query device\n");
         goto err_query_device;
     }

@@ -368,7 +368,7 @@ static int fwu_check_version(void)
                 fwu->f01_fd.query_base_addr + 18,
                 firmware_id,
                 sizeof(firmware_id));
-    if (retval < 0) {
+    if (retval <= 0) {
         TPD_DMESG("Failed to read firmware ID (code %d).\n", retval);
         return retval;
     }
@@ -382,7 +382,7 @@ static int fwu_check_version(void)
                 fwu->f34_fd.ctrl_base_addr,
                 config_id,
                 sizeof(config_id));
-    if (retval < 0) {
+    if (retval <= 0) {
         dev_err(&i2c_client->dev,
             "Failed to read config ID (code %d).\n", retval);
         return retval;
@@ -397,7 +397,7 @@ static int fwu_check_version(void)
             fwu->config_data[1],
             fwu->config_data[2],
             fwu->config_data[3]);
-    return 0;
+    return 1;
 }
 
 static int fwu_read_f01_device_status(struct f01_device_status *status)
@@ -408,14 +408,14 @@ static int fwu_read_f01_device_status(struct f01_device_status *status)
             fwu->f01_fd.data_base_addr,
             status->data,
             sizeof(status->data));
-    if (retval < 0) {
+    if (retval <= 0) {
         TPD_DMESG(
                 "%s: Failed to read F01 device status\n",
                 __func__);
         return retval;
     }
 
-    return 0;
+    return 1;
 }
 
 static int fwu_read_f34_queries(void)
@@ -429,7 +429,7 @@ static int fwu_read_f34_queries(void)
             fwu->f34_fd.query_base_addr + BOOTLOADER_ID_OFFSET,
             fwu->bootloader_id,
             sizeof(fwu->bootloader_id));
-    if (retval < 0) {
+    if (retval <= 0) {
         TPD_DMESG(
                 "%s: Failed to read bootloader ID\n",
                 __func__);
@@ -440,7 +440,7 @@ static int fwu_read_f34_queries(void)
             fwu->f34_fd.query_base_addr + FLASH_PROPERTIES_OFFSET,
             fwu->flash_properties.data,
             sizeof(fwu->flash_properties.data));
-    if (retval < 0) {
+    if (retval <= 0) {
         dev_err(&i2c_client->dev,
                 "%s: Failed to read flash properties\n",
                 __func__);
@@ -466,7 +466,7 @@ static int fwu_read_f34_queries(void)
             fwu->f34_fd.query_base_addr + BLOCK_SIZE_OFFSET,
             buf,
             2);
-    if (retval < 0) {
+    if (retval <= 0) {
         dev_err(&i2c_client->dev,
                 "%s: Failed to read block size info\n",
                 __func__);
@@ -479,7 +479,7 @@ static int fwu_read_f34_queries(void)
             fwu->f34_fd.query_base_addr + FW_BLOCK_COUNT_OFFSET,
             buf,
             count);
-    if (retval < 0) {
+    if (retval <= 0) {
         dev_err(&i2c_client->dev,
                 "%s: Failed to read block count info\n",
                 __func__);
@@ -507,7 +507,7 @@ static int fwu_read_f34_queries(void)
     fwu->addr_f34_flash_control = fwu->f34_fd.data_base_addr +
                     BLOCK_DATA_OFFSET +
                     fwu->block_size;
-    return 0;
+    return 1;
 }
 
 static int fwu_read_interrupt_status(void)
@@ -518,7 +518,7 @@ static int fwu_read_interrupt_status(void)
             fwu->addr_f01_interrupt_register,
             &interrupt_status,
             sizeof(interrupt_status));
-    if (retval < 0) {
+    if (retval <= 0) {
         TPD_DMESG(
                 "%s: Failed to read flash status\n",
                 __func__);
@@ -534,7 +534,7 @@ static int fwu_read_f34_flash_status(void)
             fwu->addr_f34_flash_control,
             fwu->flash_control.data,
             sizeof(fwu->flash_control.data));
-    if (retval < 0) {
+    if (retval <= 0) {
         dev_err(&fwu->rmi4_data->i2c_client->dev,
                 "%s: Failed to read flash status\n",
                 __func__);
@@ -559,7 +559,7 @@ static int fwu_reset_device(void)
             fwu->f01_fd.cmd_base_addr,
             &reset,
             sizeof(reset));
-    if (retval < 0) {
+    if (retval <= 0) {
         dev_err(&fwu->rmi4_data->i2c_client->dev,
                 "%s: Failed to reset device (addr : 0x%02x)\n",
                 __func__, fwu->f01_fd.cmd_base_addr);
@@ -569,13 +569,13 @@ static int fwu_reset_device(void)
     fwu_wait_for_idle(WRITE_WAIT_MS);
 
     retval = fwu->rmi4_data->reset_device(fwu->rmi4_data);
-    if (retval < 0) {
+    if (retval <= 0) {
         dev_err(&fwu->rmi4_data->i2c_client->dev,
                 "%s: Failed to reset core driver after reflash\n",
                 __func__);
         return retval;
     }
-    return 0;
+    return 1;
 }
 
 static int fwu_write_f34_command(unsigned char cmd)
@@ -586,13 +586,13 @@ static int fwu_write_f34_command(unsigned char cmd)
             fwu->addr_f34_flash_control,
             &cmd,
             sizeof(cmd));
-    if (retval < 0) {
+    if (retval <= 0) {
         TPD_DMESG(
                 "%s: Failed to write command 0x%02x\n",
                 __func__, cmd);
         return retval;
     }
-    return 0;
+    return 1;
 }
 
 static unsigned char fwu_check_flash_status(void)
@@ -610,7 +610,7 @@ static int fwu_wait_for_idle(int timeout_ms)
     do {
         if (fwu_read_interrupt_status() > 0)
     //    if(    (fwu_read_f34_flash_status())&0x7f==0x00)
-         return 0;
+         return 1;
 
         usleep_range(MIN_SLEEP_TIME_US, MAX_SLEEP_TIME_US);
         count++;
@@ -644,7 +644,7 @@ static int fwu_scan_pdt(void)
                     addr,
                     (unsigned char *)&rmi_fd,
                     sizeof(rmi_fd));
-        if (retval < 0)
+        if (retval <= 0)
             return retval;
 
         if (rmi_fd.fn_number) {
@@ -685,7 +685,7 @@ static int fwu_scan_pdt(void)
     }
 
     fwu_read_interrupt_status();
-    return 0;
+    return 1;
 }
 
 static int fwu_write_blocks(unsigned char *block_ptr, unsigned short block_cnt,
@@ -703,7 +703,7 @@ static int fwu_write_blocks(unsigned char *block_ptr, unsigned short block_cnt,
             block_offset,
             sizeof(block_offset));
     // TPD_DMESG("write block number");
-    if (retval < 0) {
+    if (retval <= 0) {
         dev_err(&fwu->rmi4_data->i2c_client->dev,
                 "%s: Failed to write to block number registers\n",
                 __func__);
@@ -725,14 +725,14 @@ static int fwu_write_blocks(unsigned char *block_ptr, unsigned short block_cnt,
             fwu->f34_fd.data_base_addr + BLOCK_DATA_OFFSET,
             block_ptr,
             fwu->block_size);
-        if (retval < 0) {
+        if (retval <= 0) {
             TPD_DMESG("%s: Failed to write block data (block %d)\n",
                 __func__, block_num);
             return retval;
         }
 
         retval = fwu_write_f34_command(command);
-        if (retval < 0) {
+        if (retval <= 0) {
             dev_err(&fwu->rmi4_data->i2c_client->dev,
                     "%s: Failed to write command for block %d\n",
                     __func__, block_num);
@@ -740,7 +740,7 @@ static int fwu_write_blocks(unsigned char *block_ptr, unsigned short block_cnt,
         }
 
         retval = fwu_wait_for_idle(WRITE_WAIT_MS);
-        if (retval < 0) {
+        if (retval <= 0) {
             dev_err(&fwu->rmi4_data->i2c_client->dev,
                     "%s: Failed to wait for idle status (block %d)\n",
                     __func__, block_num);
@@ -764,7 +764,7 @@ static int fwu_write_blocks(unsigned char *block_ptr, unsigned short block_cnt,
             "config" : "firmware",
             block_cnt, block_cnt);
 #endif
-    return 0;
+    return 1;
 }
 
 static int fwu_write_firmware(void)
@@ -793,14 +793,14 @@ static int fwu_write_bootloader_id(void)
     TPD_DMESG("bootloader ID=%s\n",fwu->bootloader_id);
     TPD_DMESG("f34_data_addr=%x\n",fwu->f34_fd.data_base_addr + BLOCK_DATA_OFFSET);
 
-    if (retval < 0) {
+    if (retval <= 0) {
         TPD_DMESG(
                 "%s: Failed to write bootloader ID\n",
                 __func__);
         return retval;
     }
 
-    return 0;
+    return 1;
 }
 
 
@@ -818,22 +818,22 @@ static int fwu_enter_flash_prog(void)
     dev_info(&fwu->rmi4_data->i2c_client->dev, "Enter bootloader mode\n");
 #endif
     retval = fwu_read_f01_device_status(&f01_device_status);
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     if (f01_device_status.flash_prog) {
         TPD_DMESG(
                 "%s: Already in flash prog mode\n",
                 __func__);
-        return 0;
+        return 1;
     }
 
     retval = fwu_write_bootloader_id();
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     retval = fwu_write_f34_command(CMD_ENABLE_FLASH_PROG);
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 #ifdef DEBUG_TP_UPDATE
     retval = fwu_wait_for_idle(idle_delay_sencond*ENABLE_WAIT_MS);
@@ -844,7 +844,7 @@ static int fwu_enter_flash_prog(void)
         return retval;
 
     retval = fwu_read_f01_device_status(&f01_device_status);
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     if (!f01_device_status.flash_prog) {
@@ -855,11 +855,11 @@ static int fwu_enter_flash_prog(void)
     }
 
     retval = fwu_scan_pdt();
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     retval = fwu_read_f01_device_status(&f01_device_status);
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     if (!f01_device_status.flash_prog) {
@@ -870,14 +870,14 @@ static int fwu_enter_flash_prog(void)
     }
 
     retval = fwu_read_f34_queries();
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     retval = fwu->fn_ptr->read(fwu->rmi4_data,
             fwu->f01_fd.ctrl_base_addr,
             f01_device_control.data,
             sizeof(f01_device_control.data));
-    if (retval < 0) {
+    if (retval <= 0) {
         TPD_DMESG(
                 "%s: Failed to read F01 device control\n",
                 __func__);
@@ -891,7 +891,7 @@ static int fwu_enter_flash_prog(void)
             fwu->f01_fd.ctrl_base_addr,
             f01_device_control.data,
             sizeof(f01_device_control.data));
-    if (retval < 0) {
+    if (retval <= 0) {
         TPD_DMESG(
                 "%s: Failed to write F01 device control\n",
                 __func__);
@@ -906,7 +906,7 @@ static int fwu_do_reflash(void)
     int retval;
 
     retval = fwu_enter_flash_prog();
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     TPD_DMESG(
@@ -914,7 +914,7 @@ static int fwu_do_reflash(void)
             __func__);
 
     retval = fwu_write_bootloader_id();
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     TPD_DMESG(
@@ -922,7 +922,7 @@ static int fwu_do_reflash(void)
             __func__);
 
     retval = fwu_write_f34_command(CMD_ERASE_ALL);
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     TPD_DMESG("%s: Erase all command written\n",
@@ -932,7 +932,7 @@ static int fwu_do_reflash(void)
 //while (1);
 
     retval = fwu_wait_for_idle(5*ERASE_WAIT_MS);
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     TPD_DMESG(
@@ -1011,7 +1011,7 @@ static int fwu_start_reflash(void)
     fwu_check_version();
 
     retval = fwu_do_reflash();
-    if (retval < 0) {
+    if (retval <= 0) {
         TPD_DMESG(
                 "%s: Failed to do reflash\n",
                 __func__);
@@ -1181,7 +1181,7 @@ static int fwu_do_read_config(void)
     unsigned short index = 0;
 
     retval = fwu_enter_flash_prog();
-    if (retval < 0)
+    if (retval <= 0)
         goto exit;
 
     TPD_DMESG(
@@ -1229,7 +1229,7 @@ static int fwu_do_read_config(void)
             fwu->f34_fd.data_base_addr + BLOCK_NUMBER_OFFSET,
             block_offset,
             sizeof(block_offset));
-    if (retval < 0) {
+    if (retval <= 0) {
         dev_err(&fwu->rmi4_data->i2c_client->dev,
                 "%s: Failed to write to block number registers\n",
                 __func__);
@@ -1257,7 +1257,7 @@ static int fwu_do_read_config(void)
                 fwu->f34_fd.data_base_addr + BLOCK_DATA_OFFSET,
                 &fwu->read_config_buf[index],
                 fwu->block_size);
-        if (retval < 0) {
+        if (retval <= 0) {
             dev_err(&fwu->rmi4_data->i2c_client->dev,
                     "%s: Failed to read block data (block %d)\n",
                     __func__, block_num);
@@ -1305,7 +1305,7 @@ int synaptics_fw_version_updater()
     ////////////////////////////////////////////////////////////////////////////
     retval = fwu->fn_ptr->read(fwu->rmi4_data,fwu->f34_fd.ctrl_base_addr,config_id,4);
     TPD_DMESG("fwu->f34_fd.ctrl_base_addr=0x%x \n",fwu->f34_fd.ctrl_base_addr);
-    if(retval<0)
+    if(retval<=0)
     {
     tpd_fw_version =0;
     sprintf(tpd_desc, "Not Find Touch Device");
@@ -1483,7 +1483,7 @@ static ssize_t fwu_sysfs_read_config_store(struct device *dev,
         return -EINVAL;
 
     retval = fwu_do_read_config();
-    if (retval < 0) {
+    if (retval <= 0) {
         dev_err(&rmi4_data->i2c_client->dev,
                 "%s: Failed to read config\n",
                 __func__);
@@ -1585,7 +1585,7 @@ static ssize_t fwu_sysfs_disp_firmware_version_show(struct device *dev,
                 fwu->f34_fd.ctrl_base_addr,
                 config_id,
                 sizeof(config_id));
-    if (retval < 0) {
+    if (retval <= 0) {
         dev_err(&i2c_client->dev,
             "Failed to read config ID (code %d).\n", retval);
         return retval;
@@ -1877,7 +1877,7 @@ static int synaptics_rmi4_irq_enable(struct synaptics_rmi4_data *rmi4_data,
                 rmi4_data->f01_data_base_addr + 1,
                 &intr_status,
                 rmi4_data->num_of_intr_regs);
-        if (retval < 0)
+        if (retval <= 0)
             return retval;
 
 /*        retval = request_threaded_irq(rmi4_data->irq, NULL,
@@ -1925,7 +1925,7 @@ static int synaptics_rmi4_alloc_fh(struct synaptics_rmi4_fn **fhandler,
             (rmi_fd->query_base_addr |
             (page_number << 8));
 
-    return 0;
+    return 1;
 }
 
 static int synaptics_rmi4_f11_init(struct synaptics_rmi4_data *rmi4_data,
@@ -1948,7 +1948,7 @@ static int synaptics_rmi4_f11_init(struct synaptics_rmi4_data *rmi4_data,
             fhandler->full_addr.query_base,
             query,
             sizeof(query));
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     /* Maximum number of fingers supported */
@@ -1961,7 +1961,7 @@ static int synaptics_rmi4_f11_init(struct synaptics_rmi4_data *rmi4_data,
             fhandler->full_addr.ctrl_base,
             control,
             sizeof(control));
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     /* Maximum x and y */
@@ -2029,7 +2029,7 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
             fhandler->full_addr.query_base + 5,
             query_5.data,
             sizeof(query_5.data));
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     ctrl_8_offset = query_5.ctrl0_is_present +
@@ -2062,7 +2062,7 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
             fhandler->full_addr.ctrl_base + ctrl_23_offset,
             ctrl_23.data,
             sizeof(ctrl_23.data));
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     /* Maximum number of fingers supported */
@@ -2072,7 +2072,7 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
             fhandler->full_addr.query_base + 8,
             query_8.data,
             sizeof(query_8.data));
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     /* Determine the presence of the Data0 register */
@@ -2082,7 +2082,7 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
             fhandler->full_addr.ctrl_base + ctrl_8_offset,
             ctrl_8.data,
             sizeof(ctrl_8.data));
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     /* Maximum x and y */
@@ -2158,7 +2158,7 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
              fhandler->full_addr.query_base,
              f1a->button_query.data,
              sizeof(f1a->button_query.data));
-     if (retval < 0) {
+     if (retval <= 0) {
          dev_err(&rmi4_data->i2c_client->dev,
                  "%s: Failed to read query registers\n",
                  __func__);
@@ -2186,7 +2186,7 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
          return -ENOMEM;
      }
 
-     return 0;
+     return 1;
  }
 
  static int synaptics_rmi4_f1a_button_map(struct synaptics_rmi4_data *rmi4_data,
@@ -2218,7 +2218,7 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
              f1a->button_map[ii] = pdata->f1a_button_map->map[ii];
      }*/
 
-     return 0;
+     return 1;
  }
 
 
@@ -2248,7 +2248,7 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
          fhandler->intr_mask |= 1 << ii;
 
      retval = synaptics_rmi4_f1a_alloc_mem(rmi4_data, fhandler);
-     if (retval < 0)
+     if (retval <= 0)
          goto error_exit;
 
      retval = synaptics_rmi4_f1a_button_map(rmi4_data, fhandler);
@@ -2257,7 +2257,7 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
 
      rmi4_data->button_0d_enabled = 1;
 
-     return 0;
+     return 1;
 
  error_exit:
      synaptics_rmi4_f1a_kfree(fhandler);
@@ -2309,7 +2309,7 @@ static int synaptics_rmi4_query_device(struct synaptics_rmi4_data *rmi4_data)
                     pdt_entry_addr,
                     (unsigned char *)&rmi_fd,
                     sizeof(rmi_fd));
-            if (retval < 0)
+            if (retval <= 0)
                 return retval;
 
             fhandler = NULL;
@@ -2341,7 +2341,7 @@ static int synaptics_rmi4_query_device(struct synaptics_rmi4_data *rmi4_data)
                         rmi4_data->f01_data_base_addr,
                         status.data,
                         sizeof(status.data));
-                if (retval < 0)
+                if (retval <= 0)
                     return retval;
 
                 if (status.flash_prog == 1) {
@@ -2367,7 +2367,7 @@ static int synaptics_rmi4_query_device(struct synaptics_rmi4_data *rmi4_data)
 
                 retval = synaptics_rmi4_f11_init(rmi4_data,
                         fhandler, &rmi_fd, intr_count);
-                if (retval < 0)
+                if (retval <= 0)
                     return retval;
                 break;
             case SYNAPTICS_RMI4_F12:
@@ -2386,7 +2386,7 @@ static int synaptics_rmi4_query_device(struct synaptics_rmi4_data *rmi4_data)
 
                 retval = synaptics_rmi4_f12_init(rmi4_data,
                         fhandler, &rmi_fd, intr_count);
-                if (retval < 0)
+                if (retval <= 0)
                     return retval;
                 break;
             case SYNAPTICS_RMI4_F1A:
@@ -2405,7 +2405,7 @@ static int synaptics_rmi4_query_device(struct synaptics_rmi4_data *rmi4_data)
 
                 retval = synaptics_rmi4_f1a_init(rmi4_data,
                         fhandler, &rmi_fd, intr_count);
-                if (retval < 0)
+                if (retval <= 0)
                     return retval;
                 break;
 #if PROXIMITY
@@ -2451,7 +2451,7 @@ flash_prog_mode:
             rmi4_data->f01_query_base_addr,
             f01_query,
             sizeof(f01_query));
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     /* RMI Version 4.0 currently supported */
@@ -2504,12 +2504,12 @@ flash_prog_mode:
                     intr_addr,
                     &(rmi4_data->intr_mask[ii]),
                     sizeof(rmi4_data->intr_mask[ii]));
-            if (retval < 0)
+            if (retval <= 0)
                 return retval;
         }
     }
 
-    return 0;
+    return 1;
 }
 
 static int synaptics_rmi4_reset_device(struct synaptics_rmi4_data *rmi4_data)
@@ -2525,7 +2525,7 @@ static int synaptics_rmi4_reset_device(struct synaptics_rmi4_data *rmi4_data)
             rmi4_data->f01_cmd_base_addr,
             &command,
             sizeof(command));
-    if (retval < 0) {
+    if (retval <= 0) {
         dev_err(&rmi4_data->i2c_client->dev,
                 "%s: Failed to issue reset command, error = %d\n",
                 __func__, retval);
@@ -2546,14 +2546,14 @@ static int synaptics_rmi4_reset_device(struct synaptics_rmi4_data *rmi4_data)
     }*/
 
     retval = synaptics_rmi4_query_device(rmi4_data);
-    if (retval < 0) {
+    if (retval <= 0) {
         dev_err(&rmi4_data->i2c_client->dev,
                 "%s: Failed to query device\n",
                 __func__);
         return retval;
     }
 
-    return 0;
+    return 1;
 }
 
 static int synaptics_rmi4_fwu_init(struct i2c_client *client)
@@ -2605,7 +2605,7 @@ static int synaptics_rmi4_fwu_init(struct i2c_client *client)
             PDT_PROPS,
             pdt_props.data,
             sizeof(pdt_props.data));
-    if (retval < 0) {
+    if (retval <= 0) {
         TPD_DMESG("%s: Failed to read PDT properties, assuming 0x00\n",
                 __func__);
     } else if (pdt_props.has_bsr) {
@@ -2616,7 +2616,7 @@ static int synaptics_rmi4_fwu_init(struct i2c_client *client)
     }
 
     retval = fwu_scan_pdt();
-    if (retval < 0)
+    if (retval <= 0)
         goto exit_free_mem;
 
 /*    fwu->productinfo1 = rmi4_data->rmi4_mod_info.product_info[0];
@@ -2634,7 +2634,7 @@ static int synaptics_rmi4_fwu_init(struct i2c_client *client)
             __func__, fwu->product_id);
 */
     retval = fwu_read_f34_queries();
-    if (retval < 0)
+    if (retval <= 0)
         goto exit_free_mem;
 
 TPD_DMESG("query_base_addr=0x%x, data_base_addr=0x%x, addr_f34_flash_control=0x%x, bootloader_id=%s\n",

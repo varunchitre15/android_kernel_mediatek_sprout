@@ -212,7 +212,7 @@ static ssize_t rmidev_sysfs_data_show(struct device *dev,
                 rmidev->address,
                 (unsigned char *)buf,
                 data_length);
-        if (retval < 0) {
+        if (retval <= 0) {
             dev_err(&rmidev->rmi4_data->i2c_client->dev,
                     "%s: Failed to read data\n",
                     __func__);
@@ -239,7 +239,7 @@ static ssize_t rmidev_sysfs_data_store(struct device *dev,
                 rmidev->address,
                 (unsigned char *)buf,
                 data_length);
-        if (retval < 0) {
+        if (retval <= 0) {
             dev_err(&rmidev->rmi4_data->i2c_client->dev,
                     "%s: Failed to write data\n",
                     __func__);
@@ -358,7 +358,7 @@ static ssize_t rmidev_read(struct file *filp, char __user *buf,
             *f_pos,
             tmpbuf,
             count);
-    if (retval < 0)
+    if (retval <= 0)
         goto clean_up;
 
     if (copy_to_user(buf, tmpbuf, count))
@@ -407,7 +407,7 @@ static ssize_t rmidev_write(struct file *filp, const char __user *buf,
             *f_pos,
             tmpbuf,
             count);
-    if (retval >= 0)
+    if (retval > 0)
         *f_pos += retval;
 
     mutex_unlock(&(dev_data->file_mutex));
@@ -726,7 +726,7 @@ static int synaptics_rmi4_irq_enable(struct synaptics_rmi4_data *rmi4_data,
                 rmi4_data->f01_data_base_addr + 1,
                 &intr_status,
                 rmi4_data->num_of_intr_regs);
-        if (retval < 0)
+        if (retval <= 0)
             return retval;
 #ifdef  SYNAPTICS_DEBUG_IF
         //mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM);
