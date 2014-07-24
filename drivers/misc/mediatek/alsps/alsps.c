@@ -33,8 +33,8 @@ int als_data_report(struct input_dev *dev, int value, int status)
 int ps_data_report(struct input_dev *dev, int value,int status)
 {
     //ALSPS_LOG("+ps_data_report! %d, %d\n",value,status);
-    input_report_rel(dev, EVENT_TYPE_PS_VALUE, (value+1));
-    input_report_rel(dev, EVENT_TYPE_PS_STATUS, status);
+      input_report_abs(dev, EVENT_TYPE_PS_VALUE, value);
+    input_report_abs(dev, EVENT_TYPE_PS_STATUS, status);
     input_sync(dev);
     return 0;
 }
@@ -823,15 +823,15 @@ static int alsps_input_init(struct alsps_context *cxt)
 
     dev->name = ALSPS_INPUTDEV_NAME;
 
-    set_bit(EV_REL, dev->evbit);
-    set_bit(EV_SYN, dev->evbit);
-    input_set_capability(dev, EV_REL, EVENT_TYPE_PS_VALUE);
-    input_set_capability(dev, EV_REL, EVENT_TYPE_PS_STATUS);
     input_set_capability(dev, EV_ABS, EVENT_TYPE_ALS_VALUE);
+    input_set_capability(dev, EV_ABS, EVENT_TYPE_PS_VALUE);
     input_set_capability(dev, EV_ABS, EVENT_TYPE_ALS_STATUS);
+    input_set_capability(dev, EV_ABS, EVENT_TYPE_PS_STATUS);
 
     input_set_abs_params(dev, EVENT_TYPE_ALS_VALUE, ALSPS_VALUE_MIN, ALSPS_VALUE_MAX, 0, 0);
+    input_set_abs_params(dev, EVENT_TYPE_PS_VALUE, ALSPS_VALUE_MIN, ALSPS_VALUE_MAX, 0, 0);
     input_set_abs_params(dev, EVENT_TYPE_ALS_STATUS, ALSPS_STATUS_MIN, ALSPS_STATUS_MAX, 0, 0);
+    input_set_abs_params(dev, EVENT_TYPE_PS_STATUS, ALSPS_STATUS_MIN, ALSPS_STATUS_MAX, 0, 0);
     input_set_drvdata(dev, cxt);
 
     err = input_register_device(dev);

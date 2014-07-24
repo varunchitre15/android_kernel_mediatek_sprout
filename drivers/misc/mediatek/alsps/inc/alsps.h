@@ -41,9 +41,9 @@
 #define ALSPS_INVALID_VALUE -1
 
 #define EVENT_TYPE_ALS_VALUE                 ABS_X
-#define EVENT_TYPE_PS_VALUE                 REL_Z
+#define EVENT_TYPE_PS_VALUE                 ABS_Z
 #define EVENT_TYPE_ALS_STATUS             ABS_WHEEL
-#define EVENT_TYPE_PS_STATUS                REL_Y
+#define EVENT_TYPE_PS_STATUS                ABS_Y
 
 
 #define ALSPS_VALUE_MAX (32767)
