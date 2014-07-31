@@ -2287,7 +2287,6 @@ void update_battery_2nd_info(int status_2nd, int capacity_2nd, int present_2nd)
 
 static void mt_kpoc_power_off_check(void)
 {
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	kal_int32 charger_vol = battery_meter_get_charger_voltage();
 
 	battery_xlog_printk(BAT_LOG_FULL, "[mt_kpoc_power_off_check] , chr_vol=%d, boot_mode=%d\r\n",charger_vol,g_platform_boot_mode);
@@ -2299,7 +2298,6 @@ static void mt_kpoc_power_off_check(void)
             battery_charging_control(CHARGING_CMD_SET_POWER_OFF,NULL);
 		}
 	}
-#endif
 }
 
 void do_chrdet_int_task(void)
@@ -2323,14 +2321,13 @@ void do_chrdet_int_task(void)
        	    battery_xlog_printk(BAT_LOG_CRTI, "[do_chrdet_int_task] charger NOT exist!\n");
             BMT_status.charger_exist = KAL_FALSE;
     		
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+
             if(g_platform_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT || g_platform_boot_mode == LOW_POWER_OFF_CHARGING_BOOT)
             {
                 battery_xlog_printk(BAT_LOG_CRTI, "[pmic_thread_kthread] Unplug Charger/USB In Kernel Power Off Charging Mode!  Shutdown OS!\r\n");
     			battery_charging_control(CHARGING_CMD_SET_POWER_OFF,NULL);
     			//mt_power_off();
             }
-#endif
 
             wake_unlock(&battery_suspend_lock);
 
@@ -2704,17 +2701,15 @@ int charger_hv_detect_sw_thread_handler(void *unused)
 			battery_charging_control(CHARGING_CMD_GET_HV_STATUS,&hv_status);
 
 		if(hv_status == KAL_TRUE)
-        {
-            battery_xlog_printk(BAT_LOG_CRTI, "[charger_hv_detect_sw_thread_handler] charger hv\n");    
+		{
+			battery_xlog_printk(BAT_LOG_CRTI, "[charger_hv_detect_sw_thread_handler] charger hv\n");    
             
 			charging_enable = KAL_FALSE;
 			if(chargin_hw_init_done)
 				battery_charging_control(CHARGING_CMD_ENABLE,&charging_enable);
-        }
-        else
-        {
-            battery_xlog_printk(BAT_LOG_FULL, "[charger_hv_detect_sw_thread_handler] upmu_chr_get_vcdt_hv_det() != 1\n");    
-        }
+		} else {
+			battery_xlog_printk(BAT_LOG_FULL, "[charger_hv_detect_sw_thread_handler] upmu_chr_get_vcdt_hv_det() != 1\n");    
+		}
 
 		if(chargin_hw_init_done)
 			battery_charging_control(CHARGING_CMD_RESET_WATCH_DOG_TIMER,NULL);
