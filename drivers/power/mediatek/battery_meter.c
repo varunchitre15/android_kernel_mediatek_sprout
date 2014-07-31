@@ -62,7 +62,7 @@ static char proc_fgadc_data[32];
 
 kal_bool gFG_Is_Charging = KAL_FALSE;
 kal_int32 g_auxadc_solution = 0;
-
+kal_int32 g_booting_vbat=0;
 ///////////////////////////////////////////////////////////////////////////////////////////
 //// PMIC AUXADC Related Variable
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -188,7 +188,7 @@ int BattThermistorConverTemp(int Res)
     {
         TBatt_Value = -20;
     }
-    else if(Res<=Batt_Temperature_Table[16].TemperatureR)
+    else if(Res<=Batt_Temperature_Table[TABLE_NUM-1].TemperatureR)
     {
         TBatt_Value = 60;
     }
@@ -227,12 +227,10 @@ int BattVoltToTemp(int dwVolt)
     // TRes_temp = ((kal_int64)RBAT_PULL_UP_R*(kal_int64)dwVolt) / (RBAT_PULL_UP_VOLT-dwVolt); 
     //TRes = (TRes_temp * (kal_int64)RBAT_PULL_DOWN_R)/((kal_int64)RBAT_PULL_DOWN_R - TRes_temp);
 
-    TRes_temp = (RBAT_PULL_UP_R*(kal_int64)dwVolt); 
+    TRes_temp = (RBAT_PULL_UP_R*(kal_int64)dwVolt);
     do_div(TRes_temp, (RBAT_PULL_UP_VOLT-dwVolt));
-
     TRes = (TRes_temp * RBAT_PULL_DOWN_R);
     do_div(TRes, abs(RBAT_PULL_DOWN_R - TRes_temp));
-
     /* convert register to temperature */
     sBaTTMP = BattThermistorConverTemp((int)TRes);
       
@@ -254,12 +252,12 @@ int force_get_tbat(void)
     int ret=0;
     
     /* Get V_BAT_Temperature */
-    bat_temperature_volt = 2; 
+    bat_temperature_volt = 2;
     ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_ADC_V_BAT_TEMP, &bat_temperature_volt);
     
     if(bat_temperature_volt != 0)
     {   
-       	#if defined(SOC_BY_HW_FG)
+#if defined(SOC_BY_HW_FG)
         fg_r_value = get_r_fg_value();
 
         ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT, &fg_current_temp);          
@@ -866,12 +864,13 @@ void fg_qmax_update_for_aging(void)
 void dod_init(void)
 {
 	boot_reason_t boot_reason = get_boot_reason();
+	kal_uint32 vbat_capacity;
     #if defined(SOC_BY_HW_FG)
     int ret = 0;    
     //use get_hw_ocv-----------------------------------------------------------------        
     ret=battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_OCV, &gFG_voltage);
     gFG_capacity_by_v = fgauge_read_capacity_by_v(gFG_voltage);
-    
+    vbat_capacity = fgauge_read_capacity_by_v(g_booting_vbat);
     bm_print(BM_LOG_CRTI, "[FGADC] get_hw_ocv=%d, HW_SOC=%d, SW_SOC = %d\n", 
         gFG_voltage, gFG_capacity_by_v, gFG_capacity_by_v_init);
     
@@ -890,32 +889,26 @@ void dod_init(void)
     #endif
     
     bm_print(BM_LOG_CRTI, "[FGADC] g_boot_reason=%d\n", get_boot_reason());
-    if(g_rtc_fg_soc >= gFG_capacity_by_v)
-    {
-        if( ((g_rtc_fg_soc != 0) && ((g_rtc_fg_soc-gFG_capacity_by_v) < CUST_POWERON_DELTA_CAPACITY_TOLRANCE) &&(( gFG_capacity_by_v > CUST_POWERON_LOW_CAPACITY_TOLRANCE || bat_is_charger_exist() == KAL_TRUE)))
+#if defined(SOC_BY_HW_FG)
+	if(((g_rtc_fg_soc != 0) && ( ( (abs(g_rtc_fg_soc-gFG_capacity_by_v) ) < CUST_POWERON_DELTA_CAPACITY_TOLRANCE) ) &&(( gFG_capacity_by_v > CUST_POWERON_LOW_CAPACITY_TOLRANCE || bat_is_charger_exist() == KAL_TRUE)))
 			|| ((g_rtc_fg_soc != 0) && (boot_reason == BR_WDT_BY_PASS_PWK || boot_reason == BR_WDT || boot_reason == BR_WDT_SW || boot_reason == BR_WDT_HW || boot_reason == BR_KERNEL_PANIC || boot_reason == BR_TOOL_BY_PASS_PWK || boot_reason == BR_2SEC_REBOOT || g_boot_mode == RECOVERY_BOOT)))
-            
-        {
-            gFG_capacity_by_v = g_rtc_fg_soc;            
-        }
-    }
-    else
-    {
-    	if(((g_rtc_fg_soc != 0) && ((gFG_capacity_by_v-g_rtc_fg_soc) < CUST_POWERON_DELTA_CAPACITY_TOLRANCE) &&(( gFG_capacity_by_v > CUST_POWERON_LOW_CAPACITY_TOLRANCE || bat_is_charger_exist() == KAL_TRUE)))
+	{
+		gFG_capacity_by_v = g_rtc_fg_soc;            
+	}
+#elif defined(SOC_BY_SW_FG)
+	if(((g_rtc_fg_soc != 0) && (((abs(g_rtc_fg_soc-gFG_capacity_by_v)) < CUST_POWERON_DELTA_CAPACITY_TOLRANCE)||(abs(g_rtc_fg_soc-vbat_capacity)< CUST_POWERON_DELTA_CAPACITY_TOLRANCE)) &&(( gFG_capacity_by_v > CUST_POWERON_LOW_CAPACITY_TOLRANCE || bat_is_charger_exist() == KAL_TRUE)))
 			|| ((g_rtc_fg_soc != 0) &&(boot_reason == BR_WDT_BY_PASS_PWK || boot_reason == BR_WDT || boot_reason == BR_WDT_SW || boot_reason == BR_WDT_HW || boot_reason == BR_KERNEL_PANIC || boot_reason == BR_TOOL_BY_PASS_PWK || boot_reason == BR_2SEC_REBOOT || g_boot_mode == RECOVERY_BOOT)))
-        {
-            gFG_capacity_by_v = g_rtc_fg_soc;
+	{
+		gFG_capacity_by_v = g_rtc_fg_soc;
         }
-    }        
-
+#endif   
     bm_print(BM_LOG_CRTI, "[FGADC] g_rtc_fg_soc=%d, gFG_capacity_by_v=%d\n", 
             g_rtc_fg_soc, gFG_capacity_by_v);
     
     if (gFG_capacity_by_v == 0 && bat_is_charger_exist() == KAL_TRUE) {
         gFG_capacity_by_v = 1;
         
-        bm_print(BM_LOG_CRTI, "[FGADC] gFG_capacity_by_v=%d\n", 
-            gFG_capacity_by_v);
+        bm_print(BM_LOG_CRTI, "[FGADC] gFG_capacity_by_v=%d\n", gFG_capacity_by_v);
     }
     gFG_capacity = gFG_capacity_by_v;   
     gFG_capacity_by_c_init = gFG_capacity;
@@ -977,27 +970,32 @@ void oam_init(void)
     int ret=0;
 	int vol_bat=0;
 	kal_int32 vbat_capacity = 0;
+	kal_bool charging_enable = KAL_FALSE;
 
-	vol_bat = 5; //set avg times
-    ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_ADC_V_BAT_SENSE, &vol_bat);
-    ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_OCV, &gFG_voltage);
+	/*stop charging for vbat measurement*/
+	battery_charging_control(CHARGING_CMD_ENABLE,&charging_enable);
+
+	msleep(50);
+
+	g_booting_vbat = 5; //set avg times
+	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_OCV, &gFG_voltage);
+	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_ADC_V_BAT_SENSE, &g_booting_vbat);
+
 
 	gFG_capacity_by_v = fgauge_read_capacity_by_v(gFG_voltage);
-	vbat_capacity = fgauge_read_capacity_by_v(vol_bat);
+	vbat_capacity = fgauge_read_capacity_by_v(g_booting_vbat);
 	
-    if(bat_is_charger_exist() == KAL_TRUE)
-    {
-    	bm_print(BM_LOG_CRTI, "[oam_init_inf] gFG_capacity_by_v=%d, vbat_capacity=%d, \n",gFG_capacity_by_v,vbat_capacity);
+	if(bat_is_charger_exist() == KAL_TRUE) {
+		bm_print(BM_LOG_CRTI, "[oam_init_inf] gFG_capacity_by_v=%d, vbat_capacity=%d, \n",gFG_capacity_by_v,vbat_capacity);
 
-    	// to avoid plug in cable without battery, then plug in battery to make hw soc = 100% 
-    	// if the difference bwtween ZCV and vbat is too large, using vbat instead ZCV
-    	if(((gFG_capacity_by_v == 100) && (vbat_capacity < CUST_POWERON_MAX_VBAT_TOLRANCE)) ||(abs(gFG_capacity_by_v-vbat_capacity)>CUST_POWERON_DELTA_VBAT_TOLRANCE))	
-    	{
-			bm_print(BM_LOG_CRTI, "[oam_init] fg_vbat=(%d), vbat=(%d), set fg_vat as vat\n", gFG_voltage,vol_bat);
-			
-			gFG_voltage = vol_bat;
+		// to avoid plug in cable without battery, then plug in battery to make hw soc = 100% 
+		// if the difference bwtween ZCV and vbat is too large, using vbat instead ZCV
+		if(((gFG_capacity_by_v == 100) && (vbat_capacity < CUST_POWERON_MAX_VBAT_TOLRANCE)) ||(abs(gFG_capacity_by_v-vbat_capacity)>CUST_POWERON_DELTA_VBAT_TOLRANCE)) {
+			bm_print(BM_LOG_CRTI, "[oam_init] fg_vbat=(%d), vbat=(%d), set fg_vat as vat\n", gFG_voltage,g_booting_vbat);
+		
+			gFG_voltage = g_booting_vbat;
 			gFG_capacity_by_v = vbat_capacity;
-    	}   	
+		}  	
     }    
 	
     gFG_capacity_by_v_init = gFG_capacity_by_v;

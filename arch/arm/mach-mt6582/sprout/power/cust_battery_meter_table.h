@@ -25,7 +25,7 @@
 
 #if (BAT_NTC_10 == 1)
 #define RBAT_PULL_UP_R             16900	
-#define RBAT_PULL_DOWN_R		   27000	
+#define RBAT_PULL_DOWN_R		   30000	
 #endif
 
 #if (BAT_NTC_47 == 1)
@@ -78,6 +78,7 @@ typedef enum
 // <DOD, Battery_Voltage> Table
 // ============================================================
 #if (BAT_NTC_10 == 1)
+#define TABLE_NUM 23
     BATT_TEMPERATURE Batt_Temperature_Table[] = {
     	 {-30,124607},
     	 {-25,94918},
@@ -106,6 +107,7 @@ typedef enum
 #endif
 
 #if (BAT_NTC_47 == 1)
+#define TABLE_NUM 17
     BATT_TEMPERATURE Batt_Temperature_Table[] = {
         {-20,483954},
         {-15,360850},
