@@ -72,10 +72,11 @@
 #include <mach/battery_common.h>
 #include <linux/time.h> 
 
-
+#if defined (CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 #include <mach/mt_boot.h>
 #include <mach/system.h>
 #include "mach/mt_gpt.h"
+#endif
 
 extern int Enable_BATDRV_LOG;
 
@@ -137,8 +138,10 @@ extern void charger_hv_detect_sw_workaround_init(void);
 
 
 extern void pmu_drv_tool_customization_init(void);
-extern void mt_power_off(void);
+
+
 #if defined (CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
+extern void mt_power_off(void);
 static kal_bool long_pwrkey_press = false;
 static unsigned long timer_pre = 0; 
 static unsigned long timer_pos = 0; 
@@ -652,15 +655,14 @@ extern void kpd_pwrkey_pmic_handler(unsigned long pressed);
 void pwrkey_int_handler(void)
 {
     kal_uint32 ret=0;
-    int boot_mode = 0;
-        boot_mode = get_boot_mode();
+
     xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[pwrkey_int_handler]....\n");
     
-    if(upmu_get_pwrkey_deb()==1)    	
+		if(upmu_get_pwrkey_deb()==1)    	    	
     {
         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[pwrkey_int_handler] Release pwrkey\n");
 #if defined (CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-		if(boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT && timer_pre != 0)
+		if(g_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT && timer_pre != 0)
 		{
 				timer_pos = sched_clock();
 				if(timer_pos - timer_pre >= LONG_PWRKEY_PRESS_TIME)
@@ -682,7 +684,7 @@ void pwrkey_int_handler(void)
     {
         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[pwrkey_int_handler] Press pwrkey\n");
 #if defined (CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-		if(boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT)
+		if(g_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT)
 		{
 			timer_pre = sched_clock();
 		}
@@ -735,6 +737,7 @@ void chrdet_int_handler(void)
     kal_uint32 ret=0;
 	
     xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[chrdet_int_handler]....\n");
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
     if (!upmu_get_rgs_chrdet())
     {
         int boot_mode = 0;
@@ -746,6 +749,7 @@ void chrdet_int_handler(void)
             mt_power_off();
         }
     }
+#endif
     do_chrdet_int_task();
 
     ret=pmic_config_interface(INT_STATUS0,0x1,0x1,10);  
