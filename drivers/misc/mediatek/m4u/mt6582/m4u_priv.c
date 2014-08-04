@@ -659,6 +659,11 @@ static long MTK_M4U_ioctl(struct file * a_pstFile,
 	        return -EINVAL;
             }
 
+            if (!access_ok(VERIFY_READ, m4u_module.BufAddr, m4u_module.BufSize)) {
+                 M4UMSG("MTK_M4U_T_ALLOC_MVA BufAddr = 0x%x, BufSize = %x. is invalid.\n", m4u_module.BufAddr, m4u_module.BufSize);
+	        return -EINVAL;
+            }
+
             if(m4u_module.MVAStart == -1) //work around for wrap layer
             {
                 m4u_module.MVAStart = m4u_user_v2p(m4u_module.BufAddr);
@@ -833,10 +838,12 @@ static long MTK_M4U_ioctl(struct file * a_pstFile,
             {
 	        M4UMSG("MTK_M4U_T_CACHE_SYNC eModuleID = 0x%x. is invalid.\n", m4u_cache_data.eModuleID);
 	        return -EINVAL;
-            } 
+            }
 
-            M4UDBG("MTK_M4U_T_CACHE_INVALID_AFTER_HW_WRITE_MEM(), moduleID=%d, eCacheSync=%d, buf_addr=0x%x, buf_length=0x%x \n", 
-            		m4u_cache_data.eModuleID, m4u_cache_data.eCacheSync, m4u_cache_data.BufAddr, m4u_cache_data.BufSize);
+            if (!access_ok(VERIFY_READ, m4u_cache_data.BufAddr, m4u_cache_data.BufSize)) {
+                 M4UMSG("MTK_M4U_T_CACHE_SYNC BufAddr = 0x%x, BufSize = %x.is invalid.\n", m4u_cache_data.BufAddr, m4u_cache_data.BufSize);
+	        return -EINVAL;
+            }
 
             switch(m4u_cache_data.eCacheSync)  
             {
@@ -1239,6 +1246,8 @@ static int m4u_probe(struct platform_device *pdev)
     pmodule_current_size = (int*)kmalloc(M4U_CLIENT_MODULE_NUM*4, GFP_KERNEL|__GFP_ZERO);
     pmodule_max_size = (int*)kmalloc(M4U_CLIENT_MODULE_NUM*4, GFP_KERNEL|__GFP_ZERO);
     pmodule_locked_pages = (int*)kmalloc(M4U_CLIENT_MODULE_NUM*4, GFP_KERNEL|__GFP_ZERO);
+
+    spin_lock_init(&gM4u_reg_lock);
     
     m4u_struct_init(); //init related structures
 
@@ -1246,8 +1255,6 @@ static int m4u_probe(struct platform_device *pdev)
         
     // add SMI reg init here
     SMI_reg_init();
-    
-    spin_lock_init(&gM4u_reg_lock);
     
     //Set IRQ   
     if(request_irq(MT6589_MMU0_IRQ_ID , MTK_M4U_isr, IRQF_TRIGGER_LOW, M4U_DEVNAME , NULL))
@@ -3835,6 +3842,24 @@ static int m4u_hw_init(void)
     }
     //invalidate all TLB entry
     m4u_invalid_tlb_all(M4U_ID_ALL, gM4U_L2_enable);
+
+    M4U_PORT_STRUCT port;
+    port.Direction = 0;
+    port.Distance = 1;
+    port.domain = 3;
+    port.Security = 0;
+    port.Virtuality = 1;
+
+    port.ePortID = MDP_RDMA;
+    m4u_config_port(&port);
+    port.ePortID = MDP_WDMA;
+    m4u_config_port(&port);
+    port.ePortID = MDP_ROTO;
+    m4u_config_port(&port);
+    port.ePortID = MDP_ROTCO;
+    m4u_config_port(&port);
+    port.ePortID = MDP_ROTVO;
+    m4u_config_port(&port);
 
     return 0;
 }
