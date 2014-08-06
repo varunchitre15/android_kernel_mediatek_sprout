@@ -602,7 +602,7 @@ exit:
 int tpd_i2c_read_data_fifo(struct i2c_client *client,
                 unsigned short addr, unsigned char *data, unsigned short length)
 {
-        u8 retval=0;
+        int retval=0;
         u8 retry = 0;
         u8 *pData = data;
         int tmp_addr = addr;
@@ -727,7 +727,7 @@ exit:
 int tpd_i2c_write_data_fifo(struct i2c_client *client,
                 unsigned short addr, unsigned char *data, unsigned short length)
 {
-    u8 retval=0;
+    int retval=0;
     u8 retry = 0;
     u8 *pData = data;
     u8 buf[5] = {0};
