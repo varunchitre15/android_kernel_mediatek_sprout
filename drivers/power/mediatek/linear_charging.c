@@ -200,7 +200,7 @@ PMU_STATUS do_jeita_state_machine(void)
                             
             g_temp_status = TEMP_POS_10_TO_POS_45;
             #ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
-            g_jeita_recharging_voltage = 4200;
+            g_jeita_recharging_voltage = JEITA_TEMP_POS_10_TO_POS_45_RECHARGE_VOLTAGE;
             #else
             g_jeita_recharging_voltage = JEITA_TEMP_POS_10_TO_POS_45_RECHARGE_VOLTAGE;
             #endif
@@ -255,10 +255,8 @@ PMU_STATUS do_jeita_state_machine(void)
     }
 
 	//set CV after temperature changed
-	if (g_temp_status != previous_g_temp_status) {
-		cv_voltage = select_jeita_cv();
-		battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE,&cv_voltage);
-	}
+	cv_voltage = select_jeita_cv();
+	battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE,&cv_voltage);
 	
     return PMU_STATUS_OK;
 }
@@ -271,11 +269,18 @@ static void set_jeita_charging_current(void)
 		return;
 #endif	
 
-	if(g_temp_status == TEMP_NEG_10_TO_POS_0)
-    {
-        g_temp_CC_value = CHARGE_CURRENT_200_00_MA;   //for low temp	
-        battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] JEITA set charging current : %d\r\n", g_temp_CC_value);
-    }
+	if(g_temp_status == TEMP_POS_10_TO_POS_45) {
+		return;	
+	} else if(g_temp_status == TEMP_NEG_10_TO_POS_0) {
+		g_temp_CC_value = JEITA_NEG_10_TO_POS_0_CURRENT;   //for low temp	
+		battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] JEITA set charging current : %d\r\n", g_temp_CC_value);
+	} else if(g_temp_status == TEMP_POS_0_TO_POS_10) {
+		g_temp_CC_value = JEITA_POS_0_TO_POS_10_CURRENT;   //for low temp	
+		battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] JEITA set charging current : %d\r\n", g_temp_CC_value);
+	} else if(g_temp_status == TEMP_POS_45_TO_POS_60) {
+		g_temp_CC_value = JEITA_POS_45_TO_POS_60_CURRENT;   //for low temp	
+		battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] JEITA set charging current : %d\r\n", g_temp_CC_value);
+	}
 }
 
 #endif

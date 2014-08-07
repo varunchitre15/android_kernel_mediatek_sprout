@@ -2134,11 +2134,8 @@ static void mt_battery_thermal_check(void)
             BMT_status.temperature = battery_cmd_thermal_test_mode_value;
             battery_xlog_printk(BAT_LOG_FULL, "[Battery] In thermal_test_mode , Tbat=%d\n", BMT_status.temperature);
         }
-    
-#if defined(MTK_JEITA_STANDARD_SUPPORT)
-        //ignore default rule
-#else    
-		if(BMT_status.temperature >= 60)
+     
+	if(BMT_status.temperature >= 60)
         {
             #if defined(CONFIG_POWER_EXT)
             battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] CONFIG_POWER_EXT, no update battery update power down.\n");
@@ -2171,7 +2168,6 @@ static void mt_battery_thermal_check(void)
             }
             #endif
         }
-#endif
         
     }
 
