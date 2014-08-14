@@ -7,6 +7,7 @@
 */
 
 #include "fuse_i.h"
+#include "fuse.h"
 
 #include <linux/pagemap.h>
 #include <linux/file.h>
@@ -546,6 +547,25 @@ no_open:
 	return finish_no_open(file, res);
 }
 
+static int fuse_users(struct inode *dir, struct dentry *entry)
+{
+    int err;
+    struct fuse_conn *fc = get_fuse_conn(dir);
+    struct fuse_req *req = fuse_get_req_nopages(fc);
+    if (IS_ERR(req))
+        return PTR_ERR(req);
+
+    req->in.h.opcode = FUSE_USERS;
+    req->in.h.nodeid = get_node_id(dir);
+    req->in.numargs = 1;
+    req->in.args[0].size = entry->d_name.len + 1;
+    req->in.args[0].value = entry->d_name.name;
+    fuse_request_send(fc, req);
+    err = req->out.h.error;
+    fuse_put_request(fc, req);
+    return err;
+}
+
 /*
  * Code shared between mknod, mkdir, symlink and link
  */
@@ -602,6 +622,9 @@ static int create_new_entry(struct fuse_conn *fc, struct fuse_req *req,
 			mutex_unlock(&fc->inst_mutex);
 			dput(alias);
 			iput(inode);
+            
+            printk(KERN_ERR "fuse:%s: EBUSY caused from that the directory,'%s', has alias. Use FUSE_USERS to find the reason. \n", __FUNCTION__, entry->d_name.name);
+            fuse_users(dir, entry);           
 			return -EBUSY;
 		}
 		d_instantiate(entry, inode);
@@ -704,7 +727,7 @@ static int fuse_unlink(struct inode *dir, struct dentry *entry)
 	req->in.numargs = 1;
 	req->in.args[0].size = entry->d_name.len + 1;
 	req->in.args[0].value = entry->d_name.name;
-	fuse_request_send(fc, req);
+	fuse_request_send_ex(fc, req, i_size_read(entry->d_inode));
 	err = req->out.h.error;
 	fuse_put_request(fc, req);
 	if (!err) {
@@ -743,7 +766,7 @@ static int fuse_rmdir(struct inode *dir, struct dentry *entry)
 	req->in.numargs = 1;
 	req->in.args[0].size = entry->d_name.len + 1;
 	req->in.args[0].value = entry->d_name.name;
-	fuse_request_send(fc, req);
+	fuse_request_send_ex(fc, req, i_size_read(entry->d_inode));
 	err = req->out.h.error;
 	fuse_put_request(fc, req);
 	if (!err) {
@@ -1175,6 +1198,8 @@ static int parse_dirfile(char *buf, size_t nbytes, struct file *file,
 			return -EIO;
 		if (reclen > nbytes)
 			break;
+		if (memchr(dirent->name, '/', dirent->namelen) != NULL)
+			return -EIO;
 
 		over = filldir(dstbuf, dirent->name, dirent->namelen,
 			       file->f_pos, dirent->ino, dirent->type);
@@ -1225,13 +1250,29 @@ static int fuse_direntplus_link(struct file *file,
 		if (name.name[1] == '.' && name.len == 2)
 			return 0;
 	}
+
+	if (invalid_nodeid(o->nodeid))
+		return -EIO;
+	if (!fuse_valid_type(o->attr.mode))
+		return -EIO;
+
 	fc = get_fuse_conn(dir);
 
 	name.hash = full_name_hash(name.name, name.len);
 	dentry = d_lookup(parent, &name);
-	if (dentry && dentry->d_inode) {
+	if (dentry) {
 		inode = dentry->d_inode;
-		if (get_node_id(inode) == o->nodeid) {
+		if (!inode) {
+			d_drop(dentry);
+		} else if (get_node_id(inode) != o->nodeid ||
+			   ((o->attr.mode ^ inode->i_mode) & S_IFMT)) {
+			err = d_invalidate(dentry);
+			if (err)
+				goto out;
+		} else if (is_bad_inode(inode)) {
+			err = -EIO;
+			goto out;
+		} else {
 			struct fuse_inode *fi;
 			fi = get_fuse_inode(inode);
 			spin_lock(&fc->lock);
@@ -1244,9 +1285,6 @@ static int fuse_direntplus_link(struct file *file,
 			 */
 			goto found;
 		}
-		err = d_invalidate(dentry);
-		if (err)
-			goto out;
 		dput(dentry);
 		dentry = NULL;
 	}
@@ -1261,10 +1299,19 @@ static int fuse_direntplus_link(struct file *file,
 	if (!inode)
 		goto out;
 
-	alias = d_materialise_unique(dentry, inode);
-	err = PTR_ERR(alias);
-	if (IS_ERR(alias))
-		goto out;
+	if (S_ISDIR(inode->i_mode)) {
+		mutex_lock(&fc->inst_mutex);
+		alias = fuse_d_add_directory(dentry, inode);
+		mutex_unlock(&fc->inst_mutex);
+		err = PTR_ERR(alias);
+		if (IS_ERR(alias)) {
+			iput(inode);
+			goto out;
+		}
+	} else {
+		alias = d_splice_alias(inode, dentry);
+	}
+
 	if (alias) {
 		dput(dentry);
 		dentry = alias;
@@ -1301,6 +1348,8 @@ static int parse_dirplusfile(char *buf, size_t nbytes, struct file *file,
 			return -EIO;
 		if (reclen > nbytes)
 			break;
+		if (memchr(dirent->name, '/', dirent->namelen) != NULL)
+			return -EIO;
 
 		if (!over) {
 			/* We fill entries into dstbuf only as much as
@@ -1572,6 +1621,7 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
 		    struct file *file)
 {
 	struct fuse_conn *fc = get_fuse_conn(inode);
+	struct fuse_inode *fi = get_fuse_inode(inode);
 	struct fuse_req *req;
 	struct fuse_setattr_in inarg;
 	struct fuse_attr_out outarg;
@@ -1599,8 +1649,10 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
 	if (IS_ERR(req))
 		return PTR_ERR(req);
 
-	if (is_truncate)
+	if (is_truncate) {
 		fuse_set_nowrite(inode);
+		set_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
+	}
 
 	memset(&inarg, 0, sizeof(inarg));
 	memset(&outarg, 0, sizeof(outarg));
@@ -1662,12 +1714,14 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
 		invalidate_inode_pages2(inode->i_mapping);
 	}
 
+	clear_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
 	return 0;
 
 error:
 	if (is_truncate)
 		fuse_release_nowrite(inode);
 
+	clear_bit(FUSE_I_SIZE_UNSTABLE, &fi->state);
 	return err;
 }
 
@@ -1731,6 +1785,8 @@ static int fuse_setxattr(struct dentry *entry, const char *name,
 		fc->no_setxattr = 1;
 		err = -EOPNOTSUPP;
 	}
+	if (!err)
+		fuse_invalidate_attr(inode);
 	return err;
 }
 
@@ -1860,6 +1916,8 @@ static int fuse_removexattr(struct dentry *entry, const char *name)
 		fc->no_removexattr = 1;
 		err = -EOPNOTSUPP;
 	}
+	if (!err)
+		fuse_invalidate_attr(inode);
 	return err;
 }
 

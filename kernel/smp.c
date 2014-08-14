@@ -270,6 +270,51 @@ int smp_call_function_single(int cpu, smp_call_func_t func, void *info,
 }
 EXPORT_SYMBOL(smp_call_function_single);
 
+/* This function can be used by MTK Monitor only */
+/* Dont use this function directly               */
+int mtk_smp_call_function_single(int cpu, smp_call_func_t func, void *info,
+                             int wait)
+{
+        struct call_single_data d = {
+                .flags = 0,
+        };
+        unsigned long flags;
+        int this_cpu;
+        int err = 0;
+
+        /*
+         * prevent preemption and reschedule on another processor,
+         * as well as CPU removal
+         */
+        this_cpu = get_cpu();
+
+        if (cpu == this_cpu) {
+                local_irq_save(flags);
+                func(info);
+                local_irq_restore(flags);
+        } else {
+                if ((unsigned)cpu < nr_cpu_ids && cpu_online(cpu)) {
+                        struct call_single_data *data = &d;
+
+                        if (!wait)
+                                data = &__get_cpu_var(csd_data);
+
+                        csd_lock(data);
+
+                        cpumask_set_cpu(cpu, data->cpumask);
+                        data->func = func;
+                        data->info = info;
+                        generic_exec_single(cpu, data, wait);
+                } else {
+                        err = -ENXIO;   /* CPU not online */
+                }
+        }
+
+        put_cpu();
+
+        return err;
+}
+
 /*
  * smp_call_function_any - Run a function on any of the given cpus
  * @mask: The mask of cpus it can run on.

@@ -4,6 +4,12 @@
 
 menu "Misc devices"
 
+
+config ANDROID_PMEM
+        bool "Android pmem allocator"
+        default y
+
+
 config SENSORS_LIS3LV02D
 	tristate
 	depends on INPUT
@@ -540,4 +546,5 @@ source "drivers/misc/carma/Kconfig"
 source "drivers/misc/altera-stapl/Kconfig"
 source "drivers/misc/mei/Kconfig"
 source "drivers/misc/vmw_vmci/Kconfig"
+source "drivers/misc/mediatek/Kconfig"
 endmenu

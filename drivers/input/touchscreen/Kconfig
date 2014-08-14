@@ -416,6 +416,53 @@ config TOUCHSCREEN_MK712
 	  To compile this driver as a module, choose M here: the
 	  module will be called mk712.
 
+config TOUCHSCREEN_MTK
+	bool "MediaTek Touch Panel Driver"
+	help
+	  Say Y here if you have MediaTek touch panel.
+
+# Touch panel
+config MTK_GT9XX
+        bool "GT9XX for Mediatek package"
+        default n
+
+config MTK_FT5406
+        bool "FT5406 for Mediatek package"
+        default n
+
+config MTK_MMS134
+        bool "MMS134 for Mediatek package"
+        default n
+
+config MTK_MSG2133
+        bool "MSG2133 for Mediatek package"
+        default n
+
+config MTK_SYNAPTICS_3508
+        bool "SYNAPTICS_3508 for Mediatek package"
+        default n
+
+config MTK_FT6X06
+        bool "FT6X06 for Mediatek package"
+        default n
+
+config MTK_S3203
+        bool "S3203 for Mediatek package"
+        default n
+
+config MTK_CTP_RESET_CONFIG
+	bool "MTK_CTP_RESET_CONFIG"
+	help
+	   Reset TP IC for avoiding issue of DL wrong load.
+
+config TOUCHSCREEN_MTK_GT9XX
+	bool "GT9XX for Mediatek package"
+	depends on TOUCHSCREEN_MTK
+
+config TOUCHSCREEN_MTK_GT9XX_HOTKNOT_SCP
+	bool "GT9XX with SCP for Mediatek package"
+	depends on TOUCHSCREEN_MTK
+
 config TOUCHSCREEN_HP600
 	tristate "HP Jornada 6xx touchscreen"
 	depends on SH_HP6XX && SH_ADC

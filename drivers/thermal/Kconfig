@@ -27,6 +27,13 @@ choice
 	  This option sets which thermal governor shall be loaded at
 	  startup. If in doubt, select 'step_wise'.
 
+config THERMAL_DEFAULT_GOV_BACKWARD_COMPATIBLE
+	bool "backward_compatible"
+	select BACKWARD_COMPATIBLE
+	help
+	  Use the backward_compatible governor as default. This throttles the
+	  devices when the temperature is over each trip point.
+
 config THERMAL_DEFAULT_GOV_STEP_WISE
 	bool "step_wise"
 	select THERMAL_GOV_STEP_WISE
@@ -50,6 +57,11 @@ config THERMAL_DEFAULT_GOV_USER_SPACE
 	  lpatform thermals.
 
 endchoice
+
+config BACKWARD_COMPATIBLE
+	bool "Backward-compatible thermal governor"
+	help
+	  Enable this to manage platform thermals using backward-compatible governor.
 
 config THERMAL_GOV_FAIR_SHARE
 	bool "Fair-share thermal governor"

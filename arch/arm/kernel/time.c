@@ -17,6 +17,7 @@
 #include <linux/time.h>
 #include <linux/init.h>
 #include <linux/sched.h>
+#include <linux/sched_clock.h>
 #include <linux/smp.h>
 #include <linux/timex.h>
 #include <linux/errno.h>
@@ -26,7 +27,6 @@
 #include <linux/irq.h>
 
 #include <asm/thread_info.h>
-#include <asm/sched_clock.h>
 #include <asm/stacktrace.h>
 #include <asm/mach/arch.h>
 #include <asm/mach/time.h>
@@ -121,5 +121,4 @@ void __init time_init(void)
 	else
 		clocksource_of_init();
 
-	sched_clock_postinit();
 }

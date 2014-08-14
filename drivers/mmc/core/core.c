@@ -44,7 +44,7 @@
 #include "mmc_ops.h"
 #include "sd_ops.h"
 #include "sdio_ops.h"
-
+#define DAT_TIMEOUT         (HZ    * 5)
 /* If the device is not responding */
 #define MMC_CORE_TIMEOUT_MS	(10 * 60 * 1000) /* 10 minute timeout */
 
@@ -55,7 +55,7 @@
 #define MMC_BKOPS_MAX_TIMEOUT	(4 * 60 * 1000) /* max time to wait in ms */
 
 static struct workqueue_struct *workqueue;
-static const unsigned freqs[] = { 400000, 300000, 200000, 100000 };
+static const unsigned freqs[] = { 300000, 260000, 200000, 100000 };
 
 /*
  * Enabling software CRCs on the data blocks can be a significant (30%)
@@ -434,10 +434,58 @@ static int mmc_wait_for_data_req_done(struct mmc_host *host,
 static void mmc_wait_for_req_done(struct mmc_host *host,
 				  struct mmc_request *mrq)
 {
+#if 0
+    struct scatterlist *sg;
+    unsigned int  num;
+    unsigned int  left;
+    unsigned int  *ptr;
+    unsigned int  i;
+#endif
+
 	struct mmc_command *cmd;
 
 	while (1) {
-		wait_for_completion(&mrq->completion);
+		if(!wait_for_completion_timeout(&mrq->completion,DAT_TIMEOUT)){
+			printk(KERN_ERR "MSDC wait request timeout CMD<%d>ARG<0x%x>\n",mrq->cmd->opcode,mrq->cmd->arg);
+			if(mrq->data){
+				host->ops->dma_error_reset(host);
+				}
+
+            if(mrq->data)
+                mrq->data->error = (unsigned int)-ETIMEDOUT;
+
+
+            printk(KERN_ERR "MSDC wait request timeout DAT<%d>\n",(mrq->data->blocks) * (mrq->data->blksz));
+        }
+
+#if 0
+    if ((mrq->cmd->arg == 0) && (mrq->data) && 
+            ((mrq->cmd->opcode == 17)||(mrq->cmd->opcode == 18))){ 
+        printk("read MBR  cmd%d: blocks %d arg %08x, sg_len = %d\n", mrq->cmd->opcode, mrq->data->blocks, mrq->cmd->arg, mrq->data->sg_len);
+            sg = mrq->data->sg;
+            num = mrq->data->sg_len;
+
+            while (num) {
+                left = sg_dma_len(sg);
+                ptr = sg_virt(sg);
+
+                printk("====left: %d\n===\n", left);
+                for (i = 0; i <= left/4; i++){
+                    printk("0x%x ", *(ptr + i));
+                    if (0 == (i + 1)%16)
+                        printk("\n");
+                }
+
+                //page = sg_to_page(sg);
+
+                /* physic addr */
+                //paddr = page_to_phys(page);
+
+                sg = sg_next(sg); 
+                num--;
+            }; 
+    }
+#endif
 
 		cmd = mrq->cmd;
 		if (!cmd->error || !cmd->retries ||
@@ -529,6 +577,12 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
 			 * nothing to return
 			 */
 			return NULL;
+		} else {
+			host->ops->send_stop(host,host->areq->mrq); //add for MTK msdc host <Yuchi Xu>
+			do{
+				host->ops->tuning(host, host->areq->mrq);	//add for MTK msdc host <Yuchi Xu>
+			}while(host->ops->check_written_data(host,host->areq->mrq));
+			err = host->areq->err_check(host->card, host->areq);
 		}
 		/*
 		 * Check BKOPS urgency for each R1 response
@@ -588,6 +642,82 @@ EXPORT_SYMBOL(mmc_wait_for_req);
  *	Issued High Priority Interrupt, and check for card status
  *	until out-of prg-state.
  */
+#ifdef MMC_ENABLED_EMPTY_QUEUE_FLUSH
+
+int mmc_interrupt_hpi_delay(struct mmc_card *card, u32 delay)
+{
+	int err = 0;
+	u32 status, delay_count = 0;
+	unsigned long prg_wait;
+
+	BUG_ON(!card);
+
+	if (!card->ext_csd.hpi_en) {
+		pr_info("%s: HPI enable bit unset\n", mmc_hostname(card->host));
+		return 1;
+	}
+
+	mmc_claim_host(card->host);	
+		
+	do {
+		err = mmc_send_status(card, &status);
+		if (err) {
+			pr_err("%s: Get card status fail\n", mmc_hostname(card->host));
+			goto out;
+		}
+		if(R1_CURRENT_STATE(status) == R1_STATE_PRG)
+			mmc_delay(1);
+		else
+			break;
+	}while (++delay_count < delay);
+
+	switch (R1_CURRENT_STATE(status)) {
+	case R1_STATE_IDLE:
+	case R1_STATE_READY:
+	case R1_STATE_STBY:
+	case R1_STATE_TRAN:
+		/*
+		 * In idle and transfer states, HPI is not needed and the caller
+		 * can issue the next intended command immediately
+		 */
+		pr_err("[%s]: %s: card release busy status before stopping by HPI, wait %dms\n", __func__, mmc_hostname(card->host), delay_count); 
+		goto out;
+	case R1_STATE_PRG:
+		pr_err("[%s]: %s: do HPI to stop flush ops, wait %dms.\n", __func__, mmc_hostname(card->host), delay_count);
+		break;
+	default:
+		/* In all other states, it's illegal to issue HPI */
+		pr_err("%s: HPI cannot be sent. Card state=%d\n",
+			mmc_hostname(card->host), R1_CURRENT_STATE(status));
+		err = -EINVAL;
+		goto out;
+	}
+
+	err = mmc_send_hpi_cmd(card, &status);
+	if (err)
+		goto out;
+
+	prg_wait = jiffies + msecs_to_jiffies(card->ext_csd.out_of_int_time);
+	do {
+		err = mmc_send_status(card, &status);
+
+		if (!err && R1_CURRENT_STATE(status) == R1_STATE_TRAN)
+			break;
+		if (time_after(jiffies, prg_wait))
+			err = -ETIMEDOUT;
+	} while (!err);
+
+out:
+	mmc_release_host(card->host);
+	return err;
+}
+
+int mmc_interrupt_hpi(struct mmc_card *card)
+{
+	return mmc_interrupt_hpi_delay(card, 0); 
+}
+
+#else
 int mmc_interrupt_hpi(struct mmc_card *card)
 {
 	int err;
@@ -646,8 +776,134 @@ out:
 	mmc_release_host(card->host);
 	return err;
 }
+#endif
 EXPORT_SYMBOL(mmc_interrupt_hpi);
 
+#ifdef MMC_ENABLED_EMPTY_QUEUE_FLUSH
+/**
+ *	mmc_start_flush - start FLUSH OPS for supported cards
+ *	@card: MMC card to start FLUSH OPS
+ *	@form_exception: A flag to indicate if this function was
+ *			 called due to an exception raised by the card
+ *
+ *	Start cache flush operations whenever requested.
+ *	When the urgent FLUSH OPS bit is set in a R1 command response
+ *	then cache flush operations should be started immediately.
+*/
+void mmc_start_flush(struct mmc_card *card)
+{
+	int err;
+	bool use_busy_signal;
+
+	if (!card || mmc_card_doing_flush(card)) {
+		printk("[%s]: !card, or it is doing flush now\n", __func__);
+		return;
+	}
+
+	mmc_claim_host(card->host);
+
+	if (card->host->flush_info.cancel_delayed_work) {
+		printk("[%s]: %s: cancel_delayed_work flush ops was set, exit.\n", __func__, mmc_hostname(card->host));
+		card->host->flush_info.cancel_delayed_work = false;
+		goto out;
+	}
+
+	if (!card->ext_csd.cache_ctrl)   /* No operations required */
+		goto out;
+
+	//printk("[%s]: mmc_start_flush_doing.\n", __func__);
+	mmc_card_set_doing_flush(card);
+	err = mmc_flush_cache(card); 
+	if (err) {
+		pr_warn("%s: Error %d starting flush ops\n",
+			mmc_hostname(card->host), err);
+		goto out;
+	}
+		
+out:
+	mmc_release_host(card->host);
+}
+EXPORT_SYMBOL(mmc_start_flush);
+
+/**
+ * mmc_start_idle_time_flush() - check if a non urgent FLUSH OPs is needed
+ * @work:	The idle time FLUSH OPs work
+ */
+void mmc_start_idle_time_flush(struct work_struct *work)
+{
+	struct mmc_host *host = container_of(work, struct mmc_host,
+			flush_info.idle_time_dw.work);
+
+	printk("mmc_start_idle_time_flush...\n");
+
+	mmc_start_flush(host->card);
+}
+EXPORT_SYMBOL(mmc_start_idle_time_flush);
+
+/**
+ *      mmc_start_delayed_flush() - Start a delayed work to check for the need of non urgent FLUSH OPs
+ *      @card: MMC card to start FLUSH OPS
+*/
+void mmc_start_delayed_flush(struct mmc_card *card)
+{
+	if (!card->ext_csd.cache_ctrl || mmc_card_doing_flush(card)) {
+		printk("queueing delayed_flush_work return.\n");
+		return;
+	}
+
+//	printk("%s: %s: queueing delayed_flush_work.\n", __func__, mmc_hostname(card->host));
+
+	/*
+	 * cancel_delayed_flush_work will prevent a race condition between
+	 * fetching a request by the queue_thread and the delayed work
+	 */
+	card->host->flush_info.cancel_delayed_work = false;
+	queue_delayed_work(card->host->flush_info.wq, &card->host->flush_info.idle_time_dw,
+		   msecs_to_jiffies(card->host->flush_info.time_to_start_flush_ms));
+}
+EXPORT_SYMBOL(mmc_start_delayed_flush);
+
+/**
+ *	mmc_stop_flush - stop ongoing flush
+ *	@card: MMC card to check flush
+ *
+ *	Send HPI command to stop ongoing cache flush operations to
+ *	allow rapid servicing of foreground operations, e.g. read/
+ *	writes. Wait until the card comes out of the programming state
+ *	to avoid errors in servicing read/write requests.
+ */
+int mmc_stop_flush(struct mmc_card *card)
+{
+	int err = 0, count = 0;
+
+	BUG_ON(!card);
+
+	/*
+	 * Notify the delayed work to be cancelled, in case it was already
+	 * removed from the queue, but was not started yet
+	 */
+	card->host->flush_info.cancel_delayed_work = true;
+
+	if (delayed_work_pending(&card->host->flush_info.idle_time_dw)) {
+	    cancel_delayed_work_sync(&card->host->flush_info.idle_time_dw);
+	}
+
+	err = mmc_interrupt_hpi_delay(card, MMC_CACHE_MAX_TIME_OUT);
+
+	/*
+	 * If err is EINVAL, we can't issue an HPI.
+	 * It should complete the FLUSH OPS.
+	 */
+	if (!err || (err == -EINVAL)) {
+		mmc_card_clr_doing_flush(card);
+		err = 0;
+	}
+
+	return err;
+}
+EXPORT_SYMBOL(mmc_stop_flush);
+
+#endif
 /**
  *	mmc_wait_for_cmd - start a command and wait for completion
  *	@host: MMC host to start command
@@ -1471,9 +1727,6 @@ static void mmc_power_up(struct mmc_host *host)
 {
 	int bit;
 
-	if (host->ios.power_mode == MMC_POWER_ON)
-		return;
-
 	mmc_host_clk_hold(host);
 
 	/* If ocr is set, we use it */
@@ -1518,14 +1771,19 @@ static void mmc_power_up(struct mmc_host *host)
 
 void mmc_power_off(struct mmc_host *host)
 {
-	if (host->ios.power_mode == MMC_POWER_OFF)
-		return;
-
 	mmc_host_clk_hold(host);
 
 	host->ios.clock = 0;
 	host->ios.vdd = 0;
-
+	
+#ifdef CONFIG_MTK_EMMC_CACHE
+    if (host->card && (mmc_card_mmc(host->card)) && (host->card->ext_csd.cache_ctrl & 0x1)) {
+        if (mmc_cache_ctrl(host, 0)) {
+            pr_err("%s: failed to disable cache\n", mmc_hostname(host));
+            return ;
+        }
+    }
+#endif
 
 	/*
 	 * Reset ocr mask to be the highest possible voltage supported for
@@ -1687,6 +1945,7 @@ void mmc_detach_bus(struct mmc_host *host)
  */
 void mmc_detect_change(struct mmc_host *host, unsigned long delay)
 {
+	int ret;
 #ifdef CONFIG_MMC_DEBUG
 	unsigned long flags;
 	spin_lock_irqsave(&host->lock, flags);
@@ -1696,7 +1955,8 @@ void mmc_detect_change(struct mmc_host *host, unsigned long delay)
 	host->detect_change = 1;
 
 	wake_lock(&host->detect_wake_lock);
-	mmc_schedule_delayed_work(&host->detect, delay);
+	ret = mmc_schedule_delayed_work(&host->detect, delay);
+	printk(KERN_INFO"msdc: %d,mmc_schedule_delayed_work ret= %d\n",host->index,ret);
 }
 
 EXPORT_SYMBOL(mmc_detect_change);
@@ -2048,8 +2308,12 @@ EXPORT_SYMBOL(mmc_can_erase);
 
 int mmc_can_trim(struct mmc_card *card)
 {
-	if (card->ext_csd.sec_feature_support & EXT_CSD_SEC_GB_CL_EN)
+	if ((card->ext_csd.sec_feature_support & EXT_CSD_SEC_GB_CL_EN) &&
+		!(card->quirks & MMC_QUIRK_TRIM_UNSTABLE) &&
+		!(card->quirks & MMC_QUIRK_KSI_V03_SKIP_TRIM))
 		return 1;
+	//printk(KERN_ERR "[%s]: quirks=0x%x, MMC_QUIRK_TRIM_UNSTABLE=0x%x\n", __func__, card->quirks, MMC_QUIRK_TRIM_UNSTABLE); 
+	//printk(KERN_ERR "[%s]: quirks=0x%x, MMC_QUIRK_KSI_V03_SKIP_TRIM=0x%x\n", __func__, card->quirks, MMC_QUIRK_KSI_V03_SKIP_TRIM);
 	return 0;
 }
 EXPORT_SYMBOL(mmc_can_trim);
@@ -2393,6 +2657,9 @@ int mmc_detect_card_removed(struct mmc_host *host)
 }
 EXPORT_SYMBOL(mmc_detect_card_removed);
 
+#ifdef CONFIG_MTK_HIBERNATION
+extern void mmc_rescan_wait_finish(void);
+#endif
 void mmc_rescan(struct work_struct *work)
 {
 	struct mmc_host *host =
@@ -2404,10 +2671,16 @@ void mmc_rescan(struct work_struct *work)
 		return;
 
 	/* If there is a non-removable card registered, only scan once */
-	if ((host->caps & MMC_CAP_NONREMOVABLE) && host->rescan_entered)
-		return;
-	host->rescan_entered = 1;
+// [FIXME] VIA marks it wrong
+/*    if ((host->caps & MMC_CAP_NONREMOVABLE) && host->rescan_entered){
+        if (extend_wakelock)
+            wake_lock_timeout(&host->detect_wake_lock, HZ / 2);
+        else
+            wake_unlock(&host->detect_wake_lock);
 
+		return;
+    }
+*/
 	mmc_bus_get(host);
 
 	/*
@@ -2462,8 +2735,14 @@ void mmc_rescan(struct work_struct *work)
 			break;
 	}
 	mmc_release_host(host);
+	host->rescan_entered = 1;
 
  out:
+#ifdef CONFIG_MTK_HIBERNATION
+    if (unlikely(host->index == 1)) {
+        mmc_rescan_wait_finish();
+    }
+#endif
 	if (extend_wakelock)
 		wake_lock_timeout(&host->detect_wake_lock, HZ / 2);
 	else
@@ -2655,9 +2934,17 @@ int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
 	unsigned int timeout;
 	int err = 0;
 
+#ifdef CONFIG_MTK_EMMC_CACHE
+	//printk("[%s]: enable=%d, caps=0x%x, CACHE_FLAG=0x%x, quirks=0x%x, CACHE_QUIRK=0x%x\n", __func__, enable, host->caps2, MMC_CAP2_CACHE_CTRL, card->quirks, MMC_QUIRK_DISABLE_CACHE); 
+	if (!(host->caps2 & MMC_CAP2_CACHE_CTRL) ||
+			mmc_card_is_removable(host) || 
+			(card->quirks & MMC_QUIRK_DISABLE_CACHE)) 
+		return err;
+#else
 	if (!(host->caps2 & MMC_CAP2_CACHE_CTRL) ||
 			mmc_card_is_removable(host))
 		return err;
+#endif
 
 	if (card && mmc_card_mmc(card) &&
 			(card->ext_csd.cache_size > 0)) {

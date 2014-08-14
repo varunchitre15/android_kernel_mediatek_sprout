@@ -45,6 +45,13 @@
 #include <asm/smp_plat.h>
 #include <asm/virt.h>
 #include <asm/mach/arch.h>
+#include <linux/mt_sched_mon.h>
+/*******************************************************************************
+* 20131225 marc.huang                                                          *
+* CPU Hotplug debug                                                            *
+*******************************************************************************/
+#include <linux/mtk_ram_console.h>
+/******************************************************************************/
 
 /*
  * as from 2.5, kernels no longer have an init_tasks structure
@@ -234,10 +241,13 @@ void __cpuinit __cpu_die(unsigned int cpu)
 void __ref cpu_die(void)
 {
 	unsigned int cpu = smp_processor_id();
+	aee_rr_rec_hoplug(cpu, 51, 0);
 
 	idle_task_exit();
+	aee_rr_rec_hoplug(cpu, 52, 0);
 
 	local_irq_disable();
+	aee_rr_rec_hoplug(cpu, 53, 0);
 
 	/*
 	 * Flush the data out of the L1 cache for this CPU.  This must be
@@ -246,6 +256,7 @@ void __ref cpu_die(void)
 	 * *this* CPU and power down its cache.
 	 */
 	flush_cache_louis();
+	aee_rr_rec_hoplug(cpu, 54, 0);
 
 	/*
 	 * Tell __cpu_die() that this CPU is now safe to dispose of.  Once
@@ -253,6 +264,7 @@ void __ref cpu_die(void)
 	 * from this CPU and its cache by platform_cpu_kill().
 	 */
 	complete(&cpu_died);
+	aee_rr_rec_hoplug(cpu, 55, 0);
 
 	/*
 	 * Ensure that the cache lines associated with that completion are
@@ -261,6 +273,7 @@ void __ref cpu_die(void)
 	 * CPU waiting for this one.
 	 */
 	flush_cache_louis();
+	aee_rr_rec_hoplug(cpu, 56, 0);
 
 	/*
 	 * The actual CPU shutdown procedure is at least platform (if not
@@ -313,7 +326,8 @@ static void percpu_timer_setup(void);
 asmlinkage void __cpuinit secondary_start_kernel(void)
 {
 	struct mm_struct *mm = &init_mm;
-	unsigned int cpu;
+	unsigned int cpu = 0;
+	aee_rr_rec_hoplug(cpu, 1, 0);
 
 	/*
 	 * The identity mapping is uncached (strongly ordered), so
@@ -323,34 +337,44 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
 	local_flush_bp_all();
 	enter_lazy_tlb(mm, current);
 	local_flush_tlb_all();
+	aee_rr_rec_hoplug(cpu, 2, 0);
 
 	/*
 	 * All kernel threads share the same mm context; grab a
 	 * reference and switch to it.
 	 */
 	cpu = smp_processor_id();
+	aee_rr_rec_hoplug(cpu, 3, 0);
 	atomic_inc(&mm->mm_count);
 	current->active_mm = mm;
 	cpumask_set_cpu(cpu, mm_cpumask(mm));
+	aee_rr_rec_hoplug(cpu, 4, 0);
 
 	cpu_init();
+	aee_rr_rec_hoplug(cpu, 5, 0);
 
 	printk("CPU%u: Booted secondary processor\n", cpu);
 
 	preempt_disable();
+	aee_rr_rec_hoplug(cpu, 6, 0);
 	trace_hardirqs_off();
+	aee_rr_rec_hoplug(cpu, 7, 0);
 
 	/*
 	 * Give the platform a chance to do its own initialisation.
 	 */
 	if (smp_ops.smp_secondary_init)
 		smp_ops.smp_secondary_init(cpu);
+	aee_rr_rec_hoplug(cpu, 8, 0);
 
 	notify_cpu_starting(cpu);
+	aee_rr_rec_hoplug(cpu, 9, 0);
 
 	calibrate_delay();
+	aee_rr_rec_hoplug(cpu, 10, 0);
 
 	smp_store_cpu_info(cpu);
+	aee_rr_rec_hoplug(cpu, 11, 0);
 
 	/*
 	 * OK, now it's safe to let the boot CPU continue.  Wait for
@@ -358,20 +382,26 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
 	 * before we continue - which happens after __cpu_up returns.
 	 */
 	set_cpu_online(cpu, true);
+	aee_rr_rec_hoplug(cpu, 12, 0);
 	complete(&cpu_running);
+	aee_rr_rec_hoplug(cpu, 13, 0);
 
 	/*
 	 * Setup the percpu timer for this CPU.
 	 */
 	percpu_timer_setup();
+	aee_rr_rec_hoplug(cpu, 14, 0);
 
 	local_irq_enable();
+	aee_rr_rec_hoplug(cpu, 15, 0);
 	local_fiq_enable();
+	aee_rr_rec_hoplug(cpu, 16, 0);
 
 	/*
 	 * OK, it's off to the idle thread for us
 	 */
 	cpu_startup_entry(CPUHP_ONLINE);
+	aee_rr_rec_hoplug(cpu, 17, 0);
 }
 
 void __init smp_cpus_done(unsigned int max_cpus)
@@ -660,12 +690,16 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 
 	switch (ipinr) {
 	case IPI_WAKEUP:
+        mt_trace_ISR_start(ipinr);
+        mt_trace_ISR_end(ipinr);
 		break;
 
 #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
 	case IPI_TIMER:
+        mt_trace_ISR_start(ipinr);
 		irq_enter();
 		tick_receive_broadcast();
+        mt_trace_ISR_end(ipinr);
 		irq_exit();
 		break;
 #endif
@@ -675,30 +709,40 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 		break;
 
 	case IPI_CALL_FUNC:
+        mt_trace_ISR_start(ipinr);
 		irq_enter();
 		generic_smp_call_function_interrupt();
+        mt_trace_ISR_end(ipinr);
 		irq_exit();
 		break;
 
 	case IPI_CALL_FUNC_SINGLE:
+        mt_trace_ISR_start(ipinr);
 		irq_enter();
 		generic_smp_call_function_single_interrupt();
+        mt_trace_ISR_end(ipinr);
 		irq_exit();
 		break;
 
 	case IPI_CPU_STOP:
+        mt_trace_ISR_start(ipinr);
 		irq_enter();
 		ipi_cpu_stop(cpu);
+        mt_trace_ISR_end(ipinr);
 		irq_exit();
 		break;
 
 	case IPI_CPU_BACKTRACE:
+        mt_trace_ISR_start(ipinr);
 		ipi_cpu_backtrace(cpu, regs);
+        mt_trace_ISR_end(ipinr);
 		break;
 
 	default:
+        mt_trace_ISR_start(ipinr);
 		printk(KERN_CRIT "CPU%u: Unknown IPI message 0x%x\n",
 		       cpu, ipinr);
+        mt_trace_ISR_end(ipinr);
 		break;
 	}
 	set_irq_regs(old_regs);

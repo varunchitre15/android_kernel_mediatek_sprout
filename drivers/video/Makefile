@@ -13,7 +13,7 @@ fb-y                              := fbmem.o fbmon.o fbcmap.o fbsysfs.o \
 fb-objs                           := $(fb-y)
 
 obj-$(CONFIG_ADF)		  += adf/
-obj-$(CONFIG_VT)		  += console/
+obj-y				  += console/
 obj-$(CONFIG_LOGO)		  += logo/
 obj-y				  += backlight/
 

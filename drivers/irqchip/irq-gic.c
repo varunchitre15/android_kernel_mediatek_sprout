@@ -184,6 +184,39 @@ static void gic_eoi_irq(struct irq_data *d)
 	writel_relaxed(gic_irq(d), gic_cpu_base(d) + GIC_CPU_EOI);
 }
 
+
+void __iomem *INT_POL_CTL0;
+
+static void mt_irq_set_polarity(unsigned int irq, unsigned int polarity)
+{
+    unsigned long flags;
+    u32 offset, reg_index, value;
+
+    if (irq < 32) {
+        printk(KERN_CRIT "Fail to set polarity of interrupt %d\n", irq);
+        return ;
+    }
+
+    offset = (irq - 32) & 0x1F;
+    reg_index = (irq - 32) >> 5;
+
+    //raw_spin_lock(&irq_controller_lock);
+
+    if (polarity == 0) {
+        /* active low */
+        value = readl_relaxed(IOMEM(INT_POL_CTL0 + (reg_index * 4)));
+        value |= (1 << offset);
+        writel_relaxed(value, (INT_POL_CTL0 + (reg_index * 4)));
+    } else {
+        /* active high */
+        value = readl_relaxed(IOMEM(INT_POL_CTL0 + (reg_index * 4)));
+        value &= ~(0x1 << offset);
+        writel_relaxed(value, INT_POL_CTL0 + (reg_index * 4));
+    }
+    
+    //raw_spin_unlock(&irq_controller_lock);
+}
+
 static int gic_set_type(struct irq_data *d, unsigned int type)
 {
 	void __iomem *base = gic_dist_base(d);
@@ -199,8 +232,8 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
 	if (gicirq < 16)
 		return -EINVAL;
 
-	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
-		return -EINVAL;
+	//if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
+		//return -EINVAL;
 
 	raw_spin_lock(&irq_controller_lock);
 
@@ -227,6 +260,14 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
 	if (enabled)
 		writel_relaxed(enablemask, base + GIC_DIST_ENABLE_SET + enableoff);
 
+    /*FIXME: add mtk polarity setting*/    
+    if (type & (IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING)) {         
+            mt_irq_set_polarity(gicirq, (type & IRQF_TRIGGER_FALLING) ? 0 : 1);
+    }
+    else if (type & (IRQF_TRIGGER_HIGH | IRQF_TRIGGER_LOW)) {
+            mt_irq_set_polarity(gicirq, (type & IRQF_TRIGGER_LOW) ? 0 : 1);
+    }
+
 	raw_spin_unlock(&irq_controller_lock);
 
 	return 0;
@@ -246,9 +287,13 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
 			    bool force)
 {
 	void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + (gic_irq(d) & ~3);
-	unsigned int shift = (gic_irq(d) % 4) * 8;
-	unsigned int cpu = cpumask_any_and(mask_val, cpu_online_mask);
+	unsigned int cpu, shift = (gic_irq(d) % 4) * 8;
 	u32 val, mask, bit;
+
+	if (!force)
+		cpu = cpumask_any_and(mask_val, cpu_online_mask);
+	else
+		cpu = cpumask_first(mask_val);
 
 	if (cpu >= NR_GIC_CPU_IF || cpu >= nr_cpu_ids)
 		return -EINVAL;
@@ -392,7 +437,9 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
 	/*
 	 * Set all global interrupts to this CPU only.
 	 */
-	cpumask = gic_get_cpumask(gic);
+	//cpumask = gic_get_cpumask(gic);
+	/*FIXME*/
+	cpumask = 1 << smp_processor_id();
 	cpumask |= cpumask << 8;
 	cpumask |= cpumask << 16;
 	for (i = 32; i < gic_irqs; i += 4)
@@ -425,7 +472,9 @@ static void __cpuinit gic_cpu_init(struct gic_chip_data *gic)
 	 * Get what the GIC says our CPU mask is.
 	 */
 	BUG_ON(cpu >= NR_GIC_CPU_IF);
-	cpu_mask = gic_get_cpumask(gic);
+	//cpu_mask = gic_get_cpumask(gic);
+	//FIXME
+	cpu_mask = 1 << smp_processor_id();
 	gic_cpu_map[cpu] = cpu_mask;
 
 	/*
@@ -701,6 +750,17 @@ static int gic_irq_domain_xlate(struct irq_domain *d,
 	return 0;
 }
 
+void gic_register_sgi(unsigned int gic_nr, int irq)
+{
+	struct irq_desc *desc = irq_to_desc(irq);
+	if (desc)
+		desc->irq_data.hwirq = irq;
+	irq_set_chip_and_handler(irq, &gic_chip,
+				 handle_fasteoi_irq);
+	set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
+	irq_set_chip_data(irq, &gic_data[gic_nr]);
+}
+
 #ifdef CONFIG_SMP
 static int __cpuinit gic_secondary_init(struct notifier_block *nfb,
 					unsigned long action, void *hcpu)
@@ -828,6 +888,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
 {
 	void __iomem *cpu_base;
 	void __iomem *dist_base;
+    void __iomem *pol_base;
 	u32 percpu_offset;
 	int irq;
 
@@ -839,6 +900,10 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
 
 	cpu_base = of_iomap(node, 1);
 	WARN(!cpu_base, "unable to map gic cpu registers\n");
+
+    pol_base = of_iomap(node, 2);
+    WARN(!pol_base, "unable to map pol registers\n");
+    INT_POL_CTL0 = pol_base;
 
 	if (of_property_read_u32(node, "cpu-offset", &percpu_offset))
 		percpu_offset = 0;

@@ -3,6 +3,7 @@ config ARM64
 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
 	select ARCH_WANT_OPTIONAL_GPIOLIB
 	select ARCH_WANT_COMPAT_IPC_PARSE_VERSION
+	select ARM_HAS_SG_CHAIN
 	select ARCH_WANT_FRAME_POINTERS
 	select ARM_AMBA
 	select ARM_ARCH_TIMER
@@ -39,6 +40,9 @@ config ARM64
 	select SYSCTL_EXCEPTION_TRACE
 	help
 	  ARM 64-bit (AArch64) Linux support.
+
+config ARM_HAS_SG_CHAIN
+	def_bool y
 
 config 64BIT
 	def_bool y
@@ -94,6 +98,18 @@ config SWIOTLB
 
 config IOMMU_HELPER
 	def_bool SWIOTLB
+
+config ARM_ERRATA_824069
+	bool "ARM errata: Cache line might not be marked as clean after a CleanShared snoop"
+	depends on SMP
+	help
+	  This option enables the workaround for erratum 824069 
+	  affecting Cortex-A53 MPCore with two or more processors (r0p0..r0p2). 
+	  If a Cortex-A53 processor is executing a store or PLDW instruction at the same time
+	  as a processor in another cluster is executing a cache maintenance operation
+	  to the same address, then this erratum might cause a clean cache line to be
+	  incorrectly marked as dirty. This workaround replaces all cache clean opeartion
+	  to clean & invalidate.
 
 source "init/Kconfig"
 
@@ -275,3 +291,4 @@ source "security/Kconfig"
 source "crypto/Kconfig"
 
 source "lib/Kconfig"
+

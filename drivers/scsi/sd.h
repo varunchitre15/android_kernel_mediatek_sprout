@@ -69,6 +69,9 @@ struct scsi_disk {
 	unsigned int	max_medium_access_timeouts;
 	unsigned int	medium_access_timed_out;
 	u8		media_present;
+#ifdef CONFIG_MTK_MULTI_PARTITION_MOUNT_ONLY_SUPPORT	
+	u8		old_media_present;  //add for sdcard hotplug
+#endif	
 	u8		write_prot;
 	u8		protection_type;/* Data Integrity Field */
 	u8		provisioning_mode;
@@ -84,6 +87,7 @@ struct scsi_disk {
 	unsigned	lbpws : 1;
 	unsigned	lbpws10 : 1;
 	unsigned	lbpvpd : 1;
+	unsigned	ws10 : 1;
 	unsigned	ws16 : 1;
 };
 #define to_scsi_disk(obj) container_of(obj,struct scsi_disk,dev)

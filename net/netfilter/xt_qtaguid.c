@@ -594,7 +594,7 @@ static void put_tag_ref_tree(tag_t full_tag, struct uid_tag_data *utd_entry)
 	}
 }
 
-static ssize_t read_proc_u64(struct file *file, char __user *buf,
+static int read_proc_u64(struct file *file, char __user *buf,
 			 size_t size, loff_t *ppos)
 {
 	uint64_t *valuep = PDE_DATA(file_inode(file));
@@ -605,7 +605,7 @@ static ssize_t read_proc_u64(struct file *file, char __user *buf,
 	return simple_read_from_buffer(buf, size, ppos, tmp, tmp_size);
 }
 
-static ssize_t read_proc_bool(struct file *file, char __user *buf,
+static int read_proc_bool(struct file *file, char __user *buf,
 			  size_t size, loff_t *ppos)
 {
 	bool *valuep = PDE_DATA(file_inode(file));
@@ -1496,7 +1496,7 @@ static const struct file_operations proc_iface_stat_fmt_fops = {
 	.open		= proc_iface_stat_fmt_open,
 	.read		= seq_read,
 	.llseek		= seq_lseek,
-	.release	= seq_release_private,
+	.release	= seq_release,
 };
 
 static int __init iface_stat_init(struct proc_dir_entry *parent_procdir)
@@ -1752,6 +1752,8 @@ static bool qtaguid_mt(const struct sk_buff *skb, struct xt_action_param *par)
 		account_for_uid(skb, sk, 0, par);
 		res = ((info->match ^ info->invert) &
 			(XT_QTAGUID_UID | XT_QTAGUID_GID)) == 0;
+		/*mtk_net: patch for duplicated account for uid 0*/
+		res = true;
 		atomic64_inc(&qtu_events.match_no_sk_file);
 		goto put_sock_ret_res;
 	}
@@ -2440,10 +2442,10 @@ err:
 	return res;
 }
 
-static ssize_t qtaguid_ctrl_parse(const char *input, size_t count)
+static int qtaguid_ctrl_parse(const char *input, int count)
 {
 	char cmd;
-	ssize_t res;
+	int res;
 
 	CT_DEBUG("qtaguid: ctrl(%s): pid=%u tgid=%u uid=%u\n",
 		 input, current->pid, current->tgid, current_fsuid());
@@ -2474,12 +2476,12 @@ static ssize_t qtaguid_ctrl_parse(const char *input, size_t count)
 	if (!res)
 		res = count;
 err:
-	CT_DEBUG("qtaguid: ctrl(%s): res=%zd\n", input, res);
+	CT_DEBUG("qtaguid: ctrl(%s): res=%d\n", input, res);
 	return res;
 }
 
 #define MAX_QTAGUID_CTRL_INPUT_LEN 255
-static ssize_t qtaguid_ctrl_proc_write(struct file *file, const char __user *buffer,
+static int qtaguid_ctrl_proc_write(struct file *file, const char __user *buffer,
 				   size_t count, loff_t *offp)
 {
 	char input_buf[MAX_QTAGUID_CTRL_INPUT_LEN];
@@ -2904,7 +2906,7 @@ static const struct file_operations proc_qtaguid_ctrl_fops = {
 	.read		= seq_read,
 	.write		= qtaguid_ctrl_proc_write,
 	.llseek		= seq_lseek,
-	.release	= seq_release_private,
+	.release	= seq_release,
 };
 
 static const struct seq_operations proc_qtaguid_stats_seqops = {

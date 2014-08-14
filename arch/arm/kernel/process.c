@@ -33,6 +33,7 @@
 #include <linux/cpuidle.h>
 #include <linux/leds.h>
 #include <linux/console.h>
+#include <linux/mtk_ram_console.h>
 
 #include <asm/cacheflush.h>
 #include <asm/idmap.h>
@@ -40,6 +41,7 @@
 #include <asm/thread_notify.h>
 #include <asm/stacktrace.h>
 #include <asm/mach/time.h>
+#include <mach/system.h>
 
 #ifdef CONFIG_CC_STACKPROTECTOR
 #include <linux/stackprotector.h>
@@ -106,6 +108,53 @@ void arm_machine_flush_console(void)
  * code.
  */
 static u64 soft_restart_stack[16];
+
+void arm_machine_restart(char mode, const char *cmd)
+{
+        /* Flush the console to make sure all the relevant messages make it
+         * out to the console drivers */
+        arm_machine_flush_console();
+
+        /* Disable interrupts first */
+        local_irq_disable();
+        local_fiq_disable();
+
+        /*
+         * Tell the mm system that we are going to reboot -
+         * we may need it to insert some 1:1 mappings so that
+         * soft boot works.
+         */
+        setup_mm_for_reboot();
+
+        /* When l1 is disabled and l2 is enabled, the spinlock cannot get the lock,
+         * so we need to disable the l2 as well. by Chia-Hao Hsu
+         */
+        outer_flush_all();
+        outer_disable();
+        outer_flush_all();
+
+        /* Clean and invalidate caches */
+        flush_cache_all();
+#ifdef CONFIG_RESTART_DISABLE_CACHE
+        /* Turn off caching */
+        cpu_proc_fin();
+#endif
+        /* Push out any further dirty data, and ensure cache is empty */
+        flush_cache_all();
+
+        /*
+         * Now call the architecture specific reboot code.
+         */
+        arch_reset(mode, cmd);
+
+        /*
+         * Whoops - the architecture was unable to reboot.
+         * Tell the user!
+         */
+        mdelay(1000);
+        printk("Reboot failed -- System halted\n");
+        while (1);
+}
 
 static void __soft_restart(void *addr)
 {
@@ -243,9 +292,12 @@ void machine_shutdown(void)
 	 * thread that might wind up blocking on
 	 * one of the stopped CPUs.
 	 */
+    printk("machine_shutdown: start, Proess(%s:%d)\n", current->comm, current->pid);
+    dump_stack();
 	preempt_disable();
 #endif
 	disable_nonboot_cpus();
+    printk("machine_shutdown: done\n");
 }
 
 /*
@@ -270,6 +322,11 @@ void machine_halt(void)
 void machine_power_off(void)
 {
 	smp_send_stop();
+	printk("machine_shutdown: start, Proess(%s:%d)\n", current->comm, current->pid);
+  dump_stack();
+#ifdef CONFIG_MTK_EMMC_SUPPORT 
+	last_kmsg_store_to_emmc();
+#endif
 
 	if (pm_power_off)
 		pm_power_off();
@@ -535,6 +592,7 @@ EXPORT_SYMBOL(dump_fpu);
 unsigned long get_wchan(struct task_struct *p)
 {
 	struct stackframe frame;
+	unsigned long stack_page;
 	int count = 0;
 	if (!p || p == current || p->state == TASK_RUNNING)
 		return 0;
@@ -543,9 +601,11 @@ unsigned long get_wchan(struct task_struct *p)
 	frame.sp = thread_saved_sp(p);
 	frame.lr = 0;			/* recovered from the stack */
 	frame.pc = thread_saved_pc(p);
+	stack_page = (unsigned long)task_stack_page(p);
 	do {
-		int ret = unwind_frame(&frame);
-		if (ret < 0)
+		if (frame.sp < stack_page ||
+		    frame.sp >= stack_page + THREAD_SIZE ||
+		    unwind_frame(&frame) < 0)
 			return 0;
 		if (!in_sched_functions(frame.pc))
 			return frame.pc;
@@ -560,10 +620,11 @@ unsigned long arch_randomize_brk(struct mm_struct *mm)
 }
 
 #ifdef CONFIG_MMU
+#ifdef CONFIG_KUSER_HELPERS
 /*
  * The vectors page is always readable from user space for the
- * atomic helpers and the signal restart code. Insert it into the
- * gate_vma so that it is visible through ptrace and /proc/<pid>/mem.
+ * atomic helpers. Insert it into the gate_vma so that it is visible
+ * through ptrace and /proc/<pid>/mem.
  */
 static struct vm_area_struct gate_vma = {
 	.vm_start	= 0xffff0000,
@@ -592,9 +653,48 @@ int in_gate_area_no_mm(unsigned long addr)
 {
 	return in_gate_area(NULL, addr);
 }
+#define is_gate_vma(vma)	((vma) == &gate_vma)
+#else
+#define is_gate_vma(vma)	0
+#endif
 
 const char *arch_vma_name(struct vm_area_struct *vma)
 {
-	return (vma == &gate_vma) ? "[vectors]" : NULL;
+	return is_gate_vma(vma) ? "[vectors]" :
+		(vma->vm_mm && vma->vm_start == vma->vm_mm->context.sigpage) ?
+		 "[sigpage]" : NULL;
+}
+
+static struct page *signal_page;
+extern struct page *get_signal_page(void);
+
+int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
+{
+	struct mm_struct *mm = current->mm;
+	unsigned long addr;
+	int ret;
+
+	if (!signal_page)
+		signal_page = get_signal_page();
+	if (!signal_page)
+		return -ENOMEM;
+
+	down_write(&mm->mmap_sem);
+	addr = get_unmapped_area(NULL, 0, PAGE_SIZE, 0, 0);
+	if (IS_ERR_VALUE(addr)) {
+		ret = addr;
+		goto up_fail;
+	}
+
+	ret = install_special_mapping(mm, addr, PAGE_SIZE,
+		VM_READ | VM_EXEC | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC,
+		&signal_page);
+
+	if (ret == 0)
+		mm->context.sigpage = addr;
+
+ up_fail:
+	up_write(&mm->mmap_sem);
+	return ret;
 }
 #endif

@@ -22,9 +22,14 @@
 
 #include <asm/cacheflush.h>
 
+#include <linux/io.h>
+#include <linux/of_address.h>
+
+
 static phys_addr_t cpu_release_addr[NR_CPUS];
 
-static int __init smp_spin_table_init_cpu(struct device_node *dn, int cpu)
+
+int __init smp_spin_table_init_cpu(struct device_node *dn, int cpu)
 {
 	/*
 	 * Determine the address from which the CPU is polling.
@@ -40,12 +45,36 @@ static int __init smp_spin_table_init_cpu(struct device_node *dn, int cpu)
 	return 0;
 }
 
-static int __init smp_spin_table_prepare_cpu(int cpu)
+/*MTK only*/
+#define CCI400_SI4_BASE                                 0x5000
+#define CCI400_SI4_SNOOP_CONTROL           CCI400_SI4_BASE
+#define DVM_MSG_REQ                                     (1U << 1)
+#define SNOOP_REQ                                       (1U << 0)
+#define CCI400_STATUS                                   0x000C
+#define CHANGE_PENDING                                  (1U << 0)
+
+int __init smp_spin_table_prepare_cpu(int cpu)
 {
 	void **release_addr;
 
+    struct device_node *node;
+    void __iomem *cci400_base;
+
 	if (!cpu_release_addr[cpu])
 		return -ENODEV;
+
+    /*MTK only. Setup coherence interface*/
+    node = of_find_compatible_node(NULL, NULL, "mediatek,CCI400");
+    if(node)
+    {
+        cci400_base = of_iomap(node, 0);
+                
+        printk(KERN_EMERG "1.CCI400_SI4_SNOOP_CONTROL:0x%p, 0x%08x\n", cci400_base + CCI400_SI4_SNOOP_CONTROL, readl(cci400_base + CCI400_SI4_SNOOP_CONTROL));
+        /* Enable snoop requests and DVM message requests*/
+        writel(readl(cci400_base + CCI400_SI4_SNOOP_CONTROL) | (SNOOP_REQ | DVM_MSG_REQ), cci400_base + CCI400_SI4_SNOOP_CONTROL);
+        while (readl(cci400_base + CCI400_STATUS) & CHANGE_PENDING);
+        printk(KERN_EMERG "2.CCI400_SI4_SNOOP_CONTROL:0x%p, 0x%08x\n", cci400_base + CCI400_SI4_SNOOP_CONTROL,readl(cci400_base + CCI400_SI4_SNOOP_CONTROL));
+    }
 
 	release_addr = __va(cpu_release_addr[cpu]);
 	release_addr[0] = (void *)__pa(secondary_holding_pen);

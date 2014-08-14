@@ -15,6 +15,8 @@
 #define _UAPI__ASMARM_SETUP_H
 
 #include <linux/types.h>
+#include <mach/dfo_boot.h>
+#include <mach/mt_devinfo.h>
 
 #define COMMAND_LINE_SIZE 1024
 
@@ -41,6 +43,14 @@ struct tag_core {
 struct tag_mem32 {
 	__u32	size;
 	__u32	start;	/* physical start address */
+};
+
+/* it is allowed to have multiple ATAG_MEM nodes */
+#define ATAG_MEM64	0x54420002
+
+struct tag_mem64 {
+	__u64	size;
+	__u64	start;	/* physical start address */
 };
 
 /* VGA text type displays */
@@ -143,11 +153,42 @@ struct tag_memclk {
 	__u32 fmemclk;
 };
 
+/* boot information */
+#define ATAG_BOOT       0x41000802
+
+struct tag_boot {
+	u32 bootmode;
+};
+
+/*META com port information*/
+#define ATAG_META_COM 0x41000803
+
+struct tag_meta_com {
+	u32 meta_com_type; /* identify meta via uart or usb */
+	u32 meta_com_id;  /* multiple meta need to know com port id */
+};
+
+
+/* MDINFO */
+#define ATAG_MDINFO_DATA 0x41000806
+struct tag_mdinfo_data{
+	u8 md_type[4];
+};
+
+#define ATAG_TEE_DATA 0x41000808
+
+/* general memory descriptor */
+typedef struct {
+    u64 start;
+    u64 size;
+} mem_desc_t;
+
 struct tag {
 	struct tag_header hdr;
 	union {
 		struct tag_core		core;
 		struct tag_mem32	mem;
+		struct tag_mem64	mem64;
 		struct tag_videotext	videotext;
 		struct tag_ramdisk	ramdisk;
 		struct tag_initrd	initrd;
@@ -165,6 +206,12 @@ struct tag {
 		 * DC21285 specific
 		 */
 		struct tag_memclk	memclk;
+		struct tag_boot		boot;
+		struct tag_meta_com	meta_com;
+		struct tag_devinfo_data	devinfo_data;
+                tag_dfo_boot     dfo_data;
+                struct tag_mdinfo_data mdinfo_data;
+		mem_desc_t tee_reserved_mem;
 	} u;
 };
 

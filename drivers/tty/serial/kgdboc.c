@@ -45,7 +45,7 @@ static int kgdboc_reset_connect(struct input_handler *handler,
 {
 	input_reset_device(dev);
 
-	/* Retrun an error - we do not want to bind, just to reset */
+	/* Return an error - we do not want to bind, just to reset */
 	return -ENODEV;
 }
 
@@ -274,6 +274,32 @@ static int param_set_kgdboc_var(const char *kmessage, struct kernel_param *kp)
 
 	if (configured == 1)
 		cleanup_kgdboc();
+
+	/* Go and configure with the new params. */
+	return configure_kgdboc();
+}
+
+int mtk_set_kgdboc_var(void)
+{
+	struct console *con = NULL;
+
+	for_each_console(con) {
+		if (!strcmp(con->name, "ttyMT")) {
+			snprintf(config, strlen(con->name)+2, "%s%d", con->name, con->index);
+			printk("mtk_set_kgdboc_var=%s\n", config);
+		}
+	}
+
+	if (configured == 1)
+		return 0;
+	/* Only copy in the string if the init function has not run yet */
+	if (configured < 0) {
+		return 0;
+	}
+	if (kgdb_connected) {
+		printk(KERN_ERR "kgdboc: Cannot reconfigure while KGDB is connected.\n");
+		return -EBUSY;
+	}
 
 	/* Go and configure with the new params. */
 	return configure_kgdboc();

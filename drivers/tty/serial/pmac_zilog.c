@@ -1798,7 +1798,6 @@ static int __exit pmz_detach(struct platform_device *pdev)
 
 	uart_remove_one_port(&pmz_uart_reg, &uap->port);
 
-	platform_set_drvdata(pdev, NULL);
 	uap->port.dev = NULL;
 
 	return 0;
@@ -2050,6 +2049,9 @@ static int __init pmz_console_init(void)
 {
 	/* Probe ports */
 	pmz_probe();
+
+	if (pmz_ports_count == 0)
+		return -ENODEV;
 
 	/* TODO: Autoprobe console based on OF */
 	/* pmz_console.index = i; */

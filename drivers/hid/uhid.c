@@ -312,7 +312,7 @@ static int uhid_event_from_user(const char __user *buffer, size_t len,
 			 */
 			struct uhid_create_req_compat *compat;
 
-			compat = kmalloc(sizeof(*compat), GFP_KERNEL);
+			compat = kzalloc(sizeof(*compat), GFP_KERNEL);
 			if (!compat)
 				return -ENOMEM;
 
@@ -405,8 +405,8 @@ static int uhid_dev_create(struct uhid_device *uhid,
 	hid->hid_get_raw_report = uhid_hid_get_raw;
 	hid->hid_output_raw_report = uhid_hid_output_raw;
 	hid->bus = ev->u.create.bus;
-	hid->vendor = ev->u.create.vendor;
-	hid->product = ev->u.create.product;
+	hid->vendor = HID_ANY_ID;
+	hid->product = HID_ANY_ID;
 	hid->version = ev->u.create.version;
 	hid->country = ev->u.create.country;
 	hid->driver_data = uhid;
@@ -640,7 +640,7 @@ static const struct file_operations uhid_fops = {
 
 static struct miscdevice uhid_misc = {
 	.fops		= &uhid_fops,
-	.minor		= MISC_DYNAMIC_MINOR,
+	.minor		= UHID_MINOR,
 	.name		= UHID_NAME,
 };
 
@@ -659,3 +659,5 @@ module_exit(uhid_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("David Herrmann <dh.herrmann@gmail.com>");
 MODULE_DESCRIPTION("User-space I/O driver support for HID subsystem");
+MODULE_ALIAS_MISCDEV(UHID_MINOR);
+MODULE_ALIAS("devname:" UHID_NAME);

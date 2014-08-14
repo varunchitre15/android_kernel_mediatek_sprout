@@ -261,6 +261,19 @@ static int cpu_has_aliasing_icache(unsigned int arch)
 	int aliasing_icache;
 	unsigned int id_reg, num_sets, line_size;
 
+#ifdef CONFIG_BIG_LITTLE
+	/*
+	 * We expect a combination of Cortex-A15 and Cortex-A7 cores.
+	 * A7 = VIPT aliasing I-cache
+	 * A15 = PIPT (non-aliasing) I-cache
+	 * To cater for this discrepancy, let's assume aliasing I-cache
+	 * all the time.  This means unneeded extra work on the A15 but
+	 * only ptrace is affected which is not performance critical.
+	 */
+	if ((read_cpuid_id() & 0xff0ffff0) == 0x410fc0f0)
+		return 1;
+#endif
+
 	/* PIPT caches never alias. */
 	if (icache_is_pipt())
 		return 0;
@@ -455,7 +468,12 @@ void __init smp_setup_processor_id(void)
 	cpu_logical_map(0) = cpu;
 	for (i = 1; i < nr_cpu_ids; ++i)
 		cpu_logical_map(i) = i == cpu ? 0 : i;
-
+	/*
+	 * clear __my_cpu_offset on boot CPU to avoid hang caused by
+	 * using percpu variable early, for example, lockdep will
+	 * access percpu variable inside lock_release
+	 */
+	set_my_cpu_offset(0);
 	printk(KERN_INFO "Booting Linux on physical CPU 0x%x\n", mpidr);
 }
 
@@ -530,6 +548,7 @@ void __init dump_machine_table(void)
 int __init arm_add_memory(phys_addr_t start, phys_addr_t size)
 {
 	struct membank *bank = &meminfo.bank[meminfo.nr_banks];
+	u64 aligned_start;
 
 	if (meminfo.nr_banks >= NR_BANKS) {
 		printk(KERN_CRIT "NR_BANKS too low, "
@@ -542,10 +561,16 @@ int __init arm_add_memory(phys_addr_t start, phys_addr_t size)
 	 * Size is appropriately rounded down, start is rounded up.
 	 */
 	size -= start & ~PAGE_MASK;
-	bank->start = PAGE_ALIGN(start);
+	aligned_start = PAGE_ALIGN(start);
 
-#ifndef CONFIG_ARM_LPAE
-	if (bank->start + size < bank->start) {
+#ifndef CONFIG_ARCH_PHYS_ADDR_T_64BIT
+	if (aligned_start > ULONG_MAX) {
+		printk(KERN_CRIT "Ignoring memory at 0x%08llx outside "
+		       "32-bit physical address space\n", (long long)start);
+		return -EINVAL;
+	}
+
+	if (aligned_start + size > ULONG_MAX) {
 		printk(KERN_CRIT "Truncating memory at 0x%08llx to fit in "
 			"32-bit physical address space\n", (long long)start);
 		/*
@@ -553,10 +578,25 @@ int __init arm_add_memory(phys_addr_t start, phys_addr_t size)
 		 * 32 bits, we use ULONG_MAX as the upper limit rather than 4GB.
 		 * This means we lose a page after masking.
 		 */
-		size = ULONG_MAX - bank->start;
+		size = ULONG_MAX - aligned_start;
 	}
 #endif
 
+	if (aligned_start < PHYS_OFFSET) {
+		if (aligned_start + size <= PHYS_OFFSET) {
+			pr_info("Ignoring memory below PHYS_OFFSET: 0x%08llx-0x%08llx\n",
+				aligned_start, aligned_start + size);
+			return -EINVAL;
+		}
+
+		pr_info("Ignoring memory below PHYS_OFFSET: 0x%08llx-0x%08llx\n",
+			aligned_start, (u64)PHYS_OFFSET);
+
+		size -= PHYS_OFFSET - aligned_start;
+		aligned_start = PHYS_OFFSET;
+	}
+
+	bank->start = aligned_start;
 	bank->size = size & ~(phys_addr_t)(PAGE_SIZE - 1);
 
 	/*
@@ -875,10 +915,49 @@ static const char *hwcap_str[] = {
 	NULL
 };
 
+static void c_show_features(struct seq_file *m, u32 cpuid)
+{
+	int j;
+
+        /* dump out the processor features */
+        seq_puts(m, "Features\t: ");
+
+        for (j = 0; hwcap_str[j]; j++)
+                if (elf_hwcap & (1 << j))
+                        seq_printf(m, "%s ", hwcap_str[j]);
+
+        seq_printf(m, "\nCPU implementer\t: 0x%02x\n", cpuid >> 24);
+        seq_printf(m, "CPU architecture: %s\n",
+                   proc_arch[cpu_architecture()]);
+
+        if ((cpuid & 0x0008f000) == 0x00000000) {
+                /* pre-ARM7 */
+                seq_printf(m, "CPU part\t: %07x\n", cpuid >> 4);
+        } else {
+                if ((cpuid & 0x0008f000) == 0x00007000) {
+                        /* ARM7 */
+                        seq_printf(m, "CPU variant\t: 0x%02x\n",
+                                   (cpuid >> 16) & 127);
+                } else {
+                        /* post-ARM7 */
+                        seq_printf(m, "CPU variant\t: 0x%x\n",
+                                   (cpuid >> 20) & 15);
+                }
+                seq_printf(m, "CPU part\t: 0x%03x\n",
+                           (cpuid >> 4) & 0xfff);
+        }
+        seq_printf(m, "CPU revision\t: %d\n\n", cpuid & 15);
+}
+
 static int c_show(struct seq_file *m, void *v)
 {
-	int i, j;
+	int i;
 	u32 cpuid;
+	int compat = config_enabled(CONFIG_COMPAT_CPUINFO);
+
+	if (compat)
+		seq_printf(m, "Processor\t: %s rev %d (%s)\n",
+			   cpu_name, read_cpuid_id() & 15, elf_platform);
 
 	for_each_online_cpu(i) {
 		/*
@@ -886,10 +965,11 @@ static int c_show(struct seq_file *m, void *v)
 		 * online processors, looking for lines beginning with
 		 * "processor".  Give glibc what it expects.
 		 */
-		seq_printf(m, "processor\t: %d\n", i);
 		cpuid = is_smp() ? per_cpu(cpu_data, i).cpuid : read_cpuid_id();
-		seq_printf(m, "model name\t: %s rev %d (%s)\n",
-			   cpu_name, cpuid & 15, elf_platform);
+		if (!compat)
+			seq_printf(m, "Processor\t: %s rev %d (%s)\n",
+				   cpu_name, cpuid & 15, elf_platform);
+		seq_printf(m, "processor\t: %d\n", i);
 
 #if defined(CONFIG_SMP)
 		seq_printf(m, "BogoMIPS\t: %lu.%02lu\n",
@@ -900,36 +980,14 @@ static int c_show(struct seq_file *m, void *v)
 			   loops_per_jiffy / (500000/HZ),
 			   (loops_per_jiffy / (5000/HZ)) % 100);
 #endif
-		/* dump out the processor features */
-		seq_puts(m, "Features\t: ");
-
-		for (j = 0; hwcap_str[j]; j++)
-			if (elf_hwcap & (1 << j))
-				seq_printf(m, "%s ", hwcap_str[j]);
-
-		seq_printf(m, "\nCPU implementer\t: 0x%02x\n", cpuid >> 24);
-		seq_printf(m, "CPU architecture: %s\n",
-			   proc_arch[cpu_architecture()]);
-
-		if ((cpuid & 0x0008f000) == 0x00000000) {
-			/* pre-ARM7 */
-			seq_printf(m, "CPU part\t: %07x\n", cpuid >> 4);
-		} else {
-			if ((cpuid & 0x0008f000) == 0x00007000) {
-				/* ARM7 */
-				seq_printf(m, "CPU variant\t: 0x%02x\n",
-					   (cpuid >> 16) & 127);
-			} else {
-				/* post-ARM7 */
-				seq_printf(m, "CPU variant\t: 0x%x\n",
-					   (cpuid >> 20) & 15);
-			}
-			seq_printf(m, "CPU part\t: 0x%03x\n",
-				   (cpuid >> 4) & 0xfff);
-		}
-		seq_printf(m, "CPU revision\t: %d\n\n", cpuid & 15);
+		if (!compat)
+			c_show_features(m, cpuid);
+                else
+			seq_printf(m, "\n");
 	}
 
+	if (compat)
+		c_show_features(m, cpuid);
 	seq_printf(m, "Hardware\t: %s\n", machine_name);
 	seq_printf(m, "Revision\t: %04x\n", system_rev);
 	seq_printf(m, "Serial\t\t: %08x%08x\n",

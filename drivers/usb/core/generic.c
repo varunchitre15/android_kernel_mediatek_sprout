@@ -199,19 +199,30 @@ static int generic_suspend(struct usb_device *udev, pm_message_t msg)
 {
 	int rc;
 
+	MYDBG("udev : %x", (unsigned int)udev);
+
 	/* Normal USB devices suspend through their upstream port.
 	 * Root hubs don't have upstream ports to suspend,
 	 * so we have to shut down their downstream HC-to-USB
 	 * interfaces manually by doing a bus (or "global") suspend.
 	 */
 	if (!udev->parent)
+	{
+		MYDBG("");
 		rc = hcd_bus_suspend(udev, msg);
+	}
 
 	/* Non-root devices don't need to do anything for FREEZE or PRETHAW */
 	else if (msg.event == PM_EVENT_FREEZE || msg.event == PM_EVENT_PRETHAW)
+	{
+		MYDBG("");
 		rc = 0;
+	}
 	else
+	{
+		MYDBG("");
 		rc = usb_port_suspend(udev, msg);
+	}
 
 	return rc;
 }
@@ -219,6 +230,7 @@ static int generic_suspend(struct usb_device *udev, pm_message_t msg)
 static int generic_resume(struct usb_device *udev, pm_message_t msg)
 {
 	int rc;
+	MYDBG("udev : %x", (unsigned int)udev);
 
 	/* Normal USB devices resume/reset through their upstream port.
 	 * Root hubs don't have upstream ports to resume or reset,
@@ -226,9 +238,15 @@ static int generic_resume(struct usb_device *udev, pm_message_t msg)
 	 * interfaces manually by doing a bus (or "global") resume.
 	 */
 	if (!udev->parent)
+	{
+		MYDBG("udev : %x", (unsigned int)udev);
 		rc = hcd_bus_resume(udev, msg);
+	}
 	else
+	{
+		MYDBG("udev : %x", (unsigned int)udev);
 		rc = usb_port_resume(udev, msg);
+	}
 	return rc;
 }
 

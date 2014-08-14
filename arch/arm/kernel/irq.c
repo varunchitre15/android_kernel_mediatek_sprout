@@ -42,6 +42,7 @@
 #include <asm/mach/irq.h>
 #include <asm/mach/time.h>
 
+#include <linux/mt_sched_mon.h>
 unsigned long irq_err_count;
 
 int arch_show_interrupts(struct seq_file *p, int prec)
@@ -66,6 +67,7 @@ void handle_IRQ(unsigned int irq, struct pt_regs *regs)
 {
 	struct pt_regs *old_regs = set_irq_regs(regs);
 
+    mt_trace_ISR_start(irq);
 	irq_enter();
 
 	/*
@@ -79,7 +81,7 @@ void handle_IRQ(unsigned int irq, struct pt_regs *regs)
 	} else {
 		generic_handle_irq(irq);
 	}
-
+    mt_trace_ISR_end(irq);
 	irq_exit();
 	set_irq_regs(old_regs);
 }

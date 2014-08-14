@@ -1,0 +1,21 @@
+
+ifeq ($(MET_TOP),)
+	obj-$(CONFIG_MTK_MET_PLF) := met_plf.o
+else
+	obj-m := met_plf.o
+endif
+
+ccflags-y += $(EXTRA_ARGS)
+
+met_plf-y := plf_init.o reg_ext.o \
+	plf_trace.o \
+	emi.o mt_emi_bm.o \
+	smi.o mt_smi.o \
+	dramc.o \
+	thermal.o \
+	pmic.o \
+	ptpod.o \
+
+ifeq ($(NO_SPM_TWAM_REGISTER_HANDLER), 0)
+	met_plf-y += spm_twam.o
+endif

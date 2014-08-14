@@ -23,6 +23,8 @@ source "drivers/gpu/drm/Kconfig"
 
 source "drivers/gpu/host1x/Kconfig"
 
+#source "drivers/gpu/ion/Kconfig"
+
 config VGASTATE
        tristate
        default n
@@ -2477,9 +2479,7 @@ source "drivers/video/mmp/Kconfig"
 source "drivers/video/backlight/Kconfig"
 source "drivers/video/adf/Kconfig"
 
-if VT
-	source "drivers/video/console/Kconfig"
-endif
+source "drivers/video/console/Kconfig"
 
 if FB || SGI_NEWPORT_CONSOLE
 	source "drivers/video/logo/Kconfig"
