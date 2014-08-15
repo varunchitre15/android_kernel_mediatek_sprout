@@ -289,7 +289,7 @@ int BattThermistorConverTemp(int Res)
 		RES1 = batt_temperature_table[0].TemperatureR;
 		TMP1 = batt_temperature_table[0].BatteryTemp;
 
-		for (i = 0; i <= 16; i++) {
+		for (i = 0; i <= TABLE_NUM; i++) {
 			if (Res >= batt_temperature_table[i].TemperatureR) {
 				RES2 = batt_temperature_table[i].TemperatureR;
 				TMP2 = batt_temperature_table[i].BatteryTemp;
