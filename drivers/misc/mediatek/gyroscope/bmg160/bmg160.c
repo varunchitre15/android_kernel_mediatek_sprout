@@ -797,7 +797,7 @@ static int bmg_init_client(struct i2c_client *client, int reset_cali)
     return 0;
 }
 static int g_enable_flag =0;
-static int g_drop_count=5;
+static int g_drop_count=10;
 
 /*
 *Returns compensated and mapped value. unit is :degree/second
@@ -832,7 +832,7 @@ static int bmg_read_sensor_data(struct i2c_client *client,
         }
         else
         {
-            g_drop_count=5;
+            g_drop_count=10;
             g_enable_flag =0;
         }
         sprintf(buf, "%04x %04x %04x",0, 0, 0);
@@ -1720,6 +1720,8 @@ static int bmg160_enable_nodata(int en)
 
     if(1==en)
     {
+		g_enable_flag =1;
+
         power=true;
     }
     if(0==en)

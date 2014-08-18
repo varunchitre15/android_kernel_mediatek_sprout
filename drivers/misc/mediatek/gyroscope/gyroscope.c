@@ -200,7 +200,8 @@ static int gyro_enable_data(int enable)
        if(false == cxt->is_polling_run && cxt->is_batch_enable == false)
        {
           if(false == cxt->gyro_ctl.is_report_input_direct)
-          {
+          {   
+              gyro_real_enable(enable);
               mod_timer(&cxt->timer, jiffies + atomic_read(&cxt->delay)/(1000/HZ));
               cxt->is_polling_run = true;
           }
@@ -226,9 +227,8 @@ static int gyro_enable_data(int enable)
                cxt->drv_data.gyro_data.values[2] = GYRO_INVALID_VALUE;
           }
        }
-
+       gyro_real_enable(enable);
     }
-    gyro_real_enable(enable);
     return 0;
 }
 
