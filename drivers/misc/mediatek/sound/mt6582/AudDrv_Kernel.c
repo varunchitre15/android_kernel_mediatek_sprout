@@ -97,6 +97,7 @@
 
 #include <mach/mt_gpio.h>
 #include <mach/mt_typedefs.h>
+#include <linux/time.h>
 
 
 
@@ -2795,7 +2796,7 @@ int AudDrv_GET_UL_REMAIN_TIME(struct file *fp)
  ******************************************************************************/
 void AudDrv_AUDIO_REMAINING(struct file *fp, Data_Remaining *time)
 {
-    jiffies_to_timespec(jiffies, &(time->time));
+    do_posix_clock_monotonic_gettime(&(time->time));
     time->bytes_remaining = AudDrv_GET_DL1_REMAIN_TIME(fp);
 }
 
