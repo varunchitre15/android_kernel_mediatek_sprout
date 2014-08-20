@@ -183,6 +183,22 @@ typedef struct {
     u64 size;
 } mem_desc_t;
 
+/*Para bins information*/
+#define ATAG_TOUCH_CUST_TAG  (0x41000817)
+#define ATAG_SENSORS_TAG     (0x41000818)
+#define ATAG_GPIO_USAGE_TAG  (0x41000819)
+#define ATAG_GPIO_BOOT_TAG   (0x4100081A)
+#define ATAG_LCM_TAG         (0x4100081B)
+#define ATAG_KEYPAD_TAG      (0x4100081C)
+#define ATAG_AUXADC_TAG      (0x4100081D)
+#define ATAG_ACCDET_TAG      (0x4100081E)
+#define ATAG_MSDC0_TAG       (0x4100081F)
+#define ATAG_MSDC1_TAG       (0x41000820)
+#define ATAG_LEDS_TAG        (0x41000821)
+#define ATAG_VIBRATOR_TAG    (0x41000822)
+#define ATAG_BATTERY_TAG     (0x41000823)
+
+
 struct tag {
 	struct tag_header hdr;
 	union {
