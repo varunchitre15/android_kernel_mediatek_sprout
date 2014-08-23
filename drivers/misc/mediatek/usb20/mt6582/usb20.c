@@ -703,7 +703,7 @@ static ssize_t mt_usb_show_rx(struct device* dev, struct device_attribute *attr,
 	return scnprintf(buf, PAGE_SIZE, "%x\n", var2);
 }
 
-DEVICE_ATTR(rx,  0664, mt_usb_show_rx, NULL);
+DEVICE_ATTR(rx,  0444, mt_usb_show_rx, NULL);
 
 static ssize_t mt_usb_show_uart_path(struct device* dev, struct device_attribute *attr, char *buf)
 {
@@ -721,7 +721,7 @@ static ssize_t mt_usb_show_uart_path(struct device* dev, struct device_attribute
 	return scnprintf(buf, PAGE_SIZE, "%x\n", var);
 }
 
-DEVICE_ATTR(uartpath,  0664, mt_usb_show_uart_path, NULL);
+DEVICE_ATTR(uartpath,  0444, mt_usb_show_uart_path, NULL);
 #endif
 
 #ifdef FPGA_PLATFORM
