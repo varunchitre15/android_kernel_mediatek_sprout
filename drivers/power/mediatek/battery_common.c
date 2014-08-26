@@ -124,6 +124,10 @@ int g_smartbook_update = 0;
 kal_uint32 g_batt_temp_status = TEMP_POS_NORMAL;
 #endif
 
+#if defined(MTK_JEITA_STANDARD_SUPPORT)
+extern int g_temp_status;
+#endif
+
 kal_bool g_battery_soc_ready = KAL_FALSE;
 ////////////////////////////////////////////////////////////////////////////////
 // Integrate with NVRAM 
@@ -2022,30 +2026,30 @@ static void mt_battery_notify_ICharging_check(void)
 static void mt_battery_notify_VBatTemp_check(void)
 {
 #if defined(BATTERY_NOTIFY_CASE_0002_VBATTEMP)
-
-	if(BMT_status.temperature >= MAX_CHARGE_TEMPERATURE)
-    {
-        g_BatteryNotifyCode |= 0x0002;
-        battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too high)\n", BMT_status.temperature);		
-    }
 #if defined(MTK_JEITA_STANDARD_SUPPORT)
-	else if (BMT_status.temperature < TEMP_NEG_10_THRESHOLD)
+	if (g_temp_status > TEMP_ABOVE_POS_60) {
+		g_BatteryNotifyCode |= 0x0002;
+        	battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too high)\n", BMT_status.temperature);	
+	}
+	else if (g_temp_status < TEMP_BELOW_NEG_10)
 	{
-        g_BatteryNotifyCode |= 0x0020;
-        battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too low)\n", BMT_status.temperature);
+		g_BatteryNotifyCode |= 0x0020;
+		battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too low)\n", BMT_status.temperature);
 	}
 #else
+	if(BMT_status.temperature >= MAX_CHARGE_TEMPERATURE) {
+		g_BatteryNotifyCode |= 0x0002;
+		battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too high)\n", BMT_status.temperature);		
+	}
 #ifdef BAT_LOW_TEMP_PROTECT_ENABLE
-	else if (BMT_status.temperature < MIN_CHARGE_TEMPERATURE)
-    {
-        g_BatteryNotifyCode |= 0x0020;
-        battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too low)\n", BMT_status.temperature);
-    }
+	else if (BMT_status.temperature < MIN_CHARGE_TEMPERATURE) {
+		g_BatteryNotifyCode |= 0x0020;
+		battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too low)\n", BMT_status.temperature);
+	}
 #endif
 #endif
 
     //battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] BATTERY_NOTIFY_CASE_0002_VBATTEMP (%x)\n", g_BatteryNotifyCode);
-        
 #endif
 }
 
@@ -2104,13 +2108,13 @@ static void mt_battery_notify_UI_test(void)
 
 void mt_battery_notify_check(void)
 {
-    g_BatteryNotifyCode = 0x0000;
+	g_BatteryNotifyCode = 0x0000;
 
 	if(g_BN_TestMode == 0x0000)	/* for normal case */
-    {
-        battery_xlog_printk(BAT_LOG_FULL, "[BATTERY] mt_battery_notify_check\n");
+	{
+		battery_xlog_printk(BAT_LOG_FULL, "[BATTERY] mt_battery_notify_check\n");
 
-	    mt_battery_notify_VCharger_check();
+		mt_battery_notify_VCharger_check();
 
 		mt_battery_notify_VBatTemp_check();
 
@@ -2119,24 +2123,23 @@ void mt_battery_notify_check(void)
 		mt_battery_notify_VBat_check();
 
 		mt_battery_notify_TatalChargingTime_check();
-    }	
-	else  /* for UI test */
-	{
+	} else { /* for UI test */
 		mt_battery_notify_UI_test();
 	}
 }
 
 static void mt_battery_thermal_check(void)
 {
+	/* for Sporout MMX special request (shutdown temperature > 60 degree)*/
+	int thermal_shut_down = TEMP_POS_60_THRESHOLD+5;
 	if( (g_battery_thermal_throttling_flag==1) || (g_battery_thermal_throttling_flag==3) )
     {
         if(battery_cmd_thermal_test_mode == 1){
             BMT_status.temperature = battery_cmd_thermal_test_mode_value;
             battery_xlog_printk(BAT_LOG_FULL, "[Battery] In thermal_test_mode , Tbat=%d\n", BMT_status.temperature);
         }
-     
-	if(BMT_status.temperature >= 60)
-        {
+	/* for Sporout MMX special request (shutdown temperature > 60 degree)*/
+	if(BMT_status.temperature >= thermal_shut_down) {
             #if defined(CONFIG_POWER_EXT)
             battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] CONFIG_POWER_EXT, no update battery update power down.\n");
             #else
@@ -2150,7 +2153,7 @@ static void mt_battery_thermal_check(void)
                     struct battery_data *bat_data = &battery_main;
                     struct power_supply *bat_psy = &bat_data->psy;
 
-                    battery_xlog_printk(BAT_LOG_CRTI, "[Battery] Tbat(%d)>=60, system need power down.\n", BMT_status.temperature);
+                    battery_xlog_printk(BAT_LOG_CRTI, "[Battery] Tbat(%d)>=%d, system need power down.\n", thermal_shut_down, BMT_status.temperature);
 
                     bat_data->BAT_CAPACITY = 0;
 
