@@ -110,6 +110,10 @@ int g_smartbook_update = 0;
 kal_uint32 g_batt_temp_status = TEMP_POS_NORMAL;
 #endif
 
+#if defined(MTK_JEITA_STANDARD_SUPPORT)
+extern int g_temp_status;
+#endif
+
 kal_bool battery_suspended = KAL_FALSE;
 
 /* ////////////////////////////////////////////////////////////////////////////// */
@@ -2188,19 +2192,22 @@ static void mt_battery_notify_ICharging_check(void)
 static void mt_battery_notify_VBatTemp_check(void)
 {
 #if defined(BATTERY_NOTIFY_CASE_0002_VBATTEMP)
-
-	if (BMT_status.temperature >= MAX_CHARGE_TEMPERATURE) {
+#if defined(MTK_JEITA_STANDARD_SUPPORT)
+	if (g_temp_status >= TEMP_ABOVE_POS_60) {
 		g_BatteryNotifyCode |= 0x0002;
 		battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too high)\n",
 				    BMT_status.temperature);
 	}
-#if defined(MTK_JEITA_STANDARD_SUPPORT)
-	else if (BMT_status.temperature < TEMP_NEG_10_THRESHOLD) {
+	else if (g_temp_status < TEMP_BELOW_NEG_10) {
 		g_BatteryNotifyCode |= 0x0020;
 		battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too low)\n",
 				    BMT_status.temperature);
 	}
 #else
+	if(BMT_status.temperature >= MAX_CHARGE_TEMPERATURE) {
+		g_BatteryNotifyCode |= 0x0002;
+		battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too high)\n", BMT_status.temperature);		
+	}
 #ifdef BAT_LOW_TEMP_PROTECT_ENABLE
 	else if (BMT_status.temperature < MIN_CHARGE_TEMPERATURE) {
 		g_BatteryNotifyCode |= 0x0020;
@@ -2288,6 +2295,8 @@ void mt_battery_notify_check(void)
 
 static void mt_battery_thermal_check(void)
 {
+	/* for Sporout MMX special request (shutdown temperature > 60 degree)*/
+	int thermal_shut_down = TEMP_POS_60_THRESHOLD+5;
 	if ((g_battery_thermal_throttling_flag == 1) || (g_battery_thermal_throttling_flag == 3)) {
 		if (battery_cmd_thermal_test_mode == 1) {
 			BMT_status.temperature = battery_cmd_thermal_test_mode_value;
@@ -2298,7 +2307,8 @@ static void mt_battery_thermal_check(void)
 #if defined(MTK_JEITA_STANDARD_SUPPORT)
 		/* ignore default rule */
 #else
-		if (BMT_status.temperature >= 60) {
+		/* for Sporout MMX special request (shutdown temperature > 60 degree)*/
+		if(BMT_status.temperature >= thermal_shut_down) {
 #if defined(CONFIG_POWER_EXT)
 			battery_xlog_printk(BAT_LOG_CRTI,
 					    "[BATTERY] CONFIG_POWER_EXT, no update battery update power down.\n");
@@ -2315,8 +2325,8 @@ static void mt_battery_thermal_check(void)
 					struct power_supply *bat_psy = &bat_data->psy;
 
 					battery_xlog_printk(BAT_LOG_CRTI,
-							    "[Battery] Tbat(%d)>=60, system need power down.\n",
-							    BMT_status.temperature);
+							    "[Battery] Tbat(%d)>=%d, system need power down.\n",
+							    thermal_shut_down, BMT_status.temperature);
 
 					bat_data->BAT_CAPACITY = 0;
 
