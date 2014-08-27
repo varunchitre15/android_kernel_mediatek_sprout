@@ -2196,12 +2196,12 @@ static void mt_battery_notify_VBatTemp_check(void)
 	if (g_temp_status >= TEMP_ABOVE_POS_60) {
 		g_BatteryNotifyCode |= 0x0002;
 		battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too high)\n",
-				    BMT_status.temperature);
+				    g_temp_status);
 	}
 	else if (g_temp_status < TEMP_BELOW_NEG_10) {
 		g_BatteryNotifyCode |= 0x0020;
 		battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too low)\n",
-				    BMT_status.temperature);
+				    g_temp_status);
 	}
 #else
 	if(BMT_status.temperature >= MAX_CHARGE_TEMPERATURE) {
@@ -2326,7 +2326,7 @@ static void mt_battery_thermal_check(void)
 
 					battery_xlog_printk(BAT_LOG_CRTI,
 							    "[Battery] Tbat(%d)>=%d, system need power down.\n",
-							    thermal_shut_down, BMT_status.temperature);
+							    BMT_status.temperature, thermal_shut_down);
 
 					bat_data->BAT_CAPACITY = 0;
 
