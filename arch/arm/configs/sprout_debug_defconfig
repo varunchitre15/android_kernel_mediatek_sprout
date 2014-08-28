@@ -1237,7 +1237,6 @@ CONFIG_MTK_PAGERECORDER=y
 #
 # MT load balance and schedule enhancement
 #
-CONFIG_MT_SCHED=y
 CONFIG_MTK_CIRQ=y
 CONFIG_MTK_HIBERNATION=y
 # CONFIG_MTK_SCHED_RQAVG_US is not set

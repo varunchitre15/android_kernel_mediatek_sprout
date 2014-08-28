@@ -80,57 +80,6 @@ static int hibernation_failed_action = HIB_FAILED_TO_S2RAM;
 #define MAX_HIB_FAILED_CNT 3
 static int hib_failed_cnt;
 
-/* ----------------------------------// */
-/* ------ userspace programs ---------// */
-/* ----------------------------------// */
-static void usr_restore_func(struct work_struct *data)
-{
-	static char *envp[] = {
-		"HOME=/data",
-		"TERM=vt100",
-		"PATH=/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin",
-		NULL
-	};
-	static char *argv[] = {
-		HIB_USRPROGRAM,
-		"--mode=restore",
-		NULL, NULL, NULL, NULL, NULL, NULL
-	};
-	int retval;
-
-	/* start ipo booting */
-	hib_log("call userspace program '%s %s'\n", argv[0], argv[1]);
-	retval = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
-	if (retval && retval != 256)
-		hib_err("Failed to launch userspace program '%s %s': "
-			"Error %d\n", argv[0], argv[1], retval);
-}
-
-/* DECLARE_DELAYED_WORK(usr_restore_work, usr_restore_func); */
-
-/* trigger userspace recover for hibernation failed */
-static void usr_recover_func(struct work_struct *data)
-{
-	static char *envp[] = {
-		"HOME=/data",
-		"TERM=vt100",
-		"PATH=/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin",
-		NULL
-	};
-	static char *argv[] = {
-		HIB_USRPROGRAM,
-		"--mode=recover",
-		NULL, NULL, NULL, NULL, NULL, NULL
-	};
-	int retval;
-
-	hib_log("call userspace program '%s %s'\n", argv[0], argv[1]);
-	retval = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
-	if (retval && retval != 256)
-		hib_err("Failed to launch userspace program '%s %s': "
-			"Error %d\n", argv[0], argv[1], retval);
-}
-
 #if defined(CONFIG_CPU_FREQ_GOV_HOTPLUG) || defined(CONFIG_CPU_FREQ_GOV_BALANCE)
 
 #define HIB_UNPLUG_CORES	/* force unplug cores before hibernation flow */
@@ -201,9 +150,6 @@ static void hibernate_recover(void)
 	hib_ftrace_buffer(1);
 
 	hib_hotplug_mode(1);
-
-	/* userspace recover if hibernation failed */
-	usr_recover_func(NULL);
 }
 
 static void hibernate_restore(void)
@@ -211,10 +157,6 @@ static void hibernate_restore(void)
 	hib_ftrace_buffer(1);
 
 	hib_hotplug_mode(1);
-
-	hib_warn("start trigger ipod\n");
-	/* schedule_delayed_work(&usr_restore_work, HZ*0.05); */
-	usr_restore_func(NULL);
 }
 
 extern int hybrid_sleep_mode(void);
