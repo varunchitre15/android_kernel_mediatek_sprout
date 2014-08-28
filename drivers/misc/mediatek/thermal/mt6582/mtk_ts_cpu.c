@@ -1844,10 +1844,12 @@ static int tscpu_read(struct seq_file *m, void *v)
 		   trip_temp[8], g_THERMAL_TRIP[8], g_bind8,
 		   trip_temp[9], g_THERMAL_TRIP[9], g_bind9, interval);
 
+    if (NULL != mtk_gpu_power)
 	for (i = 0; i < Num_of_GPU_OPP; i++)
 		seq_printf(m, "g %d %d %d\n", i, mtk_gpu_power[i].gpufreq_khz,
 			   mtk_gpu_power[i].gpufreq_power);
 
+    if (NULL != mtk_cpu_power)
 	for (i = 0; i < tscpu_num_opp; i++)
 		seq_printf(m, "c %d %d %d %d\n", i, mtk_cpu_power[i].cpufreq_khz,
 			   mtk_cpu_power[i].cpufreq_ncpu, mtk_cpu_power[i].cpufreq_power);
