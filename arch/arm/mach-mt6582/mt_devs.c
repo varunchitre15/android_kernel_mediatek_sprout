@@ -44,6 +44,9 @@
 #include <linux/aee.h>
 #include <linux/mrdump.h>
 #include <mach/i2c.h>
+#include <mach/mt_touch_ssb_cust.h>
+#include <mach/mt_keypad_ssb_cust.h>
+#include <mach/mt_auxadc_ssb_cust.h>
 
 #define SERIALNO_LEN 32
 static char serial_number[SERIALNO_LEN];
@@ -61,6 +64,67 @@ struct {
 } bl_fb = {0, 0};
 
 static int use_bl_fb = 0;
+
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+struct tag_para_touch_ssb_data touch_cust_ssb_data = {
+    0x6789,
+    {
+    {
+        0x2133,
+        0x0,
+        5,
+        {139, 172, 158},
+        {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
+        {480, 854},
+        0,
+        0x2222,
+    },
+    {
+        0x3508,
+        0x0,
+        5,
+        {139, 172, 158},
+        {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
+        {480, 854},
+        0,
+        0x2222,
+    },
+    {
+        0x6106,
+        0x0,
+        5,
+        {139, 172, 158},
+        {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
+        {480, 854},
+        1,
+        0x2222,
+    },
+    {
+        0x3203,
+        0x0,
+        5,
+        {139, 172, 158},
+        {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
+        {480, 854},
+        0,
+        0x2222,
+    },
+    {0},
+    },
+    0x9876,
+};
+
+struct tag_para_keypad_ssb_data keypad_cust_ssb_data = {
+    0x6789,
+    {[0] = 115,},
+    0,
+    32,
+    114,
+    0x9876,
+};
+
+struct tag_para_auxadc_ssb_data auxadc_cust_ssb_data = {-1, 13, -1};
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 /*=======================================================================*/
 /* MT6582 USB GADGET                                                     */
@@ -1109,6 +1173,83 @@ static int __init parse_tag_devinfo_data_fixup(const struct tag *tags)
 	return 0;
 }
 
+static int __init parse_tag_auxadc_data_fixup(const struct tag *tags)
+{
+    auxadc_cust_ssb_data.TEMPERATURE_CHANNEL = tags->u.auxadc_ssb_cust.TEMPERATURE_CHANNEL;
+    auxadc_cust_ssb_data.ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL = tags->u.auxadc_ssb_cust.ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL;
+    auxadc_cust_ssb_data.HF_MIC_CHANNEL = tags->u.auxadc_ssb_cust.HF_MIC_CHANNEL;
+    /*printk("%s: TEMPERATURE_CHANNEL(%d), ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL(%d), HF_MIC_CHANNEL(%d)\n"
+        ,__func__
+        ,auxadc_cust_ssb_data.TEMPERATURE_CHANNEL
+        ,auxadc_cust_ssb_data.ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL
+        ,auxadc_cust_ssb_data.HF_MIC_CHANNEL);*/
+    return 0;
+}
+
+static int __init parse_tag_keypad_data_fixup(const struct tag *tags)
+{
+    int i = 0;
+
+    keypad_cust_ssb_data.version = tags->u.keypad_ssb_cust.version;
+    keypad_cust_ssb_data.volume_down = tags->u.keypad_ssb_cust.volume_down;
+    keypad_cust_ssb_data.volume_up = tags->u.keypad_ssb_cust.volume_up;
+    keypad_cust_ssb_data.endflag = tags->u.keypad_ssb_cust.endflag;
+    keypad_cust_ssb_data.pmic_rst = tags->u.keypad_ssb_cust.pmic_rst;
+    memcpy(keypad_cust_ssb_data.kpd_keymap_cust, tags->u.keypad_ssb_cust.kpd_keymap_cust, sizeof(keypad_cust_ssb_data.kpd_keymap_cust[72]));
+    /*printk("%s: version(0x%x), volume_down(%d), volume_up(%d), pmic_rst(%d), endflag(0x%x)\n"
+        ,__func__
+        ,keypad_cust_ssb_data.version
+        ,keypad_cust_ssb_data.volume_down
+        ,keypad_cust_ssb_data.volume_up
+        ,keypad_cust_ssb_data.pmic_rst
+        ,keypad_cust_ssb_data.endflag);*/
+
+    for(i = 0; i < 72; i++)
+        keypad_cust_ssb_data.kpd_keymap_cust[i]= tags->u.keypad_ssb_cust.kpd_keymap_cust[i];
+    return 0;
+}
+
+static int __init parse_tag_touch_data_fixup(const struct tag *tags)
+{
+    int index = 0;
+    int i = 0;
+    int j = 0;
+
+    for(index = 0; index < 20; index++){
+        touch_cust_ssb_data.touch_ssb_data[index].endflag = tags->u.touch_ssb_cust.touch_ssb_data[index].endflag;
+        touch_cust_ssb_data.touch_ssb_data[index].i2c_number = tags->u.touch_ssb_cust.touch_ssb_data[index].i2c_number;
+        touch_cust_ssb_data.touch_ssb_data[index].identifier = tags->u.touch_ssb_cust.touch_ssb_data[index].identifier;
+        touch_cust_ssb_data.touch_ssb_data[index].power_id = tags->u.touch_ssb_cust.touch_ssb_data[index].power_id;
+        touch_cust_ssb_data.touch_ssb_data[index].use_tpd_buttom = tags->u.touch_ssb_cust.touch_ssb_data[index].use_tpd_buttom;
+        /*printk("parse_tag_touch_data_fixup, index(%d):: identifier:%d, endflag:%d, i2c_number:%d, power_id:%d, use_tpd_buttom:%d\n",
+        index,
+        touch_cust_ssb_data.touch_ssb_data[index].identifier,
+        touch_cust_ssb_data.touch_ssb_data[index].endflag,
+        touch_cust_ssb_data.touch_ssb_data[index].i2c_number,
+        touch_cust_ssb_data.touch_ssb_data[index].power_id,
+        touch_cust_ssb_data.touch_ssb_data[index].use_tpd_buttom
+        );*/
+
+        for(i = 0; i < 2; i++){
+            touch_cust_ssb_data.touch_ssb_data[index].tpd_resolution[i] = tags->u.touch_ssb_cust.touch_ssb_data[index].tpd_resolution[i];
+            //printk("parse_tag_touch_data_fixup, index(%d)::tpd_resolution[%d]:%d\n",index,i,touch_cust_ssb_data.touch_ssb_data[index].tpd_resolution[i]);
+        }
+
+        for(i = 0; i < 3; i++){
+            touch_cust_ssb_data.touch_ssb_data[index].tpd_key_local[i] = tags->u.touch_ssb_cust.touch_ssb_data[index].tpd_key_local[i];
+            //printk("parse_tag_touch_data_fixup, index(%d)::tpd_key_local[%d]:%d\n",index,i,touch_cust_ssb_data.touch_ssb_data[index].tpd_key_local[i]);
+        }
+        for(i = 0; i < 3; i++)
+        {
+            for(j = 0; j < 4; j++){
+                touch_cust_ssb_data.touch_ssb_data[index].tpd_key_dim_local[i][j] = tags->u.touch_ssb_cust.touch_ssb_data[index].tpd_key_dim_local[i][j];
+                //printk("parse_tag_touch_data_fixup, index(%d)::tpd_key_dim_local[%d][%d]:%d\n",index,i,j,touch_cust_ssb_data.touch_ssb_data[index].tpd_key_dim_local[i][j]);
+                }
+        }
+    }
+    return 0;
+}
+
 extern unsigned int mtkfb_parse_dfo_setting(void *dfo_tbl, int num);
 
 static void parse_boot_reason(char** cmdline) /*parse boot reason*/
@@ -1217,6 +1358,15 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
             parse_tag_videofb_fixup(tags);
         }else if (tags->hdr.tag == ATAG_DEVINFO_DATA){
             parse_tag_devinfo_data_fixup(tags);
+        }
+        else if (tags->hdr.tag == ATAG_KEYPAD_TAG){
+            parse_tag_keypad_data_fixup(tags);
+        }
+        else if (tags->hdr.tag == ATAG_TOUCH_CUST_TAG){
+            parse_tag_touch_data_fixup(tags);
+        }
+        else if (tags->hdr.tag == ATAG_AUXADC_TAG){
+            parse_tag_auxadc_data_fixup(tags);
         }
         else if(tags->hdr.tag == ATAG_META_COM)
         {

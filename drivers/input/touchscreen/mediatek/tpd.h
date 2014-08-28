@@ -25,6 +25,7 @@
 #include <linux/kobject.h>
 #include <linux/earlysuspend.h>
 /* #include "tpd_custom.h" */
+#include <mach/mt_touch_ssb_cust.h>
 
 /* debug macros */
 /* //#define TPD_DEBUG */

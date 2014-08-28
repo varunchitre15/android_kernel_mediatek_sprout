@@ -44,6 +44,7 @@
 #include <mach/mt_clkmgr.h>
 #include <mach/sync_write.h>
 #include <cust_adc.h>		/* generate by DCT Tool */
+#include <mach/mt_auxadc_ssb_cust.h>
 
 #include "mt_auxadc.h"
 #include <mt_auxadc_sw.h>
@@ -82,12 +83,12 @@ static DEFINE_MUTEX(auxadc_mutex);
 static dev_t auxadc_cali_devno;
 static int auxadc_cali_major;
 static struct cdev *auxadc_cali_cdev;
-static struct class *auxadc_cali_class;
+static struct class *auxadc_cali_class = NULL;
 
-static struct task_struct *thread;
-static int g_start_debug_thread;
+static struct task_struct *thread = NULL;
+static int g_start_debug_thread =0;
 
-static int g_adc_init_flag;
+static int g_adc_init_flag =0;
 
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
 /* // fop Common API */
@@ -1106,34 +1107,37 @@ static int adc_channel_info_init(void)
 {
 	unsigned int used_channel_counter = 0;
 	used_channel_counter = 0;
-#ifdef AUXADC_TEMPERATURE_CHANNEL
+
+    printk("%s: TEMPERATURE_CHANNEL(%d), ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL(%d), HF_MIC_CHANNEL(%d)\n"
+        ,__func__
+        ,auxadc_cust_ssb_data.TEMPERATURE_CHANNEL
+        ,auxadc_cust_ssb_data.ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL
+        ,auxadc_cust_ssb_data.HF_MIC_CHANNEL);
+
+    if(auxadc_cust_ssb_data.TEMPERATURE_CHANNEL != -1){
 	/* ap_domain &= ~(1<<CUST_ADC_MD_CHANNEL); */
 	sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_RFTMP");
-	g_adc_info[used_channel_counter].channel_number = AUXADC_TEMPERATURE_CHANNEL;
-	printk("[ADC] channel_name = %s channel num=%d\n",
-	       g_adc_info[used_channel_counter].channel_name,
-	       g_adc_info[used_channel_counter].channel_number);
+    g_adc_info[used_channel_counter].channel_number = auxadc_cust_ssb_data.TEMPERATURE_CHANNEL;
+    printk("[ADC] channel_name = %s channel num=%d\n", g_adc_info[used_channel_counter].channel_name
+        ,g_adc_info[used_channel_counter].channel_number);
 	used_channel_counter++;
-#endif
+    }
 
-#ifdef AUXADC_ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL
+    if(auxadc_cust_ssb_data.ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL != -1){
 	sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_FDD_Rf_Params_Dynamic_Custom");
-	g_adc_info[used_channel_counter].channel_number =
-	    AUXADC_ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL;
-	printk("[ADC] channel_name = %s channel num=%d\n",
-	       g_adc_info[used_channel_counter].channel_name,
-	       g_adc_info[used_channel_counter].channel_number);
+    g_adc_info[used_channel_counter].channel_number = auxadc_cust_ssb_data.ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL;
+    printk("[ADC] channel_name = %s channel num=%d\n", g_adc_info[used_channel_counter].channel_name
+        ,g_adc_info[used_channel_counter].channel_number);
 	used_channel_counter++;
-#endif
+    }
 
-#ifdef AUXADC_HF_MIC_CHANNEL
+    if(auxadc_cust_ssb_data.HF_MIC_CHANNEL != -1){
 	sprintf(g_adc_info[used_channel_counter].channel_name, "ADC_MIC");
-	g_adc_info[used_channel_counter].channel_number = AUXADC_HF_MIC_CHANNEL;
-	printk("[ADC] channel_name = %s channel num=%d\n",
-	       g_adc_info[used_channel_counter].channel_name,
-	       g_adc_info[used_channel_counter].channel_number);
+    g_adc_info[used_channel_counter].channel_number = auxadc_cust_ssb_data.HF_MIC_CHANNEL;
+    printk("[ADC] channel_name = %s channel num=%d\n", g_adc_info[used_channel_counter].channel_name
+        ,g_adc_info[used_channel_counter].channel_number);
 	used_channel_counter++;
-#endif
+    }
 
 	return 0;
 

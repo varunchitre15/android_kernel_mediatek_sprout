@@ -3207,10 +3207,10 @@ static int __devinit tpd_probe(struct i2c_client *client, const struct i2c_devic
 		return -1;
 	printk("In tpd_probe_ ,the i2c addr=0x%x", client->addr);
 
-    if(TPD_POWER_SOURCE != MT65XX_POWER_NONE)
+    if(touch_cust_ssb_data.touch_ssb_data[0].power_id!= MT65XX_POWER_NONE)
     {
-	    hwPowerDown(TPD_POWER_SOURCE,"TP");
-	    hwPowerOn(TPD_POWER_SOURCE,VOL_2800,"TP");
+        hwPowerDown(touch_cust_ssb_data.touch_ssb_data[0].power_id,"TP");
+        hwPowerOn(touch_cust_ssb_data.touch_ssb_data[0].power_id,VOL_2800,"TP");
 	    msleep(100);	
     }	
 	  
@@ -3433,13 +3433,13 @@ static int tpd_local_init(void)
 
     if(i2c_add_driver(&tpd_i2c_driver) != 0)
     {
-        printk("unable to add i2c driver.\n");
+        printk("MSG2033 unable to add i2c driver.\n");
         return -1;
     }
 
-#ifdef TPD_HAVE_BUTTON
-    tpd_button_setting(TPD_KEY_COUNT, tpd_keys_local, tpd_keys_dim_local);// initialize tpd button data
-#endif
+    if(touch_cust_ssb_data.touch_ssb_data[0].use_tpd_buttom == 1)
+        tpd_button_setting(TPD_KEY_COUNT, touch_cust_ssb_data.touch_ssb_data[0].tpd_key_local, touch_cust_ssb_data.touch_ssb_data[0].tpd_key_dim_local);// initialize tpd button data
+
 #if (defined(TPD_WARP_START) && defined(TPD_WARP_END))
     TPD_DO_WARP = 1;
     memcpy(tpd_wb_start, tpd_wb_start_local, TPD_WARP_CNT * 4);
@@ -3467,7 +3467,7 @@ static int tpd_resume(struct i2c_client *client)
 #endif
     printk("TPD wake up\n");
 #ifdef TPD_CLOSE_POWER_IN_SLEEP
-    hwPowerOn(TPD_POWER_SOURCE, VOL_3300, "TP");
+    hwPowerOn(touch_cust_ssb_data.touch_ssb_data[0].power_id, VOL_3300, "TP");
 #else
 	mt_set_gpio_mode(GPIO_CTP_RST_PIN, GPIO_CTP_RST_PIN_M_GPIO);
 	//changed in 2012-07-07 by [Hally]
@@ -3503,7 +3503,7 @@ static int tpd_suspend(struct i2c_client *client, pm_message_t message)
     mt_set_gpio_out(GPIO_CTP_RST_PIN, GPIO_OUT_ZERO);
     
 #ifdef TPD_CLOSE_POWER_IN_SLEEP
-    hwPowerDown(TPD_POWER_SOURCE, "TP");
+    hwPowerDown(touch_cust_ssb_data.touch_ssb_data[0].power_id, "TP");
 #else
     //i2c_smbus_write_i2c_block_data(i2c_client, 0xA5, 1, &data);  //TP enter sleep mode
     //mt_set_gpio_mode(GPIO_CTP_EN_PIN, GPIO_CTP_EN_PIN_M_GPIO);
@@ -3531,7 +3531,10 @@ static int __init tpd_driver_init(void)
 {
     printk("MediaTek MSG2033 touch panel driver init\n");
 
-    i2c_register_board_info(0, &msg2133_i2c_tpd, 1);		
+    i2c_register_board_info(touch_cust_ssb_data.touch_ssb_data[0].i2c_number, &msg2133_i2c_tpd, 1);
+
+    //add for ssb support
+    tpd_device_driver.tpd_have_button = touch_cust_ssb_data.touch_ssb_data[0].use_tpd_buttom;
 
     if(tpd_driver_add(&tpd_device_driver) < 0)
     {

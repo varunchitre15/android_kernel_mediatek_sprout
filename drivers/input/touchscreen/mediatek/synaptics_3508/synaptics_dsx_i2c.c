@@ -924,12 +924,13 @@ printk("[s3508_11]finger = %d\n",finger);
 			input_mt_sync(rmi4_data->input_dev);
 #endif
 
-#ifdef TPD_HAVE_BUTTON
+        if(touch_cust_ssb_data.touch_ssb_data[1].use_tpd_buttom == 1){
 			if (NORMAL_BOOT != boot_mode)
 			{   
 				tpd_button(x, y, 1);  
 			}	
-#endif
+        }
+
 printk("[s3508_11]x = %d  y = %d\n", x, y);
 			dev_dbg(&rmi4_data->i2c_client->dev,
 					"%s: Finger %d:\n"
@@ -954,13 +955,14 @@ printk("[s3508_11]");
 #ifndef TYPE_B_PROTOCOL
 		input_mt_sync(rmi4_data->input_dev);
 #endif
-#ifdef TPD_HAVE_BUTTON
+
+    if(touch_cust_ssb_data.touch_ssb_data[1].use_tpd_buttom == 1){
 		if (NORMAL_BOOT != boot_mode)
 		{   
 			tpd_button(x, y, 0); 
 		}   
 		printk("[s3508_11_button]x = %d  y = %d\n", x, y);
-#endif
+        }
 	}
 
 	input_sync(rmi4_data->input_dev);
@@ -1550,9 +1552,10 @@ static int synaptics_rmi4_f11_init(struct synaptics_rmi4_data *rmi4_data,
 			((control[7] & MASK_4BIT) << 8);
 	rmi4_data->sensor_max_y = ((control[8] & MASK_8BIT) << 0) |
 			((control[9] & MASK_4BIT) << 8);
-#ifdef TPD_HAVE_BUTTON
+
+    if(touch_cust_ssb_data.touch_ssb_data[1].use_tpd_buttom == 1)
 	rmi4_data->sensor_max_y = rmi4_data->sensor_max_y * TPD_DISPLAY_HEIGH_RATIO / TPD_TOUCH_HEIGH_RATIO;
-#endif
+
 	dev_dbg(&rmi4_data->i2c_client->dev,
 			"%s: Function %02x max x = %d max y = %d\n",
 			__func__, fhandler->fn_number,
@@ -1745,9 +1748,10 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
 	rmi4_data->sensor_max_y =
 			((unsigned short)ctrl_8.max_y_coord_lsb << 0) |
 			((unsigned short)ctrl_8.max_y_coord_msb << 8);
-#ifdef TPD_HAVE_BUTTON
+
+    if(touch_cust_ssb_data.touch_ssb_data[1].use_tpd_buttom == 1)
 	rmi4_data->sensor_max_y = rmi4_data->sensor_max_y * TPD_DISPLAY_HEIGH_RATIO / TPD_TOUCH_HEIGH_RATIO;
-#endif
+
 	dev_dbg(&rmi4_data->i2c_client->dev,
 			"%s: Function %02x max x = %d max y = %d\n",
 			__func__, fhandler->fn_number,
@@ -2350,7 +2354,7 @@ static void synaptics_rmi4_set_params(struct synaptics_rmi4_data *rmi4_data)
 
 #ifdef TYPE_B_PROTOCOL
 	input_mt_init_slots(rmi4_data->input_dev,
-			rmi4_data->num_of_fingers, 0);
+            rmi4_data->num_of_fingers, INPUT_MT_POINTER);
 #endif
 
 	f1a = NULL;
@@ -2719,7 +2723,7 @@ printk("[s3508]synaptics_rmi4_probe\n");
   	mt_set_gpio_out(GPIO_CTP_RST_PIN, GPIO_OUT_ONE);
 
 	// power up sequence
-	hwPowerOn(TPD_POWER_SOURCE, VOL_2800, "TP");
+    hwPowerOn(touch_cust_ssb_data.touch_ssb_data[1].power_id, VOL_2800, "TP");
 	hwPowerOn(MT65XX_POWER_LDO_VIO28, VOL_1800, "TP");
 	hwPowerOn(MT65XX_POWER_LDO_VGP1, VOL_2800, "TP");
     hwPowerOn(MT6323_POWER_LDO_VGP1, VOL_2800, "TP");
@@ -2756,13 +2760,14 @@ printk("[s3508]synaptics_rmi4_probe\n");
 	mutex_init(&(rmi4_data->rmi4_reset_mutex));
 
 	i2c_set_clientdata(client, rmi4_data);
-//#if 1
-    #ifdef TPD_HAVE_BUTTON
+
+
+    if(touch_cust_ssb_data.touch_ssb_data[1].use_tpd_buttom == 1){
     for(retval =0; retval < 3; retval ++)
     {
-	input_set_capability(tpd->dev,EV_KEY,tpd_keys_local[retval]);//kai
+            input_set_capability(tpd->dev,EV_KEY,touch_cust_ssb_data.touch_ssb_data[1].tpd_key_local[retval]);
     }
-    #endif
+    }
 
 	retval = synaptics_rmi4_set_input_dev(rmi4_data);
 	if (retval < 0) {
@@ -3183,9 +3188,10 @@ static int tpd_local_init(void)
 		TPD_DMESG("tangjie Error unable to add i2c driver.\n");
 		return -1;
 	}
-#ifdef TPD_HAVE_BUTTON     
-	tpd_button_setting(TPD_KEY_COUNT, tpd_keys_local, tpd_keys_dim_local);// initialize tpd button data
-#endif 
+
+    if(touch_cust_ssb_data.touch_ssb_data[1].use_tpd_buttom == 1)
+        tpd_button_setting(TPD_KEY_COUNT, touch_cust_ssb_data.touch_ssb_data[1].tpd_key_local, touch_cust_ssb_data.touch_ssb_data[1].tpd_key_dim_local);// initialize tpd button data
+
 	boot_mode = get_boot_mode();
 	if (boot_mode == 3) {
 		boot_mode = NORMAL_BOOT;
@@ -3194,7 +3200,7 @@ static int tpd_local_init(void)
 }
 
 static struct tpd_driver_t synaptics_rmi4_driver = {
-	.tpd_device_name = "synaptics_tpd",
+    .tpd_device_name = "synaptics_tpd_s3508",
 	.tpd_local_init = tpd_local_init,
 	.suspend = synaptics_rmi4_suspend,
 	.resume = synaptics_rmi4_resume,

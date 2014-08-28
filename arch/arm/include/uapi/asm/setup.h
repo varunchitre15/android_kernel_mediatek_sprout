@@ -17,6 +17,9 @@
 #include <linux/types.h>
 #include <mach/dfo_boot.h>
 #include <mach/mt_devinfo.h>
+#include <mach/mt_touch_ssb_cust.h>
+#include <mach/mt_keypad_ssb_cust.h>
+#include <mach/mt_auxadc_ssb_cust.h>
 
 #define COMMAND_LINE_SIZE 1024
 
@@ -228,6 +231,9 @@ struct tag {
                 tag_dfo_boot     dfo_data;
                 struct tag_mdinfo_data mdinfo_data;
 		mem_desc_t tee_reserved_mem;
+        struct tag_para_touch_ssb_data touch_ssb_cust;
+        struct tag_para_keypad_ssb_data keypad_ssb_cust;
+        struct tag_para_auxadc_ssb_data auxadc_ssb_cust;
 	} u;
 };
 

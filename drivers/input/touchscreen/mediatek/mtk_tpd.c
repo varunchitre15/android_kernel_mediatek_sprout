@@ -33,7 +33,7 @@
 
 #define TPD_GET_VELOCITY_CUSTOM_X _IO(TOUCH_IOC_MAGIC, 0)
 #define TPD_GET_VELOCITY_CUSTOM_Y _IO(TOUCH_IOC_MAGIC, 1)
-#define TPD_GET_FILTER_PARA _IOWR(TOUCH_IOC_MAGIC,2,struct tpd_filter_t) 
+#define TPD_GET_FILTER_PARA _IOWR(TOUCH_IOC_MAGIC,2,struct tpd_filter_t)
 
 
 
@@ -42,8 +42,8 @@ extern int tpd_v_magnify_y;
 struct tpd_filter_t tpd_filter;
 
 
-/*extern UINT32 DISP_GetScreenHeight(void);*/
-/*extern UINT32 DISP_GetScreenWidth(void);*/
+extern UINT32 DISP_GetScreenHeight(void);
+extern UINT32 DISP_GetScreenWidth(void);
 
 static int tpd_misc_open(struct inode *inode, struct file *file)
 {
@@ -306,8 +306,8 @@ static int tpd_probe(struct platform_device *pdev)
 	}
 	/* TPD_RES_X = simple_strtoul(LCM_WIDTH, NULL, 0); */
 	/* TPD_RES_Y = simple_strtoul(LCM_HEIGHT, NULL, 0); */
-	/* TPD_RES_X = DISP_GetScreenWidth(); VIN_TEMP_DISABLE*/
-	/* TPD_RES_Y = DISP_GetScreenHeight(); VIN_TEMP_DISABLE*/
+	 TPD_RES_X = DISP_GetScreenWidth();
+	 TPD_RES_Y = DISP_GetScreenHeight();
 
 
 	printk("mtk_tpd: TPD_RES_X = %d, TPD_RES_Y = %d\n", TPD_RES_X, TPD_RES_Y);
@@ -330,6 +330,7 @@ static int tpd_probe(struct platform_device *pdev)
 	for (i = 1; i < TP_DRV_MAX_COUNT; i++) {
 		/* add tpd driver into list */
 		if (tpd_driver_list[i].tpd_device_name != NULL) {
+			TPD_DMESG("[mtk-tpd]tpd_probe, tpd_driver_name=%s\n", tpd_driver_list[i].tpd_device_name);
 			tpd_driver_list[i].tpd_local_init();
 			/* msleep(1); */
 			if (tpd_load_status == 1) {

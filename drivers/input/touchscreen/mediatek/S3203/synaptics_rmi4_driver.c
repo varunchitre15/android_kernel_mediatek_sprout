@@ -33,6 +33,7 @@
 #include <mach/mt_pm_ldo.h>
 #include <mach/mt_typedefs.h>
 #include <mach/mt_boot.h>
+#include <mach/mt_touch_ssb_cust.h>
 
 //#define  SYNAPTICS_DEBUG_IF
 #ifdef  SYNAPTICS_DEBUG_IF
@@ -311,7 +312,7 @@ static ssize_t synaptics_rmi4_f51_enables_show(struct device *dev,
             f51->proximity_enables_addr,
             &proximity_enables,
             sizeof(proximity_enables));
-    if (retval < 0) {
+    if (retval <= 0) {
         dev_err(dev,
                 "%s: Failed to read proximity enables, error = %d\n",
                 __func__, retval);
@@ -614,7 +615,7 @@ exit:
 int tpd_i2c_read_data_fifo(struct i2c_client *client,
                 unsigned short addr, unsigned char *data, unsigned short length)
 {
-        u8 retval=0;
+        int retval=0;
         u8 retry = 0;
         u8 *pData = data;
         int tmp_addr = addr;
@@ -739,7 +740,7 @@ exit:
 int tpd_i2c_write_data_fifo(struct i2c_client *client,
                 unsigned short addr, unsigned char *data, unsigned short length)
 {
-    u8 retval=0;
+    int retval=0;
     u8 retry = 0;
     u8 *pData = data;
     u8 buf[5] = {0};
@@ -918,7 +919,7 @@ static int synaptics_rmi4_f51_init(struct synaptics_rmi4_data *rmi4_data,
             fhandler->full_addr.query_base,
             query_register.data,
             sizeof(query_register.data));
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     fhandler->data_size = sizeof(data_register->data);
@@ -930,7 +931,7 @@ static int synaptics_rmi4_f51_init(struct synaptics_rmi4_data *rmi4_data,
             query_register.control_register_count - 1,
             &proximity_enable_mask,
             sizeof(proximity_enable_mask));
-    if (retval < 0)
+    if (retval <= 0)
         return retval;
 
     f51 = kmalloc(sizeof(*f51), GFP_KERNEL);
@@ -938,7 +939,7 @@ static int synaptics_rmi4_f51_init(struct synaptics_rmi4_data *rmi4_data,
     f51->proximity_enables_addr = fhandler->full_addr.ctrl_base +
             query_register.control_register_count - 1;
 
-    return 0;
+    return 1;
 }
 
 int synaptics_rmi4_proximity_enables(unsigned char enables)
@@ -989,7 +990,7 @@ static int tpd_rmi4_read_pdt(struct tpd_data *ts)
                     pdt_entry_addr,
                     (unsigned char *)&rmi_fd,
                     sizeof(rmi_fd));
-            if (retval < 0)
+            if (retval <= 0)
                 return retval;
 
             if (rmi_fd.fn_number == 0) {
@@ -1033,7 +1034,7 @@ static int tpd_rmi4_read_pdt(struct tpd_data *ts)
                     ts->fn11_mask |= 1 <<ii;
 
                 retval = tpd_i2c_read_data(ts->client,ts->f11.query_base,f11_query,sizeof(f11_query));
-                if (retval < 0)
+                if (retval <= 0)
                     return retval;
                 TPD_DMESG("f11 query base=%d\n",ts->f11.query_base);
                 /* Maximum number of fingers supported */
@@ -1046,7 +1047,7 @@ static int tpd_rmi4_read_pdt(struct tpd_data *ts)
                     TPD_DMESG("points_supported=%d\n",ts->points_supported);
                     }
                 retval = tpd_i2c_read_data(ts->client,ts->f11.ctrl_base+6, (char *)(&f11_max_xy), sizeof(f11_max_xy));
-                if (retval < 0)
+                if (retval <= 0)
                     return retval;
 
                 /* Maximum x and y */
@@ -1211,7 +1212,7 @@ flash_prog_mode:
     }
 #endif
 
-    return 0;
+    return 1;
 }
 
 
@@ -1324,14 +1325,15 @@ static void tpd_down(int x, int y, int p ,int id)
     input_report_abs(tpd->dev, ABS_MT_TOUCH_MAJOR, p);
     input_mt_report_pointer_emulation(tpd->dev, true);
 
-    #ifdef TPD_HAVE_BUTTON
+
+    if(touch_cust_ssb_data.touch_ssb_data[3].use_tpd_buttom == 1){
     /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
     if (FACTORY_BOOT == boot_mode || RECOVERY_BOOT == boot_mode)
     /*END PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
     {
         tpd_button(x, y, 1);
     }
-    #endif
+    }
 }
 #else
 static void tpd_down(int x, int y, int p,int id)
@@ -1352,14 +1354,16 @@ static void tpd_down(int x, int y, int p,int id)
     input_report_abs(tpd->dev, ABS_MT_POSITION_Y, y);
     input_mt_sync(tpd->dev);
 #endif
-    #ifdef TPD_HAVE_BUTTON
+
+    if(touch_cust_ssb_data.touch_ssb_data[3].use_tpd_buttom == 1){
     /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
     if (FACTORY_BOOT == boot_mode || RECOVERY_BOOT == boot_mode)
     /*END PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
     {
         tpd_button(x, y, 1);
     }
-    #endif
+    }
+
     /* < DTS2012042803609 gkf61766 20120428 begin */
     TPD_DMESG("=================>D---[%4d %4d %4d]\n", x, y, p);
     /* DTS2012042803609 gkf61766 20120428 end > */
@@ -1376,14 +1380,16 @@ static void tpd_up(int x, int y,int id)
         input_mt_report_slot_state(tpd->dev, MT_TOOL_FINGER, 0);
         input_mt_report_pointer_emulation(tpd->dev, true);
 
-            #ifdef TPD_HAVE_BUTTON
+
+    if(touch_cust_ssb_data.touch_ssb_data[3].use_tpd_buttom == 1){
     /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
     if (FACTORY_BOOT == boot_mode || RECOVERY_BOOT == boot_mode)
     /*END PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
     {
         tpd_button(x, y, 1);
     }
-    #endif
+    }
+
 }
 #else
 static void tpd_up(int x, int y ,int id)
@@ -1400,14 +1406,16 @@ static void tpd_up(int x, int y ,int id)
         input_report_key(tpd->dev, BTN_TOUCH, 0);
         input_mt_sync(tpd->dev);
 #endif
-    #ifdef TPD_HAVE_BUTTON
+
+    if(touch_cust_ssb_data.touch_ssb_data[3].use_tpd_buttom == 1){
     /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
     if (FACTORY_BOOT == boot_mode || RECOVERY_BOOT == boot_mode)
     /*END PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
     {
         tpd_button(x, y, 0);
     }
-    #endif
+    }
+
     /* < DTS2012042803609 gkf61766 20120428 begin */
     TPD_DMESG("==================>U---[%4d %4d %4d]\n", x, y, 0);
     /* DTS2012042803609 gkf61766 20120428 end > */
@@ -1433,7 +1441,7 @@ static int tpd_process()
 
     //clear interrupt bit
     retval = tpd_i2c_read_data(ts->client, ts->f01.data_base + 1, &status, 1);
-    if (retval < 0)
+    if (retval <= 0)
     {
         TPD_DMESG("tpd_i2c_read_data retval error\n");
         ret=0;
@@ -1713,7 +1721,7 @@ static int tpd_sw_power(struct i2c_client *client, int on)
                 ts->f01.ctrl_base,
                 &device_ctrl,
                 sizeof(device_ctrl));
-    if (retval < 0) {
+    if (retval <= 0) {
         TPD_DMESG("Error sensor can not wake up\n");
         goto out;
     }
@@ -1727,7 +1735,7 @@ static int tpd_sw_power(struct i2c_client *client, int on)
                 ts->f01.ctrl_base,
                 &device_ctrl,
                 sizeof(device_ctrl));
-        if (retval < 0) {
+        if (retval <= 0) {
             TPD_DMESG("Error touch can not leave very-low power state\n");
             goto out;
         }
@@ -1741,7 +1749,7 @@ static int tpd_sw_power(struct i2c_client *client, int on)
                 ts->f01.ctrl_base,
                 &device_ctrl,
                 sizeof(device_ctrl));
-        if (retval < 0) {
+        if (retval <= 0) {
             TPD_DMESG("Error touch can not enter very-low power state\n");
             goto out;
         }
@@ -1768,7 +1776,7 @@ static int tpd_clear_interrupt(struct i2c_client *client)
     int retval = 0;
     u8 status = 0;
     retval = tpd_i2c_read_data(client, ts->f01.data_base + 1, &status, 1);
-    if (retval < 0){
+    if (retval <= 0){
         dev_err(&client->dev,
                 "%s: Failed to enable attention interrupt\n",
                 __func__);
@@ -1854,7 +1862,7 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
     mutex_init(&(ts->io_ctrl_mutex));
 
     retval = tpd_rmi4_read_pdt(ts);
-    if (retval < 0) {
+    if (retval <= 0) {
         TPD_DMESG("Failed to query device\n");
         goto err_query_device;
     }
@@ -1908,6 +1916,11 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 #ifdef TPD_UPDATE_FIRMWARE
     synaptics_rmi4_detection_work(NULL);
     synaptics_fw_updater_s3203(synaImage);
+
+    retval = tpd_rmi4_read_pdt(ts);
+    if (retval <= 0) {
+        TPD_DMESG("TPD_UPDATE_FIRMWARE Failed to tpd_rmi4_read_pdt\n");
+    }
 #endif
 
     tpd_i2c_read_data(client, ts->f11.ctrl_base+6, &TP_Max_X,2);
@@ -1961,9 +1974,8 @@ static int tpd_local_init(void)
         return -1;
     }
 
-#ifdef TPD_HAVE_BUTTON
-         tpd_button_setting(TPD_KEY_COUNT, tpd_keys_local, tpd_keys_dim_local);
-#endif
+    if(touch_cust_ssb_data.touch_ssb_data[3].use_tpd_buttom == 1)
+         tpd_button_setting(TPD_KEY_COUNT, touch_cust_ssb_data.touch_ssb_data[3].tpd_key_local, touch_cust_ssb_data.touch_ssb_data[3].tpd_key_dim_local);
 
 #if (defined(TPD_WARP_START) && defined(TPD_WARP_END))
     TPD_DO_WARP = 1;
@@ -2024,7 +2036,7 @@ static void tpd_suspend(struct early_suspend *h)
 
 
 static struct tpd_driver_t tpd_device_driver = {
-    .tpd_device_name = "synaptics",
+    .tpd_device_name = "synaptics_s3203",
     .tpd_local_init = tpd_local_init,
     .suspend = tpd_suspend,
     .resume = tpd_resume,
@@ -2044,9 +2056,15 @@ static int __init tpd_driver_init(void)
         return -1;
     }
 #endif
+    printk("synaptics touch panel driver init\n");
 
-    TPD_DMESG("synaptics touch panel driver init\n");
-    i2c_register_board_info(0, &i2c_tpd, 1);
+    printk("touch tpd_driver_init, i2c_number:%d\n", touch_cust_ssb_data.touch_ssb_data[3].i2c_number);
+
+    i2c_register_board_info(touch_cust_ssb_data.touch_ssb_data[3].i2c_number, &i2c_tpd, 1);
+
+    //add for ssb support
+    tpd_device_driver.tpd_have_button = touch_cust_ssb_data.touch_ssb_data[3].use_tpd_buttom;
+
     if(tpd_driver_add(&tpd_device_driver) < 0)
         TPD_DMESG("Error Add synaptics driver failed\n");
     return 0;

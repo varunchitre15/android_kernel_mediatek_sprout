@@ -40,7 +40,7 @@
 #define TPD_YMAX_BYD        900  //LINE <tp> <DATE20130508> <TP YMAX> zhangxiaofei
 #define TPD_BUTTON_HEIGHT    854
 #define TPD_Y_OFFSET        6
-#define DEBUG_ON            1
+#define DEBUG_ON            0
 
 #define KEYCODE_APP_SWITCH KEY_F17
 
