@@ -86,14 +86,10 @@ static void dw8250_serial_out(struct uart_port *p, int offset, int value)
 {
 	struct dw8250_data *d = p->private_data;
 
-
 	if (offset == UART_MCR)
 		d->last_mcr = value;
 
 	writeb(value, p->membase + (offset << p->regshift));
-
-	offset <<= p->regshift;
-	writeb(value, p->membase + offset);
 
 	/* Make sure LCR write wasn't ignored */
 	if (offset == UART_LCR) {
@@ -114,13 +110,6 @@ static unsigned int dw8250_serial_in(struct uart_port *p, int offset)
 	unsigned int value = readb(p->membase + (offset << p->regshift));
 
 	return dw8250_modify_msr(p, offset, value);
-}
-
-/* Read Back (rb) version to ensure register access ording. */
-static void dw8250_serial_out_rb(struct uart_port *p, int offset, int value)
-{
-	dw8250_serial_out(p, offset, value);
-	dw8250_serial_in(p, UART_LCR);
 }
 
 static void dw8250_serial_out32(struct uart_port *p, int offset, int value)

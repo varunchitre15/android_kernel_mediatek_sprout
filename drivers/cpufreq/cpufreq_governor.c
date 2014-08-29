@@ -178,9 +178,9 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
 	if (!policy->governor_enabled)
 		return;
 
-	if (!all_cpus)
+	if (!all_cpus) {
 		__gov_queue_work(smp_processor_id(), dbs_data, delay);
-	else {
+	} else {
 		for_each_cpu(i, policy->cpus)
 			__gov_queue_work(i, dbs_data, delay);
 	}

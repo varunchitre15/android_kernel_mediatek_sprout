@@ -1510,10 +1510,7 @@ static int acm_resume(struct usb_interface *intf)
 		 * do the write path at all cost
 		 */
 		if (rv < 0)
-		{
-			MYDBG("urb fail(%d)\n", rv);
 			goto out;
-		}
 
 		rv = acm_submit_read_urbs(acm, GFP_ATOMIC);
 	}

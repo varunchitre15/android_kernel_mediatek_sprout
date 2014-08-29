@@ -941,14 +941,14 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
 			runtime = rt_rq->rt_runtime;
 			rt_rq->rt_time -= min(rt_rq->rt_time, overrun*runtime);
 			if (rt_rq->rt_throttled) {
-				printk_sched("sched: cpu=%d, [%llu -> %llu]"
+				printk_deferred("sched: cpu=%d, [%llu -> %llu]"
 					     " -= min(%llu, %d*[%llu -> %llu])"
 					     "\n", i, rt_time_pre,
 					     rt_rq->rt_time, rt_time_pre,
 					     overrun, runtime_pre, runtime);
 			}
 			if (rt_rq->rt_throttled && rt_rq->rt_time < runtime) {
-				printk_sched("sched: RT throttling inactivated"
+				printk_deferred("sched: RT throttling inactivated"
 					     " cpu=%d\n", i);
 				rt_rq->rt_throttled = 0;
 #ifdef CONFIG_MT_RT_SCHED_CRIT
@@ -1021,7 +1021,7 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 		struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
 		int cpu = rq_cpu(rt_rq->rq);
 
-		printk_sched("sched: cpu=%d rt_time %llu <-> runtime"
+		printk_deferred("sched: cpu=%d rt_time %llu <-> runtime"
 			     " [%llu -> %llu], exec_delta_time[%llu]"
 			     ", clock_task[%llu], exec_start[%llu]\n",
 			     cpu, rt_rq->rt_time, runtime_pre, runtime,
@@ -1040,7 +1040,7 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 
 		//	if (!once) {
 		//		once = true;
-				printk_sched("sched: RT throttling activated cpu=%d\n",
+				printk_deferred("sched: RT throttling activated cpu=%d\n",
 					cpu);
 		//	}
 #ifdef CONFIG_MT_RT_SCHED_CRIT
