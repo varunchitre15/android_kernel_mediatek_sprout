@@ -47,6 +47,7 @@
 #include <mach/mt_touch_ssb_cust.h>
 #include <mach/mt_keypad_ssb_cust.h>
 #include <mach/mt_auxadc_ssb_cust.h>
+#include <mach/accdet_ssb.h>
 
 #define SERIALNO_LEN 32
 static char serial_number[SERIALNO_LEN];
@@ -57,6 +58,8 @@ extern u32 g_devinfo_data[];
 extern u32 g_devinfo_data_size;
 extern void adjust_kernel_cmd_line_setting_for_console(char*, char*);
 unsigned int mtk_get_max_DRAM_size(void);
+static struct accdet_ssb_data accdet_data ;
+struct accdet_ssb_data *accdet_tuning_data = NULL;
 
 struct {
 	u32 base;
@@ -1385,6 +1388,10 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
             parse_ccci_dfo_setting(&tags->u.dfo_data, DFO_BOOT_COUNT);
             parse_eemcs_dfo_setting(&tags->u.dfo_data, DFO_BOOT_COUNT);
             mtkfb_parse_dfo_setting(&tags->u.dfo_data, DFO_BOOT_COUNT);
+        }
+		else if (tags->hdr.tag == ATAG_ACCDET_TAG){
+            accdet_data = tags->u.accdet_mode_data;
+            accdet_tuning_data = &accdet_data;
         }
 		else if(tags->hdr.tag == ATAG_MDINFO_DATA) {
             printk(KERN_ALERT "Get MD inf from META\n");

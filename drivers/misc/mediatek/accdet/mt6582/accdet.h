@@ -43,9 +43,9 @@
 #include <linux/input.h>
 #include <linux/wakelock.h>
 #include <linux/time.h>
-
 #include <linux/string.h>
 
+#include <mach/accdet_ssb.h>
 #include <mach/mt_typedefs.h>
 #include <mach/mt_reg_base.h>
 #include <mach/irqs.h>

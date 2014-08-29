@@ -20,6 +20,7 @@
 #include <mach/mt_touch_ssb_cust.h>
 #include <mach/mt_keypad_ssb_cust.h>
 #include <mach/mt_auxadc_ssb_cust.h>
+#include <mach/accdet_ssb.h>
 
 #define COMMAND_LINE_SIZE 1024
 
@@ -246,6 +247,7 @@ struct tag {
         struct tag_para_touch_ssb_data touch_ssb_cust;
         struct tag_para_keypad_ssb_data keypad_ssb_cust;
         struct tag_para_auxadc_ssb_data auxadc_ssb_cust;
+        struct accdet_ssb_data accdet_mode_data;
         struct tag_lcminfo_data lcminfo_data;
         struct tag_para_lcm_data lcm_data;
 	} u;
