@@ -64,6 +64,12 @@
 // ---------------------------------------------------------------------------
 
 static LCM_UTIL_FUNCS lcm_util ;
+static struct LCM_setting_table *para_init_table = NULL;
+static unsigned int para_init_size = 0;
+static LCM_PARAMS *para_params = NULL;
+
+static unsigned int lcm_driver_id = 0x0;
+static unsigned int lcm_module_id = 0x0;
 
 #define SET_RESET_PIN(v)                                    (lcm_util.set_reset_pin((v)))
 
@@ -125,12 +131,53 @@ static LCM_setting_table_V3 lcm_initialization_setting[] = {
 };
 
 
+static void push_table(struct LCM_setting_table *table, unsigned int count, unsigned char force_update)
+{
+    unsigned int i;
+
+    for(i = 0; i < count; i++) {
+
+        unsigned cmd;
+        cmd = table[i].cmd;
+
+        switch (cmd) {
+
+            case REGFLAG_DELAY :
+                MDELAY(table[i].count);
+                break;
+
+            case REGFLAG_END_OF_TABLE :
+                break;
+
+            default:
+                dsi_set_cmdq_V2(cmd, table[i].count, table[i].para_list, force_update);
+           }
+    }
+
+}
+
+
 // ---------------------------------------------------------------------------
 //  LCM Driver Implementations
 // ---------------------------------------------------------------------------
+static void lcm_get_id(unsigned int* driver_id, unsigned int* module_id)
+{
+    *driver_id = lcm_driver_id;
+    *module_id = lcm_module_id;
+}
+
+
 static void lcm_set_util_funcs(const LCM_UTIL_FUNCS *util)
 {
     memcpy(&lcm_util, util, sizeof(LCM_UTIL_FUNCS));
+}
+
+
+static void lcm_set_params(struct LCM_setting_table *init_table, unsigned int init_size, LCM_PARAMS *params)
+{
+    para_init_table = init_table;
+    para_init_size = init_size;
+    para_params = params;
 }
 
 
@@ -139,15 +186,21 @@ static void lcm_get_params(LCM_PARAMS *params)
 
         memset(params, 0, sizeof(LCM_PARAMS));
 
+    if (para_params != NULL)
+    {
+        memcpy(params, para_params, sizeof(LCM_PARAMS));
+    }
+    else
+    {
         params->type   = LCM_TYPE_DSI;
 
         params->width  = FRAME_WIDTH;
         params->height = FRAME_HEIGHT;
 
         #if (LCM_DSI_CMD_MODE)
-        params->dsi.mode   = CMD_MODE;
+            params->dsi.mode   = CMD_MODE;
         #else
-        params->dsi.mode   = SYNC_PULSE_VDO_MODE; //SYNC_PULSE_VDO_MODE;//BURST_VDO_MODE;
+            params->dsi.mode   = SYNC_PULSE_VDO_MODE; //SYNC_PULSE_VDO_MODE;//BURST_VDO_MODE;
         #endif
 
         // DSI
@@ -160,16 +213,16 @@ static void lcm_get_params(LCM_PARAMS *params)
         // Video mode setting
         params->dsi.PS=LCM_PACKED_PS_24BIT_RGB888;
 
-    params->dsi.vertical_sync_active                =4;
-    params->dsi.vertical_backporch                    = 16;
-    params->dsi.vertical_frontporch                    = 10;
-    params->dsi.vertical_active_line                = FRAME_HEIGHT;
+        params->dsi.vertical_sync_active                =4;
+        params->dsi.vertical_backporch                    = 16;
+        params->dsi.vertical_frontporch                    = 10;
+        params->dsi.vertical_active_line                = FRAME_HEIGHT;
 
 
-    params->dsi.horizontal_sync_active                = 10;///////////////20 20 4  20  14  6
-     params->dsi.horizontal_backporch                = 80;
-    params->dsi.horizontal_frontporch                = 80;
-    params->dsi.horizontal_active_pixel                = FRAME_WIDTH;
+        params->dsi.horizontal_sync_active                = 10;///////////////20 20 4  20  14  6
+        params->dsi.horizontal_backporch                = 80;
+        params->dsi.horizontal_frontporch                = 80;
+        params->dsi.horizontal_active_pixel                = FRAME_WIDTH;
 
         //params->dsi.LPX=8;
 
@@ -180,26 +233,35 @@ static void lcm_get_params(LCM_PARAMS *params)
         params->dsi.PLL_CLOCK=234;
         params->dsi.pll_div1=0;        // div1=0,1,2,3;div1_real=1,2,4,4 ----0: 546Mbps  1:273Mbps
         params->dsi.pll_div2=0;        // div2=0,1,2,3;div1_real=1,2,4,4
-#if (LCM_DSI_CMD_MODE)
-        params->dsi.fbk_div =7;
-#else
-        params->dsi.fbk_div =7;    // fref=26MHz, fvco=fref*(fbk_div+1)*2/(div1_real*div2_real)
-#endif
+        #if (LCM_DSI_CMD_MODE)
+            params->dsi.fbk_div =7;
+        #else
+            params->dsi.fbk_div =7;    // fref=26MHz, fvco=fref*(fbk_div+1)*2/(div1_real*div2_real)
+        #endif
         //params->dsi.compatibility_for_nvk = 1;        // this parameter would be set to 1 if DriverIC is NTK's and when force match DSI clock for NTK's
-
+    }
 }
 
 
 static void lcm_init(void)
 {
+    int i, j;
+    int size;
+
     SET_RESET_PIN(1);
     SET_RESET_PIN(0);
     MDELAY(10);
     SET_RESET_PIN(1);
     MDELAY(120);
 
+    if (para_init_table != NULL)
+    {
+        push_table(para_init_table, para_init_size, 1);
+    }
+    else
+    {
         dsi_set_cmdq_V3(lcm_initialization_setting,sizeof(lcm_initialization_setting)/sizeof(lcm_initialization_setting[0]),1);
-
+    }
 }
 
 
@@ -301,19 +363,21 @@ static unsigned int lcm_compare_id(void)
     id_low = buffer[2];
     id = (id_high<<8) | id_low;
 
-    #ifdef BUILD_LK
+    lcm_driver_id = id;
+    // TBD
+    lcm_module_id = 0x0;
 
-        printf("ILI9806 uboot %s \n", __func__);
-           printf("%s id = 0x%08x \n", __func__, id);
-    #else
-        printk("ILI9806 kernel %s \n", __func__);
-        printk("%s id = 0x%08x \n", __func__, id);
+#ifdef BUILD_LK
 
-    #endif
+    printf("ILI9806 uboot %s \n", __func__);
+    printf("%s id = 0x%08x \n", __func__, id);
+#else
+    printk("ILI9806 kernel %s \n", __func__);
+    printk("%s id = 0x%08x \n", __func__, id);
 
+#endif
 
     return (LCM_ID_ILI9806 == id)?1:0;
-
 }
 
 // zhoulidong  add for lcm detect (start)
@@ -414,13 +478,15 @@ LCM_DRIVER ili9806c_dsi_vdo_txd_lcm_drv=
 {
     .name            = "ili9806c_dsi_vdo_txd",
     .set_util_funcs = lcm_set_util_funcs,
+    .set_params     = lcm_set_params,
+    .get_id     = lcm_get_id,
     .get_params     = lcm_get_params,
     .init           = lcm_init,
     .suspend        = lcm_suspend,
     .resume         = lcm_resume,
     .compare_id    =  rgk_lcm_compare_id,
-//    .esd_check = lcm_esd_check,
-//    .esd_recover = lcm_esd_recover,
+    //    .esd_check = lcm_esd_check,
+    //    .esd_recover = lcm_esd_recover,
 #if (LCM_DSI_CMD_MODE)
     .update         = lcm_update,
 #endif

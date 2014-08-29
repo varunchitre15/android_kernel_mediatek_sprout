@@ -178,6 +178,13 @@ struct tag_mdinfo_data{
 	u8 md_type[4];
 };
 
+
+#define ATAG_LCMINFO_DATA         (0x41000807)
+struct tag_lcminfo_data{
+   u32 lcm_index;
+};
+
+
 #define ATAG_TEE_DATA 0x41000808
 
 /* general memory descriptor */
@@ -185,6 +192,11 @@ typedef struct {
     u64 start;
     u64 size;
 } mem_desc_t;
+
+
+struct tag_para_lcm_data{
+    u32 version;
+};
 
 /*Para bins information*/
 #define ATAG_TOUCH_CUST_TAG  (0x41000817)
@@ -234,6 +246,8 @@ struct tag {
         struct tag_para_touch_ssb_data touch_ssb_cust;
         struct tag_para_keypad_ssb_data keypad_ssb_cust;
         struct tag_para_auxadc_ssb_data auxadc_ssb_cust;
+        struct tag_lcminfo_data lcminfo_data;
+        struct tag_para_lcm_data lcm_data;
 	} u;
 };
 

@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -42,6 +42,10 @@ static LCD_IF_ID ctrl_if = LCD_IF_PARALLEL_0;
 static LCM_PARAMS s_lcm_params= {0};
 static BOOL disp_use_mmu;
 LCM_PARAMS *lcm_params = &s_lcm_params;
+
+static BOOL isLCMParaLoaded                     = FALSE;
+
+
 int disp_module_clock_on(DISP_MODULE_ENUM module, char* caller_name);
 int disp_module_clock_off(DISP_MODULE_ENUM module, char* caller_name);
 
@@ -87,15 +91,15 @@ int disphal_process_dbg_opt(const char *opt)
             else
             {
                 //DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "Before: BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
-				LCD_TE_Enable(TRUE);
-				DSI_TE_Enable(TRUE);
-				//DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "After : BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
+                LCD_TE_Enable(TRUE);
+                DSI_TE_Enable(TRUE);
+                //DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "After : BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
 
             }
         } else if (0 == strncmp(opt + 3, "off", 3)) {
 
             //DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "Before: BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
-			LCD_TE_Enable(FALSE);
+            LCD_TE_Enable(FALSE);
             DSI_TE_Enable(FALSE);
             //DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "After : BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
 
@@ -148,7 +152,7 @@ int disphal_process_dbg_opt(const char *opt)
             goto Error;
         }
     }
-	else if (0 == strncmp(opt, "dsilog:", 7))
+    else if (0 == strncmp(opt, "dsilog:", 7))
     {
         if (0 == strncmp(opt + 7, "on", 2)) {
             DSI_Enable_Log(true);
@@ -178,13 +182,13 @@ Error:
 const DISP_IF_DRIVER* disphal_get_if_driver(void)
 {
     switch(lcm_params->type)
-	{
-		case LCM_TYPE_DBI : return DISP_GetDriverDBI(); break;
-		case LCM_TYPE_DPI : return DISP_GetDriverDPI(); break;
-		case LCM_TYPE_DSI : return DISP_GetDriverDSI(); break;
-		default : ASSERT(0);
-	}
-	return NULL;
+    {
+        case LCM_TYPE_DBI : return DISP_GetDriverDBI(); break;
+        case LCM_TYPE_DPI : return DISP_GetDriverDPI(); break;
+        case LCM_TYPE_DSI : return DISP_GetDriverDSI(); break;
+        default : ASSERT(0);
+    }
+    return NULL;
 }
 
 static void lcm_set_reset_pin(UINT32 value)
@@ -250,16 +254,16 @@ static const LCM_UTIL_FUNCS lcm_utils =
     .send_cmd           = lcm_send_cmd,
     .send_data          = lcm_send_data,
     .read_data          = lcm_read_data,
-    .dsi_set_cmdq		= (void (*)(unsigned int *, unsigned int, unsigned char))DSI_set_cmdq,
-    .dsi_set_cmdq_V2	= DSI_set_cmdq_V2,
-    .dsi_set_cmdq_V3	= (void (*)(LCM_setting_table_V3 *, unsigned int, unsigned char))DSI_set_cmdq_V3,	
-    .dsi_write_cmd		= DSI_write_lcm_cmd,
-    .dsi_write_regs 	= DSI_write_lcm_regs,
-    .dsi_read_reg		= DSI_read_lcm_reg,
+    .dsi_set_cmdq        = (void (*)(unsigned int *, unsigned int, unsigned char))DSI_set_cmdq,
+    .dsi_set_cmdq_V2    = DSI_set_cmdq_V2,
+    .dsi_set_cmdq_V3    = (void (*)(LCM_setting_table_V3 *, unsigned int, unsigned char))DSI_set_cmdq_V3,
+    .dsi_write_cmd        = DSI_write_lcm_cmd,
+    .dsi_write_regs     = DSI_write_lcm_regs,
+    .dsi_read_reg        = DSI_read_lcm_reg,
     .dsi_dcs_read_lcm_reg       = DSI_dcs_read_lcm_reg,
     .dsi_dcs_read_lcm_reg_v2    = DSI_dcs_read_lcm_reg_v2,
     /** FIXME: GPIO mode should not be configured in lcm driver
-    REMOVE ME after GPIO customization is done    
+    REMOVE ME after GPIO customization is done
     */
     .set_gpio_out       = (int (*)(unsigned int, unsigned int))mt_set_gpio_out,
     .set_gpio_mode        = (int (*)(unsigned int, unsigned int))mt_set_gpio_mode,
@@ -268,23 +272,23 @@ static const LCM_UTIL_FUNCS lcm_utils =
 };
 
 LCM_UTIL_FUNCS fbconfig_lcm_utils =
-	{
+    {
     .set_reset_pin      = lcm_set_reset_pin,
     .udelay             = lcm_udelay,
     .mdelay             = lcm_mdelay,
     .send_cmd           = lcm_send_cmd,
     .send_data          = lcm_send_data,
     .read_data          = lcm_read_data,
-    .dsi_set_cmdq		= (void (*)(unsigned int *, unsigned int, unsigned char))DSI_set_cmdq,
-    .dsi_set_cmdq_V2	= DSI_set_cmdq_V2,
-    .dsi_set_cmdq_V3	= (void (*)(LCM_setting_table_V3 *, unsigned int, unsigned char))DSI_set_cmdq_V3,	
-    .dsi_write_cmd		= DSI_write_lcm_cmd,
-    .dsi_write_regs 	= DSI_write_lcm_regs,
-    .dsi_read_reg		= DSI_read_lcm_reg,
+    .dsi_set_cmdq        = (void (*)(unsigned int *, unsigned int, unsigned char))DSI_set_cmdq,
+    .dsi_set_cmdq_V2    = DSI_set_cmdq_V2,
+    .dsi_set_cmdq_V3    = (void (*)(LCM_setting_table_V3 *, unsigned int, unsigned char))DSI_set_cmdq_V3,
+    .dsi_write_cmd        = DSI_write_lcm_cmd,
+    .dsi_write_regs     = DSI_write_lcm_regs,
+    .dsi_read_reg        = DSI_read_lcm_reg,
     .dsi_dcs_read_lcm_reg       = DSI_dcs_read_lcm_reg,
     .dsi_dcs_read_lcm_reg_v2    = DSI_dcs_read_lcm_reg_v2,
     /** FIXME: GPIO mode should not be configured in lcm driver
-    REMOVE ME after GPIO customization is done    
+    REMOVE ME after GPIO customization is done
     */
     .set_gpio_out       = (int (*)(unsigned int, unsigned int))mt_set_gpio_out,
     .set_gpio_mode        = (int (*)(unsigned int, unsigned int))mt_set_gpio_mode,
@@ -310,7 +314,7 @@ static __inline LCD_IF_WIDTH to_lcd_if_width(LCM_DBI_DATA_WIDTH data_width)
 
 int disphal_get_fb_alignment(void)
 {
-	return MTK_FB_ALIGNMENT;
+    return MTK_FB_ALIGNMENT;
 }
 
 int disphal_init_ctrl_if(void)
@@ -325,7 +329,7 @@ int disphal_init_ctrl_if(void)
     {
     case LCM_CTRL_NONE :
     case LCM_CTRL_GPIO :
-    	return 0;
+        return 0;
 
     case LCM_CTRL_SERIAL_DBI :
         ASSERT(dbi->port <= 1);
@@ -402,7 +406,7 @@ int disphal_panel_enable(const LCM_DRIVER *lcm_drv, struct mutex* pLcmCmdMutex, 
     if (enable)
     {
         if(lcm_params->type==LCM_TYPE_DSI && lcm_params->dsi.mode != CMD_MODE)
-        {		
+        {
             DSI_SetMode(CMD_MODE);
         }
         mutex_lock(pLcmCmdMutex);
@@ -428,7 +432,7 @@ int disphal_panel_enable(const LCM_DRIVER *lcm_drv, struct mutex* pLcmCmdMutex, 
             DSI_CHECK_RET(DSI_WaitForNotBusy());
 
         if (lcm_params->type==LCM_TYPE_DSI && lcm_params->dsi.mode != CMD_MODE)
-        {		
+        {
             DPI_CHECK_RET(DPI_DisableClk());
             //msleep(200);
             //DSI_Reset();
@@ -631,26 +635,124 @@ DISP_STATUS disphal_change_updatespeed(unsigned int speed)
 int disphal_prepare_suspend(void)
 {
     if(lcm_params->type==LCM_TYPE_DSI && lcm_params->dsi.mode != CMD_MODE)
-    {		
+    {
         DSI_SetMode(CMD_MODE);
     }
     if(clk_is_force_on(MT_CG_DISP0_SMI_LARB0) || clk_is_force_on(MT_CG_DISP0_SMI_COMMON))
     {
-    	printk("[DDP] MT_CG_DISP0_SMI_LARB0 is forced on\n");
-    	clk_clr_force_on(MT_CG_DISP0_SMI_LARB0);
-    	clk_clr_force_on(MT_CG_DISP0_SMI_COMMON);
+        printk("[DDP] MT_CG_DISP0_SMI_LARB0 is forced on\n");
+        clk_clr_force_on(MT_CG_DISP0_SMI_LARB0);
+        clk_clr_force_on(MT_CG_DISP0_SMI_COMMON);
     }
     return 0;
 }
 
+
+unsigned char lcm_buf[10 * 1024];  // preserve 10K buffer
+unsigned int lcm_size = 0;
+unsigned int lcm_initialization_size_ssb;
+struct LCM_setting_table lcm_initialization_ssb[MAX_INIT_CNT];
+LCM_PARAMS lcm_params_ssb;
+unsigned int lcm_index_ssb = 0xFF;
+
+
+int parse_tag_lcm_fixup(void *buf, unsigned int size)
+{
+    printk("[LCM] read buf = 0x%x, %d\n", (unsigned int)buf, size);
+
+    memcpy(lcm_buf, (unsigned char*)buf, size);
+    lcm_size = size;
+
+    return 0;
+}
+
+
+int parse_tag_lcminfo_data_fixup(unsigned int index)
+{
+    printk("[LCM] read index = %d\n", index);
+
+    if (0xFF != index)
+    {
+        lcm_index_ssb = index;
+    }
+
+    return 0;
+}
+
+
+int disp_drv_read_para(unsigned char *buf, unsigned int* count, unsigned int driver_id[], unsigned int module_id[])
+{
+    int result = 0;
+    int index=0,offset,len,inaddr;
+    int i, j, curr;
+    unsigned int size = 0;
+    struct lcm_para_header *pfile_header;
+    struct lcm_custom_header *pcustom_header;
+
+
+    if (NULL == buf)
+    {
+        return -1;
+    }
+
+    pfile_header = (struct lcm_para_header *)buf;
+
+    *count = pfile_header->count;
+    for(i=0; i<pfile_header->count; i++)
+    {
+        pcustom_header = &(pfile_header->header_list[i]);
+        driver_id[i] = pcustom_header->driver_id;
+        module_id[i] = pcustom_header->module_id;
+    }
+
+    return 0;
+}
+
+
 const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm_index)
 {
+    int result = 0;
+    unsigned int count = 0;
+    unsigned int size = 0;
+    unsigned char* buf = NULL;
+    unsigned int driver_id[MAX_LCM_CNT];
+    unsigned int module_id[MAX_LCM_CNT];
+
     LCM_DRIVER *lcm = NULL;
     bool isLCMFound = false;
+
+
     printk("[LCM Auto Detect], we have %d lcm drivers built in\n", lcm_count);
-    printk("[LCM Auto Detect], try to find driver for [%s]\n", 
+    printk("[LCM Auto Detect], try to find driver for [%s]\n",
         (lcm_name==NULL)?"unknown":lcm_name);
 
+    if (FALSE == isLCMParaLoaded)
+    {
+        if (0 != lcm_size)
+        {
+            size = lcm_size;
+            buf = lcm_buf;
+
+            printk("%s read_para_size() is 0x%x, %d\n", "lcm.bin", (unsigned int)buf, size);
+
+            memset(driver_id, 0x0, sizeof(unsigned int)*MAX_LCM_CNT);
+            memset(module_id, 0x0, sizeof(unsigned int)*MAX_LCM_CNT);
+            result = disp_drv_read_para(buf, &count, driver_id, module_id);
+            if (result < 0)
+            {
+                printk("%s read_para() is failed! \n", "lcm.bin");
+                ASSERT(0);
+            }
+        }
+        else
+        {
+            printk("%s does not exist. \n", "lcm.bin");
+        }
+
+        isLCMParaLoaded = TRUE;
+    }
+
+#if 0
     if(lcm_count == 1)
     {
         // we need to verify whether the lcm is connected
@@ -663,6 +765,7 @@ const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm
         goto done;
     }
     else
+#endif
     {
         int i;
         for(i = 0;i < lcm_count;i++)
@@ -691,7 +794,7 @@ const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm
                     printk("\t\t[fail]\n");
                 }
             }
-            else 
+            else
             {
                 if(LCM_TYPE_DSI == lcm_params->type)
                 {
@@ -717,6 +820,74 @@ const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm
 done:
     if (isLCMFound)
     {
+        int ret = 0;
+        int i, j, index = 0;
+        int curr;
+        int offset,len,inaddr;
+        BOOL para_match = FALSE;
+        unsigned int data_array[3];
+        UINT8 buffer[4];
+        unsigned int lcm_driver_id = 0, lcm_module_id = 0;
+        struct lcm_para_header *pfile_header;
+        struct lcm_custom_header *pcustom_header;
+
+
+        para_match = TRUE;
+        index = lcm_index_ssb;
+        printk("[LCM] para update =%d,%d,%d\n", index, count, size);
+        if ((TRUE == para_match) && (index < count) && (0 != size))
+        {
+            printk("[LCM] para matched!! index=%d\n", index);
+
+            pfile_header = (struct lcm_para_header *)buf;
+            pcustom_header = &(pfile_header->header_list[index]);
+
+            curr = pcustom_header->node_list[0].offset;
+            len = pcustom_header->node_list[0].len;
+
+            // load first initial para
+            i = 0;
+            offset = curr + len;
+            while (curr < offset)
+            {
+                lcm_initialization_ssb[i].cmd = buf[curr];
+                curr++;
+                lcm_initialization_ssb[i].count = buf[curr];
+                curr++;
+
+                if (REGFLAG_DELAY != lcm_initialization_ssb[i].cmd)
+                {
+                    for (j=0; j<lcm_initialization_ssb[i].count; j++)
+                    {
+                        lcm_initialization_ssb[i].para_list[j] = buf[curr+j];
+                    }
+                    curr += j;
+                }
+                i++;
+
+                if ((i == MAX_INIT_CNT) && (curr < offset))
+                {
+                    printk("lcm initialization ssb out of range error!\n");
+                }
+            }
+            lcm_initialization_size_ssb = i;
+
+            // load second initial para
+            curr = pcustom_header->node_list[1].offset;
+            len = pcustom_header->node_list[1].len;
+            memcpy(&lcm_params_ssb, buf+curr, len);
+
+            // update lcm initial table & parameter
+            if (NULL != lcm->set_params)
+            {
+                lcm->set_params(&(lcm_initialization_ssb[0]), lcm_initialization_size_ssb, &lcm_params_ssb);
+            }
+            else
+            {
+                printk("[LCM] set para failed. \n");
+            }
+        }
+
         memset((void*)&s_lcm_params, 0, sizeof(LCM_PARAMS));
         lcm->get_params(&s_lcm_params);
         return lcm;
@@ -766,19 +937,19 @@ int disphal_register_event(char* event_name, DISPHAL_EVENT_HANDLER event_handler
     }
     else if (strcmp(event_name, "DISP_ScrUpdStart") == 0)
     {
-    	if (LCM_TYPE_DSI == lcm_params->type) {
-    		DISP_SetInterruptCallback(DISP_DSI_SCREEN_UPDATE_START_INT, &cb);
-    	} else if (LCM_TYPE_DPI == lcm_params->type) {
-    		DISP_SetInterruptCallback(DISP_DPI_SCREEN_UPDATE_START_INT, &cb);
-    	}
+        if (LCM_TYPE_DSI == lcm_params->type) {
+            DISP_SetInterruptCallback(DISP_DSI_SCREEN_UPDATE_START_INT, &cb);
+        } else if (LCM_TYPE_DPI == lcm_params->type) {
+            DISP_SetInterruptCallback(DISP_DPI_SCREEN_UPDATE_START_INT, &cb);
+        }
     }
     else if (strcmp(event_name, "DISP_ScrUpdEnd") == 0)
     {
-    	if (LCM_TYPE_DSI == lcm_params->type) {
-    		DISP_SetInterruptCallback(DISP_DSI_SCREEN_UPDATE_END_INT, &cb);
-    	} else if (LCM_TYPE_DPI == lcm_params->type) {
-    		DISP_SetInterruptCallback(DISP_DPI_SCREEN_UPDATE_END_INT, &cb);
-    	}
+        if (LCM_TYPE_DSI == lcm_params->type) {
+            DISP_SetInterruptCallback(DISP_DSI_SCREEN_UPDATE_END_INT, &cb);
+        } else if (LCM_TYPE_DPI == lcm_params->type) {
+            DISP_SetInterruptCallback(DISP_DPI_SCREEN_UPDATE_END_INT, &cb);
+        }
     }
 
     return 0;
@@ -787,7 +958,7 @@ int disphal_register_event(char* event_name, DISPHAL_EVENT_HANDLER event_handler
 int disphal_enable_te(BOOL enable)
 {
     LCD_TE_Enable(enable);
-	return 0;
+    return 0;
 }
 
 extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
@@ -813,18 +984,18 @@ int disphal_enable_mmu(BOOL enable)
 
 int disphal_allocate_fb(struct resource* res, unsigned int* pa, unsigned int* va, unsigned int* dma_pa)
 {
-	int ret = 0;
+    int ret = 0;
     *pa = res->start;
     *va = (unsigned int) ioremap_nocache(res->start, res->end - res->start + 1);
     if (disp_use_mmu)
     {
         //m4u_alloc_mva(M4U_CLNTMOD_LCDC_UI, *pa, (res->end - res->start + 1), 0, 0, dma_pa);
-	ret = m4u_fill_linear_pagetable(*pa, res->end - res->start + 1);
-	if(ret)
-	{
-		printk("fill_linear_pagetable error, %d\n", ret);
-	}
-	*dma_pa = *pa;
+    ret = m4u_fill_linear_pagetable(*pa, res->end - res->start + 1);
+    if(ret)
+    {
+        printk("fill_linear_pagetable error, %d\n", ret);
+    }
+    *dma_pa = *pa;
         ASSERT(dma_pa);
         printk("[DISPHAL] FB MVA is 0x%08X PA is 0x%08X\n", *dma_pa, *pa);
     }
@@ -875,12 +1046,12 @@ int disphal_init_overlay_to_memory(void)
 {
     M4U_PORT_STRUCT portStruct;
     disp_module_clock_on(DISP_MODULE_WDMA0, "disphal overlay2mem");
-    portStruct.ePortID = DISP_WDMA;		   //hardware port ID, defined in M4U_PORT_ID_ENUM
-    portStruct.Virtuality = 1;						   
+    portStruct.ePortID = DISP_WDMA;           //hardware port ID, defined in M4U_PORT_ID_ENUM
+    portStruct.Virtuality = 1;
     portStruct.Security = 0;
     portStruct.domain = 0;            //domain : 0 1 2 3
     portStruct.Distance = 1;
-    portStruct.Direction = 0; 	
+    portStruct.Direction = 0;
     m4u_config_port(&portStruct);
     return 0;
 }
@@ -888,59 +1059,59 @@ int disphal_init_overlay_to_memory(void)
 int disphal_deinit_overlay_to_memory(void)
 {
     M4U_PORT_STRUCT portStruct;
-    portStruct.ePortID = DISP_WDMA;		   //hardware port ID, defined in M4U_PORT_ID_ENUM
+    portStruct.ePortID = DISP_WDMA;           //hardware port ID, defined in M4U_PORT_ID_ENUM
     portStruct.Virtuality = 0;
     portStruct.Security = 0;
-    portStruct.domain = 0;			  //domain : 0 1 2 3
+    portStruct.domain = 0;              //domain : 0 1 2 3
     portStruct.Distance = 1;
     portStruct.Direction = 0;
     m4u_config_port(&portStruct);
-    disp_module_clock_off(DISP_MODULE_WDMA0, "disphal overlay2mem");    
+    disp_module_clock_off(DISP_MODULE_WDMA0, "disphal overlay2mem");
     return 0;
 }
 unsigned int disphal_bls_query()
 {
-	return DSI_BLS_Query();
+    return DSI_BLS_Query();
 }
 
 void disphal_bls_enable(bool enable)
 {
-	DSI_BLS_Enable(enable);
+    DSI_BLS_Enable(enable);
 }
 
 unsigned int disphal_check_lcm(UINT32 color)
 {
-	unsigned int ret = 0;
+    unsigned int ret = 0;
     if(LCM_TYPE_DBI == lcm_params->type){//DBI
     }
     else if(LCM_TYPE_DPI == lcm_params->type){//DPI
     }
-    else if(LCM_TYPE_DSI == lcm_params->type){ //dsi 
-		ret = DSI_Check_LCM(color);
-		if(lcm_params->dsi.mode != CMD_MODE){
-			DSI_SetMode(lcm_params->dsi.mode);
-			DSI_clk_HS_mode(1);
-       		DSI_CHECK_RET(DSI_StartTransfer(FALSE));
-		}
+    else if(LCM_TYPE_DSI == lcm_params->type){ //dsi
+        ret = DSI_Check_LCM(color);
+        if(lcm_params->dsi.mode != CMD_MODE){
+            DSI_SetMode(lcm_params->dsi.mode);
+            DSI_clk_HS_mode(1);
+               DSI_CHECK_RET(DSI_StartTransfer(FALSE));
+        }
     }
     else
     {
         printk("DISP_AutoTest():unknown interface\n");
         ret = 0;
     }
-	return ret;
+    return ret;
 }
 
 
 void fbconfig_disp_set_te_enable(char enable)
 {
-	BOOL en =(BOOL)enable ;
-	DSI_TE_Enable(en);
+    BOOL en =(BOOL)enable ;
+    DSI_TE_Enable(en);
 }
 
 void fbconfig_disp_set_continuous_clock(int enable)
-{	
-	fbconfig_DSI_Continuous_HS(enable);
+{
+    fbconfig_DSI_Continuous_HS(enable);
 }
 
 

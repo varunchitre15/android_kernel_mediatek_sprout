@@ -45,7 +45,7 @@ extern LCM_DRIVER nt35582_mcu_lcm_drv;
 extern LCM_DRIVER nt35582_mcu_6575_lcm_drv;
 extern LCM_DRIVER nt35582_rgb_6575_lcm_drv;
 extern LCM_DRIVER hx8357b_lcm_drv;
-extern LCM_DRIVER hx8357c_hvga_dsi_cmd_drv;
+extern LCM_DRIVER hx8357c_hvga_dsi_cmd_lcm_drv;
 extern LCM_DRIVER hx8369_dsi_lcm_drv;
 extern LCM_DRIVER hx8369_dsi_6575_lcm_drv;
 extern LCM_DRIVER hx8369_dsi_6575_hvga_lcm_drv;
@@ -56,6 +56,7 @@ extern LCM_DRIVER hx8369b_wvga_dsi_vdo_drv;
 extern LCM_DRIVER hx8389b_qhd_dsi_vdo_drv;
 extern LCM_DRIVER hx8369_hvga_lcm_drv;
 extern LCM_DRIVER ili9481_lcm_drv;
+extern LCM_DRIVER ili9486_hvga_dsi_cmd_lcm_drv;
 extern LCM_DRIVER nt35582_lcm_drv;
 extern LCM_DRIVER s6d0170_lcm_drv;
 extern LCM_DRIVER spfd5461a_lcm_drv;
@@ -142,6 +143,7 @@ extern LCM_DRIVER auo_b079xat02_dsi_vdo_lcm_drv;
 extern LCM_DRIVER hx8389b_qhd_dsi_vdo_tianma055xdhp_lcm_drv;
 extern LCM_DRIVER cpt_claa101fp01_dsi_vdo_lcm_drv;
 extern LCM_DRIVER h070d_18dm_lcm_drv;
+extern LCM_DRIVER hx8379a_wvga_dsi_vdo_drv;
 extern LCM_DRIVER hx8394a_hd720_dsi_vdo_tianma_lcm_drv;
 extern LCM_DRIVER cpt_clap070wp03xg_sn65dsi83_lcm_drv;
 extern LCM_DRIVER nt35520_hd720_tm_lcm_drv;
@@ -198,6 +200,7 @@ LCM_DRIVER* lcm_driver_list[] =
 #if defined(ILI9806C_DSI_VDO_AZET_IPS)
     &ili9806c_dsi_vdo_azet_ips_lcm_drv,
 #endif
+
 #if defined(ILI9806C_DSI_VDO_TXD)
     &ili9806c_dsi_vdo_txd_lcm_drv,
 #endif
@@ -309,7 +312,7 @@ LCM_DRIVER* lcm_driver_list[] =
 #endif
 
 #if defined(HX8357C_HVGA_DSI_CMD)
-    &hx8357c_hvga_dsi_cmd_drv,
+    &hx8357c_hvga_dsi_cmd_lcm_drv,
 #endif
 
 #if defined(R61408)
@@ -394,6 +397,10 @@ LCM_DRIVER* lcm_driver_list[] =
 
 #if defined(ILI9481)
     &ili9481_lcm_drv,
+#endif
+
+#if defined(ILI9486_HVGA_DSI_CMD)
+    &ili9486_hvga_dsi_cmd_lcm_drv,
 #endif
 
 #if defined(NT35582)
@@ -645,9 +652,14 @@ LCM_DRIVER* lcm_driver_list[] =
     &h070d_18dm_lcm_drv,
 #endif
 
+#if defined(HX8379A_WVGA_DSI_VDO)
+    &hx8379a_wvga_dsi_vdo_drv,
+#endif
+
 #if defined(HX8394A_HD720_DSI_VDO_TIANMA)
     &hx8394a_hd720_dsi_vdo_tianma_lcm_drv,
 #endif
+
 #if defined(ILI9806C_DSI_VDO_DJN_FWVGA)
         &ili9806c_dsi_vdo_djn_fwvga_lcm_drv,
 #endif

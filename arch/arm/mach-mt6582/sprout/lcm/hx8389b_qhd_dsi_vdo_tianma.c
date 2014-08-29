@@ -25,38 +25,25 @@
 #else
     #include <mach/mt_gpio.h>
 #endif
-
-// ---------------------------------------------------------------------------
-//RGK add
-// ---------------------------------------------------------------------------
-#include <cust_adc.h>        // zhoulidong  add for lcm detect
-#if 0
-#define MIN_VOLTAGE (100)     // zhoulidong  add for lcm detect
-#define MAX_VOLTAGE (300)     // zhoulidong  add for lcm detect
-#else
-#define MIN_VOLTAGE (150)     //xiaoanxiang change for 6582
-#define MAX_VOLTAGE (270)     //xiaoanxiang change for 6582
-#endif
-
 // ---------------------------------------------------------------------------
 //  Local Constants
 // ---------------------------------------------------------------------------
 
-#define FRAME_WIDTH                                          (480)
-#define FRAME_HEIGHT                                         (800)
+#define FRAME_WIDTH  (540)
+#define FRAME_HEIGHT (960)
 
-#define LCM_ID_ILI9806                                    0x9816
+#define LCM_ID_HX8389B 0x89
 
 
 #ifndef TRUE
-    #define   TRUE     1
+    #define TRUE 1
 #endif
 
 #ifndef FALSE
-    #define   FALSE    0
+    #define FALSE 0
 #endif
 
- unsigned static int lcm_esd_test = FALSE;      ///only for ESD test
+ unsigned int lcm_esd_test = FALSE;      ///only for ESD test
 
 // ---------------------------------------------------------------------------
 //  Local Variables
@@ -70,10 +57,10 @@ static LCM_PARAMS *para_params = NULL;
 static unsigned int lcm_driver_id = 0x0;
 static unsigned int lcm_module_id = 0x0;
 
-#define SET_RESET_PIN(v)                                    (lcm_util.set_reset_pin((v)))
+#define SET_RESET_PIN(v)    (lcm_util.set_reset_pin((v)))
 
-#define UDELAY(n)                                             (lcm_util.udelay(n))
-#define MDELAY(n)                                             (lcm_util.mdelay(n))
+#define UDELAY(n) (lcm_util.udelay(n))
+#define MDELAY(n) (lcm_util.mdelay(n))
 
 
 // ---------------------------------------------------------------------------
@@ -89,94 +76,104 @@ static unsigned int lcm_module_id = 0x0;
 
 #define   LCM_DSI_CMD_MODE                            0
 
-// zhoulidong  add for lcm detect ,read adc voltage
-extern int IMM_GetOneChannelValue(int dwChannel, int data[4], int* rawdata);
-
-
 static LCM_setting_table_V3 lcm_initialization_setting[] = {
 
+    /*
+    Note :
+
+    Data ID will depends on the following rule.
+
+        count of parameters > 1    => Data ID = 0x39
+        count of parameters = 1    => Data ID = 0x15
+        count of parameters = 0    => Data ID = 0x05
+
+    Structure Format :
+
+    {DCS command, count of parameters, {parameter list}}
+    {REGFLAG_DELAY, milliseconds of time, {}},
+
+    ...
+
+    Setting ending by predefined flag
+
+    {REGFLAG_END_OF_TABLE, 0x00, {}}
+    */
+
+     {0x39,0xB9,3,{0xFF,0x83,0x89}},
+          {REGFLAG_ESCAPE_ID,REGFLAG_DELAY_MS_V3, 1, {}},
+
+    {0x39,0xBA,7,{0x41,0x93,0x00,0x16,0xA4,0x10,0x18}},
+        {REGFLAG_ESCAPE_ID,REGFLAG_DELAY_MS_V3, 1, {}},
+
+    {0x15,0xC6,1,{0xE8}},
+//------------ HX5186 set power-------------------------------//
+
+    {0x39,0xB1,19,{0x00,0x00,0x04,0xE8,0x99,0x10,0x11,0xD1,0xf1,0x36,
+                   0x3e,0x2A,0x2A,0x43,0x01,0x5a,0xF2,0x20,0x80}},
+        {REGFLAG_ESCAPE_ID,REGFLAG_DELAY_MS_V3, 10, {}},
+
+//------------------------------------------------------
+     {0x39,0xDE,3,{0x05,0x58,0x12}},
+
+     {0x39,0xB2,7,{0x00,0x00,0x78,0x0E,0x05,0x3F,0x80}},
+        {REGFLAG_ESCAPE_ID,REGFLAG_DELAY_MS_V3, 1, {}},
+
+     {0x39,0xB4,23,{0x80,0x08,0x00,0x32,0x10,0x07,0x32,0x10,0x02,0x32,
+                    0x10,0x00,0x37,0x05,0x40,0x0B,0x37,0x05,0x48,0x14,
+                    0x50,0x53,0x0a}},
+     {REGFLAG_ESCAPE_ID,REGFLAG_DELAY_MS_V3, 10, {}},
+     {0x39,0xD5,48,{0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x01,0x60,0x00,
+                    0x99,0x88,0x88,0x88,0x88,0x23,0x88,0x01,0x88,0x67,
+                    0x88,0x45,0x01,0x23,0x23,0x45,0x88,0x88,0x88,0x88,
+                    0x99,0x88,0x88,0x88,0x54,0x88,0x76,0x88,0x10,0x88,
+                    0x32,0x32,0x10,0x88,0x54,0x88,0x88,0x88}},
+     {REGFLAG_ESCAPE_ID,REGFLAG_DELAY_MS_V3, 10, {}},
+     {0x39,0xC1,32,{0x01,0x00,0x08,0x10,0x18,0x21,0x28,0x30,0x38,0x41,
+                    0x49,0x51,0x59,0x61,0x68,0x70,0x78,0x81,0x89,0x90,
+                    0x98,0xA0,0xA8,0xB0,0xB8,0xC1,0xC9,0xD1,0xD7,0xE2,
+                    0xEA,0xF2}},
+     {0x29,0xc1,32,{0xF8,0xFF,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+                    0x00,0x00,0x08,0x10,0x18,0x20,0x28,0x30,0x38,0x40,
+                    0x48,0x50,0x58,0x60,0x68,0x70,0x78,0x80,0x88,0x90,
+                    0x98,0xA0}},
 
 
+     {0x29,0xc1,32,{0xA8,0xB0,0xB8,0xC0,0xC8,0xD0,0xD8,0xE0,0xE8,0xF0,
+                    0xF8,0xFF,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+                    0x00,0x00,0x08,0x10,0x18,0x22,0x2A,0x32,0x3B,0x43,
+                    0x4B,0x54}},
+     {0x29,0xc1,31,{0x5C,0x64,0x6C,0x74,0x7D,0x85,0x8E,0x96,0x9E,0xA6,
+                    0xAE,0xB6,0xBE,0xC6,0xCE,0xD6,0xDE,0xE5,0xED,0xF5,
+                    0xF8,0xFF,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+                    0x00}},
+     {0x39,0xE0,34,{0x16,0x2C,0x32,0x30,0x35,0x3F,0x3D,0x52,0x08,0x0E,
+                    0x0F,0x13,0x15,0x13,0x14,0x19,0x1C,0x16,0x2C,0x32,
+                    0x30,0x35,0x3F,0x3D,0x52,0x07,0x0D,0x0F,0x13,0x15,
+                    0x13,0x14,0x19,0x1C}},
 
-    {0x39, 0xFF, 3,{0xFF,0x98,0x16}},
+         {REGFLAG_ESCAPE_ID,REGFLAG_DELAY_MS_V3, 5, {}},
 
-
-
-    {0x15, 0xBA, 1,{0x60}},
-
-
-
-    {0x15, 0xB0, 1,{0x01}},
-
-
-
-    {0x39, 0xBC, 18,{0x01,0x0F,0x61,0x39,0x01,0x01,0x1B,0x11,0x38,0x63,0xFF,0xFF,0x01,0x01,0x0D,0x00,0xFF,0xF2}},
-
-
-
-    {0x39, 0xBD, 8,{0x01,0x23,0x45,0x67,0x01,0x23,0x45,0x67}},
-
+     {0x39,0xB6,4,{0x00,0x88,0x00,0x88}},
+         {REGFLAG_ESCAPE_ID,REGFLAG_DELAY_MS_V3, 1, {}},
 
 
-    {0x39, 0xBE, 17,{0x13,0x22,0x22,0x22,0x22,0xBB,0xAA,0xDD,0xCC,0x22,0x66,0x22,0x88,0x22,0x22,0x22,0x22}},
-
-    {0x39, 0xED, 2,{0x7F,0x0F}},
+     {0x15,0xCC,1,{0x02}},
 
 
-
-    {0x15, 0xF3, 1,{0x70}},
-
+     {0x39,0xB7,3,{0x00,0x00,0x50}},
 
 
-    {0x15, 0xB4, 1,{0x02}},
+    {0x15,0x51,1,{0xFF}},
+    {0x15,0x53,1,{0x2C}},
+    {0x15,0x55,1,{0x02}},
 
-
-
-    {0x39, 0xC0, 3,{0x57,0x0B,0x0A}},
-
-
-
-    {0x39, 0xC1, 4,{0x17,0x98,0x88,0x20}},
-
-
-
-    {0x15, 0xD8, 1,{0x50}},
-
-
-
-    {0x15, 0xFC, 1,{0x08}},
-
-
-
-    {0x39, 0xE0, 16,{0x00,0x08,0x11,0x0d,0x10,0x0b,0Xd7,0x06,0x08,0x0c,0x10,0x0F,0x0f,0x19,0x11,0x00}},
-
-
-
-    {0x39, 0xE1, 16,{0x00,0x0e,0x14,0x0c,0x0c,0x09,0X77,0x04,0x07,0x0c,0x10,0x0f,0x0d,0x0b,0x05,0x00}},
-
-
-
-    {0x39, 0xD5, 8,{0x0A,0x09,0x0F,0x06,0xCB,0XA5,0x01,0x04}},
-
-
-
-    {0x15, 0xF7, 1,{0x8A}},
-
-
-
-    {0x15, 0xC7, 1,{0x79}},
-
-    {0x15, 0x3A, 1,{0x77}},
-    {0x15, 0x36, 1,{0x00}},
-    {0x15, 0x35, 1,{0x00}},
 
     {0x05,0x11,0,{}},
     {REGFLAG_ESCAPE_ID,REGFLAG_DELAY_MS_V3, 120, {}},
-
-    {0x39, 0xEE, 9, {0x0A,0x1B,0x5F,0x40,0x00,0x00,0X10,0x00,0x58}},
-
-    {0x05, 0x29,0,{}},
+    {0x05,0x29,0,{}},
     {REGFLAG_ESCAPE_ID,REGFLAG_DELAY_MS_V3, 10, {}},
+
+
 
 };
 
@@ -207,7 +204,6 @@ static void push_table(struct LCM_setting_table *table, unsigned int count, unsi
 }
 
 
-
 // ---------------------------------------------------------------------------
 //  LCM Driver Implementations
 // ---------------------------------------------------------------------------
@@ -235,7 +231,7 @@ static void lcm_set_params(struct LCM_setting_table *init_table, unsigned int in
 
 static void lcm_get_params(LCM_PARAMS *params)
 {
-        memset(params, 0, sizeof(LCM_PARAMS));
+    memset(params, 0, sizeof(LCM_PARAMS));
 
     if (para_params != NULL)
     {
@@ -264,16 +260,15 @@ static void lcm_get_params(LCM_PARAMS *params)
         // Video mode setting
         params->dsi.PS=LCM_PACKED_PS_24BIT_RGB888;
 
-    params->dsi.vertical_sync_active                =4;
-    params->dsi.vertical_backporch                    = 16;
-    params->dsi.vertical_frontporch                    = 10;
-    params->dsi.vertical_active_line                = FRAME_HEIGHT;
+        params->dsi.vertical_sync_active                = 0x05;// 3    2
+        params->dsi.vertical_backporch                    = 14;// 20   1
+        params->dsi.vertical_frontporch                    = 12; // 1  12
+        params->dsi.vertical_active_line                = FRAME_HEIGHT;
 
-
-    params->dsi.horizontal_sync_active                = 10;///////////////20 20 4  20  14  6
-     params->dsi.horizontal_backporch                = 80;
-    params->dsi.horizontal_frontporch                = 80;
-    params->dsi.horizontal_active_pixel                = FRAME_WIDTH;
+        params->dsi.horizontal_sync_active                = 0x16;// 50  2
+        params->dsi.horizontal_backporch                = 0x38;
+        params->dsi.horizontal_frontporch                = 0x18;
+        params->dsi.horizontal_active_pixel                = FRAME_WIDTH;
 
         //params->dsi.LPX=8;
 
@@ -281,27 +276,25 @@ static void lcm_get_params(LCM_PARAMS *params)
         //1 Every lane speed
         //params->dsi.pll_select=1;
         //params->dsi.PLL_CLOCK  = LCM_DSI_6589_PLL_CLOCK_377;
-        params->dsi.PLL_CLOCK=234;
-        params->dsi.pll_div1=0;        // div1=0,1,2,3;div1_real=1,2,4,4 ----0: 546Mbps  1:273Mbps
-        params->dsi.pll_div2=0;        // div2=0,1,2,3;div1_real=1,2,4,4
+        params->dsi.PLL_CLOCK=250;
+        //params->dsi.pll_div1=0;        // div1=0,1,2,3;div1_real=1,2,4,4 ----0: 546Mbps  1:273Mbps
+        //params->dsi.pll_div2=0;        // div2=0,1,2,3;div1_real=1,2,4,4
 #if (LCM_DSI_CMD_MODE)
-        params->dsi.fbk_div =7;
+        //params->dsi.fbk_div =9;
 #else
-        params->dsi.fbk_div =7;    // fref=26MHz, fvco=fref*(fbk_div+1)*2/(div1_real*div2_real)
+        //params->dsi.fbk_div =9;    // fref=26MHz, fvco=fref*(fbk_div+1)*2/(div1_real*div2_real)
 #endif
         //params->dsi.compatibility_for_nvk = 1;        // this parameter would be set to 1 if DriverIC is NTK's and when force match DSI clock for NTK's
     }
 }
-
 
 static void lcm_init(void)
 {
     int i, j;
     int size;
 
-    SET_RESET_PIN(1);
     SET_RESET_PIN(0);
-    MDELAY(10);
+    MDELAY(20);
     SET_RESET_PIN(1);
     MDELAY(20);
 
@@ -316,20 +309,19 @@ static void lcm_init(void)
 }
 
 
-static LCM_setting_table_V3  lcm_deep_sleep_mode_in_setting[] = {
-    // Display off sequence
-    {0x05, 0x28, 0, {}},
-    {REGFLAG_ESCAPE_ID,REGFLAG_DELAY_MS_V3, 10, {}},
-
-    // Sleep Mode On
-    {0x05, 0x10, 0, {}},
-    {REGFLAG_ESCAPE_ID,REGFLAG_DELAY_MS_V3, 120, {}},
-};
 
 static void lcm_suspend(void)
 {
+    unsigned int data_array[16];
 
-    dsi_set_cmdq_V3(lcm_deep_sleep_mode_in_setting, sizeof(lcm_deep_sleep_mode_in_setting)/sizeof(lcm_deep_sleep_mode_in_setting[0]), 1);
+    //data_array[0]=0x00280500; // Display Off
+    //dsi_set_cmdq(data_array, 1, 1);
+
+    data_array[0] = 0x00100500; // Sleep In
+    dsi_set_cmdq(data_array, 1, 1);
+    MDELAY(120);
+
+
     SET_RESET_PIN(1);
     SET_RESET_PIN(0);
     MDELAY(20); // 1ms
@@ -343,6 +335,11 @@ static void lcm_resume(void)
 {
     lcm_init();
 
+    #ifdef BUILD_LK
+      printf("[LK]------hx8389b----%s------\n",__func__);
+    #else
+      printk("[KERNEL]------hx8389b----%s------\n",__func__);
+    #endif
 }
 
 #if (LCM_DSI_CMD_MODE)
@@ -381,156 +378,104 @@ static void lcm_update(unsigned int x, unsigned int y,
 }
 #endif
 
-
-
-
-
 static unsigned int lcm_compare_id(void)
 {
-    int array[4];
-    char buffer[4]={0,0,0,0};
-    char id_high=0;
-    char id_low=0;
-    int id=0;
+    unsigned int id,id1=0;
+    unsigned char buffer[2];
+    unsigned int array[16];
 
-    SET_RESET_PIN(1);
     SET_RESET_PIN(0);
-    MDELAY(10);
+    MDELAY(20);
     SET_RESET_PIN(1);
-    MDELAY(200);
+    MDELAY(20);
+
 
     array[0]=0x00043902;
-    array[1]=0x0698ffff;
+    array[1]=0x8983FFB9;// page enable
     dsi_set_cmdq(array, 2, 1);
+    //MDELAY(10);
+//{0x39,0xBA,7,{0x41,0x93,0x00,0x16,0xA4,0x10,0x18}},
+    array[0]=0x00083902;
+    array[1]=0x009341BA;// page enable
+    array[2]=0x1810a416;
+    dsi_set_cmdq(array, 3, 1);
 
-    MDELAY(10);
-    array[0] = 0x00083700;
+    array[0] = 0x00043700;// return byte number
     dsi_set_cmdq(array, 1, 1);
-
     MDELAY(10);
-    read_reg_v2(0xD3, buffer, 4);//    NC 0x00  0x98 0x16
 
-    id_high = buffer[1];
-    id_low = buffer[2];
-    id = (id_high<<8) | id_low;
+    read_reg_v2(0xF4, buffer, 3);
+    id  =  buffer[1];
+    id1 =  buffer[0];
 
     lcm_driver_id = id;
     // TBD
     lcm_module_id = 0x0;
 
-    #ifdef BUILD_LK
-        printf("@@@@@@@ file : %s, line : %d\n",__FILE__, __LINE__);
-
-        printf("ILI9806 uboot %s \n", __func__);
-        printf("%s id = 0x%08x \n", __func__, id);
-
-    #else
-        printk("ILI9806 kernel %s \n", __func__);
-        printk("%s id = 0x%08x \n", __func__, id);
-
-    #endif
-
-
-    return (LCM_ID_ILI9806 == id)?1:0;
-
-}
-
-// zhoulidong  add for lcm detect (start)
-static unsigned int rgk_lcm_compare_id(void)
-{
-    int data[4] = {0,0,0,0};
-    int res = 0;
-    int rawdata = 0;
-    int lcm_vol = 0;
-
-#ifdef AUXADC_LCM_VOLTAGE_CHANNEL
-    res = IMM_GetOneChannelValue(AUXADC_LCM_VOLTAGE_CHANNEL,data,&rawdata);
-    if(res < 0)
-
-    {
-    #ifdef BUILD_LK
-    printf("[adc_uboot]: get data error\n");
-    #endif
-    return 0;
-
-    }
+#ifdef BUILD_LK
+    printf("%s, id = 0x%08x id1=%x \n", __func__, id,id1);
+#else
+    printk("%s, id = 0x%08x  id1=%x \n",__func__, id,id1);
 #endif
-    lcm_vol = data[0]*1000+data[1]*10;
 
-
-    #ifdef BUILD_LK
-    printf("@@@@@@@[adc_uboot]: lcm_vol= %d , file : %s, line : %d\n",lcm_vol, __FILE__, __LINE__);
-    #endif
-
-    if (lcm_vol>=MIN_VOLTAGE &&lcm_vol <= MAX_VOLTAGE &&lcm_compare_id())
-    {
-    return 1;
-    }
-
-    return 0;
+    return (LCM_ID_HX8389B == id)?1:0;
 
 }
-// zhoulidong add for eds(start)
+
+
+
 static unsigned int lcm_esd_check(void)
 {
-    #ifdef BUILD_LK
-        //printf("lcm_esd_check()\n");
-    #else
-        //printk("lcm_esd_check()\n");
-    #endif
- #ifndef BUILD_LK
-    char  buffer[3];
+    unsigned int ret=FALSE;
+  #ifndef BUILD_LK
+    char  buffer[6];
     int   array[4];
 
+#if 1
     if(lcm_esd_test)
     {
         lcm_esd_test = FALSE;
         return TRUE;
     }
-
-    array[0] = 0x00013700;
+#endif
+    array[0] = 0x00083700;
     dsi_set_cmdq(array, 1, 1);
 
-    read_reg_v2(0x0a, buffer, 1);
-    if(buffer[0]==0x9c)
+    read_reg_v2(0x0A, buffer, 2);
+    //printk(" esd buffer0 =%x,buffer1 =%x  \n",buffer[0],buffer[1]);
+    //read_reg_v2(0x09,buffer,5);
+    //printk(" esd buffer0=%x, buffer1 =%x buffer2=%x,buffer3=%x,buffer4=%x \n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4]);
+#if 1
+    if(buffer[0]==0x1C)
     {
-        //#ifdef BUILD_LK
-        //printf("%s %d\n FALSE", __func__, __LINE__);
-        //#else
-        //printk("%s %d\n FALSE", __func__, __LINE__);
-        //#endif
-        return FALSE;
+        ret=FALSE;
     }
     else
     {
-        //#ifdef BUILD_LK
-        //printf("%s %d\n FALSE", __func__, __LINE__);
-        //#else
-        //printk("%s %d\n FALSE", __func__, __LINE__);
-        //#endif
-        return TRUE;
+        ret=TRUE;
     }
+#endif
  #endif
+ return ret;
 
 }
 
 static unsigned int lcm_esd_recover(void)
 {
-
-    #ifdef BUILD_LK
-        printf("lcm_esd_recover()\n");
-    #else
-        printk("lcm_esd_recover()\n");
-    #endif
-
     lcm_init();
 
+    #ifndef BUILD_LK
+    printk("lcm_esd_recover  hx8389b_video_tianma \n");
+    #endif
     return TRUE;
 }
-// zhoulidong add for eds(end)
-LCM_DRIVER ili9806c_dsi_vdo_azet_ips_lcm_drv =
+
+
+
+
+LCM_DRIVER hx8389b_qhd_dsi_vdo_tianma_lcm_drv =
 {
-        .name            = "ili9806c_dsi_vdo_azet_ips",
+    .name            = "hx8389b_qhd_dsi_vdo_tianma",
     .set_util_funcs = lcm_set_util_funcs,
     .set_params     = lcm_set_params,
     .get_id     = lcm_get_id,
@@ -538,11 +483,10 @@ LCM_DRIVER ili9806c_dsi_vdo_azet_ips_lcm_drv =
     .init           = lcm_init,
     .suspend        = lcm_suspend,
     .resume         = lcm_resume,
-    .compare_id     = rgk_lcm_compare_id,
-//    .esd_check = lcm_esd_check,
-//    .esd_recover = lcm_esd_recover,
+    .compare_id     = lcm_compare_id,
+    .esd_check = lcm_esd_check,
+    .esd_recover = lcm_esd_recover,
 #if (LCM_DSI_CMD_MODE)
     .update         = lcm_update,
 #endif
-};
-
+    };
