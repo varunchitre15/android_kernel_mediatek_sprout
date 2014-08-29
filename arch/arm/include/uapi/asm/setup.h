@@ -21,6 +21,7 @@
 #include <mach/mt_keypad_ssb_cust.h>
 #include <mach/mt_auxadc_ssb_cust.h>
 #include <mach/accdet_ssb.h>
+#include <mach/gpio_usage_para.h>
 
 #define COMMAND_LINE_SIZE 1024
 
@@ -251,6 +252,7 @@ struct tag {
                 tag_dfo_boot     dfo_data;
                 struct tag_mdinfo_data mdinfo_data;
 		mem_desc_t tee_reserved_mem;
+        struct _gpio_usage gpio_usage_data;
         struct tag_para_touch_ssb_data touch_ssb_cust;
         struct tag_para_keypad_ssb_data keypad_ssb_cust;
         struct tag_para_auxadc_ssb_data auxadc_ssb_cust;
