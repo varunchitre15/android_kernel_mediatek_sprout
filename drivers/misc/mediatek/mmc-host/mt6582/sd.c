@@ -49,6 +49,7 @@
 #include <mach/irqs.h>
 #include <mach/mt_gpio.h>
 #include <linux/seq_file.h>
+#include <mach/mt_msdc_ssb_cust.h>
 
 #include "mt_sd.h"
 #include "dbg.h"
@@ -8665,6 +8666,58 @@ int msdc_drv_pm_restore_noirq(struct device *device)
 }
 #endif
 
+extern struct tag_msdc_hw_para *msdc_para_hw_datap[2];
+
+void msdc_update_para(struct msdc_hw *hw,int hostid)
+{
+     
+    if ((hw != NULL) && \
+        ((hostid >=0) && (hostid < 2)) && \
+        (msdc_para_hw_datap[hostid] != NULL) && \
+        ((msdc_para_hw_datap[hostid]->host_function == MSDC_SD) || (msdc_para_hw_datap[hostid]->host_function == MSDC_EMMC)) && \ 
+        (msdc_para_hw_datap[hostid]->version == 0x5A01) )
+    {
+        hw->clk_src    = msdc_para_hw_datap[hostid]->clk_src ;
+        hw->cmd_edge   = msdc_para_hw_datap[hostid]->cmd_edge;        
+        hw->rdata_edge = msdc_para_hw_datap[hostid]->rdata_edge;      
+        hw->wdata_edge = msdc_para_hw_datap[hostid]->wdata_edge;      
+        hw->clk_drv    = msdc_para_hw_datap[hostid]->clk_drv;         
+        hw->cmd_drv    = msdc_para_hw_datap[hostid]->cmd_drv;         
+        hw->dat_drv    = msdc_para_hw_datap[hostid]->dat_drv;         
+        hw->clk_drv_sd_18 = msdc_para_hw_datap[hostid]->clk_drv_sd_18;   
+        hw->cmd_drv_sd_18 = msdc_para_hw_datap[hostid]->cmd_drv_sd_18;   
+        hw->dat_drv_sd_18 = msdc_para_hw_datap[hostid]->dat_drv_sd_18;   
+        hw->clk_drv_sd_18_sdr50 = msdc_para_hw_datap[hostid]->clk_drv_sd_18_sdr50;   
+        hw->cmd_drv_sd_18_sdr50 = msdc_para_hw_datap[hostid]->cmd_drv_sd_18_sdr50;   
+        hw->dat_drv_sd_18_sdr50 = msdc_para_hw_datap[hostid]->dat_drv_sd_18_sdr50;   
+        hw->clk_drv_sd_18_ddr50 = msdc_para_hw_datap[hostid]->clk_drv_sd_18_ddr50;   
+        hw->cmd_drv_sd_18_ddr50 = msdc_para_hw_datap[hostid]->cmd_drv_sd_18_ddr50;   
+        hw->dat_drv_sd_18_ddr50 = msdc_para_hw_datap[hostid]->dat_drv_sd_18_ddr50;   
+        hw->flags       = msdc_para_hw_datap[hostid]->flags;      
+        hw->data_pins   = msdc_para_hw_datap[hostid]->data_pins;  
+        hw->data_offset = msdc_para_hw_datap[hostid]->data_offset;
+
+        hw->ddlsel   = msdc_para_hw_datap[hostid]->ddlsel;    
+        hw->rdsplsel = msdc_para_hw_datap[hostid]->rdsplsel;  
+        hw->wdsplsel = msdc_para_hw_datap[hostid]->wdsplsel;  
+
+        hw->dat0rddly = msdc_para_hw_datap[hostid]->dat0rddly; 
+        hw->dat1rddly = msdc_para_hw_datap[hostid]->dat1rddly; 
+        hw->dat2rddly = msdc_para_hw_datap[hostid]->dat2rddly; 
+        hw->dat3rddly = msdc_para_hw_datap[hostid]->dat3rddly; 
+        hw->dat4rddly = msdc_para_hw_datap[hostid]->dat4rddly; 
+        hw->dat5rddly = msdc_para_hw_datap[hostid]->dat5rddly; 
+        hw->dat6rddly = msdc_para_hw_datap[hostid]->dat6rddly; 
+        hw->dat7rddly = msdc_para_hw_datap[hostid]->dat7rddly; 
+        hw->datwrddly = msdc_para_hw_datap[hostid]->datwrddly; 
+        hw->cmdrrddly = msdc_para_hw_datap[hostid]->cmdrrddly; 
+        hw->cmdrddly  = msdc_para_hw_datap[hostid]->cmdrddly; 
+        hw->host_function  = msdc_para_hw_datap[hostid]->host_function;
+        hw->boot  = msdc_para_hw_datap[hostid]->boot;
+        hw->cd_level  = msdc_para_hw_datap[hostid]->cd_level;
+    }
+        
+}
 static int msdc_drv_probe(struct platform_device *pdev)
 {
     struct mmc_host *mmc;
@@ -8736,6 +8789,9 @@ static int msdc_drv_probe(struct platform_device *pdev)
     }
 #endif
     hw   = (struct msdc_hw*)pdev->dev.platform_data;
+
+    msdc_update_para(hw,pdev->id);
+
     mem  = platform_get_resource(pdev, IORESOURCE_MEM, 0);
     irq  = platform_get_irq(pdev, 0);
     base = IO_PHYS_TO_VIRT(mem->start);

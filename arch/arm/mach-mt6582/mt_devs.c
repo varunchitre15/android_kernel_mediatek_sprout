@@ -49,6 +49,7 @@
 #include <mach/mt_auxadc_ssb_cust.h>
 #include <mach/accdet_ssb.h>
 #include <cust_gpio_usage.h>
+#include <mach/mt_msdc_ssb_cust.h>
 
 #define SERIALNO_LEN 32
 static char serial_number[SERIALNO_LEN];
@@ -134,6 +135,8 @@ struct tag_para_keypad_ssb_data keypad_cust_ssb_data = {
 struct tag_para_auxadc_ssb_data auxadc_cust_ssb_data = {-1, 13, -1};
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
+static struct tag_msdc_hw_para    msdc_para_hw_data[2];
+struct tag_msdc_hw_para *msdc_para_hw_datap[2] = { NULL,NULL};
 /*=======================================================================*/
 /* MT6582 USB GADGET                                                     */
 /*=======================================================================*/
@@ -1452,6 +1455,15 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
         }
         else if (tags->hdr.tag == ATAG_TOUCH_CUST_TAG){
             parse_tag_touch_data_fixup(tags);
+        }
+        else if (tags->hdr.tag == ATAG_MSDC0_TAG){
+
+            msdc_para_hw_data[0] = tags->u.msdc0_data ;
+            msdc_para_hw_datap[0] = &msdc_para_hw_data[0];
+        }
+        else if (tags->hdr.tag == ATAG_MSDC1_TAG){
+           msdc_para_hw_data[1] = tags->u.msdc0_data ;
+            msdc_para_hw_datap[1] = &msdc_para_hw_data[1];
         }
         else if (tags->hdr.tag == ATAG_AUXADC_TAG){
             parse_tag_auxadc_data_fixup(tags);
