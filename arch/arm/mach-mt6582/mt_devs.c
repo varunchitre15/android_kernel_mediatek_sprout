@@ -52,6 +52,8 @@
 #define SERIALNO_LEN 32
 static char serial_number[SERIALNO_LEN];
 
+extern int parse_tag_eint_ssb_fixup(const struct tag *tags);
+extern void eint_fixup_default(void);
 extern BOOTMODE get_boot_mode(void);
 extern u32 get_devinfo_with_index(u32 index);
 extern u32 g_devinfo_data[];
@@ -1314,6 +1316,7 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
     resource_size_t avail_dram = 0;
     resource_size_t bl_mem_sz = 0;
     unsigned char md_inf_from_meta[4] = {0};
+    int eint_ssb_bin_exist = 0;
 
 #if defined(CONFIG_MTK_FB)
 	struct tag *temp_tags = tags;
@@ -1388,6 +1391,9 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
             parse_ccci_dfo_setting(&tags->u.dfo_data, DFO_BOOT_COUNT);
             parse_eemcs_dfo_setting(&tags->u.dfo_data, DFO_BOOT_COUNT);
             mtkfb_parse_dfo_setting(&tags->u.dfo_data, DFO_BOOT_COUNT);
+        } else if (tags->hdr.tag == ATAG_EINT_TAG) {
+            parse_tag_eint_ssb_fixup(tags);
+            eint_ssb_bin_exist = 1;
         }
 		else if (tags->hdr.tag == ATAG_ACCDET_TAG){
             accdet_data = tags->u.accdet_mode_data;
@@ -1404,6 +1410,10 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
             md_inf_from_meta[2]=tags->u.mdinfo_data.md_type[2]; 
             md_inf_from_meta[3]=tags->u.mdinfo_data.md_type[3];
         }
+    }
+
+    if (!eint_ssb_bin_exist) {
+        eint_fixup_default();
     }
 
     if ((g_boot_mode == META_BOOT) || (g_boot_mode == ADVMETA_BOOT)) {

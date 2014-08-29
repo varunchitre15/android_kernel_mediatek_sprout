@@ -199,6 +199,12 @@ struct tag_para_lcm_data{
     u32 version;
 };
 
+struct tag_eint_data {
+    char magic[4];
+    u32 count;
+    char payload[1];
+};
+
 /*Para bins information*/
 #define ATAG_TOUCH_CUST_TAG  (0x41000817)
 #define ATAG_SENSORS_TAG     (0x41000818)
@@ -213,6 +219,7 @@ struct tag_para_lcm_data{
 #define ATAG_LEDS_TAG        (0x41000821)
 #define ATAG_VIBRATOR_TAG    (0x41000822)
 #define ATAG_BATTERY_TAG     (0x41000823)
+#define ATAG_EINT_TAG        (0x41000824)
 
 
 struct tag {
@@ -250,6 +257,7 @@ struct tag {
         struct accdet_ssb_data accdet_mode_data;
         struct tag_lcminfo_data lcminfo_data;
         struct tag_para_lcm_data lcm_data;
+        struct tag_eint_data eint_data;
 	} u;
 };
 
