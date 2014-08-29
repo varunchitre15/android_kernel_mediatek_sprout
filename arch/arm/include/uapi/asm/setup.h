@@ -223,6 +223,18 @@ struct tag_eint_data {
 #define ATAG_BATTERY_TAG     (0x41000823)
 #define ATAG_EINT_TAG        (0x41000824)
 
+struct tag_vibrator_data {
+    unsigned int magic;
+    int vib_vol;
+    unsigned int end_magic;
+};
+
+struct tag_leds_data {
+    unsigned int magic;
+    int led_mode[3];
+    int led_pmic[3];
+    unsigned int end_magic;
+};
 
 struct tag {
 	struct tag_header hdr;
@@ -260,6 +272,8 @@ struct tag {
         struct accdet_ssb_data accdet_mode_data;
         struct tag_msdc_hw_para msdc0_data;
         struct tag_msdc_hw_para msdc1_data;
+        struct tag_vibrator_data     vibrator_data;
+        struct tag_leds_data         leds_data;
         struct tag_lcminfo_data lcminfo_data;
         struct tag_para_lcm_data lcm_data;
         struct tag_eint_data eint_data;

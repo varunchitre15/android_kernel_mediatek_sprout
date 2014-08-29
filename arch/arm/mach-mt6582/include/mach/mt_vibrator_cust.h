@@ -12,25 +12,14 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <cust_vibrator.h>
-#include <linux/types.h>
-#include <mach/mt_vibrator_cust.h>
+#ifndef __MT_VIBRATOR_CUST_H__
+#define __MT_VIBRATOR_CUST_H__
 
-static struct vibrator_hw cust_vibrator_hw = {
-	.vib_timer = 50,
-  #ifdef CUST_VIBR_LIMIT
-	.vib_limit = 9,
-  #endif
-  #ifdef CUST_VIBR_VOL
-	.vib_vol = 0x5,//2.8V for vibr
-  #endif
+struct vibrator_cust_data {
+    bool isInited;
+    int vib_vol;
 };
 
-struct vibrator_hw *get_cust_vibrator_hw(void)
-{
-    if(vibrator_cust_data_fromtag.isInited == true) {
-        cust_vibrator_hw.vib_vol = vibrator_cust_data_fromtag.vib_vol;
-    }
-    return &cust_vibrator_hw;
-}
+extern struct vibrator_cust_data vibrator_cust_data_fromtag;
 
+#endif

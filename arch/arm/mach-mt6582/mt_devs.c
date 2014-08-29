@@ -50,6 +50,8 @@
 #include <mach/accdet_ssb.h>
 #include <cust_gpio_usage.h>
 #include <mach/mt_msdc_ssb_cust.h>
+#include <mach/mt_leds_cust.h>
+#include <mach/mt_vibrator_cust.h>
 
 #define SERIALNO_LEN 32
 static char serial_number[SERIALNO_LEN];
@@ -1282,6 +1284,30 @@ static int __init parse_tag_gpio_use_data_fixup(const struct tag *tags)
 */
 }
 
+struct led_cust_data led_cust_data_fromtag = {false,{0},{0}};
+
+static int __init parse_tag_leds_data_fixup(const struct tag *tags)
+{
+    int i = 0;
+
+    for(i = 0; i < 3; i++) {
+        led_cust_data_fromtag.led_mode[i] = tags->u.leds_data.led_mode[i];
+        led_cust_data_fromtag.led_pmic[i] = tags->u.leds_data.led_pmic[i];
+        printk("led[%d] 's mode is :%d  pmic is :%d \n",i,led_cust_data_fromtag.led_mode[i],led_cust_data_fromtag.led_pmic[i]);
+    }
+    led_cust_data_fromtag.isInited = true;
+}
+
+struct vibrator_cust_data vibrator_cust_data_fromtag = {false,0};
+
+static int __init parse_tag_vibrator_data_fixup(const struct tag *tags)
+{
+    vibrator_cust_data_fromtag.vib_vol = tags->u.vibrator_data.vib_vol;
+    printk("the vibrator value is %d \n",vibrator_cust_data_fromtag.vib_vol);
+    vibrator_cust_data_fromtag.isInited = true;
+}
+
+
 static struct _gpio_usage default_value=
         {     0xff00,
               1,0,3,1,0,2,0,1,3,6,
@@ -1468,11 +1494,17 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
         else if (tags->hdr.tag == ATAG_AUXADC_TAG){
             parse_tag_auxadc_data_fixup(tags);
         }
+        else if (tags->hdr.tag == ATAG_LEDS_TAG){
+            parse_tag_leds_data_fixup(tags);
+        }
         else if (tags->hdr.tag == ATAG_LCMINFO_DATA){
             parse_tag_lcminfo_data_fixup(tags->u.lcminfo_data.lcm_index);
         }
         else if (tags->hdr.tag == ATAG_LCM_TAG){
             parse_tag_lcm_fixup(&(tags->u.lcm_data), ((tags->hdr.size << 2)-sizeof(struct tag_header)));
+        }
+        else if (tags->hdr.tag == ATAG_VIBRATOR_TAG){
+            parse_tag_vibrator_data_fixup(tags);
         }
         else if(tags->hdr.tag == ATAG_META_COM)
         {
