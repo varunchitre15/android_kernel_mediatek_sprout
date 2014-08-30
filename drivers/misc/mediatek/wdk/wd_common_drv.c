@@ -315,18 +315,18 @@ static int kwdt_thread(void *arg)
 				/* only process WDT info if thread-x is on cpu-x */
 				spin_lock(&lock);
 				local_bit = kick_bit;
-				printk_sched("[WDK], local_bit:0x%x, cpu:%d,RT[%lld]\n", local_bit,
+				printk_deferred("[WDK], local_bit:0x%x, cpu:%d,RT[%lld]\n", local_bit,
 					     cpu, sched_clock());
 				if ((local_bit & (1 << cpu)) == 0) {
 					/* printk("[WDK]: set  WDT kick_bit\n"); */
 					local_bit |= (1 << cpu);
 					/* aee_rr_rec_wdk_kick_jiffies(jiffies); */
 				}
-				printk_sched
+				printk_deferred
 				    ("[WDK], local_bit:0x%x, cpu:%d, check bit0x:%x,RT[%lld]\n",
 				     local_bit, cpu, wk_check_kick_bit(), sched_clock());
 				if (local_bit == wk_check_kick_bit()) {
-					printk_sched("[WDK]: kick Ex WDT,RT[%lld]\n",
+					printk_deferred("[WDK]: kick Ex WDT,RT[%lld]\n",
 						     sched_clock());
 					mtk_wdt_restart(WD_TYPE_NORMAL);	/* for KICK external wdt */
 					local_bit = 0;
@@ -335,7 +335,7 @@ static int kwdt_thread(void *arg)
 				spin_unlock(&lock);
 
 #ifdef CONFIG_LOCAL_WDT
-				printk_sched("[WDK]: cpu:%d, kick local wdt,RT[%lld]\n", cpu,
+				printk_deferred("[WDK]: cpu:%d, kick local wdt,RT[%lld]\n", cpu,
 					     sched_clock());
 				/* kick local wdt */
 				mpcore_wdt_restart(WD_TYPE_NORMAL);
@@ -358,7 +358,7 @@ static int kwdt_thread(void *arg)
 			rtc_time_to_tm(tv.tv_sec, &tm);
 			tv_android.tv_sec -= sys_tz.tz_minuteswest * 60;
 			rtc_time_to_tm(tv_android.tv_sec, &tm_android);
-			printk_sched
+			printk_deferred
 			    ("[thread:%d][RT:%lld] %d-%02d-%02d %02d:%02d:%02d.%u UTC; android time %d-%02d-%02d %02d:%02d:%02d.%03d\n",
 			     current->pid, sched_clock(), tm.tm_year + 1900, tm.tm_mon + 1,
 			     tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, (unsigned int)tv.tv_usec,
@@ -373,7 +373,7 @@ static int kwdt_thread(void *arg)
 		if ((cpu == 0) && (wk_tsk[cpu]->pid == current->pid))	/* only effect at cpu0 */
 		{
 			if (aee_kernel_wdt_kick_api(g_kinterval) == WDT_PWK_HANG_FORCE_HWT) {
-				printk_sched("power key trigger HWT\n");
+				printk_deferred("power key trigger HWT\n");
 				cpus_kick_bit = 0xFFFF;	/* Try to force to HWT */
 			}
 		}

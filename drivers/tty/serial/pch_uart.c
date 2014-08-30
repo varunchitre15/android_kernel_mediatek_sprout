@@ -430,6 +430,10 @@ static unsigned int pch_uart_get_uartclk(void)
 	if (d)
 		return (unsigned long)d->driver_data;
 
+	cmp = dmi_get_system_info(DMI_BOARD_NAME);
+	if (cmp && strstr(cmp, "MinnowBoard"))
+		return MINNOW_UARTCLK;
+
 	return DEFAULT_UARTCLK;
 }
 
