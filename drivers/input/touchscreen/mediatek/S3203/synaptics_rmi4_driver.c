@@ -1896,6 +1896,11 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 #ifdef TPD_UPDATE_FIRMWARE
     synaptics_rmi4_detection_work(NULL);
     synaptics_fw_updater_s3203(synaImage);
+	
+    retval = tpd_rmi4_read_pdt(ts);
+    if (retval <= 0) {
+        TPD_DMESG("TPD_UPDATE_FIRMWARE Failed to tpd_rmi4_read_pdt\n");
+    }
 #endif
 
     tpd_i2c_read_data(client, ts->f11.ctrl_base+6, &TP_Max_X,2);

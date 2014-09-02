@@ -972,7 +972,7 @@ static int fwu_start_reflash(void)
 
     TPD_DMESG("%s: Start of reflash process\n", __func__);
     mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM);
-        fwu->fn_ptr->write(fwu->rmi4_data,0x5e,&data_buf,1);
+
     if (fwu->ext_data_source)
         fw_image = fwu->ext_data_source;
     else {
@@ -1046,8 +1046,7 @@ static int fwu_start_reflash(void)
     TPD_DMESG("%s: End of reflash process\n", __func__);
 exit:
     synaptics_chip_reset();
-    data_buf=0x7f;
-    fwu->fn_ptr->write(fwu->rmi4_data,0x5e,&data_buf,1);
+
     mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM);
     return retval;
 }
@@ -1349,6 +1348,12 @@ int synaptics_fw_updater_s3203(unsigned char *fw_data)
     if(image_configID != device_configID || updateflag){
         updateflag = 0;
        retval = fwu_start_reflash();
+
+	msleep(10);  	
+	mt_set_gpio_out(GPIO_CTP_RST_PIN, GPIO_OUT_ZERO);
+	msleep(2);
+	mt_set_gpio_out(GPIO_CTP_RST_PIN, GPIO_OUT_ONE);
+	msleep(100);
     }
 #else
       retval = fwu_start_reflash();
