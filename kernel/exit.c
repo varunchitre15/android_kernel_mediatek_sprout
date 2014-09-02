@@ -723,7 +723,7 @@ void do_exit(long code)
 	profile_task_exit(tsk);
 #ifdef CONFIG_SCHEDSTATS
 	/* mt shceduler profiling*/
-	printk(KERN_DEBUG "[%d:%s] exit\n", tsk->pid, tsk->comm);
+	pr_debug("[%d:%s] exit\n", tsk->pid, tsk->comm);
 	end_mtproc_info(tsk);
 #endif
 
