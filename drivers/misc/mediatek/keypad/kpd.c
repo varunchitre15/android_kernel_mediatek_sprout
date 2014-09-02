@@ -17,6 +17,7 @@
 
 /*kpd.h file path: ALPS/mediatek/kernel/include/linux */
 #include <linux/kpd.h>
+#include <mach/hal_priv_kpd.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_address.h>
@@ -103,7 +104,8 @@ static void kpd_memory_setting(void)
 
 /*****************for kpd auto set wake up source*************************/
 
-static ssize_t kpd_store_call_state(struct device_driver *ddri, const char *buf, size_t count)
+static ssize_t kpd_store_call_state(struct device* dev, struct device_attribute *attr, const char *buf, size_t
+count)
 {
 	if (sscanf(buf, "%u", &call_status) != 1) {
 		kpd_print("kpd call state: Invalid values\n");
@@ -128,11 +130,49 @@ static ssize_t kpd_store_call_state(struct device_driver *ddri, const char *buf,
 	return count;
 }
 
-static ssize_t kpd_show_call_state(struct device_driver *ddri, char *buf)
+static ssize_t kpd_show_call_state(struct device* dev, struct device_attribute *attr, char *buf)
 {
-	ssize_t res;
-	res = snprintf(buf, PAGE_SIZE, "%d\n", call_status);
-	return res;
+    int len = 0;
+    u16 reg_kpstaus;
+    u16 reg_kpstate1;
+    u16 reg_kpstate2;
+    u16 reg_kpstate3;
+    u16 reg_kpstate4;
+    u16 reg_kpstate5;
+    u16 reg_kpdebounce;
+    u16 reg_kpscantime;
+    u16 reg_kpsel;
+    u16 reg_kpen;
+    u32 reg_kpd_irq;
+
+    reg_kpstaus = *(volatile u16 *)KP_STA;
+    reg_kpstate1 = *(volatile u16 *)KP_MEM1;
+    reg_kpstate2 = *(volatile u16 *)KP_MEM2;
+    reg_kpstate3 = *(volatile u16 *)KP_MEM3;
+    reg_kpstate4 = *(volatile u16 *)KP_MEM4;
+    reg_kpstate5 = *(volatile u16 *)KP_MEM5;
+    reg_kpdebounce = *(volatile u16 *)KP_DEBOUNCE;
+    reg_kpscantime = *(volatile u16 *)KP_SCAN_TIMING;
+    reg_kpsel = *(volatile u16 *)KP_SEL;
+    reg_kpen = *(volatile u16 *)KP_EN;
+
+    reg_kpd_irq = *(volatile u32 *)(0xF0211196);
+
+    len += snprintf(buf+len, PAGE_SIZE-len, "kp_status: 0x%x\n", reg_kpstaus);
+    len += snprintf(buf+len, PAGE_SIZE-len, "reg_kpmem1: 0x%x\n", reg_kpstate1);
+    len += snprintf(buf+len, PAGE_SIZE-len, "reg_kpmem2: 0x%x\n", reg_kpstate2);
+    len += snprintf(buf+len, PAGE_SIZE-len, "reg_kpmem3: 0x%x\n", reg_kpstate3);
+    len += snprintf(buf+len, PAGE_SIZE-len, "reg_kpmem4: 0x%x\n", reg_kpstate4);
+    len += snprintf(buf+len, PAGE_SIZE-len, "reg_kpmem5: 0x%x\n", reg_kpstate5);
+    len += snprintf(buf+len, PAGE_SIZE-len, "kp_debounce: 0x%x\n", reg_kpdebounce);
+    len += snprintf(buf+len, PAGE_SIZE-len, "kp_scantime: 0x%x\n", reg_kpscantime);
+    len += snprintf(buf+len, PAGE_SIZE-len, "kp_sel: 0x%x\n", reg_kpsel);
+    len += snprintf(buf+len, PAGE_SIZE-len, "kp_en: 0x%x\n", reg_kpen);
+    len += snprintf(buf+len, PAGE_SIZE-len, "kp_irq_status: 0x%x\n", ((reg_kpd_irq&0x80000) >> 20));
+
+    len += snprintf(buf+len, PAGE_SIZE-len, "call status: %d\n", call_status);
+    printk("debug: %s \n", buf);
+    return len;
 }
 
 static DRIVER_ATTR(kpd_call_state, S_IWUSR | S_IRUGO, kpd_show_call_state, kpd_store_call_state);
