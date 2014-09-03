@@ -42,21 +42,16 @@
 
 #include <linux/xlog.h>
 
-#define VSYNC_DBG(...) xlog_printk(ANDROID_LOG_DEBUG, MTKFB_VSYNC_DEVNAME, __VA_ARGS__)
-
-#define VSYNC_INF(...) xlog_printk(ANDROID_LOG_INFO,  MTKFB_VSYNC_DEVNAME, __VA_ARGS__)
-#define VSYNC_WRN(...) xlog_printk(ANDROID_LOG_WARN,  MTKFB_VSYNC_DEVNAME, __VA_ARGS__)
-#define VSYNC_ERR(...) xlog_printk(ANDROID_LOG_ERROR, MTKFB_VSYNC_DEVNAME, __VA_ARGS__)
 
 static size_t mtkfb_vsync_on = false;
 #define MTKFB_VSYNC_LOG(fmt, arg...) \
     do { \
-        if (mtkfb_vsync_on) VSYNC_WRN(fmt, ##arg); \
+        if (mtkfb_vsync_on) pr_warn("[MTKFB_VSYNC]"fmt, ##arg); \
     }while (0)
 
 #define MTKFB_VSYNC_FUNC()	\
 	do { \
-		if(mtkfb_vsync_on) VSYNC_WRN("[Func]%s\n", __func__); \
+        if(mtkfb_vsync_on) pr_warn("[MTKFB_VSYNC][Func]%s\n", __func__); \
 	}while (0)
 
 static dev_t mtkfb_vsync_devno;
@@ -80,20 +75,20 @@ void mtkfb_vsync_log_enable(int enable)
 
 static int mtkfb_vsync_open(struct inode *inode, struct file *file)
 {
-    VSYNC_DBG("driver open\n");
+    pr_debug("[MTKFB_VSYNC] driver open\n");
     return 0;
 }
 
 static ssize_t mtkfb_vsync_read(struct file *file, char __user *data, size_t len, loff_t *ppos)
 {
-    VSYNC_DBG("driver read\n");
+    pr_debug("[MTKFB_VSYNC] driver read\n");
     return 0;
 }
 
 static int mtkfb_vsync_release(struct inode *inode, struct file *file)
 {
-    VSYNC_DBG("driver release\n");
-    VSYNC_DBG("reset overlay engine\n");
+    pr_debug("[MTKFB_VSYNC] driver release\n");
+    pr_debug("[MTKFB_VSYNC] reset overlay engine\n");
     mtkfb_disable_non_fb_layer();
 	return 0;
 }
@@ -112,13 +107,13 @@ static long mtkfb_vsync_unlocked_ioctl(struct file *file, unsigned int cmd, unsi
     {
         case MTKFB_VSYNC_IOCTL:
         {         
-			MTKFB_VSYNC_LOG("[MTKFB_VSYNC]: enter MTKFB_VSYNC_IOCTL %d\n", arg);			
+            MTKFB_VSYNC_LOG("[MTKFB_VSYNC]: enter MTKFB_VSYNC_IOCTL %d\n", (unsigned int)arg);
 
 			if(arg == MTKFB_VSYNC_SOURCE_HDMI)
 			{
 #if defined(CONFIG_MTK_HDMI_SUPPORT)
                 if (down_interruptible(&mtkfb_vsync_sem)) {
-         			printk("[mtkfb_vsync_ioctl] can't get semaphore,%d\n", __LINE__);
+                     pr_err("[mtkfb_vsync_ioctl] can't get semaphore,%d\n", __LINE__);
     				msleep(20);
          			return ret;
         		}
@@ -133,7 +128,7 @@ static long mtkfb_vsync_unlocked_ioctl(struct file *file, unsigned int cmd, unsi
 			}
 			
 			if (down_interruptible(&mtkfb_vsync_sem)) {
-     			printk("[mtkfb_vsync_ioctl] can't get semaphore,%d\n", __LINE__);
+                 pr_err("[mtkfb_vsync_ioctl] can't get semaphore,%d\n", __LINE__);
 				msleep(20);
      			return ret;
     		}
@@ -161,15 +156,15 @@ static int mtkfb_vsync_probe(struct platform_device *pdev)
     struct class_device;
     struct class_device *class_dev = NULL;
     
-    printk("\n=== MTKFB_VSYNC probe ===\n");
+    pr_debug("\n=== MTKFB_VSYNC probe ===\n");
 
     if (alloc_chrdev_region(&mtkfb_vsync_devno, 0, 1, MTKFB_VSYNC_DEVNAME))
     {
-        VSYNC_ERR("can't get device major number...\n");
+        pr_err("[MTKFB_VSYNC] can't get device major number...\n");
         return -EFAULT;
     }
 
-    printk("get device major number (%d)\n", mtkfb_vsync_devno);
+    pr_debug("get device major number (%d)\n", mtkfb_vsync_devno);
 
     mtkfb_vsync_cdev = cdev_alloc();
     mtkfb_vsync_cdev->owner = THIS_MODULE;
@@ -180,19 +175,19 @@ static int mtkfb_vsync_probe(struct platform_device *pdev)
     mtkfb_vsync_class = class_create(THIS_MODULE, MTKFB_VSYNC_DEVNAME);
     class_dev = (struct class_device *)device_create(mtkfb_vsync_class, NULL, mtkfb_vsync_devno, NULL, MTKFB_VSYNC_DEVNAME);
 
-    VSYNC_INF("probe is done\n");
+    pr_debug("[MTKFB_VSYNC] probe is done\n");
     return 0;
 }
 
 static int mtkfb_vsync_remove(struct platform_device *pdev)
 {
-    VSYNC_INF("device remove\n");
+    pr_debug("[MTKFB_VSYNC] device remove\n");
     return 0;
 }
 
 static void mtkfb_vsync_shutdown(struct platform_device *pdev)
 {
-    printk("mtkfb_vsync device shutdown\n");
+    pr_debug("mtkfb_vsync device shutdown\n");
 }
 
 static int mtkfb_vsync_suspend(struct platform_device *pdev, pm_message_t mesg)
@@ -235,17 +230,17 @@ static struct platform_device mtkfb_vsync_device = {
 
 static int __init mtkfb_vsync_init(void)
 {
-    VSYNC_INF("initializeing driver...\n");
+    pr_debug("[MTKFB_VSYNC] initializeing driver...\n");
 	
     if (platform_device_register(&mtkfb_vsync_device))
     {
-        VSYNC_ERR("failed to register device\n");
+        pr_err("[MTKFB_VSYNC] failed to register device\n");
         return -ENODEV;
     }
 
     if (platform_driver_register(&mtkfb_vsync_driver))
     {
-        VSYNC_ERR("failed to register driver\n");
+        pr_err("[MTKFB_VSYNC] failed to register driver\n");
         platform_device_unregister(&mtkfb_vsync_device);
         return -ENODEV;
     }
@@ -264,7 +259,7 @@ static void __exit mtkfb_vsync_exit(void)
     device_destroy(mtkfb_vsync_class, mtkfb_vsync_devno);
     class_destroy(mtkfb_vsync_class);
 	
-    VSYNC_INF("exit driver...\n");
+    pr_debug("[MTKFB_VSYNC] exit driver...\n");
 }
 
 module_init(mtkfb_vsync_init);

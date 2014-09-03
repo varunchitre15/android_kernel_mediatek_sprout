@@ -49,8 +49,8 @@
 #include "ddp_drv.h"
 
 #ifndef ASSERT
-//#define ASSERT(expr) do {printk("ASSERT error func=%s, line=%d\n", __FUNC__, __LINE__);} while (!(expr))
-#define ASSERT(expr) do {printk("ASSERT error \n");} while (!(expr))
+//#define ASSERT(expr) do {pr_err("ASSERT error func=%s, line=%d\n", __FUNC__, __LINE__);} while (!(expr))
+#define ASSERT(expr) do {pr_err("ASSERT error \n");} while (!(expr))
 #endif
 
 #define DISP_INDEX_OFFSET 0  // 82 has only one RDMA, base addr do not have to add offset according to module index
@@ -96,7 +96,7 @@ int RDMAReset(unsigned idx) {
     unsigned int delay_cnt=0;
     //static unsigned int cnt=0;
     
-    // printk("[DDP] RDMAReset called %d \n", cnt++);
+    // pr_debug("[DDP] RDMAReset called %d \n", cnt++);
 
     ASSERT(idx <= 2);
 
@@ -106,18 +106,18 @@ int RDMAReset(unsigned idx) {
         delay_cnt++;
         if(delay_cnt>10000)
         {
-            printk("[DDP] error, RDMAReset(%d) timeout, stage 1! DISP_REG_RDMA_GLOBAL_CON=0x%x \n", idx, DISP_REG_GET(idx * DISP_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON));
+            pr_warn("[DDP] error, RDMAReset(%d) timeout, stage 1! DISP_REG_RDMA_GLOBAL_CON=0x%x \n", idx, DISP_REG_GET(idx * DISP_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON));
             break;
         }
     }
     DISP_REG_SET_FIELD(GLOBAL_CON_FLD_SOFT_RESET, idx * DISP_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, 0);
-    // printk("[DDP] start reset! \n");
+    // pr_debug("[DDP] start reset! \n");
     while((DISP_REG_GET(idx * DISP_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON)&0x700)!=0x100)
     {
         delay_cnt++;
         if(delay_cnt>10000)
         {
-            printk("[DDP] error, RDMAReset(%d) timeout, stage 2! DISP_REG_RDMA_GLOBAL_CON=0x%x \n", idx, DISP_REG_GET(idx * DISP_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON));
+            pr_warn("[DDP] error, RDMAReset(%d) timeout, stage 2! DISP_REG_RDMA_GLOBAL_CON=0x%x \n", idx, DISP_REG_GET(idx * DISP_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON));
             ddp_dump_info(DISP_MODULE_CONFIG);
             ddp_dump_info(DISP_MODULE_MUTEX);
                 ddp_dump_info(DISP_MODULE_OVL);
@@ -125,7 +125,7 @@ int RDMAReset(unsigned idx) {
             break;
         }
     }   
-    // printk("[DDP] end reset! \n");
+    // pr_debug("[DDP] end reset! \n");
 
 #if 0    
     DISP_REG_SET(idx * DISP_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON     , 0x00);
@@ -201,12 +201,12 @@ int RDMAConfig(unsigned idx,
     ASSERT(idx <= 2);
     if((width > RDMA_MAX_WIDTH) || (height > RDMA_MAX_HEIGHT))
     {
-    	  printk("DDP error, RDMA input overflow, w=%d, h=%d, max_w=%d, max_h=%d\n", width, height, RDMA_MAX_WIDTH, RDMA_MAX_HEIGHT);
+          pr_err("DDP error, RDMA input overflow, w=%d, h=%d, max_w=%d, max_h=%d\n", width, height, RDMA_MAX_WIDTH, RDMA_MAX_HEIGHT);
     }
 
     if(width==0 || height==0)
     {
-        printk("DDP error, RDMA input error, w=%d, h=%d, pitch=%d\n", width, height, pitch); 
+        pr_err("DDP error, RDMA input error, w=%d, h=%d, pitch=%d\n", width, height, pitch);
         ASSERT( width > 0);
         ASSERT( height > 0);
     }
@@ -248,13 +248,13 @@ int RDMAConfig(unsigned idx,
         break;
 
     default:
-        printk("DDP error, unknown RDMA input format = %d\n", inputFormat);
+        pr_err("DDP error, unknown RDMA input format = %d\n", inputFormat);
         ASSERT(0);
     }
     // OUTPUT_VALID_FIFO_THREASHOLD = min{(DISP_WIDTH+120)*bpp/16, FIFO_PSEUDO_LENGTH}
     fifo_threashold = (width + 120) * bpp / 16;
     fifo_threashold = fifo_threashold > fifo_pseudo_length ? fifo_pseudo_length : fifo_threashold;
-    //printk("RDMA: w=%d, h=%d, addr=%x, pitch=%d, mode=%d\n", width, height, address, width*bpp, mode);
+    //pr_debug("RDMA: w=%d, h=%d, addr=%x, pitch=%d, mode=%d\n", width, height, address, width*bpp, mode);
     //--------------------------------------------------------
     // calculate ultra/pre-ultra setting
     // to start to issue ultra from fifo having 4us data
@@ -273,7 +273,7 @@ int RDMAConfig(unsigned idx,
     pre_ultra_low_ofs = pre_ultra_low_level - ultra_low_level;
     ultra_high_ofs = 1;
     pre_ultra_high_ofs = pre_ultra_high_level - pre_ultra_low_level - 1;
-    //printk("RDMA%d: fifo_pseudo_length=%d, fifo_threashold=%d, ultra_low_level=%x, pre_ultra_low_level=%d, pre_ultra_high_level=%d, ultra_high_ofs=%d, pre_ultra_low_ofs=%d, pre_ultra_high_ofs=%d\n", 
+    //pr_debug("RDMA%d: fifo_pseudo_length=%d, fifo_threashold=%d, ultra_low_level=%x, pre_ultra_low_level=%d, pre_ultra_high_level=%d, ultra_high_ofs=%d, pre_ultra_low_ofs=%d, pre_ultra_high_ofs=%d\n",
     //        idx, fifo_pseudo_length, fifo_threashold, ultra_low_level, pre_ultra_low_level, pre_ultra_high_level, ultra_high_ofs, pre_ultra_low_ofs, pre_ultra_high_ofs);
     if ((DISP_IsDecoupleMode()==0) || (gEnableUltra==1)) {
     	if(gUltraLevel==4)  // always ultra
@@ -307,7 +307,7 @@ int RDMAConfig(unsigned idx,
         break;
         
     default:
-    	  printk("DDP error, unknow input format is %d\n", inputFormat);
+          pr_err("DDP error, unknow input format is %d\n", inputFormat);
         ASSERT(0);
     } 
     
@@ -401,7 +401,7 @@ void RDMAWait(unsigned idx)
 		msleep(1);
 		if(delay_cnt>100)
 		{
-			printk("[DDP] error:RDMA%dWait timeout \n", idx);
+            pr_warn("[DDP] error:RDMA%dWait timeout \n", idx);
 			break;
 		}
     }
@@ -460,7 +460,7 @@ enum RDMA_INPUT_FORMAT rdma_fmt_convert(DpColorFormat fmt)
 	   rdma_fmt = RDMA_INPUT_FORMAT_VYUY;
 	   break;
    default:
-	   printk("error: rdma_fmt_convert fmt=%d, rdma_fmt=%d \n", fmt, rdma_fmt);
+       pr_err("error: rdma_fmt_convert fmt=%d, rdma_fmt=%d \n", fmt, rdma_fmt);
    }
    return rdma_fmt;
 }
@@ -475,7 +475,7 @@ enum RDMA_OUTPUT_FORMAT rdma_output_fmt_convert(DpColorFormat fmt)
        //case eYUV_444_1P           :
        //  rdma_fmt = RDMA_OUTPUT_FORMAT_YUV444   ;  break;
        default:
-           printk("error: rdma_fmt_convert fmt=%d, rdma_fmt=%d \n", fmt, rdma_fmt);
+           pr_err("error: rdma_fmt_convert fmt=%d, rdma_fmt=%d \n", fmt, rdma_fmt);
    }
 
    return rdma_fmt;

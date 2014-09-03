@@ -26,7 +26,7 @@ unsigned int ddp_bitblt_ioctl_inform_done( unsigned long ioctl_user_param  );
 #define DDPK_CH_HDMI_3   (3)
 #define DDPK_CH_WFD_0    (4)
 
-#define DDPK_PRINTF               printk
+#define DDPK_PRINTF               pr_debug
 
 //#define DDPK_SHOWFUNCTION( b_valid_function )     {  DDPK_PRINTF("[DDPK Func Call]: %s()%s\n\r", __FUNCTION__, b_valid_function?"":":Under Implement!" );  } 
 #define DDPK_SHOWFUNCTION( b_valid_function )

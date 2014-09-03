@@ -53,7 +53,7 @@ static void _DISP_InterruptCallbackProxy(DISP_INTERRUPT_EVENTS eventID)
     }
     else
     {
-        printk("Invalid event id: %d\n", eventID);
+        pr_err("Invalid event id: %d\n", eventID);
         ASSERT(0);
     }
 
@@ -96,7 +96,7 @@ DISP_STATUS DISP_SetInterruptCallback(DISP_INTERRUPT_EVENTS eventID, DISP_INTERR
     }
     else
     {
-        printk("Invalid event id: %d\n", eventID);
+        pr_err("Invalid event id: %d\n", eventID);
         ASSERT(0);
         return DISP_STATUS_ERROR;        ///TODO: error log
     }

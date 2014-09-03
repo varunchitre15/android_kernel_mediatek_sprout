@@ -184,7 +184,7 @@ static void _DPI1_LogRefreshRate(DPI1_REG_INTERRUPT status)
 
         if (prevUs < curr.tv_usec)
         {
-            DISP_LOG_PRINT(ANDROID_LOG_INFO, "DPI1", "Receive 1 vsync in %lu us\n",
+            pr_debug("[DPI1] Receive 1 vsync in %lu us\n",
                    curr.tv_usec - prevUs);
         }
         prevUs = curr.tv_usec;
@@ -246,7 +246,7 @@ static irqreturn_t _DPI1_InterruptHandler(int irq, void *dev_id)
     }
 
     if (status.VSYNC && counter) {
-        DISP_LOG_PRINT(ANDROID_LOG_ERROR, "DPI1", "[Error] DPI FIFO is empty, "
+        pr_err("[DPI1][Error] DPI FIFO is empty, "
                "received %d times interrupt !!!\n", counter);
         counter = 0;
     }
@@ -282,10 +282,10 @@ enum hrtimer_restart dpi1_vsync_hrtimer_func(struct hrtimer *timer)
 	{
 		dpi_vsync = true;
 		wake_up_interruptible(&_vsync_wait_queue_dpi);
-//		printk("hrtimer Vsync, and wake up\n");
+//        pr_debug("hrtimer Vsync, and wake up\n");
 	}
 //	ret = hrtimer_forward_now(timer, ktime_set(0, VSYNC_US_TO_NS(vsync_timer_dpi1)));
-//	printk("hrtimer callback\n");
+//    pr_debug("hrtimer callback\n");
     return HRTIMER_NORESTART;
 }
 #endif
@@ -388,7 +388,7 @@ DPI_STATUS DPI1_Init(BOOL isDpiPoweredOn)
     if (request_irq(MT6589_DPI_IRQ_ID,
         _DPI1_InterruptHandler, IRQF_TRIGGER_LOW, "mtkdpi", NULL) < 0)
     {
-        DISP_LOG_PRINT(ANDROID_LOG_INFO, "DPI1", "[ERROR] fail to request DPI irq\n");
+        pr_debug("[DPI1][ERROR] fail to request DPI irq\n");
         return DPI_STATUS_ERROR;
     }
 
@@ -485,7 +485,7 @@ DPI_STATUS DPI1_Init_PLL(HDMI_VIDEO_RESOLUTION resolution)
 
 		default:
 		{
-			printk("[DPI1] not supported format, %s, %d, format = %d\n", __func__, __LINE__, resolution);
+            pr_warn("[DPI1] not supported format, %s, %d, format = %d\n", __func__, __LINE__, resolution);
 			break;
 		}
 	}
@@ -499,7 +499,7 @@ EXPORT_SYMBOL(DPI1_Init_PLL);
 
 DPI_STATUS DPI1_Set_DrivingCurrent(LCM_PARAMS *lcm_params)
 {
-	DISP_LOG_PRINT(ANDROID_LOG_WARN, "DPI1", "DPI1_Set_DrivingCurrent not implement for 6575");
+    pr_warn("[DPI1] DPI1_Set_DrivingCurrent not implement for 6575");
 	return DPI_STATUS_OK;
 }
 
@@ -546,7 +546,7 @@ DPI_STATUS DPI1_PowerOn()
         int ret = enable_clock(MT_CG_DISP1_DPI1, "DPI");
 		if(1 == ret)
 		{
-			DISP_LOG_PRINT(ANDROID_LOG_ERROR, "DPI", "power manager API return FALSE\n");
+            pr_err("[DPI] power manager API return FALSE\n");
 		}
 #endif
         _RestoreDPIRegisters();
@@ -567,7 +567,7 @@ DPI_STATUS DPI1_PowerOff()
         ret = disable_clock(MT_CG_DISP1_DPI1, "DPI");
 		if(1 == ret)
 		{
-			DISP_LOG_PRINT(ANDROID_LOG_ERROR, "DPI", "power manager API return FALSE\n");
+            pr_err("[DPI] power manager API return FALSE\n");
 		}
 #endif
         s_isDpiPowerOn = FALSE;
@@ -770,11 +770,11 @@ DPI_STATUS DPI1_DumpRegisters(void)
 {
     UINT32 i;
 
-    DISP_LOG_PRINT(ANDROID_LOG_WARN, "DPI1", "---------- Start dump DPI1 registers ----------\n");
+    pr_warn("[DPI1] ---------- Start dump DPI1 registers ----------\n");
 
     for (i = 0; i < sizeof(DPI_REGS); i += 4)
     {
-        DISP_LOG_PRINT(ANDROID_LOG_WARN, "DPI1", "DPI1+%04x : 0x%08x\n", i, INREG32(DPI1_BASE + i));
+        pr_warn("[DPI1] DPI1+%04x : 0x%08x\n", i, INREG32(DPI1_BASE + i));
     }
 
     return DPI_STATUS_OK;
@@ -809,7 +809,7 @@ DPI_STATUS DPI1_Capture_Framebuffer(unsigned int pvbuf, unsigned int bpp)
 
     if(pvbuf == 0 || bpp == 0)
     {
-        DISP_LOG_PRINT(ANDROID_LOG_ERROR, "DPI", "DPI1_Capture_Framebuffer, ERROR, parameters wrong: pvbuf=0x%08x, bpp=%d\n", pvbuf, bpp);
+        pr_err("[DPI] DPI1_Capture_Framebuffer, ERROR, parameters wrong: pvbuf=0x%08x, bpp=%d\n", pvbuf, bpp);
         return DPI_STATUS_OK;
     }
 
@@ -823,7 +823,7 @@ DPI_STATUS DPI1_Capture_Framebuffer(unsigned int pvbuf, unsigned int bpp)
     }
     else
     {
-        DISP_LOG_PRINT(ANDROID_LOG_ERROR, "DPI", "DPI1_Capture_Framebuffer, ERROR, dpi_fb_bpp is wrong: %d\n", dpi_fb_bpp);
+        pr_err("[DPI] DPI1_Capture_Framebuffer, ERROR, dpi_fb_bpp is wrong: %d\n", dpi_fb_bpp);
         return DPI_STATUS_OK;
     }
 
@@ -835,7 +835,7 @@ DPI_STATUS DPI1_Capture_Framebuffer(unsigned int pvbuf, unsigned int bpp)
 	else
     	fbv = (unsigned char*)ioremap_cached((unsigned int)DPI1_REG->FB[DPI1_GetCurrentFB()].ADDR, fbsize);
 
-    DISP_LOG_PRINT(ANDROID_LOG_INFO, "DPI", "current fb count is %d\n", DPI1_GetCurrentFB());
+    pr_debug("[DPI] current fb count is %d\n", DPI1_GetCurrentFB());
 
     if(bpp == 32 && dpi_fb_bpp == 24)
     {
@@ -910,7 +910,7 @@ DPI_STATUS DPI1_Capture_Framebuffer(unsigned int pvbuf, unsigned int bpp)
     }
     else
     {
-    	DISP_LOG_PRINT(ANDROID_LOG_ERROR, "DPI", "DPI1_Capture_Framebuffer, bpp:%d & dpi_fb_bpp:%d is not supported now\n", bpp, dpi_fb_bpp);
+        pr_err("[DPI] DPI1_Capture_Framebuffer, bpp:%d & dpi_fb_bpp:%d is not supported now\n", bpp, dpi_fb_bpp);
     }
 
     iounmap(fbv);

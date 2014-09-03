@@ -35,19 +35,19 @@ typedef unsigned char BOOL;
 
 #define XLOG_INFO(fmt, arg...) 												   \
 	do {                                                    				   \
-		if(log_on)xlog_printk(ANDROID_LOG_INFO, "DISP/"LOG_TAG, fmt, ##arg);   \
+        if(log_on)pr_debug("[DISP/SYNC]"fmt, ##arg);   \
 	}while(0)
 #define XLOG_DBG(fmt, arg...)  												   \
 	do {                                                    				   \
-		if(log_on)xlog_printk(ANDROID_LOG_DEBUG, "DISP/"LOG_TAG, fmt, ##arg);  \
+        if(log_on)pr_debug("[DISP/SYNC]"fmt, ##arg);  \
 	}while(0)
 #define XLOG_WARN(fmt, arg...) 												   \
     do { 																	   \
-    	xlog_printk(ANDROID_LOG_WARN, "DISP/"LOG_TAG, fmt, ##arg);  		   \
+        pr_warn("[DISP/SYNC] "fmt, ##arg);             \
     }while (0)
 #define XLOG_ERR(fmt, arg...) 												   \
     do { 																	   \
-    	xlog_printk(ANDROID_LOG_WARN, "DISP/"LOG_TAG, fmt, ##arg);  		   \
+        pr_warn("[DISP/SYNC] "fmt, ##arg);             \
     }while (0)
 
 ///=============================================================================

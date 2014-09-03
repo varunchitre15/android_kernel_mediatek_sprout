@@ -32,7 +32,7 @@ static int mtkfb_size_read(char *page, char **start, off_t off, int count, int *
 	int len = 0, fb_size;
 
 	fb_size = DISP_GetVRamSize();  //unit: Byte
-	printk("%s fb_size:%d\n", __func__, fb_size);
+    pr_debug("%s fb_size:%d\n", __func__, fb_size);
 	p += sprintf(p, "%d\n", fb_size);
 	*start = page + off;
 
@@ -53,7 +53,7 @@ static const struct file_operations mtkfb_proc_fops = {
 
 int mtkfb_proc_intf_register(void)
 {
-	printk("%s: register mtk fb proc interface\n", __func__);
+    pr_debug("%s: register mtk fb proc interface\n", __func__);
 
 #if 0
 	mtkfb_kop_entry = create_proc_entry(MTKFB_PROC_INTERFACE_NAME, 0, NULL);
@@ -70,7 +70,7 @@ int mtkfb_proc_intf_register(void)
 
 void mtkfb_proc_intf_unregister(void)
 {
-	printk("%s: unregister mtk fb proc interface\n", __func__);
+    pr_debug("%s: unregister mtk fb proc interface\n", __func__);
 
 	if (mtkfb_kop_entry != NULL) {
 		remove_proc_entry(MTKFB_PROC_INTERFACE_NAME, mtkfb_kop_entry);
@@ -80,13 +80,13 @@ void mtkfb_proc_intf_unregister(void)
 
 static int __init mtkfb_proc_intf_init(void)
 {
-	printk("%s\n", __func__);
+    pr_debug("%s\n", __func__);
     return mtkfb_proc_intf_register();
 }
 
 static void __exit mtkfb_proc_intf_exit(void)
 {
-    printk("%s\n", __func__);
+    pr_debug("%s\n", __func__);
     mtkfb_proc_intf_unregister();
 }
 

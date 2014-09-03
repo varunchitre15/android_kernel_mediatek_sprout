@@ -111,12 +111,12 @@ static unsigned int vsync_timer = 0;
 static size_t dbi_log_on = false;
 #define DBI_LOG(fmt, arg...) \
     do { \
-        if (dbi_log_on) DISP_LOG_PRINT(ANDROID_LOG_WARN, "LCD", fmt, ##arg);    \
+        if (dbi_log_on) pr_warn("[LCD]"fmt, ##arg);    \
     }while (0)
 
 #define DBI_FUNC()	\
 	do { \
-		if(dbi_log_on) DISP_LOG_PRINT(ANDROID_LOG_INFO, "LCD", "[Func]%s\n", __func__);  \
+        if(dbi_log_on) pr_debug("[LCD][Func]%s\n", __func__);  \
 	}while (0)
 
 void dbi_log_enable(int enable)
@@ -178,7 +178,7 @@ static irqreturn_t _LCD_InterruptHandler(int irq, void *dev_id)
     if (status.COMPLETED)
     {
 #ifdef CONFIG_MTPROF_APPLAUNCH  // eng enable, user disable   	
-        LOG_PRINT(ANDROID_LOG_INFO, "AppLaunch", "LCD frame buffer update done !\n");
+        pr_debug("[AppLaunch] LCD frame buffer update done !\n");
 #endif
         wake_up_interruptible(&_lcd_wait_queue);
 
@@ -203,7 +203,7 @@ static irqreturn_t _LCD_InterruptHandler(int irq, void *dev_id)
 
 				wake_up_interruptible(&_vsync_wait_queue);
 			}
-//			printk("TE signal, and wake up\n");
+//            pr_debug("TE signal, and wake up\n");
 		}
 #endif  
 		DBG_OnTeDelayDone();
@@ -275,10 +275,10 @@ static void _WaitForEngineNotBusy(void)
                                                         !_IsEngineBusy(),
                                                         WAIT_TIMEOUT);
             if (0 == ret) {
-                DISP_LOG_PRINT(ANDROID_LOG_WARN, "LCD", "[WARNING] Wait for LCD engine not busy timeout!!!\n"); 
+                pr_warn("[LCD][WARNING] Wait for LCD engine not busy timeout!!!\n");
 						LCD_DumpRegisters();
 						if(LCD_REG->STATUS.WAIT_SYNC){
-                    DISP_LOG_PRINT(ANDROID_LOG_WARN, "LCD", "reason is LCD can't wait TE signal!!!\n"); 
+                    pr_warn("[LCD] reason is LCD can't wait TE signal!!!\n");
 							LCD_TE_Enable(FALSE);
 						}
 						OUTREG16(&LCD_REG->START, 0);
@@ -291,11 +291,11 @@ static void _WaitForEngineNotBusy(void)
 		msleep(1);//sleep 1ms
 		wait_time++;
 		if(wait_time>2000){ //timeout
-			printk("[WARNING] Wait for LCD engine not busy timeout!!!\n");
+            pr_warn("[WARNING] Wait for LCD engine not busy timeout!!!\n");
 			LCD_DumpRegisters();
 
 			if(LCD_REG->STATUS.WAIT_SYNC){
-				printk("reason is LCD can't wait TE signal!!!\n");
+                pr_warn("reason is LCD can't wait TE signal!!!\n");
 				LCD_TE_Enable(FALSE);
 			}
 			OUTREG16(&LCD_REG->START, 0);
@@ -330,10 +330,10 @@ enum hrtimer_restart lcd_te_hrtimer_func(struct hrtimer *timer)
 	{
 		lcd_vsync = true;
 		wake_up_interruptible(&_vsync_wait_queue);
-//		printk("hrtimer Vsync, and wake up\n");
+//        pr_debug("hrtimer Vsync, and wake up\n");
 	}
 //	ret = hrtimer_forward_now(timer, ktime_set(0, VSYNC_US_TO_NS(vsync_timer)));
-//	printk("hrtimer callback\n");
+//    pr_debug("hrtimer callback\n");
     return HRTIMER_NORESTART;
 }
 #endif
@@ -788,14 +788,14 @@ LCD_STATUS LCD_ConfigSerialIF(LCD_IF_ID id,
 	unsigned int offset = 0;
 	unsigned int sif_id = 0;
 
-    printk("LCD_ConfigSerialIF 1 \n");
+    pr_debug("LCD_ConfigSerialIF 1 \n");
 	ASSERT(id >= LCD_IF_SERIAL_0 && id <= LCD_IF_SERIAL_1);
 
-    printk("LCD_ConfigSerialIF 2 \n");
+    pr_debug("LCD_ConfigSerialIF 2 \n");
 
     _WaitForEngineNotBusy();
 
-    printk("LCD_ConfigSerialIF 3 \n");
+    pr_debug("LCD_ConfigSerialIF 3 \n");
 
     memset(&config, 0, sizeof(config));
 	
@@ -804,7 +804,7 @@ LCD_STATUS LCD_ConfigSerialIF(LCD_IF_ID id,
 		sif_id = 1;
 	}
 
-	printk("LCD_ConfigSerialIF 4 \n");
+    pr_debug("LCD_ConfigSerialIF 4 \n");
 	LCD_MASKREG32(&config, 0x07 << offset, bits << offset);
 	LCD_MASKREG32(&config, 0x08 << offset, three_wire << (offset + 3));
 	LCD_MASKREG32(&config, 0x10 << offset, sdi << (offset + 4));
@@ -972,7 +972,7 @@ UINT32 LCD_DisableAllLayer(UINT32 vram_start, UINT32 vram_end)
 {
     int id;
     int layer_enable = 0;
-    DISP_LOG_PRINT(ANDROID_LOG_INFO, "LCD", "%s(%d, %d)\n", __func__, vram_start, vram_end);
+    pr_debug("[LCD] %s(%d, %d)\n", __func__, vram_start, vram_end);
 
     for (id = 0; id < DDP_OVL_LAYER_MUN; id++) {
         if (cached_layer_config[id].layer_en == 0)
@@ -981,12 +981,12 @@ UINT32 LCD_DisableAllLayer(UINT32 vram_start, UINT32 vram_end)
         if (cached_layer_config[id].addr >= vram_start &&
             cached_layer_config[id].addr < vram_end)
         {
-            DISP_LOG_PRINT(ANDROID_LOG_INFO, "LCD", "  not disable(%d)\n", id);
+            pr_debug("[LCD] not disable(%d)\n", id);
             layer_enable |= (1 << id);
             continue;
         }
 
-        DISP_LOG_PRINT(ANDROID_LOG_INFO, "LCD", "  disable(%d)\n", id);
+        pr_debug("[LCD] disable(%d)\n", id);
         cached_layer_config[id].layer_en = 0;
         cached_layer_config[id].isDirty = true;
     }
@@ -1411,10 +1411,10 @@ LCD_STATUS LCD_Dump_Layer_Info()
 {
     int i=0;
 
-    printk("LCD_Dump_Layer_Info: \n");
+    pr_debug("LCD_Dump_Layer_Info: \n");
     for(i=0;i<4;i++)
     {
-        printk("layer=%d, en=%d, src=%d, fmt=%d, addr=0x%x, (%d, %d, %d, %d), pitch=%d, keyEn=%d, key=0x%x, aen=%d, alpha=0x%x, isTdshp=%d, curr_buff_idx=%d, next_buff_idx=%d\n", 
+        pr_debug("layer=%d, en=%d, src=%d, fmt=%d, addr=0x%x, (%d, %d, %d, %d), pitch=%d, keyEn=%d, key=0x%x, aen=%d, alpha=0x%x, isTdshp=%d, curr_buff_idx=%d, next_buff_idx=%d\n",
             cached_layer_config[i].layer,
             cached_layer_config[i].layer_en,
             cached_layer_config[i].source,
@@ -1511,11 +1511,11 @@ LCD_STATUS LCD_DumpRegisters(void)
 {
     UINT32 i;
 
-    DISP_LOG_PRINT(ANDROID_LOG_WARN, "LCD", "---------- Start dump LCD registers ----------\n");
+    pr_warn("[LCD] ---------- Start dump LCD registers ----------\n");
     
     for (i = 0; i < offsetof(LCD_REGS, GMC_ULTRA_TH); i += 4)
     {
-        printk("LCD+%04x : 0x%08x\n", i, INREG32(LCD_BASE + i));
+        pr_debug("LCD+%04x : 0x%08x\n", i, INREG32(LCD_BASE + i));
     }
 	
     return LCD_STATUS_OK;
@@ -1525,7 +1525,7 @@ void LCD_DumpLayer()
 {
 	unsigned int i;
 	for(i=0;i<4;i++){
-		printk("LayerInfo in LCD driver, layer=%d,layer_en=%d, source=%d, fmt=%d, addr=0x%x, x=%d, y=%d \n\
+        pr_debug("LayerInfo in LCD driver, layer=%d,layer_en=%d, source=%d, fmt=%d, addr=0x%x, x=%d, y=%d \n\
 		w=%d, h=%d, pitch=%d, keyEn=%d, key=%d, aen=%d, alpha=%d \n ", 
 	    cached_layer_config[i].layer,   // layer
 	    cached_layer_config[i].layer_en,
@@ -1800,7 +1800,7 @@ LCD_STATUS LCD_FM_Desense(LCD_IF_ID id, unsigned long freq)
 
 	OUTREG32(&config, AS_UINT32(&LCD_REG->PARALLEL_CFG[(UINT32)id]));
     DBI_LOG("[enter LCD_FM_Desense]:parallel IF = 0x%x, ctrl = 0x%x\n",
-		INREG32(&LCD_REG->PARALLEL_CFG[(UINT32)id]));   
+        (unsigned int)id, INREG32(&LCD_REG->PARALLEL_CFG[(UINT32)id]));
 	wst = config.WST;
 	c2wh = config.C2WH;
 	// Config Delay Between Commands
@@ -1876,7 +1876,7 @@ LCD_STATUS LCD_Get_Default_WriteCycle(LCD_IF_ID id, unsigned int *write_cycle)
 
 	OUTREG32(&config, AS_UINT32(&LCD_REG->PARALLEL_CFG[(UINT32)id]));
     DBI_LOG("[enter LCD_Get_Default_WriteCycle]:parallel IF = 0x%x, ctrl = 0x%x\n",
-		INREG32(&LCD_REG->PARALLEL_CFG[(UINT32)id]));   
+        (unsigned int)id, INREG32(&LCD_REG->PARALLEL_CFG[(UINT32)id]));
 	wst = config.WST;
 	c2wh = config.C2WH;
 	// Config Delay Between Commands
@@ -1906,7 +1906,7 @@ LCD_STATUS LCD_Get_Current_WriteCycle(LCD_IF_ID id, unsigned int *write_cycle)
 
 	OUTREG32(&config, AS_UINT32(&LCD_REG->PARALLEL_CFG[(UINT32)id]));
     DBI_LOG("[enter LCD_Get_Current_WriteCycle]:parallel IF = 0x%x, ctrl = 0x%x\n",
-		INREG32(&LCD_REG->PARALLEL_CFG[(UINT32)id]));   
+        (unsigned int)id, INREG32(&LCD_REG->PARALLEL_CFG[(UINT32)id]));
 	wst = config.WST;
 	c2wh = config.C2WH;
 	// Config Delay Between Commands

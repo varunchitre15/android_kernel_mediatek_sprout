@@ -201,7 +201,7 @@ void mtkfb_pan_disp_test(void)
         return;
     }
     sem_flipping_cnt--;
-    DISP_LOG_PRINT(ANDROID_LOG_WARN, "MTKFB", "wait sem_flipping\n");
+    pr_warn("[MTKFB] wait sem_flipping\n");
     if (down_interruptible(&sem_early_suspend)) {
         MTKFB_WRAN("[fb driver] can't get semaphore:%d\n", __LINE__);
         sem_flipping_cnt++;
@@ -210,7 +210,7 @@ void mtkfb_pan_disp_test(void)
     }
     sem_early_suspend_cnt--;
 
-    DISP_LOG_PRINT(ANDROID_LOG_WARN, "MTKFB", "wait sem_early_suspend\n");
+    pr_warn("[MTKFB] wait sem_early_suspend\n");
     if (down_interruptible(&sem_overlay_buffer)) {
         MTKFB_WRAN("[fb driver] can't get semaphore,%d\n", __LINE__);
         sem_early_suspend_cnt++;
@@ -221,7 +221,7 @@ void mtkfb_pan_disp_test(void)
         return;
     }
     sem_overlay_buffer_cnt--;
-    DISP_LOG_PRINT(ANDROID_LOG_WARN, "MTKFB", "wait sem_overlay_buffer\n");
+    pr_warn("[MTKFB] wait sem_overlay_buffer\n");
     if (is_early_suspended) goto end;
 
 end:
@@ -762,7 +762,7 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 static int mtkfb_pan_display_proxy(struct fb_var_screeninfo *var, struct fb_info *info)
 {
 #ifdef CONFIG_MTPROF_APPLAUNCH  // eng enable, user disable
-    LOG_PRINT(ANDROID_LOG_INFO, "AppLaunch", "mtkfb_pan_display_proxy.\n");
+    pr_debug("[AppLaunch] mtkfb_pan_display_proxy.\n");
 #endif
     return mtkfb_pan_display_impl(var, info);
 }
@@ -2030,7 +2030,7 @@ static int mtkfb_ioctl(struct file *file, struct fb_info *info, unsigned int cmd
     }
 ////////////////////////////////////////////////
     default:
-        printk("mtkfb_ioctl Not support, info=0x%08x, cmd=0x%08x, arg=0x%08x, num=%d\n", (unsigned int)info, (unsigned int)cmd, (unsigned int)arg, _IOC_NR(cmd));
+        pr_err("mtkfb_ioctl Not support, info=0x%08x, cmd=0x%08x, arg=0x%08x, num=%d\n", (unsigned int)info, (unsigned int)cmd, (unsigned int)arg, _IOC_NR(cmd));
         return -EINVAL;
     }
 }
@@ -2306,7 +2306,7 @@ void mtkfb_disable_non_fb_layer(void)
             cached_layer_config[id].addr < (fb_pa+DISP_GetVRamSize()))
             continue;
 
-        DISP_LOG_PRINT(ANDROID_LOG_INFO, "LCD", "  disable(%d)\n", id);
+        pr_debug("[LCD] disable(%d)\n", id);
         cached_layer_config[id].layer_en = 0;
         cached_layer_config[id].isDirty = true;
         dirty = 1;
@@ -2464,7 +2464,7 @@ static void mtkfb_fb_565_to_8888(struct fb_info *fb_info)
     int wait_ret = 0;
 
     MTKFB_INFO("mtkfb_fb_565_to_8888 xres=%d yres=%d fbsize=0x%X x_virtual=%d s=0x%08X d=0x%08X\n",
-                 xres, yres, fbsize, x_virtual, s, d);
+                 xres, yres, fbsize, x_virtual, (unsigned int)s, (unsigned int)d);
     //printf("[boot_logo_updater]normal\n");
     for (j = 0; j < yres; ++ j){
         for(k = 0; k < xres; ++ k)
@@ -2527,7 +2527,7 @@ static void mtkfb_fb_565_to_888(void* fb_va)
     int j = 0;
     int k = 0;
 
-    MTKFB_INFO("555_to_888, s = 0x%x, d=0x%x\n", s,d);
+    MTKFB_INFO("555_to_888, s = 0x%x, d=0x%x\n", (unsigned int)s,(unsigned int)d);
     for (j = 0; j < yres; ++ j)
     {
         for(k = 0; k < xres; ++ k)
@@ -2556,7 +2556,7 @@ static disp_dfo_item_t disp_dfo_setting[] =
 
 #define MT_DISP_DFO_DEBUG
 #ifdef MT_DISP_DFO_DEBUG
-#define disp_dfo_printf(string, args...) printk("[DISP/DFO]"string, ##args)
+#define disp_dfo_printf(string, args...) pr_debug("[DISP/DFO]"string, ##args)
 #else
 #define disp_dfo_printf(string, args...) ()
 #endif
@@ -2752,7 +2752,7 @@ static int mtkfb_probe(struct device *dev)
     fbdev->layer_format = (MTK_FB_FORMAT*)vmalloc(sizeof(MTK_FB_FORMAT) * HW_OVERLAY_COUNT);
     if(!fbdev->layer_format)
     {
-        printk("[mtkfb.c FB driver] vmalloc failed, %d\n", __LINE__);
+        pr_err("[MTKFB] vmalloc failed, %d\n", __LINE__);
         r = -ENOMEM;
         goto cleanup;
     }
@@ -2787,19 +2787,19 @@ static int mtkfb_probe(struct device *dev)
 
         if(fb_address_lk)
         {
-            printk("[wwy]fbsize_copy=%d\n", fbsize_copy);
+            pr_debug("[wwy]fbsize_copy=%d\n", fbsize_copy);
             memcpy((void*)fbdev->fb_va_base,(void*)(va_lk),fbsize_copy);
             iounmap((void*)va_lk);
         }
 
 #ifdef MTK_LCA_RAM_OPTIMIZE
-        printk("[MTKFB] max RAM = %x, actual RAM = %x\n", get_max_DRAM_size(), get_actual_DRAM_size());
+        pr_debug("[MTKFB] max RAM = %x, actual RAM = %x\n", get_max_DRAM_size(), get_actual_DRAM_size());
         if (get_max_DRAM_size() < get_actual_DRAM_size())
         {
             void *fb_va_base_lk;
             unsigned int fb_pa_base_lk = get_phys_offset() + get_actual_DRAM_size() - (res->end - res->start + 1);
 
-            printk("Boot logo address shift, copy framebuffer from 0x%08X to 0x%08X\n", fb_pa_base_lk, fbdev->fb_pa_base);
+            pr_debug("Boot logo address shift, copy framebuffer from 0x%08X to 0x%08X\n", fb_pa_base_lk, fbdev->fb_pa_base);
             fb_va_base_lk = ioremap_nocache(fb_pa_base_lk, res->end - res->start + 1);
             memcpy(fbdev->fb_va_base, fb_va_base_lk, res->end - res->start + 1);
             iounmap(fb_va_base_lk);

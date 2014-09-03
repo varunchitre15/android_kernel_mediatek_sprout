@@ -41,47 +41,47 @@ extern size_t mtkfb_dbg_ioctl_log;
 
 #define DISP_DRV_WRAN(fmt, arg...) \
     do { \
-        if (disp_drv_dbg_log) DISP_LOG_PRINT(ANDROID_LOG_WARN, "DISP", fmt, ##arg); \
+        if (disp_drv_dbg_log) pr_warn("[DISP] "fmt, ##arg); \
     }while (0)
 
 #define DISP_DRV_INFO(fmt, arg...) \
     do { \
-        if (disp_drv_dbg_info_log) DISP_LOG_PRINT(ANDROID_LOG_INFO, "DISP", fmt, ##arg); \
+        if (disp_drv_dbg_info_log) pr_debug("[DISP] "fmt, ##arg); \
     }while (0)
 
 #define DISP_DRV_FUNC()	\
     do { \
-        if(disp_drv_dbg_func_log) DISP_LOG_PRINT(ANDROID_LOG_INFO, "DISP", "[Func]%s\n", __func__); \
+        if(disp_drv_dbg_func_log) pr_debug("[DISP]""[Func]%s\n", __func__); \
     }while (0)
 
 #define DISP_DRV_UPD(fmt, arg...) \
     do { \
-        if (disp_drv_dbg_upd_log) DISP_LOG_PRINT(ANDROID_LOG_INFO, "DISP", fmt, ##arg); \
+        if (disp_drv_dbg_upd_log) pr_debug("[DISP] "fmt, ##arg); \
     }while (0)
 
 #define MTKFB_WRAN(fmt, arg...) \
     do { \
-        if (mtkfb_dbg_log) DISP_LOG_PRINT(ANDROID_LOG_WARN, "MTKFB", fmt, ##arg); \
+        if (mtkfb_dbg_log) pr_warn("[MTKFB] "fmt, ##arg); \
     }while (0)
 
 #define MTKFB_INFO(fmt, arg...) \
     do { \
-        if (mtkfb_dbg_log) DISP_LOG_PRINT(ANDROID_LOG_INFO, "MTKFB", fmt, ##arg); \
+        if (mtkfb_dbg_log) pr_debug("[MTKFB] "fmt, ##arg); \
     }while (0)
 
 #define MTKFB_FENCE(fmt, arg...) \
     do { \
-        if (mtkfb_dbg_fence_log) DISP_LOG_PRINT(ANDROID_LOG_INFO, "MTKFB", fmt, ##arg); \
+        if (mtkfb_dbg_fence_log) pr_debug("[MTKFB] "fmt, ##arg); \
     }while (0)
 
 #define MTKFB_FUNC()	\
     do { \
-        if(mtkfb_dbg_func_log) DISP_LOG_PRINT(ANDROID_LOG_INFO, "MTKFB", "[Func]%s\n", __func__); \
+        if(mtkfb_dbg_func_log) pr_debug("[MTKFB]""[Func]%s\n", __func__); \
     }while (0)
 
 #define MTKFB_IOCTL(fmt, arg...) \
     do { \
-        if (mtkfb_dbg_ioctl_log) DISP_LOG_PRINT(ANDROID_LOG_INFO, "MTKFB", fmt, ##arg); \
+        if (mtkfb_dbg_ioctl_log) pr_debug("[MTKFB] "fmt, ##arg); \
     }while (0)
 
 
@@ -163,10 +163,10 @@ static inline void dbg_print(int level, const char *fmt, ...)
 			if (ind > MAX_DBG_INDENT_LEVEL)
 				ind = MAX_DBG_INDENT_LEVEL;
 
-			DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", "%*s", ind * DBG_INDENT_SIZE, "");
+            pr_debug("[DBG] %*s", ind * DBG_INDENT_SIZE, "");
 			va_start(args, fmt);
 			vsnprintf(dbg_buf, sizeof(dbg_buf), fmt, args);
-			DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", dbg_buf);
+            pr_debug("[DBG] "dbg_buf);
 			va_end(args);
 			spin_unlock_irqrestore(&dbg_spinlock, flags);
 		}
@@ -197,7 +197,7 @@ static inline void dbg_print(int level, const char *fmt, ...)
 #define MSG(evt, fmt, args...)                              \
     do {                                                    \
         if ((MTKFB_DBG_EVT_##evt) & MTKFB_DBG_EVT_MASK) {   \
-            DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", fmt, ##args);                            \
+            pr_debug("[DBG] "fmt, ##args);                            \
         }                                                   \
     } while (0)
 

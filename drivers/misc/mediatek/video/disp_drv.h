@@ -32,7 +32,7 @@ extern "C" {
     do {                                                                    \
         DISP_STATUS ret = (expr);                                           \
         if (DISP_STATUS_OK != ret) {                                        \
-            DISP_LOG_PRINT(ANDROID_LOG_ERROR, "COMMON", "[ERROR][mtkfb] DISP API return error code: 0x%x\n"      \
+            pr_err("[COMMON][ERROR][mtkfb] DISP API return error code: 0x%x\n"      \
                    "  file : %s, line : %d\n"                               \
                    "  expr : %s\n", ret, __FILE__, __LINE__, #expr);        \
         }                                                                   \

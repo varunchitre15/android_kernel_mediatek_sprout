@@ -265,7 +265,7 @@ uint32_t* cmdq_core_dump_pc(const TaskStruct *pTask, int thread, const char *tag
             // then read value from VAL
             DISP_REG_SET(DISP_REG_CMDQ_SYNC_TOKEN_ID, 0x3FF & argA);
             value = DISP_REG_GET(DISP_REG_CMDQ_SYNC_TOKEN_VALUE);
-            printk(KERN_DEBUG "[CMDQ][%s] Curr PC(VA): 0x%p, Inst: 0x%08x:0x%08x, WAIT for %s, token_value=0x%08x\n", 
+            pr_debug("[CMDQ][%s] Curr PC(VA): 0x%p, Inst: 0x%08x:0x%08x, WAIT for %s, token_value=0x%08x\n",
                      tag, 
                      hwPC, 
                      insts[2], 
@@ -274,7 +274,7 @@ uint32_t* cmdq_core_dump_pc(const TaskStruct *pTask, int thread, const char *tag
                      value);
             break;
         case CMDQ_CODE_POLL:
-            printk(KERN_DEBUG "[CMDQ][%s] Curr PC(VA): 0x%p, Inst: 0x%08x:0x%08x, POLL for %s\n", 
+            pr_debug("[CMDQ][%s] Curr PC(VA): 0x%p, Inst: 0x%08x:0x%08x, POLL for %s\n",
                      tag, 
                      hwPC, 
                      insts[2], 
@@ -282,14 +282,14 @@ uint32_t* cmdq_core_dump_pc(const TaskStruct *pTask, int thread, const char *tag
                      cmdq_core_parse_subsys(argA, argB));
             break;
         default:
-            printk(KERN_DEBUG "[CMDQ][%s] Curr PC(VA): 0x%p, Inst: 0x%08x:0x%08x, OP: %s\n", tag, hwPC, insts[2], insts[3], cmdq_core_parse_op(op));
+            pr_debug("[CMDQ][%s] Curr PC(VA): 0x%p, Inst: 0x%08x:0x%08x, OP: %s\n", tag, hwPC, insts[2], insts[3], cmdq_core_parse_op(op));
             break;
         }
 
     }
     else
     {
-         printk(KERN_DEBUG "[CMDQ][%s]Curr PC(VA): N/A, no valid address found\n", tag);
+         pr_debug("[CMDQ][%s]Curr PC(VA): N/A, no valid address found\n", tag);
     }
 
     return hwPC;

@@ -99,7 +99,7 @@ int OVLReset() {
    
    unsigned int delay_cnt = 0;
    static unsigned int cnt=0;
-   printk("[DDP] OVLReset called %d \n", cnt++);
+   pr_debug("[DDP] OVLReset called %d \n", cnt++);
    
    DISP_REG_SET(DISP_REG_OVL_RST, 0x1);              // soft reset
    DISP_REG_SET(DISP_REG_OVL_RST, 0x0);
@@ -108,7 +108,7 @@ int OVLReset() {
         delay_cnt++;
         if(delay_cnt>10000)
         {
-            printk("[DDP] error, OVLReset() timeout! \n");
+            pr_warn("[DDP] error, OVLReset() timeout! \n");
 		   ddp_dump_info(DISP_MODULE_CONFIG);
            ddp_dump_info(DISP_MODULE_MUTEX);
            ddp_dump_info(DISP_MODULE_OVL);
@@ -162,7 +162,7 @@ int OVLROI(unsigned int bgW,
 {
     if((bgW > OVL_MAX_WIDTH) || (bgH > OVL_MAX_HEIGHT))
     {
-        printk("error: OVLROI(), exceed OVL max size, w=%d, h=%d \n", bgW, bgH);		
+        pr_err("error: OVLROI(), exceed OVL max size, w=%d, h=%d \n", bgW, bgH);
         ASSERT(0);
     }
 
@@ -195,7 +195,7 @@ int OVLLayerSwitch(unsigned layer, bool en) {
             DISP_REG_SET(DISP_REG_OVL_RDMA3_CTRL, 0);
             break;
         default:
-            printk("error: invalid layer=%d \n", layer);           // invalid layer
+            pr_err("error: invalid layer=%d \n", layer);           // invalid layer
             ASSERT(0);
     }
 
@@ -231,7 +231,7 @@ int OVL3DConfig(unsigned int layer_id,
             DISP_REG_SET_FIELD(L3_CON_FLD_R_FIRST,   DISP_REG_OVL_L3_CON, r_first);
             break;
         default:
-            printk("error: OVL3DConfig(), invalid layer=%d \n", layer_id);           // invalid layer
+            pr_err("error: OVL3DConfig(), invalid layer=%d \n", layer_id);           // invalid layer
             ASSERT(0);
     }
 	  
@@ -269,7 +269,7 @@ int OVLLayerConfig(unsigned int layer,
 
     if((layer==3) && (isAEEEnabled==1) && (addr!=dal_fb_pa))
     {
-        printk("[DDP], config AEE layer! addr=0x%x \n", addr);
+        pr_debug("[DDP], config AEE layer! addr=0x%x \n", addr);
     }
     
     if(fmt==OVL_INPUT_FORMAT_ABGR8888  ||
@@ -304,19 +304,19 @@ int OVLLayerConfig(unsigned int layer,
             bpp = 2;
             break;
         default:
-            printk("DDP error, OVLLayerConfig unknown fmt , fmt=%d\n", fmt);
+            pr_err("DDP error, OVLLayerConfig unknown fmt , fmt=%d\n", fmt);
             ASSERT(0);      // invalid input format
     }
 
     if((source == OVL_LAYER_SOURCE_SCL || source == OVL_LAYER_SOURCE_PQ) &&
        (fmt != OVL_INPUT_FORMAT_YUV444)) {
-        printk("error: direct link to OVL only support YUV444! \n" );
+        pr_err("error: direct link to OVL only support YUV444! \n" );
         ASSERT(0);                           // direct link support YUV444 only
     }
 
     if((source == OVL_LAYER_SOURCE_MEM && addr == 0))
     {
-        printk("error: source from memory, but addr is 0! \n");
+        pr_err("error: source from memory, but addr is 0! \n");
         ASSERT(0);                           // direct link support YUV444 only
     }
 
@@ -336,7 +336,7 @@ int OVLLayerConfig(unsigned int layer,
             input_color_space = OVL_COLOR_SPACE_YUV;
             break;
         default:
-            printk("DDP error, OVLLayerConfig unknown fmt , fmt=%d\n", fmt);
+            pr_err("DDP error, OVLLayerConfig unknown fmt , fmt=%d\n", fmt);
             ASSERT(0);      // invalid input format
     }
 
@@ -402,11 +402,11 @@ int OVLLayerConfig(unsigned int layer,
     	if (width <= 0) {
             width = dst_w;
     	}
-    	printk("OVL align 64byte:ROI(%d,%d %d,%d), (%d,%d), 0x%08x-->0x%08x, %d-->%d\n", src_x, src_y, dst_w, dst_h, dst_x, dst_w, addr, address, dst_w, width);
+        pr_debug("OVL align 64byte:ROI(%d,%d %d,%d), (%d,%d), 0x%08x-->0x%08x, %d-->%d\n", src_x, src_y, dst_w, dst_h, dst_x, dst_w, addr, address, dst_w, width);
     }
 #else
     if (src_pitch && ( (src_pitch&0x7f) != 0 || (start&0x70) >= 0x50 || (end&0x70) < 0x30 )) {
-        printk("[DDP] warning: hw request(pitch:0x%x,star:0x%x,end:0x%x)\n", src_pitch, start, end);
+        pr_warn("[DDP] warning: hw request(pitch:0x%x,star:0x%x,end:0x%x)\n", src_pitch, start, end);
     }
 #endif
     switch(layer) {
@@ -630,13 +630,13 @@ int OVLLayerConfig(unsigned int layer,
             break;
             
         default:
-            printk("DDP error, OVLLayerConfig layer=%d\n", layer);
+            pr_err("DDP error, OVLLayerConfig layer=%d\n", layer);
             ASSERT(0);       // invalid layer index
     }
 
     if(0)//if(w==1080)
     {
-        // printk("[DDP]set 1080p ultra \n");
+        // pr_debug("[DDP]set 1080p ultra \n");
         DISP_REG_SET(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING, 0x00f00040);
         DISP_REG_SET(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING, 0x00f00040);
         DISP_REG_SET(DISP_REG_OVL_RDMA2_MEM_GMC_SETTING, 0x00f00040);
@@ -665,7 +665,7 @@ enum OVL_INPUT_FORMAT ovl_fmt_convert(DpColorFormat fmt)
 {
     enum OVL_INPUT_FORMAT ovl_fmt = OVL_INPUT_FORMAT_UNKNOWN;
 
-    //printk("BOOT ovl_fmt_convert 0 fmt=%d, ovl_fmt=%d \n", fmt, ovl_fmt);
+    //pr_debug("BOOT ovl_fmt_convert 0 fmt=%d, ovl_fmt=%d \n", fmt, ovl_fmt);
     switch(fmt)
     {
         case eYUY2             :
@@ -696,10 +696,10 @@ enum OVL_INPUT_FORMAT ovl_fmt_convert(DpColorFormat fmt)
           ovl_fmt = OVL_INPUT_FORMAT_xRGB8888; break;
           
         default:
-          printk("error: DDP, unknown ovl input format = %d\n", fmt);
+          pr_err("error: DDP, unknown ovl input format = %d\n", fmt);
     }
 
-    //printk("BOOT ovl_fmt_convert 1 fmt=%d, ovl_fmt=%d \n", fmt, ovl_fmt);
+    //pr_debug("BOOT ovl_fmt_convert 1 fmt=%d, ovl_fmt=%d \n", fmt, ovl_fmt);
     
     return  ovl_fmt;   
 }

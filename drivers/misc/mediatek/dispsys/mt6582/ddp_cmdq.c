@@ -313,7 +313,7 @@ int32_t cmdqRegisterCallback(int32_t          index,
 {
     if((index >= 2) || (NULL == pTimeoutFunc) || (NULL == pResetFunc))
     {
-        printk("Warning! [Func]%s register NULL function : %p,%p\n", __func__ , pTimeoutFunc , pResetFunc);
+        pr_warn("Warning! [Func]%s register NULL function : %p,%p\n", __func__ , pTimeoutFunc , pResetFunc);
         return -1;
     }
 
@@ -835,13 +835,13 @@ static void cmdq_dump_task_usage(void)
         pTask = &(gCmdqContext.taskInfo[index]);
         if (TASK_STATE_IDLE != pTask->taskState)
         {
-            printk("====== Task %d Usage =======\n", index);
+            pr_debug("====== Task %d Usage =======\n", index);
 
-            printk("State %d, VABase: 0x%08x, MVABase: 0x%08x, Size: %d\n",
+            pr_debug("State %d, VABase: 0x%08x, MVABase: 0x%08x, Size: %d\n",
                 pTask->taskState, (uint32_t)pTask->pVABase, pTask->MVABase, pTask->blockSize);
-            printk("Scenario %d, Priority: %d, Flag: 0x%08x, VAEnd: 0x%08x\n",
+            pr_debug("Scenario %d, Priority: %d, Flag: 0x%08x, VAEnd: 0x%08x\n",
                 pTask->scenario, pTask->priority, pTask->engineFlag, (uint32_t)pTask->pCMDEnd);
-            printk("Reorder: %d, Trigger %d:%d, IRQ: %d:%d, Wake Up: %d:%d\n",
+            pr_debug("Reorder: %d, Trigger %d:%d, IRQ: %d:%d, Wake Up: %d:%d\n",
                 pTask->reorder,
                 (uint32_t)pTask->trigger.tv_sec, (uint32_t)pTask->trigger.tv_usec,
                 (uint32_t)pTask->gotIRQ.tv_sec, (uint32_t)pTask->gotIRQ.tv_usec,
@@ -1437,20 +1437,20 @@ static int32_t cmdq_reset_hw_engine(int32_t engineFlag)
     int32_t      loopCount;
     uint32_t     regValue;
 
-    printk("Reset hardware engine begin\n");
+    pr_debug("Reset hardware engine begin\n");
 
     pEngine = &(gCmdqContext.engine[0]);
 
     if (engineFlag & (0x01 << tIMGI))
     {
-        printk("Reset ISP pass2 start\n");
+        pr_debug("Reset ISP pass2 start\n");
 
         if(NULL != g_CMDQ_CB_Array.cmdqReset_cb[cbISP])
         {
             g_CMDQ_CB_Array.cmdqReset_cb[cbISP](0);
         }
 
-        printk("Reset ISP pass2 end\n");
+        pr_debug("Reset ISP pass2 end\n");
     }
 
     if (engineFlag & (0x1 << tRDMA0))
@@ -1598,7 +1598,7 @@ static int32_t cmdq_reset_hw_engine(int32_t engineFlag)
         }
     }
 
-    printk("Reset hardware engine end\n");
+    pr_debug("Reset hardware engine end\n");
 
     return 0;
 }
@@ -1606,15 +1606,15 @@ static int32_t cmdq_reset_hw_engine(int32_t engineFlag)
 
 void cmdq_dump_mmsys_config(void)
 {
-    printk(KERN_DEBUG "CAM_MDP_MOUT_EN: 0x%08x, MDP_RDMA_MOUT_EN: 0x%08x, MDP_RSZ0_MOUT_EN: 0x%08x\n",
+    pr_debug("CAM_MDP_MOUT_EN: 0x%08x, MDP_RDMA_MOUT_EN: 0x%08x, MDP_RSZ0_MOUT_EN: 0x%08x\n",
         DISP_REG_GET(0xF4000000 + 0x01c), DISP_REG_GET(0xF4000000 + 0x020), DISP_REG_GET(0xF4000000 + 0x024));
-    printk(KERN_DEBUG "MDP_RSZ1_MOUT_EN: 0x%08x, MDP_TDSHP_MOUT_EN: 0x%08x, DISP_OVL_MOUT_EN: 0x%08x\n",
+    pr_debug("MDP_RSZ1_MOUT_EN: 0x%08x, MDP_TDSHP_MOUT_EN: 0x%08x, DISP_OVL_MOUT_EN: 0x%08x\n",
         DISP_REG_GET(0xF4000000 + 0x028), DISP_REG_GET(0xF4000000 + 0x02c), DISP_REG_GET(0xF4000000 + 0x030));
-    printk(KERN_DEBUG "MDP_RSZ0_SEL: 0x%08x, MDP_RSZ1_SEL: 0x%08x, MDP_TDSHP_SEL: 0x%08x\n",
+    pr_debug("MDP_RSZ0_SEL: 0x%08x, MDP_RSZ1_SEL: 0x%08x, MDP_TDSHP_SEL: 0x%08x\n",
         DISP_REG_GET(0xF4000000 + 0x038), DISP_REG_GET(0xF4000000 + 0x03c), DISP_REG_GET(0xF4000000 + 0x040));
-    printk(KERN_DEBUG "MDP_WROT_SEL: 0x%08x, MDP_WDMA_SEL: 0x%08x, DISP_OUT_SEL: 0x%08x\n",
+    pr_debug("MDP_WROT_SEL: 0x%08x, MDP_WDMA_SEL: 0x%08x, DISP_OUT_SEL: 0x%08x\n",
         DISP_REG_GET(0xF4000000 + 0x044), DISP_REG_GET(0xF4000000 + 0x048), DISP_REG_GET(0xF4000000 + 0x04c));
-    printk(KERN_DEBUG "MMSYS_DL_VALID_0: 0x%08x, MMSYS_DL_VALID_1: 0x%08x, MMSYS_DL_READY0: 0x%08x, MMSYS_DL_READY1: 0x%08x\n",
+    pr_debug("MMSYS_DL_VALID_0: 0x%08x, MMSYS_DL_VALID_1: 0x%08x, MMSYS_DL_READY0: 0x%08x, MMSYS_DL_READY1: 0x%08x\n",
         DISP_REG_GET(0xF4000000 + 0x860), DISP_REG_GET(0xF4000000 + 0x864), DISP_REG_GET(0xF4000000 + 0x868), DISP_REG_GET(0xF4000000 + 0x86c));
 }
 
@@ -1941,7 +1941,7 @@ int32_t cmdq_core_wait_task_done_with_interruptible_timeout(
         }
 
         hwPC = cmdq_core_dump_pc(pTask, thread, "INFO");
-        printk("[CMDQ][PREDUMP %d] pc(VA) = 0x%p\n", i, hwPC);
+        pr_debug("[CMDQ][PREDUMP %d] pc(VA) = 0x%p\n", i, hwPC);
 
         // continue to wait
         if(hasInterrupted)

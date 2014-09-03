@@ -584,7 +584,7 @@ static void DISP_ConfigMemReadDatapath (disp_path_config_dirty *dirty_flag)
         }
         if (i >= DDP_OVL_LAYER_MUN) 
         {
-            printk("[FB Driver] error: cannot happen,%d\n", __LINE__);
+            pr_err("[FB Driver] error: cannot happen,%d\n", __LINE__);
             i = 0;
         }
         config.idx = 0;
@@ -674,7 +674,7 @@ DISP_STATUS DISP_SwitchDisplayMode (struct fb_overlay_mode *pConfig)
 
     if (!is_early_suspended) 
     {
-        printk("[FB Driver] Switch to display mode: %s\n", (pConfig->mode == DISP_DECOUPLE_MODE) ? "de-couple" : "direct-link");
+        pr_debug("[FB Driver] Switch to display mode: %s\n", (pConfig->mode == DISP_DECOUPLE_MODE) ? "de-couple" : "direct-link");
         MMProfileLogEx(MTKFB_MMP_Events.SwitchMode, MMProfileFlagStart, disp_mode, pConfig->mode);
 
         /**
@@ -683,7 +683,7 @@ DISP_STATUS DISP_SwitchDisplayMode (struct fb_overlay_mode *pConfig)
         */
         if (disp_mode == DISP_DIRECT_LINK_MODE) 
         {
-            printk("[FB Driver] Switch display mode-0_1!\n");
+            pr_debug("[FB Driver] Switch display mode-0_1!\n");
             MMProfileLogEx(MTKFB_MMP_Events.SwitchMode, MMProfileFlagPulse, 0, 1);
             spin_lock_irqsave(&mem_rw_lock, flag);
             read_buffer_index = 0;
@@ -706,7 +706,7 @@ DISP_STATUS DISP_SwitchDisplayMode (struct fb_overlay_mode *pConfig)
             // Wait for mem out done.
             disp_path_wait_mem_out_done();
             
-            printk("[FB Driver] Switch display mode-0_2!\n");
+            pr_debug("[FB Driver] Switch display mode-0_2!\n");
             MMProfileLogEx(MTKFB_MMP_Events.SwitchMode, MMProfileFlagPulse, 0, 2);
             
             mutex_lock(&MemOutSettingMutex);
@@ -715,14 +715,14 @@ DISP_STATUS DISP_SwitchDisplayMode (struct fb_overlay_mode *pConfig)
             mutex_unlock(&MemOutSettingMutex);
             wait_event_interruptible(reg_update_wq, !MemOutConfig.dirty);
             
-            printk("[FB Driver] Switch display mode-0_3!\n");
+            pr_debug("[FB Driver] Switch display mode-0_3!\n");
             MMProfileLogEx(MTKFB_MMP_Events.SwitchMode, MMProfileFlagPulse, 0, 3);
         
         }
         else 
         {
             wait_event_interruptible_timeout(write_mem_idle_wq, !write_mem_running, HZ/10);
-            printk("[FB Driver] Switch display mode-1_0!\n");
+            pr_debug("[FB Driver] Switch display mode-1_0!\n");
             MMProfileLogEx(MTKFB_MMP_Events.SwitchMode, MMProfileFlagPulse, 1, 0);
             
             spin_lock_irqsave(&mem_rw_lock, flag);
@@ -735,7 +735,7 @@ DISP_STATUS DISP_SwitchDisplayMode (struct fb_overlay_mode *pConfig)
         * 2. Waiting for last frame screen update done
         */
         mutex_lock(&SwitchModeMutex);
-        printk("[FB Driver] Switch display mode-2_0!\n");
+        pr_debug("[FB Driver] Switch display mode-2_0!\n");
         MMProfileLogEx(MTKFB_MMP_Events.SwitchMode, MMProfileFlagPulse, 2, 0);
         /*
         if (!read_mem_running) 
@@ -745,7 +745,7 @@ DISP_STATUS DISP_SwitchDisplayMode (struct fb_overlay_mode *pConfig)
         */
         wait_event_interruptible_timeout(read_mem_idle_wq, !read_mem_running, HZ/10);
         
-        printk("[FB Driver] Switch display mode-2_1!\n");
+        pr_debug("[FB Driver] Switch display mode-2_1!\n");
         MMProfileLogEx(MTKFB_MMP_Events.SwitchMode, MMProfileFlagPulse, 2, 1);
 
         /**
@@ -772,7 +772,7 @@ DISP_STATUS DISP_SwitchDisplayMode (struct fb_overlay_mode *pConfig)
         {
             DISP_StartOverlayTransfer();
         }
-        printk("[FB Driver] Switch display mode done!\n");
+        pr_debug("[FB Driver] Switch display mode done!\n");
         MMProfileLogEx(MTKFB_MMP_Events.SwitchMode, MMProfileFlagEnd, disp_mode, pConfig->mode);
     }
     ret = DISP_STATUS_OK;
@@ -807,7 +807,7 @@ void DISP_WaitMemWriteDoneIfNeeded (void)
     {
         if (wait_event_interruptible_timeout(write_mem_idle_wq, !write_mem_running, HZ/10) == 0) 
         {
-            printk("[FB Driver] wait write mem done timeout!\n");
+            pr_warn("[FB Driver] wait write mem done timeout!\n");
         }
     }
 #endif
@@ -822,9 +822,9 @@ static void disp_dump_lcm_parameters(LCM_PARAMS *lcm_params)
     if(lcm_params == NULL)
         return;
     
-    printk("[mtkfb] LCM TYPE: %s\n", LCM_TYPE_NAME[lcm_params->type]);
-    printk("[mtkfb] LCM INTERFACE: %s\n", LCM_CTRL_NAME[lcm_params->ctrl]);
-    printk("[mtkfb] LCM resolution: %d x %d\n", lcm_params->width, lcm_params->height);
+    pr_debug("[mtkfb] LCM TYPE: %s\n", LCM_TYPE_NAME[lcm_params->type]);
+    pr_debug("[mtkfb] LCM INTERFACE: %s\n", LCM_CTRL_NAME[lcm_params->ctrl]);
+    pr_debug("[mtkfb] LCM resolution: %d x %d\n", lcm_params->width, lcm_params->height);
     
     return;
 }
@@ -851,7 +851,7 @@ BOOL disp_get_lcm_name_boot(char *cmdline)
     }
     
     isLCMConnected  = strncmp(p, "0", 1);
-    printk("[mtkfb] LCM is %sconnected\n", ((isLCMConnected)?"":"not "));
+    pr_debug("[mtkfb] LCM is %sconnected\n", ((isLCMConnected)?"":"not "));
     p += 2;
     q = p;
     while(*q != ' ' && *q != '\0')
@@ -903,7 +903,7 @@ BOOL DISP_SelectDeviceBoot(const char* lcm_name)
 {
     //LCM_DRIVER *lcm = NULL;
     
-    printk("%s\n", __func__);
+    pr_debug("%s\n", __func__);
 
     if(lcm_name == NULL)
     {
@@ -914,7 +914,7 @@ BOOL DISP_SelectDeviceBoot(const char* lcm_name)
 
     if (NULL == lcm_drv)
     {
-        printk("%s, get_lcm_driver returns NULL\n", __func__);
+        pr_warn("%s, get_lcm_driver returns NULL\n", __func__);
         return FALSE;
     }
     isLCMFound = TRUE;
@@ -930,7 +930,7 @@ BOOL DISP_SelectDevice(const char* lcm_name)
     lcm_drv = disphal_get_lcm_driver(lcm_name, (unsigned int *)&u4IndexOfLCMList);
     if (NULL == lcm_drv)
     {
-        printk("%s, disphal_get_lcm_driver() returns NULL\n", __func__);
+        pr_warn("%s, disphal_get_lcm_driver() returns NULL\n", __func__);
         return FALSE;
     }
     isLCMFound = TRUE;
@@ -944,7 +944,7 @@ BOOL DISP_DetectDevice(void)
     lcm_drv = disphal_get_lcm_driver(NULL, (unsigned int *)&u4IndexOfLCMList);
     if (NULL == lcm_drv)
     {
-        printk("%s, disphal_get_lcm_driver() returns NULL\n", __func__);
+        pr_warn("%s, disphal_get_lcm_driver() returns NULL\n", __func__);
         return FALSE;
     }
     isLCMFound = TRUE;
@@ -1024,7 +1024,7 @@ DISP_STATUS DISP_Init(UINT32 fbVA, UINT32 fbPA, BOOL isLcmInited)
             dispif_info[MTKFB_DISPIF_PRIMARY_LCD].displayType = DISPIF_TYPE_DBI;
             dispif_info[MTKFB_DISPIF_PRIMARY_LCD].displayMode = DISPIF_MODE_COMMAND;
             dispif_info[MTKFB_DISPIF_PRIMARY_LCD].isHwVsyncAvailable = 1;
-            printk("DISP Info: DBI, CMD Mode, HW Vsync enable\n");
+            pr_debug("DISP Info: DBI, CMD Mode, HW Vsync enable\n");
             break;
         }
         case LCM_TYPE_DPI:
@@ -1032,7 +1032,7 @@ DISP_STATUS DISP_Init(UINT32 fbVA, UINT32 fbPA, BOOL isLcmInited)
             dispif_info[MTKFB_DISPIF_PRIMARY_LCD].displayType = DISPIF_TYPE_DPI;
             dispif_info[MTKFB_DISPIF_PRIMARY_LCD].displayMode = DISPIF_MODE_VIDEO;
             dispif_info[MTKFB_DISPIF_PRIMARY_LCD].isHwVsyncAvailable = 1;				
-            printk("DISP Info: DPI, VDO Mode, HW Vsync enable\n");
+            pr_debug("DISP Info: DPI, VDO Mode, HW Vsync enable\n");
             break;
         }
         case LCM_TYPE_DSI:
@@ -1042,13 +1042,13 @@ DISP_STATUS DISP_Init(UINT32 fbVA, UINT32 fbPA, BOOL isLcmInited)
             {
                 dispif_info[MTKFB_DISPIF_PRIMARY_LCD].displayMode = DISPIF_MODE_COMMAND;
                 dispif_info[MTKFB_DISPIF_PRIMARY_LCD].isHwVsyncAvailable = 1;
-                printk("DISP Info: DSI, CMD Mode, HW Vsync enable\n");
+                pr_debug("DISP Info: DSI, CMD Mode, HW Vsync enable\n");
             }
             else
             {
                 dispif_info[MTKFB_DISPIF_PRIMARY_LCD].displayMode = DISPIF_MODE_VIDEO;
                 dispif_info[MTKFB_DISPIF_PRIMARY_LCD].isHwVsyncAvailable = 1;
-                printk("DISP Info: DSI, VDO Mode, HW Vsync enable\n");
+                pr_debug("DISP Info: DSI, VDO Mode, HW Vsync enable\n");
             }
             
             break;
@@ -1105,11 +1105,11 @@ DISP_STATUS DISP_Init(UINT32 fbVA, UINT32 fbPA, BOOL isLcmInited)
             lcm_drv->get_params(&lcm_params_temp);
             dispif_info[MTKFB_DISPIF_PRIMARY_LCD].lcmOriginalWidth = lcm_params_temp.width;
             dispif_info[MTKFB_DISPIF_PRIMARY_LCD].lcmOriginalHeight = lcm_params_temp.height;			
-            printk("DISP Info: LCM Panel Original Resolution(For DFO Only): %d x %d\n", dispif_info[MTKFB_DISPIF_PRIMARY_LCD].lcmOriginalWidth, dispif_info[MTKFB_DISPIF_PRIMARY_LCD].lcmOriginalHeight);
+            pr_debug("DISP Info: LCM Panel Original Resolution(For DFO Only): %d x %d\n", dispif_info[MTKFB_DISPIF_PRIMARY_LCD].lcmOriginalWidth, dispif_info[MTKFB_DISPIF_PRIMARY_LCD].lcmOriginalHeight);
         }
         else
         {
-            printk("DISP Info: Fatal Error!!, lcm_drv is null\n");
+            pr_err("DISP Info: Fatal Error!!, lcm_drv is null\n");
         }
     }
 
@@ -1125,7 +1125,7 @@ DISP_STATUS DISP_Init(UINT32 fbVA, UINT32 fbPA, BOOL isLcmInited)
             if(!strcmp(&dfo_boot_default.name[i], "LCM_FAKE_HEIGHT"))
                 height = dfo_boot_default.value[i];
         }
-        printk("DISP Info: from DFO, width/height=%d x %d\n", width, height);
+        pr_debug("DISP Info: from DFO, width/height=%d x %d\n", width, height);
     }
 #endif
     
@@ -1154,7 +1154,7 @@ DISP_STATUS DISP_PowerEnable(BOOL enable)
         return ret;
     
     if (down_interruptible(&sem_update_screen)) {
-        printk("ERROR: Can't get sem_update_screen in DISP_PowerEnable()\n");
+        pr_err("ERROR: Can't get sem_update_screen in DISP_PowerEnable()\n");
         return DISP_STATUS_ERROR;
     }
     
@@ -1201,7 +1201,7 @@ DISP_STATUS DISP_PanelEnable(BOOL enable)
 
     if (down_interruptible(&sem_update_screen)) 
     {
-        printk("ERROR: Can't get sem_update_screen in DISP_PanelEnable()\n");
+        pr_err("ERROR: Can't get sem_update_screen in DISP_PanelEnable()\n");
         return DISP_STATUS_ERROR;
     }
     
@@ -1240,7 +1240,7 @@ DISP_STATUS DISP_SetBacklight(UINT32 level)
     DISP_STATUS ret = DISP_STATUS_OK;
     
     if (down_interruptible(&sem_update_screen)) {
-        printk("ERROR: Can't get sem_update_screen in DISP_SetBacklight()\n");
+        pr_err("ERROR: Can't get sem_update_screen in DISP_SetBacklight()\n");
         return DISP_STATUS_ERROR;
     }
     
@@ -1266,7 +1266,7 @@ DISP_STATUS DISP_SetBacklight_mode(UINT32 mode)
     DISP_STATUS ret = DISP_STATUS_OK;
     
     if (down_interruptible(&sem_update_screen)) {
-        printk("ERROR: Can't get sem_update_screen in DISP_SetBacklight_mode()\n");
+        pr_err("ERROR: Can't get sem_update_screen in DISP_SetBacklight_mode()\n");
         return DISP_STATUS_ERROR;
     }
     
@@ -1293,7 +1293,7 @@ DISP_STATUS DISP_SetPWM(UINT32 divider)
     DISP_STATUS ret = DISP_STATUS_OK;
     
     if (down_interruptible(&sem_update_screen)) {
-        printk("ERROR: Can't get sem_update_screen in DISP_SetPWM()\n");
+        pr_err("ERROR: Can't get sem_update_screen in DISP_SetPWM()\n");
         return DISP_STATUS_ERROR;
     }
     
@@ -1537,7 +1537,7 @@ DISP_STATUS DISP_UpdateScreen(UINT32 x, UINT32 y, UINT32 width, UINT32 height)
         is_video_mode = 0;
 
     if (down_interruptible(&sem_update_screen)) {
-        printk("ERROR: Can't get sem_update_screen in DISP_UpdateScreen()\n");
+        pr_err("ERROR: Can't get sem_update_screen in DISP_UpdateScreen()\n");
         return DISP_STATUS_ERROR;
     }
     // if LCM is powered down, LCD would never recieve the TE signal
@@ -1589,7 +1589,7 @@ int DISP_RegisterExTriggerSource(DISP_EXTRA_CHECKUPDATE_PTR pCheckUpdateFunc , D
     int hit = 0;
     if((NULL == pCheckUpdateFunc) || (NULL == pConfFunc))
     {
-        printk("Warnning! [Func]%s register NULL function : %p,%p\n", __func__ , pCheckUpdateFunc , pConfFunc);
+        pr_err("Warnning! [Func]%s register NULL function : %p,%p\n", __func__ , pCheckUpdateFunc , pConfFunc);
         return -1;
     }
 
@@ -1615,7 +1615,7 @@ void DISP_UnRegisterExTriggerSource(int u4ID)
 {
     if(DISP_CB_MAXCNT < (u4ID+1))
     {
-        printk("Warnning! [Func]%s unregister a never registered function : %d\n", __func__ , u4ID);
+        pr_err("Warnning! [Func]%s unregister a never registered function : %d\n", __func__ , u4ID);
         return;
     }
 
@@ -1755,7 +1755,7 @@ static void _DISP_DumpLayer(OVL_CONFIG_STRUCT* pLayer)
         case ePABGR8888:
           Bitmap.format = MMProfileBitmapRGBA8888; Bitmap.bpp = 32; break;
         default:
-          printk("error: _DISP_DumpLayer(), unknow format=%d \n", pLayer->fmt);
+          pr_err("error: _DISP_DumpLayer(), unknow format=%d \n", pLayer->fmt);
           // enhancement: for those YUV or unknown format, we dump it to raw data so
           //   that we can check if the buffer data is correct.
           //   user should config a larger MMProfile Metadata buffer size.
@@ -2094,7 +2094,7 @@ static int _DISP_ConfigUpdateKThread(void *data)
 
         if (down_interruptible(&sem_early_suspend)) 
         {
-            printk("[FB Driver] can't get semaphore:%d\n", __LINE__);
+            pr_err("[FB Driver] can't get semaphore:%d\n", __LINE__);
             continue;
         }
         //MMProfileLogEx(MTKFB_MMP_Events.EarlySuspend, MMProfileFlagStart, 1, 0);
@@ -2196,7 +2196,7 @@ static UINT32 vsync_cnt = 0;
 static bool half_vsync = false;
 void DISP_HalfVsync(bool enable)
 {
-	printk("DISP_HalfVsync, enable half vsync, %d\n", half_vsync);
+    pr_debug("DISP_HalfVsync, enable half vsync, %d\n", half_vsync);
 	half_vsync = enable;
 }
 EXPORT_SYMBOL(DISP_HalfVsync);
@@ -2445,7 +2445,7 @@ void DISP_InitVSYNC(unsigned int vsync_interval)
         ((LCM_TYPE_DSI == lcm_params->type) && (CMD_MODE == lcm_params->dsi.mode)))
     {
         cmd_mode_update_timer_period = ktime_set(0 , vsync_interval*1000);
-        printk("[MTKFB] vsync timer_period=%d \n", vsync_interval);
+        pr_debug("[MTKFB] vsync timer_period=%d \n", vsync_interval);
         hrtimer_init(&cmd_mode_update_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
         cmd_mode_update_timer.function = _DISP_CmdModeTimer_handler;
         config_update_task_wakeup = 1;
@@ -2460,7 +2460,7 @@ void DISP_WaitVSYNC(void)
     vsync_wq_flag = 0;
     if (wait_event_interruptible_timeout(vsync_wq, vsync_wq_flag, HZ/10) == 0)
     {
-        printk("[DISP] Wait VSync timeout. early_suspend=%d\n", is_early_suspended);
+        pr_debug("[DISP] Wait VSync timeout. early_suspend=%d\n", is_early_suspended);
     }
     MMProfileLog(MTKFB_MMP_Events.WaitVSync, MMProfileFlagEnd);
 }
@@ -2503,7 +2503,7 @@ BOOL DISP_IsVideoMode(void)
         return lcm_params->type==LCM_TYPE_DPI || (lcm_params->type==LCM_TYPE_DSI && lcm_params->dsi.mode != CMD_MODE);
     else
     {
-        printk("WARNING!! DISP_IsVideoMode is called before display driver inited!\n");
+        pr_warn("WARNING!! DISP_IsVideoMode is called before display driver inited!\n");
         return 0;
     }
 }
@@ -2515,7 +2515,7 @@ UINT32 DISP_GetScreenWidth(void)
         return lcm_params->width;
     else
     {
-        printk("WARNING!! get screen width before display driver inited!\n");
+        pr_warn("WARNING!! get screen width before display driver inited!\n");
         return 0;
     }
 }
@@ -2528,7 +2528,7 @@ UINT32 DISP_GetScreenHeight(void)
         return lcm_params->height;
     else
     {
-        printk("WARNING!! get screen height before display driver inited!\n");
+        pr_warn("WARNING!! get screen height before display driver inited!\n");
         return 0;
     }
 }
@@ -2538,12 +2538,12 @@ UINT32 DISP_GetPhysicalHeight(void)
     disp_drv_init_context();
     if(lcm_params)
     {
-        printk("[wwy]lcm_parms->physical_height = %d\n",lcm_params->physical_height);
+        pr_debug("[wwy]lcm_parms->physical_height = %d\n",lcm_params->physical_height);
         return lcm_params->physical_height;
     }
     else
     {
-        printk("WARNING!! get physical_height before display driver inited!\n");
+        pr_warn("WARNING!! get physical_height before display driver inited!\n");
         return 0;
     }
 }
@@ -2553,12 +2553,12 @@ UINT32 DISP_GetPhysicalWidth(void)
     disp_drv_init_context();
     if(lcm_params)
     {
-        printk("[wwy]lcm_parms->physical_width = %d\n",lcm_params->physical_width);
+        pr_debug("[wwy]lcm_parms->physical_width = %d\n",lcm_params->physical_width);
         return lcm_params->physical_width;
     }
     else
     {
-        printk("WARNING!! get physical_width before display driver inited!\n");
+        pr_warn("WARNING!! get physical_width before display driver inited!\n");
         return 0;
     }
 }
@@ -2671,14 +2671,14 @@ UINT32 DISP_GetVRamSizeBoot(char *cmdline)
         vramSize = DISP_GetVRamSize();
     else
     {
-        printk("%s, can't get lcm type, reserved memory size will be set as 0x800000\n", __func__);
+        pr_warn("%s, can't get lcm type, reserved memory size will be set as 0x800000\n", __func__);
         return 0x1400000;
     }   
     // Align vramSize to 1MB
     //
     vramSize = ALIGN_TO_POW_OF_2(vramSize, 0x100000);
 
-    printk("DISP_GetVRamSizeBoot: %u bytes[%dMB]\n", vramSize, (vramSize>>20));
+    pr_debug("DISP_GetVRamSizeBoot: %u bytes[%dMB]\n", vramSize, (vramSize>>20));
 
     return vramSize;
 }
@@ -2845,7 +2845,7 @@ DISP_STATUS DISP_Capture_Framebuffer( unsigned int pvbuf, unsigned int bpp, unsi
     ret = disphal_map_overlay_out_buffer(pvbuf, DISP_GetScreenHeight()*DISP_GetScreenWidth()*bpp/8, &mva);
     if(ret!=0)
     {
-        printk("disphal_map_overlay_out_buffer fail! \n");
+        pr_err("disphal_map_overlay_out_buffer fail! \n");
 
         return DISP_STATUS_OK;
     }
@@ -2860,7 +2860,7 @@ DISP_STATUS DISP_Capture_Framebuffer( unsigned int pvbuf, unsigned int bpp, unsi
         MemOutConfig.outFormat = eRGB888;
     else
     {
-        printk("DSI_Capture_FB, fb color format not support\n");
+        pr_warn("DSI_Capture_FB, fb color format not support\n");
         MemOutConfig.outFormat = eRGB888;
     }
     
@@ -2982,7 +2982,7 @@ unsigned int DISP_AutoTest()
 {
     unsigned int ret = 0;
     if (down_interruptible(&sem_update_screen)) {
-        printk("ERROR: Can't get sem_update_screen in DISP_Change_Update()\n");
+        pr_err("ERROR: Can't get sem_update_screen in DISP_Change_Update()\n");
         return DISP_STATUS_ERROR;
     }
     ret = disphal_check_lcm(color);
@@ -3026,7 +3026,7 @@ BOOL DISP_EsdCheck(void)
     }
 
     if (down_interruptible(&sem_update_screen)) {
-        printk("ERROR: Can't get sem_update_screen in DISP_EsdCheck()\n");
+        pr_err("ERROR: Can't get sem_update_screen in DISP_EsdCheck()\n");
         return FALSE;
     }
     MMProfileLogEx(MTKFB_MMP_Events.EsdCheck, MMProfileFlagPulse, 0x11, 0);
@@ -3073,7 +3073,7 @@ BOOL DISP_EsdRecover(void)
     }
 
     if (down_interruptible(&sem_update_screen)) {
-        printk("ERROR: Can't get sem_update_screen in DISP_EsdRecover()\n");
+        pr_err("ERROR: Can't get sem_update_screen in DISP_EsdRecover()\n");
         return FALSE;
     }
 
@@ -3148,7 +3148,7 @@ BOOL fbconfig_dsi_vdo_prepare(void)
         disp_drv_init_context();
         
         if (down_interruptible(&sem_update_screen)) {
-            printk("ERROR: Can't get sem_update_screen in fbconfig_dsi_vdo_prepare()\n");
+            pr_err("ERROR: Can't get sem_update_screen in fbconfig_dsi_vdo_prepare()\n");
             return FALSE;
         }
         
@@ -3158,21 +3158,21 @@ BOOL fbconfig_dsi_vdo_prepare(void)
             return FALSE;
         }
         //to do: set to cmd mode and other preparation....
-        printk("fbconfig=>02will set cmd mode in disp_drv.c!!\n");
+        pr_debug("fbconfig=>02will set cmd mode in disp_drv.c!!\n");
         //disphal_fbconfig_dsi_late_prepare();
         mutex_lock(&Fbconfig_Switch_Mode_Mutex);
         if(fbconfig_if_drv->set_cmd_mode)
             fbconfig_if_drv->set_cmd_mode();
         mutex_unlock(&Fbconfig_Switch_Mode_Mutex);
-        printk("fbconfig=>exec cmd !!\n");	
+        pr_debug("fbconfig=>exec cmd !!\n");
         fb_config_execute_cmd();//execute my cmds from config file....
-        printk("sxk=>restore to vdo mode !!\n");
+        pr_debug("sxk=>restore to vdo mode !!\n");
         //disphal_fbconfig_dsi_post();
         if(fbconfig_if_drv->set_dsi_post)
             fbconfig_if_drv->set_dsi_post();
         
         up(&sem_update_screen);
-        printk("sxk=>will call disphal_update_scn !!\n");
+        pr_debug("sxk=>will call disphal_update_scn !!\n");
         //disphal_update_screen(lcm_drv, &LcmCmdMutex, 0, 0, DISP_GetScreenWidth(), DISP_GetScreenHeight());
         
         return TRUE;
@@ -3185,16 +3185,16 @@ DISP_STATUS DISP_Change_LCM_Resolution(unsigned int width, unsigned int height)
 {
     if(lcm_params)
     {
-        printk("LCM Resolution will be changed, original: %dx%d, now: %dx%d\n", lcm_params->width, lcm_params->height, width, height);
+        pr_debug("LCM Resolution will be changed, original: %dx%d, now: %dx%d\n", lcm_params->width, lcm_params->height, width, height);
         if(width >lcm_params->width || height > lcm_params->height || width == 0 || height == 0)
         {
-            printk("Invalid resolution: %dx%d\n", width, height);
+            pr_err("Invalid resolution: %dx%d\n", width, height);
             return DISP_STATUS_ERROR;
         }
         
         if(DISP_IsVideoMode())
         {
-            printk("Warning!!!Video Mode can't support multiple resolution!\n");
+            pr_warn("Warning!!!Video Mode can't support multiple resolution!\n");
             return DISP_STATUS_ERROR;
         }
         
@@ -3212,7 +3212,7 @@ DISP_STATUS DISP_Change_LCM_Resolution(unsigned int width, unsigned int height)
 //for slt 
 DISP_STATUS DISP_Auto_Capture_FB( unsigned int pvbuf, unsigned int wdma_out_fmt,unsigned int bpp, unsigned int is_early_suspended,int wdma_width,int wdma_height)
 {
-    printk("DISP_Auto_Capture_FB width %d height %d\n",wdma_width,wdma_height);
+    pr_debug("DISP_Auto_Capture_FB width %d height %d\n",wdma_width,wdma_height);
 
     if (DISP_IsDecoupleMode()) 
     {
@@ -3258,7 +3258,7 @@ DISP_STATUS DISP_Auto_Capture_FB( unsigned int pvbuf, unsigned int wdma_out_fmt,
         ret = disphal_map_overlay_out_buffer(pvbuf, DISP_GetScreenHeight()*DISP_GetScreenWidth()*bpp/8, &mva);
         if(ret!=0)
         {
-            printk("disphal_map_overlay_out_buffer fail! \n");
+            pr_err("disphal_map_overlay_out_buffer fail! \n");
             return DISP_STATUS_OK;
         }
         disphal_init_overlay_to_memory();
@@ -3282,7 +3282,7 @@ DISP_STATUS DISP_Auto_Capture_FB( unsigned int pvbuf, unsigned int wdma_out_fmt,
         }
         else
         {
-            printk("DSI_Capture_FB, fb color format not support\n");
+            pr_warn("DSI_Capture_FB, fb color format not support\n");
             MemOutConfig.outFormat = eRGB888;
         }
         
@@ -3355,7 +3355,7 @@ static BOOL fbconfig_disp_set_clk_prepare(unsigned int clk)
         disp_drv_init_context();
         
         if (down_interruptible(&sem_update_screen)) {
-            printk("ERROR: Can't get sem_update_screen in fbconfig_disp_set_clk_prepare()\n");
+            pr_err("ERROR: Can't get sem_update_screen in fbconfig_disp_set_clk_prepare()\n");
             return FALSE;
         }
         
@@ -3367,7 +3367,7 @@ static BOOL fbconfig_disp_set_clk_prepare(unsigned int clk)
         //to do: set to cmd mode and other preparation....		
         if(fbconfig_if_drv->set_cmd_mode)
             fbconfig_if_drv->set_cmd_mode();
-        printk("sxk==>in disp_drv 2124:%d\n",clk);
+        pr_debug("sxk==>in disp_drv 2124:%d\n",clk);
         if(fbconfig_if_drv->set_mipi_clk)
             fbconfig_if_drv->set_mipi_clk(clk);//execute :clk setting .....	
         if(fbconfig_if_drv->set_dsi_post)
@@ -3384,7 +3384,7 @@ void fbconfig_disp_set_mipi_clk(unsigned int clk)
     if(lcm_params->dsi.mode != CMD_MODE)
     {
         if (down_interruptible(&sem_early_suspend)) {
-            printk("sxk=>can't get semaphore in fbconfig_disp_set_mipi_clk()\n");
+            pr_err("sxk=>can't get semaphore in fbconfig_disp_set_mipi_clk()\n");
             return ;
         }
         
@@ -3393,7 +3393,7 @@ void fbconfig_disp_set_mipi_clk(unsigned int clk)
     }
     else{//cmd mode
         if (down_interruptible(&sem_early_suspend)) {
-            printk("sxk=>can't get semaphore in fbconfig_disp_set_mipi_clk()\n");
+            pr_err("sxk=>can't get semaphore in fbconfig_disp_set_mipi_clk()\n");
             return ;
         }
         if(fbconfig_if_drv->set_mipi_clk)
@@ -3410,7 +3410,7 @@ static BOOL fbconfig_disp_set_ssc_prepare(unsigned int ssc)
         
         if (down_interruptible(&sem_update_screen)) 
         {
-            printk("ERROR: Can't get sem_update_screen in fbconfig_disp_set_ssc_prepare()\n");
+            pr_err("ERROR: Can't get sem_update_screen in fbconfig_disp_set_ssc_prepare()\n");
             return FALSE;
         }	
         if(is_lcm_in_suspend_mode)
@@ -3421,7 +3421,7 @@ static BOOL fbconfig_disp_set_ssc_prepare(unsigned int ssc)
         //to do: set to cmd mode and other preparation....		
         if(fbconfig_if_drv->set_cmd_mode)
             fbconfig_if_drv->set_cmd_mode();
-        printk("sxk==>in disp_drv 2124:%d\n",ssc);
+        pr_debug("sxk==>in disp_drv 2124:%d\n",ssc);
         if(fbconfig_if_drv->set_spread_frequency)
             fbconfig_if_drv->set_spread_frequency(ssc);//execute :clk setting .....	
         
@@ -3441,7 +3441,7 @@ void fbconfig_disp_set_mipi_ssc(unsigned int ssc)
     {
         if (down_interruptible(&sem_early_suspend)) 
         {
-            printk("sxk=>can't get semaphore in fbconfig_disp_set_mipi_ssc()\n");
+            pr_err("sxk=>can't get semaphore in fbconfig_disp_set_mipi_ssc()\n");
             return ;
         }
         
@@ -3451,7 +3451,7 @@ void fbconfig_disp_set_mipi_ssc(unsigned int ssc)
     else
     {//cmd mode
         if (down_interruptible(&sem_early_suspend)) {
-            printk("sxk=>can't get semaphore in fbconfig_disp_set_mipi_ssc()\n");
+            pr_err("sxk=>can't get semaphore in fbconfig_disp_set_mipi_ssc()\n");
             return ;
         }
         if(fbconfig_if_drv->set_spread_frequency)
@@ -3527,7 +3527,7 @@ static int fbconfig_disp_get_esd_prepare(void)
         disp_drv_init_context();
         
         if (down_interruptible(&sem_update_screen)) {
-            printk("ERROR: Can't get sem_update_screen in fbconfig_disp_get_esd_prepare()\n");
+            pr_err("ERROR: Can't get sem_update_screen in fbconfig_disp_get_esd_prepare()\n");
             ret = -2;
         }
         
@@ -3558,7 +3558,7 @@ int fbconfig_get_esd_check(void)
     {
         if (down_interruptible(&sem_early_suspend)) 
         {
-            printk("sxk=>can't get semaphore in fbconfig_get_esd_check()\n");
+            pr_err("sxk=>can't get semaphore in fbconfig_get_esd_check()\n");
             ret= -2;
         }
         ret = fbconfig_disp_get_esd_prepare();
@@ -3568,7 +3568,7 @@ int fbconfig_get_esd_check(void)
     {//cmd mode
         if (down_interruptible(&sem_early_suspend)) 
         {
-            printk("sxk=>can't get semaphore in fbconfig_get_esd_check()\n");
+            pr_err("sxk=>can't get semaphore in fbconfig_get_esd_check()\n");
             ret= -2;
         }
         ret =fbconfig_get_esd_check_exec();//execute :esd check...	
@@ -3586,7 +3586,7 @@ BOOL fbconfig_rest_lcm_setting_prepare(void)
         disp_drv_init_context();
         
         if (down_interruptible(&sem_update_screen)) {
-            printk("ERROR: Can't get sem_update_screen in fbconfig_rest_lcm_setting_prepare()\n");
+            pr_err("ERROR: Can't get sem_update_screen in fbconfig_rest_lcm_setting_prepare()\n");
             return FALSE;
         }
         
@@ -3598,9 +3598,9 @@ BOOL fbconfig_rest_lcm_setting_prepare(void)
         //to do: set to cmd mode and other preparation....	
         if(fbconfig_if_drv->set_cmd_mode)
             fbconfig_if_drv->set_cmd_mode();
-        printk("sxk=>exec cmd !!\n");	
+        pr_debug("sxk=>exec cmd !!\n");
         lcm_drv->init();//execute my cmds from config file....
-        printk("sxk=>restore to vdo mode !!\n");
+        pr_debug("sxk=>restore to vdo mode !!\n");
         if(fbconfig_if_drv->set_dsi_post)
             fbconfig_if_drv->set_dsi_post();
         up(&sem_update_screen); 

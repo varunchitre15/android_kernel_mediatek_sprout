@@ -48,7 +48,7 @@
 #define MFC_LOCK()                                                          \
     do {                                                                    \
         if (down_interruptible(&ctxt->sem)) {                               \
-            printk("[MFC] ERROR: Can't get semaphore in %s()\n",            \
+            pr_err("[MFC] ERROR: Can't get semaphore in %s()\n",            \
                    __FUNCTION__);                                           \
             ASSERT(0);                                                      \
             return MFC_STATUS_LOCK_FAIL;                                    \

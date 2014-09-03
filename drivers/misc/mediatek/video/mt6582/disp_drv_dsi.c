@@ -60,14 +60,6 @@ static void init_lcd_te_control(void)
     const LCM_DBI_PARAMS *dbi = &(lcm_params->dbi);
 
     LCD_CHECK_RET(LCD_TE_Enable(FALSE));
-#ifdef BUILD_UBOOT
-    {
-        extern BOOTMODE g_boot_mode;
-        printf("boot_mode = %d\n",g_boot_mode);
-        if(g_boot_mode == META_BOOT)
-            return;
-    }
-#endif
     if (LCM_DBI_TE_MODE_DISABLED == dbi->te_mode) {
         LCD_CHECK_RET(LCD_TE_Enable(FALSE));
         return;
@@ -122,7 +114,7 @@ static void dsi_IsGlitchWorkaroundEnabled(void)
     // check whether chip version is E2 or later
     if(ver >= CHIP_SW_VER_02 )
     {
-        printk("this is 6582 E2 chip, disable glitch detect!\n");
+        pr_debug("this is 6582 E2 chip, disable glitch detect!\n");
         lcm_params->dsi.compatibility_for_nvk = 0;
     }
 }
@@ -135,7 +127,7 @@ void init_dsi(BOOL isDsiPoweredOn)
             DSI_PHY_clk_setting(lcm_params);
     }
 
-    // DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "%s, line:%d\n", __func__, __LINE__);
+    // pr_debug("[DSI] %s, line:%d\n", __func__, __LINE__);
     DSI_CHECK_RET(DSI_Init(isDsiPoweredOn));
     dsi_IsGlitchWorkaroundEnabled();
 
@@ -287,7 +279,7 @@ static DISP_STATUS dsi_config_ddp(UINT32 fbPA)
         //    UFOE_Start();
         //DSI_Start();
     }
-    printk("%s, config done\n", __func__);
+    pr_debug("%s, config done\n", __func__);
     return DISP_STATUS_OK;
 }
 
@@ -504,7 +496,7 @@ static DISP_STATUS dsi_update_screen(BOOL isMuextLocked)
     }
 
     if (DDMS_capturing)
-        DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "[DISP] kernel - dsi_update_screen. DDMS is capturing. Skip one frame. \n");
+        pr_debug("[DSI][DISP] kernel - dsi_update_screen. DDMS is capturing. Skip one frame. \n");
 
     return DISP_STATUS_OK;
 }

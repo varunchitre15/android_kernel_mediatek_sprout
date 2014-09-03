@@ -36,9 +36,9 @@
 #define PWM_DEFAULT_DIV_VALUE 0x0
 
 unsigned int bls_dbg_log = 0;
-#define BLS_DBG(string, args...) if(bls_dbg_log) printk("[BLS]"string,##args)  // default off, use "adb shell "echo dbg_log:1 > sys/kernel/debug/dispsys" to enable
-#define BLS_MSG(string, args...) printk("[BLS]"string,##args)  // default on, important msg, not err
-#define BLS_ERR(string, args...) printk("[BLS]error:"string,##args)  //default on, err msg
+#define BLS_DBG(string, args...) if(bls_dbg_log) pr_debug("[BLS]"string,##args)  // default off, use "adb shell "echo dbg_log:1 > sys/kernel/debug/dispsys" to enable
+#define BLS_MSG(string, args...) pr_debug("[BLS]"string,##args)  // default on, important msg, not err
+#define BLS_ERR(string, args...) pr_err("[BLS]error:"string,##args)  //default on, err msg
 
 #if !defined(CONFIG_MTK_AAL_SUPPORT)
 #ifdef USE_DISP_BLS_MUTEX

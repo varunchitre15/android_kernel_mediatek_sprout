@@ -21,7 +21,7 @@
 #define ENABLE_DDP_ROT_LOG
 
 #ifdef ENABLE_DDP_ROT_LOG
-#define DDP_ROT_LOG(fmt, arg...) {printk("[ROT]"); printk(fmt, ##arg);}
+#define DDP_ROT_LOG(fmt, arg...) {pr_debug("[ROT]"); pr_debug(fmt, ##arg);}
 #else
 #define DDP_ROT_LOG()
 #endif
@@ -1588,7 +1588,7 @@ void disp_rot_reg_reset(void)
          delay_cnt++;
          if(delay_cnt>10000)
          {
-             printk("[DDP] error, disp_rot_reg_reset() timeout! \n");
+             pr_warn("[DDP] error, disp_rot_reg_reset() timeout! \n");
              disp_dump_reg(DISP_MODULE_ROT);
              //disp_dump_reg(DISP_MODULE_CONFIG); 
              break;

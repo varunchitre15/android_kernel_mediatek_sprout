@@ -98,10 +98,10 @@ static BOOL disp_drv_dpi_init_context(void)
     if (lcm_drv != NULL && lcm_params!= NULL)
         return TRUE;
     else
-        printk("%s, lcm_drv=0x%08x, lcm_params=0x%08x\n", __func__, (unsigned int)lcm_drv, (unsigned int)lcm_params);
+        pr_debug("%s, lcm_drv=0x%08x, lcm_params=0x%08x\n", __func__, (unsigned int)lcm_drv, (unsigned int)lcm_params);
 
     if (NULL == lcm_drv) {
-        printk("%s, lcm_drv is NULL\n", __func__);
+        pr_err("%s, lcm_drv is NULL\n", __func__);
 
         return FALSE;
     }
@@ -293,7 +293,7 @@ static DISP_STATUS dpi_init(UINT32 fbVA, UINT32 fbPA, BOOL isLcmInited)
         fbva_stored = fbVA;
         fbpa_stored = fbPA;
 
-        printk("[DPI]fbVA=0x%x, fbPA=0x%x\n", fbVA, fbPA);
+        pr_debug("[DPI]fbVA=0x%x, fbPA=0x%x\n", fbVA, fbPA);
 
 #if 1   // use lk setting to avoid flicker at system booting
         //init_mipi_pll();
@@ -404,7 +404,7 @@ static DISP_STATUS dpi_init(UINT32 fbVA, UINT32 fbPA, BOOL isLcmInited)
 
 void hdmi_reinit_dpi(void)
 {
-    printk("[DPI]hdmi_reinit_dpi. \n");
+    pr_debug("[DPI]hdmi_reinit_dpi. \n");
 
     LCD_WaitForNotBusy();
     reinitializing = TRUE;

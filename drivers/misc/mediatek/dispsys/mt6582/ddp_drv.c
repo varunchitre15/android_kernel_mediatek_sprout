@@ -79,10 +79,10 @@ unsigned int irq_log = 0;  // must disable irq level log by default, else will b
 unsigned int irq_err_log = 0;
 
 #if 0  // defined in ddp_debug.h
-#define DISP_WRN(string, args...) if(dbg_log) printk("[DSS]"string,##args)
-#define DISP_MSG(string, args...) if(0) printk("[DSS]"string,##args)
-#define DISP_ERR(string, args...) if(dbg_log) printk("[DSS]error:"string,##args)
-#define DISP_IRQ(string, args...) if(irq_log) printk("[DSS]"string,##args)
+#define DISP_WRN(string, args...) if(dbg_log) pr_debug("[DSS]"string,##args)
+#define DISP_MSG(string, args...) if(0) pr_debug("[DSS]"string,##args)
+#define DISP_ERR(string, args...) if(dbg_log) pr_err("[DSS]error:"string,##args)
+#define DISP_IRQ(string, args...) if(irq_log) pr_debug("[DSS]"string,##args)
 #endif
 
 #define DISP_DEVNAME "mtk_disp"
@@ -433,7 +433,7 @@ int disp_lock_cmdq_thread(void)
 {
     int i=0;
 
-    printk("disp_lock_cmdq_thread()called \n");
+    pr_debug("disp_lock_cmdq_thread()called \n");
     
     spin_lock(&gCmdqLock);
     for (i = 0; i < CMDQ_THREAD_NUM; i++)
@@ -446,7 +446,7 @@ int disp_lock_cmdq_thread(void)
     } 
     spin_unlock(&gCmdqLock);
 
-    printk("disp_lock_cmdq_thread(), i=%d \n", i);
+    pr_debug("disp_lock_cmdq_thread(), i=%d \n", i);
 
     return (i>=CMDQ_THREAD_NUM)? -1 : i;
     
@@ -1146,7 +1146,7 @@ void disp_aal_lock()
 {
     if(0 == AAL_init)
     {
-        //printk("disp_aal_lock: register update func\n");
+        //pr_debug("disp_aal_lock: register update func\n");
         DISP_RegisterExTriggerSource(CheckAALUpdateFunc , ConfAALFunc);
         AAL_init = 1;
     }
@@ -1208,7 +1208,7 @@ int disp_color_set_pq_param(void* arg)
     pq_param = get_Color_config();
     if(copy_from_user(pq_param, (void *)arg, sizeof(DISP_PQ_PARAM)))
     {
-        printk("disp driver : DISP_IOCTL_SET_PQPARAM Copy from user failed\n");
+        pr_err("disp driver : DISP_IOCTL_SET_PQPARAM Copy from user failed\n");
         ReleaseUpdateMutex();
         return -EFAULT;            
     }
@@ -1373,7 +1373,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
             break;  
 
         case DISP_IOCTL_LOCK_THREAD:
-            printk("DISP_IOCTL_LOCK_THREAD! \n");
+            pr_debug("DISP_IOCTL_LOCK_THREAD! \n");
             value = disp_lock_cmdq_thread();  
             if (copy_to_user((void*)arg, &value , sizeof(unsigned int)))
             {
@@ -1494,12 +1494,12 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
             if( (value&0xffff0000) !=0)
             {
                 disable_irq(value&0xff);
-                printk("disable_irq %d \n", value&0xff);
+                pr_debug("disable_irq %d \n", value&0xff);
             }
             else
             {
                 DISP_REGISTER_IRQ(value&0xff);
-                printk("enable irq: %d \n", value&0xff);
+                pr_debug("enable irq: %d \n", value&0xff);
             }            
             break; 
 
@@ -1562,12 +1562,12 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
 
         case DISP_IOCTL_AAL_EVENTCTL:
 #if !defined(CONFIG_MTK_AAL_SUPPORT)
-            printk("Invalid operation DISP_IOCTL_AAL_EVENTCTL since AAL is not turned on, in %s\n" , __FUNCTION__);
+            pr_err("Invalid operation DISP_IOCTL_AAL_EVENTCTL since AAL is not turned on, in %s\n" , __FUNCTION__);
             return -EFAULT;
 #else
             if(copy_from_user(&value, (void *)arg, sizeof(int)))
             {
-                printk("disp driver : DISP_IOCTL_AAL_EVENTCTL Copy from user failed\n");
+                pr_err("disp driver : DISP_IOCTL_AAL_EVENTCTL Copy from user failed\n");
                 return -EFAULT;            
             }
             disp_set_aal_alarm(value);
@@ -1578,13 +1578,13 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
 
         case DISP_IOCTL_GET_AALSTATISTICS:
 #if !defined(CONFIG_MTK_AAL_SUPPORT)
-            printk("Invalid operation DISP_IOCTL_GET_AALSTATISTICS since AAL is not turned on, in %s\n" , __FUNCTION__);
+            pr_err("Invalid operation DISP_IOCTL_GET_AALSTATISTICS since AAL is not turned on, in %s\n" , __FUNCTION__);
             return -EFAULT;
 #else
             // 1. Wait till new interrupt comes
             if(disp_wait_hist_update(60))
             {
-                printk("disp driver : DISP_IOCTL_GET_AALSTATISTICS wait time out\n");
+                pr_warn("disp driver : DISP_IOCTL_GET_AALSTATISTICS wait time out\n");
                 return -EFAULT;
             }
 
@@ -1592,7 +1592,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
             disp_set_hist_readlock(1);
             if(copy_to_user((void*)arg, (void *)(disp_get_hist_ptr()) , sizeof(DISP_AAL_STATISTICS)))
             {
-                printk("disp driver : DISP_IOCTL_GET_AALSTATISTICS Copy to user failed\n");
+                pr_err("disp driver : DISP_IOCTL_GET_AALSTATISTICS Copy to user failed\n");
                 return -EFAULT;
             }
             disp_set_hist_readlock(0);
@@ -1602,7 +1602,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
 
         case DISP_IOCTL_SET_AALPARAM:
 #if !defined(CONFIG_MTK_AAL_SUPPORT)
-            printk("Invalid operation : DISP_IOCTL_SET_AALPARAM since AAL is not turned on, in %s\n" , __FUNCTION__);
+            pr_err("Invalid operation : DISP_IOCTL_SET_AALPARAM since AAL is not turned on, in %s\n" , __FUNCTION__);
             return -EFAULT;
 #else
 //            disp_set_needupdate(DISP_MODULE_BLS , 0);
@@ -1613,7 +1613,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
 
             if(copy_from_user(aal_param , (void *)arg, sizeof(DISP_AAL_PARAM)))
             {
-                printk("disp driver : DISP_IOCTL_SET_AALPARAM Copy from user failed\n");
+                pr_err("disp driver : DISP_IOCTL_SET_AALPARAM Copy from user failed\n");
                 return -EFAULT;            
             }
 
@@ -1632,7 +1632,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
             pq_index = get_Color_index();
             if(copy_from_user(pq_index, (void *)arg, sizeof(DISPLAY_PQ_T)))
             {
-                printk("disp driver : DISP_IOCTL_SET_PQINDEX Copy from user failed\n");
+                pr_err("disp driver : DISP_IOCTL_SET_PQINDEX Copy from user failed\n");
                 return -EFAULT;
             }
 
@@ -1644,7 +1644,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
             pq_param = get_Color_config();
             if(copy_to_user((void *)arg, pq_param, sizeof(DISP_PQ_PARAM)))
             {
-                printk("disp driver : DISP_IOCTL_GET_PQPARAM Copy to user failed\n");
+                pr_err("disp driver : DISP_IOCTL_GET_PQPARAM Copy to user failed\n");
                 return -EFAULT;            
             }
 
@@ -1656,7 +1656,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
             tdshp_index = get_TDSHP_index();
             if(copy_from_user(tdshp_index, (void *)arg, sizeof(DISPLAY_TDSHP_T)))
             {
-                printk("disp driver : DISP_IOCTL_SET_TDSHPINDEX Copy from user failed\n");
+                pr_err("disp driver : DISP_IOCTL_SET_TDSHPINDEX Copy from user failed\n");
                 return -EFAULT;
             }
         
@@ -1667,7 +1667,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
                 tdshp_index = get_TDSHP_index();
                 if(copy_to_user((void *)arg, tdshp_index, sizeof(DISPLAY_TDSHP_T)))
                 {
-                    printk("disp driver : DISP_IOCTL_GET_TDSHPINDEX Copy to user failed\n");
+                    pr_err("disp driver : DISP_IOCTL_GET_TDSHPINDEX Copy to user failed\n");
                     return -EFAULT;            
                 }
         
@@ -1680,7 +1680,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
             gamma_index = get_gamma_index();
             if(copy_from_user(gamma_index, (void *)arg, sizeof(DISPLAY_GAMMA_T)))
             {
-                printk("disp driver : DISP_IOCTL_SET_GAMMALUT Copy from user failed\n");
+                pr_err("disp driver : DISP_IOCTL_SET_GAMMALUT Copy from user failed\n");
                 return -EFAULT;
             }
 
@@ -1715,7 +1715,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
          case DISP_IOCTL_SET_CLKON:
             if(copy_from_user(&module, (void *)arg, sizeof(DISP_MODULE_ENUM)))
             {
-                printk("disp driver : DISP_IOCTL_SET_CLKON Copy from user failed\n");
+                pr_err("disp driver : DISP_IOCTL_SET_CLKON Copy from user failed\n");
                 return -EFAULT;            
             }
 
@@ -1725,7 +1725,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
         case DISP_IOCTL_SET_CLKOFF:
             if(copy_from_user(&module, (void *)arg, sizeof(DISP_MODULE_ENUM)))
             {
-                printk("disp driver : DISP_IOCTL_SET_CLKOFF Copy from user failed\n");
+                pr_err("disp driver : DISP_IOCTL_SET_CLKOFF Copy from user failed\n");
                 return -EFAULT;            
             }
 
@@ -1735,7 +1735,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
         case DISP_IOCTL_MUTEX_CONTROL:
             if(copy_from_user(&value, (void *)arg, sizeof(int)))
             {
-                printk("disp driver : DISP_IOCTL_MUTEX_CONTROL Copy from user failed\n");
+                pr_err("disp driver : DISP_IOCTL_MUTEX_CONTROL Copy from user failed\n");
                 return -EFAULT;            
             }
 
@@ -1776,7 +1776,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
             }
             else
             {
-                printk("disp driver : DISP_IOCTL_MUTEX_CONTROL invalid control\n");
+                pr_err("disp driver : DISP_IOCTL_MUTEX_CONTROL invalid control\n");
                 return -EFAULT;            
             }
 
@@ -1789,7 +1789,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
                 lcmindex = DISP_GetLCMIndex();
                 if(copy_to_user((void *)arg, &lcmindex, sizeof(unsigned long)))
                 {
-                    printk("disp driver : DISP_IOCTL_GET_LCMINDEX Copy to user failed\n");
+                    pr_err("disp driver : DISP_IOCTL_GET_LCMINDEX Copy to user failed\n");
                     return -EFAULT;            
                 }
 
@@ -1802,7 +1802,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
             pq_cam_param = get_Color_Cam_config();
             if(copy_from_user(pq_cam_param, (void *)arg, sizeof(DISP_PQ_PARAM)))
             {
-                printk("disp driver : DISP_IOCTL_SET_PQ_CAM_PARAM Copy from user failed\n");
+                pr_err("disp driver : DISP_IOCTL_SET_PQ_CAM_PARAM Copy from user failed\n");
                 return -EFAULT;            
             }
 
@@ -1813,7 +1813,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
             pq_cam_param = get_Color_Cam_config();
             if(copy_to_user((void *)arg, pq_cam_param, sizeof(DISP_PQ_PARAM)))
             {
-                printk("disp driver : DISP_IOCTL_GET_PQ_CAM_PARAM Copy to user failed\n");
+                pr_err("disp driver : DISP_IOCTL_GET_PQ_CAM_PARAM Copy to user failed\n");
                 return -EFAULT;            
             }
             
@@ -1824,7 +1824,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
             pq_gal_param = get_Color_Gal_config();
             if(copy_from_user(pq_gal_param, (void *)arg, sizeof(DISP_PQ_PARAM)))
             {
-                printk("disp driver : DISP_IOCTL_SET_PQ_GAL_PARAM Copy from user failed\n");
+                pr_err("disp driver : DISP_IOCTL_SET_PQ_GAL_PARAM Copy from user failed\n");
                 return -EFAULT;            
             }
             
@@ -1835,7 +1835,7 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
             pq_gal_param = get_Color_Gal_config();
             if(copy_to_user((void *)arg, pq_gal_param, sizeof(DISP_PQ_PARAM)))
             {
-                printk("disp driver : DISP_IOCTL_GET_PQ_GAL_PARAM Copy to user failed\n");
+                pr_err("disp driver : DISP_IOCTL_GET_PQ_GAL_PARAM Copy to user failed\n");
                 return -EFAULT;            
             }
             
@@ -2134,7 +2134,7 @@ static void disp_shutdown(struct platform_device *pdev)
 /* PM suspend */
 static int disp_suspend(struct platform_device *pdev, pm_message_t mesg)
 {
-    printk("\n\n==== DISP suspend is called ====\n");
+    pr_debug("\n\n==== DISP suspend is called ====\n");
 
     return cmdqSuspendTask();
 }

@@ -21,7 +21,7 @@
 #define ENABLE_DDP_SCL_LOG
 
 #ifdef ENABLE_DDP_SCL_LOG
-#define DDP_SCL_LOG(fmt, arg...) {printk("[SCL]"); printk(fmt, ##arg);}
+#define DDP_SCL_LOG(fmt, arg...) {pr_debug("[SCL]"); pr_debug(fmt, ##arg);}
 #else
 #define DDP_SCL_LOG()
 #endif

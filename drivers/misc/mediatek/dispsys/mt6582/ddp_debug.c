@@ -276,7 +276,7 @@ static void process_dbg_opt(const char *opt)
         unsigned int enable = (unsigned int) simple_strtoul(p, &p, 10);
         if(enable==1)
         {
-            printk("[DDP] debug=1, trigger AEE\n");
+            pr_debug("[DDP] debug=1, trigger AEE\n");
             aee_kernel_exception("DDP-TEST-ASSERT", "[DDP] DDP-TEST-ASSERT");
         }
         else if(enable==2)
@@ -584,24 +584,24 @@ int ddp_mem_test2(void)
     pSrc= vmalloc(DDP_TEST_WIDTH*DDP_TEST_HEIGHT*DDP_TEST_BPP);
     if(pSrc==0)
     {
-        printk("[DDP] error: dma_alloc_coherent error!  dma memory not available.\n");
+        pr_err("[DDP] error: dma_alloc_coherent error!  dma memory not available.\n");
         return 0;
     }
     else
     {
-        printk("[ddp] pSrc=0x%x \n", (unsigned int)pSrc);
+        pr_debug("[ddp] pSrc=0x%x \n", (unsigned int)pSrc);
     }
     memcpy((void*)pSrc, data_rgb888_64x64, DDP_TEST_WIDTH*DDP_TEST_HEIGHT*DDP_TEST_BPP);
     
     pDst= vmalloc(DDP_TEST_WIDTH*DDP_TEST_HEIGHT*DDP_TEST_BPP);
     if(pDst==0)
     {
-        printk("[DDP] error: dma_alloc_coherent error!  dma memory not available.\n");
+        pr_err("[DDP] error: dma_alloc_coherent error!  dma memory not available.\n");
         return 0;
     }
     else
     {
-        printk("[ddp] pDst=0x%x\n", (unsigned int)pDst);
+        pr_debug("[ddp] pDst=0x%x\n", (unsigned int)pDst);
     }
     memset((void*)pDst, 0, DDP_TEST_WIDTH*DDP_TEST_HEIGHT*DDP_TEST_BPP);
 
@@ -656,10 +656,10 @@ int ddp_mem_test2(void)
     result = DDPK_Bitblt_Config( DDPK_CH_HDMI_0, &pddp );
     if(result)
     {
-        printk("[DDP] error: DDPK_Bitblt_Config fail!, ret=%d\n", result);
+        pr_err("[DDP] error: DDPK_Bitblt_Config fail!, ret=%d\n", result);
     }
 
-    printk("DDP, DDPK_Bitblt module setting: \n");
+    pr_debug("DDP, DDPK_Bitblt module setting: \n");
     disp_dump_reg(DISP_MODULE_ROT);
     disp_dump_reg(DISP_MODULE_SCL);
     disp_dump_reg(DISP_MODULE_WDMA0);
@@ -668,7 +668,7 @@ int ddp_mem_test2(void)
     result = DDPK_Bitblt( DDPK_CH_HDMI_0);
     if(result)
     {
-        printk("[DDP] error: DDPK_Bitblt() fail, result=%d \n", result);
+        pr_err("[DDP] error: DDPK_Bitblt() fail, result=%d \n", result);
     }
 
         
@@ -682,7 +682,7 @@ int ddp_mem_test2(void)
             if( *((unsigned char*)pSrc+t) != *((unsigned char*)data_rgb888_64x64+t) )
             {
                 diff_cnt++;
-                printk("t=%d, diff_cnt=%d, dst=0x%x, gold=0x%x \n", 
+                pr_debug("t=%d, diff_cnt=%d, dst=0x%x, gold=0x%x \n",
                 t, 
                 diff_cnt, 
                 *((unsigned char*)pSrc+t), 
@@ -691,11 +691,11 @@ int ddp_mem_test2(void)
     
         }
         if(diff_cnt == 0)
-            printk("ddp_mem_test src compare result: success \n");
+            pr_debug("ddp_mem_test src compare result: success \n");
         else
         {
-            printk("[DDP] error: ddp_mem_test src compare result: fail \n");
-            printk("detail, %d, %d, %%%d \n", diff_cnt, size, diff_cnt*100/size);  
+            pr_err("[DDP] error: ddp_mem_test src compare result: fail \n");
+            pr_debug("detail, %d, %d, %%%d \n", diff_cnt, size, diff_cnt*100/size);
             result = -1;
         }              
     }
@@ -709,7 +709,7 @@ int ddp_mem_test2(void)
             if( *((unsigned char*)pDst+t) != *((unsigned char*)data_rgb888_64x64_golden+t) )
             {
                 diff_cnt++;
-                printk("t=%d, diff_cnt=%d, dst=0x%x, gold=0x%x \n", 
+                pr_debug("t=%d, diff_cnt=%d, dst=0x%x, gold=0x%x \n",
                 t, 
                 diff_cnt, 
                 *((unsigned char*)pDst+t), 
@@ -718,11 +718,11 @@ int ddp_mem_test2(void)
     
         }
         if(diff_cnt == 0)
-            printk("ddp_mem_test result: success \n");
+            pr_debug("ddp_mem_test result: success \n");
         else
         {
-            printk("[DDP] error: ddp_mem_test result: fail \n");
-            printk("detail, %d, %d, %%%d \n", diff_cnt, size, diff_cnt*100/size); 
+            pr_err("[DDP] error: ddp_mem_test result: fail \n");
+            pr_debug("detail, %d, %d, %%%d \n", diff_cnt, size, diff_cnt*100/size);
             result = -1;
         }              
     }
@@ -753,24 +753,24 @@ int ddp_mem_test(void)
     pSrc= dma_alloc_coherent(NULL, DDP_TEST_WIDTH*DDP_TEST_HEIGHT*DDP_TEST_BPP, (dma_addr_t *)&pSrcPa, GFP_KERNEL);
     if(pSrc==0 || pSrcPa==0)
     {
-        printk("dma_alloc_coherent error!  dma memory not available.\n");
+        pr_err("dma_alloc_coherent error!  dma memory not available.\n");
         return 0;
     }
     else
     {
-        printk("[ddp] pSrc=0x%x, pSrcPa=0x%x \n", (unsigned int)pSrc, (unsigned int)pSrcPa);
+        pr_debug("[ddp] pSrc=0x%x, pSrcPa=0x%x \n", (unsigned int)pSrc, (unsigned int)pSrcPa);
     }
     memcpy((void*)pSrc, data_rgb888_64x64, DDP_TEST_WIDTH*DDP_TEST_HEIGHT*DDP_TEST_BPP);
     
     pDst= dma_alloc_coherent(NULL, DDP_TEST_WIDTH*DDP_TEST_HEIGHT*DDP_TEST_BPP, (dma_addr_t *)&pDstPa, GFP_KERNEL);
     if(pDst==0 || pDstPa==0)
     {
-        printk("dma_alloc_coherent error!  dma memory not available.\n");
+        pr_err("dma_alloc_coherent error!  dma memory not available.\n");
         return 0;
     }
     else
     {
-        printk("[ddp] pDst=0x%x, pDstPa=0x%x \n",(unsigned int) pDst, (unsigned int)pDstPa);
+        pr_debug("[ddp] pDst=0x%x, pDstPa=0x%x \n",(unsigned int) pDst, (unsigned int)pDstPa);
     }
     memset((void*)pDst, 0, DDP_TEST_WIDTH*DDP_TEST_HEIGHT*DDP_TEST_BPP);
 
@@ -817,12 +817,12 @@ int ddp_mem_test(void)
     disp_path_get_mutex_(DDP_MUTEX_FOR_ROT_SCL_WDMA);
     disp_path_config_(&config, DDP_MUTEX_FOR_ROT_SCL_WDMA);
     
-    printk("*after ddp test config start: -------------------\n");
+    pr_debug("*after ddp test config start: -------------------\n");
     disp_dump_reg(DISP_MODULE_ROT);
     disp_dump_reg(DISP_MODULE_SCL);
     disp_dump_reg(DISP_MODULE_WDMA0);
     disp_dump_reg(DISP_MODULE_CONFIG);
-    printk("*after ddp test config end: ---------------------\n");
+    pr_debug("*after ddp test config end: ---------------------\n");
     
     disp_path_release_mutex_(DDP_MUTEX_FOR_ROT_SCL_WDMA);
     if(*(volatile unsigned int*)DISP_REG_CONFIG_MUTEX1 != 0)
@@ -830,9 +830,9 @@ int ddp_mem_test(void)
         *(volatile unsigned int*)DISP_REG_CONFIG_MUTEX1 = 0;
     }
     
-    printk("ddp_mem_test wdma wait done... \n"); 
+    pr_debug("ddp_mem_test wdma wait done... \n");
     WDMAWait(0);
-    printk("ddp_mem_test wdma done! \n");            
+    pr_debug("ddp_mem_test wdma done! \n");
     
     if(0) //compare source
     {
@@ -844,7 +844,7 @@ int ddp_mem_test(void)
             if( *((unsigned char*)pSrc+t) != *((unsigned char*)data_rgb888_64x64+t) )
             {
                 diff_cnt++;
-                printk("t=%d, diff_cnt=%d, dst=0x%x, gold=0x%x \n", 
+                pr_debug("t=%d, diff_cnt=%d, dst=0x%x, gold=0x%x \n",
                 t, 
                 diff_cnt, 
                 *((unsigned char*)pSrc+t), 
@@ -853,11 +853,11 @@ int ddp_mem_test(void)
     
         }
         if(diff_cnt == 0)
-            printk("ddp_mem_test src compare result: success \n");
+            pr_debug("ddp_mem_test src compare result: success \n");
         else
         {
-            printk("ddp_mem_test src compare result: fail \n");
-            printk("detail, %d, %d, %%%d \n", diff_cnt, size, diff_cnt*100/size);  
+            pr_err("ddp_mem_test src compare result: fail \n");
+            pr_debug("detail, %d, %d, %%%d \n", diff_cnt, size, diff_cnt*100/size);
             result = -1;
         }              
     }
@@ -872,7 +872,7 @@ int ddp_mem_test(void)
             if( *((unsigned char*)pDst+t) != *((unsigned char*)data_rgb888_64x64_golden+t) )
             {
                 diff_cnt++;
-                printk("t=%d, diff_cnt=%d, dst=0x%x, gold=0x%x \n", 
+                pr_debug("t=%d, diff_cnt=%d, dst=0x%x, gold=0x%x \n",
                 t, 
                 diff_cnt, 
                 *((unsigned char*)pDst+t), 
@@ -881,11 +881,11 @@ int ddp_mem_test(void)
     
         }
         if(diff_cnt == 0)
-            printk("ddp_mem_test result: success \n");
+            pr_debug("ddp_mem_test result: success \n");
         else
         {
-            printk("ddp_mem_test result: fail \n");
-            printk("detail, %d, %d, %%%d \n", diff_cnt, size, diff_cnt*100/size); 
+            pr_err("ddp_mem_test result: fail \n");
+            pr_debug("detail, %d, %d, %%%d \n", diff_cnt, size, diff_cnt*100/size);
             result = -1;
         }              
     }
@@ -897,10 +897,10 @@ int ddp_mem_test(void)
 	        unsigned int size = DDP_TEST_WIDTH*DDP_TEST_HEIGHT*DDP_TEST_BPP;
 	        for(t=0;t<size;t++)
 	        {
-		    	  printk("0x%x, ", *((unsigned char*)pDst+t));
+                  pr_debug("0x%x, ", *((unsigned char*)pDst+t));
 		    	  if((t+1)%12==0)
 		    	  {
-		    	  	  printk("\n%05d: ", (t+1)/12);
+                        pr_debug("\n%05d: ", (t+1)/12);
 		    	  }
 	        }
     }
@@ -1033,7 +1033,7 @@ static char* ddp_get_mutex_module_name(unsigned int bit)
            case 9: return "bls";
            case 10: return "rdma0";
            default: 
-             printk("error_bit=%d, ", bit);
+             pr_err("error_bit=%d, ", bit);
              return "mutex-unknown";
        }
 }
@@ -1075,40 +1075,40 @@ static char* ddp_clock_1(int bit)
 char* ddp_ovl_get_status(unsigned int status)
 {
     DISP_MSG("ovl_status: ");
-    if(status&(1<<10))  printk("addcon_idle,");
-    if(status&(1<<11))  printk("blend_idle,");
-    if(status&(1<<15))  printk("out_idle,");
-    if(status&(1<<16))  printk("rdma3_idle,");
-    if(status&(1<<17))  printk("rdma2_idle,");
-    if(status&(1<<18))  printk("rdma1_idle,");
-    if(status&(1<<19))  printk("rdma0_idle,");
-    if(status&(1<<20))  printk("rst,");
-    if(status&(1<<21))  printk("trig,");
-    if(status&(1<<23))  printk("frame_hwrst_done,");
-    if(status&(1<<24))  printk("frame_swrst_done,");
-    if(status&(1<<25))  printk("frame_underrun,");
-    if(status&(1<<26))  printk("frame_done,");
-    if(status&(1<<27))  printk("ovl_running,");
-    if(status&(1<<28))  printk("ovl_start,");
-    if(status&(1<<29))  printk("ovl_clr,");
-    if(status&(1<<30))  printk("reg_update,");
-    if(status&(1<<31))  printk("ovl_upd_reg,");  
-    printk("\n");
+    if(status&(1<<10))  pr_debug("addcon_idle,");
+    if(status&(1<<11))  pr_debug("blend_idle,");
+    if(status&(1<<15))  pr_debug("out_idle,");
+    if(status&(1<<16))  pr_debug("rdma3_idle,");
+    if(status&(1<<17))  pr_debug("rdma2_idle,");
+    if(status&(1<<18))  pr_debug("rdma1_idle,");
+    if(status&(1<<19))  pr_debug("rdma0_idle,");
+    if(status&(1<<20))  pr_debug("rst,");
+    if(status&(1<<21))  pr_debug("trig,");
+    if(status&(1<<23))  pr_debug("frame_hwrst_done,");
+    if(status&(1<<24))  pr_debug("frame_swrst_done,");
+    if(status&(1<<25))  pr_debug("frame_underrun,");
+    if(status&(1<<26))  pr_debug("frame_done,");
+    if(status&(1<<27))  pr_debug("ovl_running,");
+    if(status&(1<<28))  pr_debug("ovl_start,");
+    if(status&(1<<29))  pr_debug("ovl_clr,");
+    if(status&(1<<30))  pr_debug("reg_update,");
+    if(status&(1<<31))  pr_debug("ovl_upd_reg,");
+    pr_debug("\n");
     
     DISP_MSG("ovl_state_machine: ");
     switch(status&0x3ff)
     {
-        case 0x1:  printk("idle\n"); break;
-        case 0x2:  printk("wait_SOF\n"); break;
-        case 0x4:  printk("prepare\n"); break;
-        case 0x8:  printk("reg_update\n"); break;
-        case 0x10: printk("eng_clr\n"); break;
-        case 0x20: printk("processing\n"); break;
-        case 0x40: printk("s_wait_w_rst\n"); break;
-        case 0x80: printk("s_w_rst\n"); break;
-        case 0x100:printk("h_wait_w_rst\n"); break;
-        case 0x200:printk("h_w_rst\n"); break;
-        default:   printk("unknown\n");
+        case 0x1:  pr_debug("idle\n"); break;
+        case 0x2:  pr_debug("wait_SOF\n"); break;
+        case 0x4:  pr_debug("prepare\n"); break;
+        case 0x8:  pr_debug("reg_update\n"); break;
+        case 0x10: pr_debug("eng_clr\n"); break;
+        case 0x20: pr_debug("processing\n"); break;
+        case 0x40: pr_debug("s_wait_w_rst\n"); break;
+        case 0x80: pr_debug("s_w_rst\n"); break;
+        case 0x100:pr_debug("h_wait_w_rst\n"); break;
+        case 0x200:pr_debug("h_w_rst\n"); break;
+        default:   pr_debug("unknown\n");
     }
     return 0;
 }
@@ -1181,21 +1181,21 @@ char* ddp_dsi_get_err(unsigned int reg)
     if((reg&0xf2)!=0)
     {
         if((reg>>7)&0x1)
-          printk("contention_err, ");
+          pr_debug("contention_err, ");
         if((reg>>6)&0x1)
-          printk("false_ctrl_err, ");
+          pr_debug("false_ctrl_err, ");
         if((reg>>5)&0x1)
-          printk("lpdt_sync_err, "); 
+          pr_debug("lpdt_sync_err, ");
         if((reg>>4)&0x1)
-          printk("esc_entry_err, ");
+          pr_debug("esc_entry_err, ");
         if((reg>>1)&0x1)
-          printk("buffer_underrun");
+          pr_debug("buffer_underrun");
 
-        printk("\n");
+        pr_debug("\n");
     }
     else
     {  
-        printk("none. \n");
+        pr_debug("none. \n");
     }
     return 0;
 }
@@ -1365,21 +1365,21 @@ int ddp_dump_info(DISP_MODULE_ENUM module)
                 for(i=0;i<9;i++)
                 {
                     if((reg&(1<<i))==0)
-                       printk("%s, ", ddp_clock_0(i));
+                       pr_debug("%s, ", ddp_clock_0(i));
                 }
                 for(i=20;i<22;i++)
                 {
                     if((reg&(1<<i))==0)
-                       printk("%s, ", ddp_clock_0(i));
+                       pr_debug("%s, ", ddp_clock_0(i));
                 }
-                printk("\n");
+                pr_debug("\n");
                 reg = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1);
                 for(i=0;i<7;i++)
                 {
                     if((reg&(1<<i))==0)
-                       printk("%s, ", ddp_clock_1(i));
+                       pr_debug("%s, ", ddp_clock_1(i));
                 }
-                printk("\n");                
+                pr_debug("\n");
             }
 #if 0
             {
@@ -1412,9 +1412,9 @@ int ddp_dump_info(DISP_MODULE_ENUM module)
                    for(j=3;j<=12;j++)
                    {
                        if((DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(i))>>j)&0x1)
-                          printk("%s,", ddp_get_mutex_module_name(j));
+                          pr_debug("%s,", ddp_get_mutex_module_name(j));
                    }
-                   printk(")\n");
+                   pr_debug(")\n");
                 }
             }            
             break;

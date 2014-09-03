@@ -82,11 +82,11 @@ enum WDMA_COLOR_SPACE {
 static int WDMADumpHidenReg(unsigned idx)
 {
   unsigned int i=0;
-  printk("[DDP] dump WDMA 0xac:\n [DDP]:");
+  pr_debug("[DDP] dump WDMA 0xac:\n [DDP]:");
   for(i=0;i<16;i++)
   {
       DISP_REG_SET_FIELD(WDMA_CFG_FLD_REG_MASK, idx*DISP_INDEX_OFFSET+DISP_REG_WDMA_CFG, i);
-      printk("0x%x, ", DISP_REG_GET(DISP_REG_WDMA_CFG));
+      pr_debug("0x%x, ", DISP_REG_GET(DISP_REG_WDMA_CFG));
   }
   return 0;
 }
@@ -122,7 +122,7 @@ int WDMAReset(unsigned idx) {
          delay_cnt++;
          if(delay_cnt>10000)
          {
-             printk("[DDP] error, WDMAReset(%d) timeout! wdma_timeout_cnt=%d \n", idx, wdma_timeout_cnt++);
+             pr_warn("[DDP] error, WDMAReset(%d) timeout! wdma_timeout_cnt=%d \n", idx, wdma_timeout_cnt++);
              WDMADumpHidenReg(idx);
              disp_dump_reg(DISP_MODULE_WDMA0);
              smi_dumpDebugMsg();
@@ -373,7 +373,7 @@ void WDMAWait(unsigned idx)
         msleep(1);
         if(delay_cnt>100)
         {
-            printk("[DDP] error:WDMA%dWait timeout \n", idx);
+            pr_warn("[DDP] error:WDMA%dWait timeout \n", idx);
             break;
         }
     }
@@ -424,7 +424,7 @@ enum WDMA_OUTPUT_FORMAT wdma_fmt_convert(DpColorFormat fmt)
        case eRGBA8888         :
          wdma_fmt = WDMA_OUTPUT_FORMAT_RGBA     ;  break;
        default:
-         printk("DDP error, unknow wdma_fmt=%d \n", wdma_fmt);
+         pr_err("DDP error, unknow wdma_fmt=%d \n", wdma_fmt);
    }
 
    return wdma_fmt;

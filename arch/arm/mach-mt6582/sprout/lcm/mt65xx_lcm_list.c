@@ -29,7 +29,7 @@
 #ifdef BUILD_LK
 #define LCD_DEBUG(fmt)  dprintf(CRITICAL,fmt)
 #else
-#define LCD_DEBUG(fmt)  printk(fmt)
+#define LCD_DEBUG(fmt)  pr_debug(fmt)
 #endif
 
 extern LCM_DRIVER kd079d1_35na_a1_lcm_drv;
@@ -923,15 +923,15 @@ unsigned char which_lcd_module_triple(void)
     dprintf(CRITICAL,"which_lcd_module_triple,lcd_id0:%d\n",lcd_id0);
     dprintf(CRITICAL,"which_lcd_module_triple,lcd_id1:%d\n",lcd_id1);
 #else
-    printk("which_lcd_module_triple,lcd_id0:%d\n",lcd_id0);
-    printk("which_lcd_module_triple,lcd_id1:%d\n",lcd_id1);
+    pr_debug("which_lcd_module_triple,lcd_id0:%d\n",lcd_id0);
+    pr_debug("which_lcd_module_triple,lcd_id1:%d\n",lcd_id1);
 #endif
     lcd_id =  lcd_id0 | (lcd_id1 << 2);
 
 #ifdef BUILD_LK
     dprintf(CRITICAL,"which_lcd_module_triple,lcd_id:%d\n",lcd_id);
 #else
-    printk("which_lcd_module_triple,lcd_id:%d\n",lcd_id);
+    pr_debug("which_lcd_module_triple,lcd_id:%d\n",lcd_id);
 #endif
 
     lcd_id_pins_value = lcd_id;

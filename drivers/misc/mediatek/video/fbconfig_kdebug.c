@@ -112,12 +112,12 @@ int fbconfig_get_esd_check_exec(void)
     esd_check_buffer = (char *)kmalloc(sizeof(char)*(6+esd_check_para_num), GFP_KERNEL);
     if(esd_check_buffer == NULL)
     {
-        printk("sxk=>esd_check :esd_check_buffer kmalloc fail!!\n");
+        pr_err("sxk=>esd_check :esd_check_buffer kmalloc fail!!\n");
         return -2 ;
     }
     array[0] = 0x00013700;
     array[0] = 0x3700+(esd_check_para_num<<16);
-    printk("sxk=>esd_check : arrar[0]=0x%x\n",array[0]);
+    pr_debug("sxk=>esd_check : arrar[0]=0x%x\n",array[0]);
     dsi_set_cmdq(array, 1, 1);	
     read_reg_v2(esd_check_addr, esd_check_buffer, 6+esd_check_para_num);
     return 0 ;
@@ -144,14 +144,14 @@ static void free_backup_list_memory(void)
 static void print_record (CONFIG_RECORD * record_head)
 {
     int z =0 ;
-    printk("sxk=>[PRINT_RECORD] type is %d\n",record_head->type);
+    pr_debug("sxk=>[PRINT_RECORD] type is %d\n",record_head->type);
     for(z=0;z<record_head->ins_num;z++)
-        printk("sxk=>[PRINT_RECORD]data is 0x%x\n",record_head->ins_array[z]);
+        pr_debug("sxk=>[PRINT_RECORD]data is 0x%x\n",record_head->ins_array[z]);
 }
 #endif
 static void record_list_init(void)
 {
-    printk("sxk=>call record_list_init!!\n");
+    pr_debug("sxk=>call record_list_init!!\n");
     fbconfig_start_LCM_config = 1;
     record_head = (CONFIG_RECORD *)kmalloc(sizeof(CONFIG_RECORD), GFP_KERNEL);
     record_head->next = NULL;
@@ -187,15 +187,15 @@ static void print_from_head_to_tail(void)
 {
     int z = 0 ;
     CONFIG_RECORD  * tmp = record_head ;
-    printk("sxk=>print_from_head_to_tail:START\n");
+    pr_debug("sxk=>print_from_head_to_tail:START\n");
     while(tmp !=NULL)
     {
-        printk("sxk=>record type is %d;record ins_num is %d\n",tmp->type,tmp->ins_num);
+        pr_debug("sxk=>record type is %d;record ins_num is %d\n",tmp->type,tmp->ins_num);
         for(z=0;z<tmp->ins_num;z++)
-            printk("sxk=>record conten is :0x%x\n",tmp->ins_array[z]);
+            pr_debug("sxk=>record conten is :0x%x\n",tmp->ins_array[z]);
         tmp = tmp->next;
     }
-    printk("sxk=>print_from_head_to_tail:END\n");
+    pr_debug("sxk=>print_from_head_to_tail:END\n");
 }
 
 #if FBCONFIG_KEEP_NEW_SETTING
@@ -203,15 +203,15 @@ static void print_from_head_to_tail_backup(void)
 {
     int z = 0 ;
     CONFIG_RECORD  * tmp = backup_head ;
-    printk("sxk=>print_from_head_to_tail_BACKUP...........:START\n");
+    pr_debug("sxk=>print_from_head_to_tail_BACKUP...........:START\n");
     while(tmp !=NULL)
     {
-        printk("sxk=>record type is %d;record ins_num is %d\n",tmp->type,tmp->ins_num);
+        pr_debug("sxk=>record type is %d;record ins_num is %d\n",tmp->type,tmp->ins_num);
         for(z=0;z<tmp->ins_num;z++)
-            printk("sxk=>record conten is :0x%x\n",tmp->ins_array[z]);
+            pr_debug("sxk=>record conten is :0x%x\n",tmp->ins_array[z]);
         tmp = tmp->next;
     }
-    printk("sxk=>print_from_head_to_tail_BACKUP..................:END\n");
+    pr_debug("sxk=>print_from_head_to_tail_BACKUP..................:END\n");
 }
 
 //backup_lcm_setting will copy the linked list to a backup
@@ -247,7 +247,7 @@ static void fbconfig_backup_lcm_setting(void)
  int fb_config_execute_cmd(void)
 {
     CONFIG_RECORD  * tmp = record_head ;
-    printk("sxk=>execute_cmd:START\n");
+    pr_debug("sxk=>execute_cmd:START\n");
     while(tmp !=NULL)
     {
         switch(tmp->type)
@@ -263,11 +263,11 @@ static void fbconfig_backup_lcm_setting(void)
                 SET_RESET_PIN(tmp->ins_array[0]);
                 break;
             default:
-                printk("sxk=>No such Type!!!!!\n");
+                pr_err("sxk=>No such Type!!!!!\n");
         }
         tmp = tmp->next;
     }
-    printk("sxk=>execute_cmd:END\n");
+    pr_debug("sxk=>execute_cmd:END\n");
 
     return 0;
 }
@@ -293,7 +293,7 @@ static void free_list_memory(void)
 void fbconfig_apply_new_lcm_setting(void)
 {
     CONFIG_RECORD  * tmp = backup_head;
-    printk("sxk=>fbconfig_apply_new_lcm_setting:START\n");
+    pr_debug("sxk=>fbconfig_apply_new_lcm_setting:START\n");
     while(tmp !=NULL)
     {
         switch(tmp->type)
@@ -309,11 +309,11 @@ void fbconfig_apply_new_lcm_setting(void)
                 SET_RESET_PIN(tmp->ins_array[0]);
                 break;
             default:
-                printk("sxk=>No such Type!!!!!\n");
+                pr_err("sxk=>No such Type!!!!!\n");
         }
         tmp = tmp->next;
     }
-    printk("sxk=>fbconfig_apply_new_lcm_setting:END\n");
+    pr_debug("sxk=>fbconfig_apply_new_lcm_setting:END\n");
     return;
 }
 
@@ -325,7 +325,7 @@ static void fbconfig_reset_lcm_setting(void)
     if(lcm_params->dsi.mode != CMD_MODE)
     {
         if (down_interruptible(&sem_early_suspend)) {
-            printk("sxk=>can't get semaphore in fbconfig_reset_lcm_setting()\n");
+            pr_err("sxk=>can't get semaphore in fbconfig_reset_lcm_setting()\n");
             return;
         }
         fbconfig_rest_lcm_setting_prepare();//video mode	
@@ -333,7 +333,7 @@ static void fbconfig_reset_lcm_setting(void)
     }
     else{//cmd mode
         if (down_interruptible(&sem_early_suspend)) {
-            printk("sxk=>can't get semaphore in execute_cmd()\n");
+            pr_err("sxk=>can't get semaphore in execute_cmd()\n");
             return;
         }
         lcm_drv->init();
@@ -398,7 +398,7 @@ static long fbconfig_ioctl(struct file * file, unsigned int cmd, unsigned long a
 {
     int ret =0 ;
     void __user *argp = (void __user *)arg;
-    printk("sxk=>run in fbconfig_ioctl** \n");
+    pr_debug("sxk=>run in fbconfig_ioctl** \n");
 
     switch (cmd) 
     {
@@ -418,21 +418,21 @@ static long fbconfig_ioctl(struct file * file, unsigned int cmd, unsigned long a
 	{	int ret ;
 		if(fbconfig_if_drv->set_spread_frequency)
 			ret=fbconfig_if_drv->set_spread_frequency(10);//100 for dsi_continuous;
-		printk("fbconfig=>LCM_GET_DSI_CONTINU:%d\n",ret);
+        pr_debug("fbconfig=>LCM_GET_DSI_CONTINU:%d\n",ret);
 		return copy_to_user(argp, &ret,  sizeof(ret)) ? -EFAULT : 0;
 	}
 	case LCM_TEST_DSI_CLK:
 	{	LCM_TYPE_FB lcm_fb ;
 		lcm_fb.clock= lcm_params->dsi.PLL_CLOCK ;
 		lcm_fb.lcm_type = lcm_params->dsi.mode ;
-		printk("fbconfig=>LCM_TEST_DSI_CLK:%d\n",ret);
+        pr_debug("fbconfig=>LCM_TEST_DSI_CLK:%d\n",ret);
 		return copy_to_user(argp, &lcm_fb,  sizeof(lcm_fb)) ? -EFAULT : 0;
 	}
 	case LCM_GET_DSI_CLK:
 	{	int ret ;
 		if(fbconfig_if_drv->set_spread_frequency)
 			ret=fbconfig_if_drv->set_spread_frequency(11);//11 for dsi_CLK;
-		printk("fbconfig=>LCM_GET_DSI_CLK:%d\n",ret);
+        pr_debug("fbconfig=>LCM_GET_DSI_CLK:%d\n",ret);
 		return copy_to_user(argp, &ret,  sizeof(ret)) ? -EFAULT : 0;
 	}
 	case LCM_GET_DSI_CLK_V2:
@@ -449,21 +449,21 @@ static long fbconfig_ioctl(struct file * file, unsigned int cmd, unsigned long a
 	{	int ret ;
 		if(fbconfig_if_drv->set_spread_frequency)
 			ret=fbconfig_if_drv->set_spread_frequency(9);//9 for ssc get;
-		printk("fbconfig=>LCM_GET_DSI_SSC:%d\n",ret);
+        pr_debug("fbconfig=>LCM_GET_DSI_SSC:%d\n",ret);
 		return copy_to_user(argp, &ret,  sizeof(ret)) ? -EFAULT : 0;
 	}
 	case LCM_GET_DSI_LANE_NUM:
 	{	int ret ;
 		if(fbconfig_if_drv->set_spread_frequency)
 			ret=fbconfig_if_drv->set_spread_frequency(12);//102 for dsi_LANE_NUM;
-		printk("fbconfig=>LCM_GET_DSI_LANE_NUM:%d\n",ret);
+        pr_debug("fbconfig=>LCM_GET_DSI_LANE_NUM:%d\n",ret);
 		return copy_to_user(argp, &ret,  sizeof(ret)) ? -EFAULT : 0;
 	}
 	case LCM_GET_DSI_TE:
 	{	int ret ;
 		if(fbconfig_if_drv->set_spread_frequency)
 			ret=fbconfig_if_drv->set_spread_frequency(13);//103 for dsi_TE;
-		printk("fbconfig=>LCM_GET_DSI_TE:%d\n",ret);
+        pr_debug("fbconfig=>LCM_GET_DSI_TE:%d\n",ret);
 		return copy_to_user(argp, &ret,  sizeof(ret)) ? -EFAULT : 0;
 	}
 	case LCM_GET_DSI_TIMING:
@@ -471,23 +471,23 @@ static long fbconfig_ioctl(struct file * file, unsigned int cmd, unsigned long a
 		MIPI_TIMING timing;	
 		if(copy_from_user(&timing,(void __user*)argp,sizeof(timing)))
         {
-            printk("[MIPI_SET_TIMING]: copy_from_user failed! line:%d \n", __LINE__);
+            pr_debug("[MIPI_SET_TIMING]: copy_from_user failed! line:%d \n", __LINE__);
             return -EFAULT;
         }
 		if(fbconfig_if_drv->set_spread_frequency)
 			ret=fbconfig_if_drv->set_spread_frequency(100+timing.type);//103 for dsi_TIMING;
-		printk("fbconfig=>LCM_GET_DSI_TIMING:%d\n",ret);
+        pr_debug("fbconfig=>LCM_GET_DSI_TIMING:%d\n",ret);
 		timing.value = ret ;
 		return copy_to_user(argp, &timing,  sizeof(timing)) ? -EFAULT : 0;
 	}
         case DRIVER_IC_CONFIG:
        {
-            printk("sxk=>run in case:DRIVER_IC_CONFIG** \n");	
+            pr_debug("sxk=>run in case:DRIVER_IC_CONFIG** \n");
             if(record_list_initialed == 0)
             {
                 record_list_init();
                 if (copy_from_user(record_head, (void __user *)arg, sizeof(CONFIG_RECORD))) {
-                    printk("sxk=>copy_from_user failed! line:%d \n", __LINE__);
+                    pr_err("sxk=>copy_from_user failed! line:%d \n", __LINE__);
                     return -EFAULT;
                 }
 #if 0
@@ -498,11 +498,11 @@ static long fbconfig_ioctl(struct file * file, unsigned int cmd, unsigned long a
             else
             {
                 if (copy_from_user(record_tmp, (void __user *)arg, sizeof(CONFIG_RECORD))) {
-                    printk("[DRIVER_IC_CONFIG]: copy_from_user failed! line:%d \n", __LINE__);
+                    pr_err("[DRIVER_IC_CONFIG]: copy_from_user failed! line:%d \n", __LINE__);
                     return -EFAULT;
                 }
 #if 0//FBCONFIG_DEBUG
-                    printk("sxk=>will print before add to list \n");
+                    pr_debug("sxk=>will print before add to list \n");
                     print_record(record_tmp);
 #endif
                 record_list_add();//add new node to list ;
@@ -516,7 +516,7 @@ static long fbconfig_ioctl(struct file * file, unsigned int cmd, unsigned long a
             unsigned int clk;
             if(copy_from_user(&clk,(void __user*)argp,sizeof(clk)))
             {
-                printk("[MIPI_SET_CLK]: copy_from_user failed! line:%d \n", __LINE__);
+                pr_err("[MIPI_SET_CLK]: copy_from_user failed! line:%d \n", __LINE__);
                 return -EFAULT;
             }
             else
@@ -530,7 +530,7 @@ static long fbconfig_ioctl(struct file * file, unsigned int cmd, unsigned long a
 		MIPI_CLK_V2 clk;		
 		if(copy_from_user(&clk,(void __user*)argp,sizeof(clk)))
         {
-            printk("[MIPI_SET_CLK]: copy_from_user failed! line:%d \n", __LINE__);
+            pr_err("[MIPI_SET_CLK]: copy_from_user failed! line:%d \n", __LINE__);
             return -EFAULT;
         }
         else
@@ -544,15 +544,15 @@ static long fbconfig_ioctl(struct file * file, unsigned int cmd, unsigned long a
 	case MIPI_SET_SSC:
 	{	
 		unsigned int ssc;
-		printk("sxk=>debug.c call set mipi ssc line:%d \n", __LINE__);
+        pr_debug("sxk=>debug.c call set mipi ssc line:%d \n", __LINE__);
 		if(copy_from_user(&ssc,(void __user*)argp,sizeof(ssc)))
         {
-            printk("[MIPI_SET_SSC]: copy_from_user failed! line:%d \n", __LINE__);
+            pr_err("[MIPI_SET_SSC]: copy_from_user failed! line:%d \n", __LINE__);
             return -EFAULT;
         }
         else
         {	
-        printk("sxk=>debug.c call set mipi ssc line:%d \n", __LINE__);
+        pr_debug("sxk=>debug.c call set mipi ssc line:%d \n", __LINE__);
 		fbconfig_disp_set_mipi_ssc(ssc);		
         }	 
             return 0 ;
@@ -562,7 +562,7 @@ static long fbconfig_ioctl(struct file * file, unsigned int cmd, unsigned long a
             unsigned int lane_num;		
             if(copy_from_user(&lane_num,(void __user*)argp,sizeof(lane_num)))
             {
-                printk("[MIPI_SET_LANE]: copy_from_user failed! line:%d \n", __LINE__);
+                pr_err("[MIPI_SET_LANE]: copy_from_user failed! line:%d \n", __LINE__);
                 return -EFAULT;
             }
             else
@@ -578,7 +578,7 @@ static long fbconfig_ioctl(struct file * file, unsigned int cmd, unsigned long a
                 MIPI_TIMING timing;		
                 if(copy_from_user(&timing,(void __user*)argp,sizeof(timing)))
                 {
-                    printk("[MIPI_SET_TIMING]: copy_from_user failed! line:%d \n", __LINE__);
+                    pr_err("[MIPI_SET_TIMING]: copy_from_user failed! line:%d \n", __LINE__);
                     return -EFAULT;
                 }
                 else
@@ -595,7 +595,7 @@ static long fbconfig_ioctl(struct file * file, unsigned int cmd, unsigned long a
             char enable;
             if(copy_from_user(&enable,(void __user*)argp,sizeof(enable)))
             {
-                printk("[TE_SET_ENABLE]: copy_from_user failed! line:%d \n", __LINE__);
+                pr_err("[TE_SET_ENABLE]: copy_from_user failed! line:%d \n", __LINE__);
                 return -EFAULT;
             }
             else
@@ -617,11 +617,11 @@ static long fbconfig_ioctl(struct file * file, unsigned int cmd, unsigned long a
 		int layer_size ,enable,height,fmt;
 		    if(copy_from_user(&tmp,(void __user*)argp,sizeof(LAYER_H_SIZE)))
             {
-                    printk("[TE_SET_ENABLE]: copy_from_user failed! line:%d \n", __LINE__);
+                    pr_err("[TE_SET_ENABLE]: copy_from_user failed! line:%d \n", __LINE__);
                     return -EFAULT;
             }
 		    global_layer_id = tmp.height ;
-            printk("sxk==>global_layer_id is %d\n",global_layer_id);	
+            pr_debug("sxk==>global_layer_id is %d\n",global_layer_id);
 
 		    fbconfig_get_layer_height(global_layer_id,&layer_size,&enable,&height,&fmt);
 		    if((layer_size == 0)||(enable ==0)||(height ==0))
@@ -642,10 +642,10 @@ static long fbconfig_ioctl(struct file * file, unsigned int cmd, unsigned long a
             unsigned int mva = fbconfig_get_layer_vaddr(global_layer_id,&layer_size,&enable);
             if((layer_size !=0)&&(enable!=0))
             {
-                printk("sxk==>FB_LAYER_DUMP==>layer_size is %d   mva is 0x%x\n",layer_size,mva);
+                pr_debug("sxk==>FB_LAYER_DUMP==>layer_size is %d   mva is 0x%x\n",layer_size,mva);
                 m4u_mva_map_kernel( mva, layer_size, 0,&kva, &mapped_size);		
-                printk("sxk==> addr from user space is 0x%x\n",(unsigned int)argp);
-                printk("sxk==> kva is 0x%x   mmaped size is %d\n",kva,mapped_size);
+                pr_debug("sxk==> addr from user space is 0x%x\n",(unsigned int)argp);
+                pr_debug("sxk==> kva is 0x%x   mmaped size is %d\n",kva,mapped_size);
                 ret = copy_to_user(argp, (void *)kva,  mapped_size) ? -EFAULT : 0;
                 m4u_mva_unmap_kernel(mva, mapped_size, kva);
                 return ret ;
@@ -658,7 +658,7 @@ static long fbconfig_ioctl(struct file * file, unsigned int cmd, unsigned long a
             int enable;
             if(copy_from_user(&enable,(void __user*)argp,sizeof(enable)))
             {
-                printk("[MIPI_SET_CC]: copy_from_user failed! line:%d \n", __LINE__);
+                pr_err("[MIPI_SET_CC]: copy_from_user failed! line:%d \n", __LINE__);
                 return -EFAULT;
             }
             else
@@ -673,7 +673,7 @@ static long fbconfig_ioctl(struct file * file, unsigned int cmd, unsigned long a
             ESD_PARA esd_para ;
             int i = 0;
             if (copy_from_user(&esd_para, (void __user *)arg, sizeof(esd_para))) {
-                printk("[LCM_GET_ESD]: copy_from_user failed! line:%d \n", __LINE__);
+                pr_err("[LCM_GET_ESD]: copy_from_user failed! line:%d \n", __LINE__);
                 return -EFAULT;
             }
             esd_check_addr = esd_para.addr;
@@ -685,7 +685,7 @@ static long fbconfig_ioctl(struct file * file, unsigned int cmd, unsigned long a
             }
             else{
                 for(i=0;i<esd_check_para_num+6;i++)
-                    printk("sxk=>%s, esd_check_buffer[%d]=0x%x\n", __func__, i,esd_check_buffer[i]);
+                    pr_debug("sxk=>%s, esd_check_buffer[%d]=0x%x\n", __func__, i,esd_check_buffer[i]);
                 return 0;
             }
         }
@@ -726,20 +726,20 @@ print_from_head_to_tail_backup();
 #if 1
 if(lcm_params->dsi.mode != CMD_MODE)
 {
-printk("sxk=>01will exec cmd!! in fbconfig_release()\n");
+pr_debug("sxk=>01will exec cmd!! in fbconfig_release()\n");
 
 if (down_interruptible(&sem_early_suspend)) {
-				printk("sxk=>can't get semaphore in execute_cmd()\n");
+                pr_err("sxk=>can't get semaphore in execute_cmd()\n");
 				return 0;
 		   }
 fbconfig_dsi_vdo_prepare();//video mode
-printk("sxk=>FINISH!!\n");
+pr_debug("sxk=>FINISH!!\n");
 
 up(&sem_early_suspend);
 }
 else{//cmd mode
 if (down_interruptible(&sem_early_suspend)) {
-            printk("sxk=>can't get semaphore in execute_cmd()\n");
+            pr_err("sxk=>can't get semaphore in execute_cmd()\n");
             return 0;
        }
 fb_config_execute_cmd();
@@ -747,7 +747,7 @@ up(&sem_early_suspend);
 }
 #endif
 /*free the memory .....*/
-printk("sxk=>will free the memory \n");
+pr_debug("sxk=>will free the memory \n");
 free_list_memory();
 return 0;
 }

@@ -86,22 +86,22 @@ int disphal_process_dbg_opt(const char *opt)
         if (0 == strncmp(opt + 3, "on", 2)) {
             if (DSI_Get_EXT_TE())
             {
-                //DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "EXT TE is enabled, can not enable BTA TE now\n");
+                //pr_debug("[DSI] EXT TE is enabled, can not enable BTA TE now\n");
             }
             else
             {
-                //DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "Before: BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
+                //pr_debug("[DSI] Before: BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
                 LCD_TE_Enable(TRUE);
                 DSI_TE_Enable(TRUE);
-                //DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "After : BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
+                //pr_debug("[DSI] After : BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
 
             }
         } else if (0 == strncmp(opt + 3, "off", 3)) {
 
-            //DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "Before: BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
+            //pr_debug("[DSI] Before: BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
             LCD_TE_Enable(FALSE);
             DSI_TE_Enable(FALSE);
-            //DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "After : BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
+            //pr_debug("[DSI] After : BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
 
         } else {
             goto Error;
@@ -112,21 +112,21 @@ int disphal_process_dbg_opt(const char *opt)
         if (0 == strncmp(opt + 7, "on", 2)) {
             if (DSI_Get_BTA_TE())
             {
-                //DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "BTA TE is enabled, can not enable EXT TE now\n");
+                //pr_debug("[DSI] BTA TE is enabled, can not enable EXT TE now\n");
             }
             else
             {
-                //DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "Before: BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
+                //pr_debug("[DSI] Before: BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
                 LCD_TE_Enable(TRUE);
                 DSI_TE_EXT_Enable(TRUE);
-                //DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "After : BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
+                //pr_debug("[DSI] After : BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
             }
         } else if (0 == strncmp(opt + 7, "off", 3)) {
 
-            //DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "Before: BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
+            //pr_debug("[DSI] Before: BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
             LCD_TE_Enable(FALSE);
             DSI_TE_EXT_Enable(FALSE);
-            //DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "After : BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
+            //pr_debug("[DSI] After : BTA_TE = %d, EXT_TE = %d\n", DSI_Get_BTA_TE(),DSI_Get_EXT_TE());
 
         } else {
             goto Error;
@@ -640,7 +640,7 @@ int disphal_prepare_suspend(void)
     }
     if(clk_is_force_on(MT_CG_DISP0_SMI_LARB0) || clk_is_force_on(MT_CG_DISP0_SMI_COMMON))
     {
-        printk("[DDP] MT_CG_DISP0_SMI_LARB0 is forced on\n");
+        pr_debug("[DDP] MT_CG_DISP0_SMI_LARB0 is forced on\n");
         clk_clr_force_on(MT_CG_DISP0_SMI_LARB0);
         clk_clr_force_on(MT_CG_DISP0_SMI_COMMON);
     }
@@ -658,7 +658,7 @@ unsigned int lcm_index_ssb = 0xFF;
 
 int parse_tag_lcm_fixup(void *buf, unsigned int size)
 {
-    printk("[LCM] read buf = 0x%x, %d\n", (unsigned int)buf, size);
+    pr_debug("[LCM] read buf = 0x%x, %d\n", (unsigned int)buf, size);
 
     memcpy(lcm_buf, (unsigned char*)buf, size);
     lcm_size = size;
@@ -669,7 +669,7 @@ int parse_tag_lcm_fixup(void *buf, unsigned int size)
 
 int parse_tag_lcminfo_data_fixup(unsigned int index)
 {
-    printk("[LCM] read index = %d\n", index);
+    pr_debug("[LCM] read index = %d\n", index);
 
     if (0xFF != index)
     {
@@ -722,8 +722,8 @@ const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm
     bool isLCMFound = false;
 
 
-    printk("[LCM Auto Detect], we have %d lcm drivers built in\n", lcm_count);
-    printk("[LCM Auto Detect], try to find driver for [%s]\n",
+    pr_debug("[LCM Auto Detect], we have %d lcm drivers built in\n", lcm_count);
+    pr_debug("[LCM Auto Detect], try to find driver for [%s]\n",
         (lcm_name==NULL)?"unknown":lcm_name);
 
     if (FALSE == isLCMParaLoaded)
@@ -733,20 +733,20 @@ const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm
             size = lcm_size;
             buf = lcm_buf;
 
-            printk("%s read_para_size() is 0x%x, %d\n", "lcm.bin", (unsigned int)buf, size);
+            pr_debug("%s read_para_size() is 0x%x, %d\n", "lcm.bin", (unsigned int)buf, size);
 
             memset(driver_id, 0x0, sizeof(unsigned int)*MAX_LCM_CNT);
             memset(module_id, 0x0, sizeof(unsigned int)*MAX_LCM_CNT);
             result = disp_drv_read_para(buf, &count, driver_id, module_id);
             if (result < 0)
             {
-                printk("%s read_para() is failed! \n", "lcm.bin");
+                pr_err("%s read_para() is failed! \n", "lcm.bin");
                 ASSERT(0);
             }
         }
         else
         {
-            printk("%s does not exist. \n", "lcm.bin");
+            pr_warn("%s does not exist. \n", "lcm.bin");
         }
 
         isLCMParaLoaded = TRUE;
@@ -760,7 +760,7 @@ const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm
         lcm = lcm_driver_list[0];
         lcm->set_util_funcs(&lcm_utils);
         *lcm_index = 0;
-        printk("[LCM Specified]\t[%s]\n", (lcm->name==NULL)?"unknown":lcm->name);
+        pr_debug("[LCM Specified]\t[%s]\n", (lcm->name==NULL)?"unknown":lcm->name);
         isLCMFound = true;
         goto done;
     }
@@ -771,7 +771,7 @@ const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm
         for(i = 0;i < lcm_count;i++)
         {
             lcm = lcm_driver_list[i];
-            printk("[LCM Auto Detect] [%d] - [%s]\t", i, (lcm->name==NULL)?"unknown":lcm->name);
+            pr_debug("[LCM Auto Detect] [%d] - [%s]\t", i, (lcm->name==NULL)?"unknown":lcm->name);
             lcm->set_util_funcs(&lcm_utils);
             memset((void*)&s_lcm_params, 0, sizeof(LCM_PARAMS));
             lcm->get_params(&s_lcm_params);
@@ -784,14 +784,14 @@ const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm
             {
                 if(!strcmp(lcm_name,lcm->name))
                 {
-                    printk("\t\t[success]\n");
+                    pr_debug("\t\t[success]\n");
                     *lcm_index = i;
                     isLCMFound = true;
                     goto done;
                 }
                 else
                 {
-                    printk("\t\t[fail]\n");
+                    pr_warn("\t\t[fail]\n");
                 }
             }
             else
@@ -803,7 +803,7 @@ const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm
 
                 if(lcm->compare_id != NULL && lcm->compare_id())
                 {
-                    printk("\t\t[success]\n");
+                    pr_debug("\t\t[success]\n");
                     isLCMFound = true;
                     *lcm_index = i;
                     goto done;
@@ -812,7 +812,7 @@ const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm
                 {
                     if(LCM_TYPE_DSI == lcm_params->type)
                         DSI_Deinit();
-                    printk("\t\t[fail]\n");
+                    pr_warn("\t\t[fail]\n");
                 }
             }
         }
@@ -834,10 +834,10 @@ done:
 
         para_match = TRUE;
         index = lcm_index_ssb;
-        printk("[LCM] para update =%d,%d,%d\n", index, count, size);
+        pr_debug("[LCM] para update =%d,%d,%d\n", index, count, size);
         if ((TRUE == para_match) && (index < count) && (0 != size))
         {
-            printk("[LCM] para matched!! index=%d\n", index);
+            pr_debug("[LCM] para matched!! index=%d\n", index);
 
             pfile_header = (struct lcm_para_header *)buf;
             pcustom_header = &(pfile_header->header_list[index]);
@@ -867,7 +867,7 @@ done:
 
                 if ((i == MAX_INIT_CNT) && (curr < offset))
                 {
-                    printk("lcm initialization ssb out of range error!\n");
+                    pr_err("lcm initialization ssb out of range error!\n");
                 }
             }
             lcm_initialization_size_ssb = i;
@@ -884,7 +884,7 @@ done:
             }
             else
             {
-                printk("[LCM] set para failed. \n");
+                pr_warn("[LCM] set para failed. \n");
             }
         }
 
@@ -993,11 +993,11 @@ int disphal_allocate_fb(struct resource* res, unsigned int* pa, unsigned int* va
     ret = m4u_fill_linear_pagetable(*pa, res->end - res->start + 1);
     if(ret)
     {
-        printk("fill_linear_pagetable error, %d\n", ret);
+        pr_err("fill_linear_pagetable error, %d\n", ret);
     }
     *dma_pa = *pa;
         ASSERT(dma_pa);
-        printk("[DISPHAL] FB MVA is 0x%08X PA is 0x%08X\n", *dma_pa, *pa);
+        pr_debug("[DISPHAL] FB MVA is 0x%08X PA is 0x%08X\n", *dma_pa, *pa);
     }
     else
     {
@@ -1096,7 +1096,7 @@ unsigned int disphal_check_lcm(UINT32 color)
     }
     else
     {
-        printk("DISP_AutoTest():unknown interface\n");
+        pr_debug("DISP_AutoTest():unknown interface\n");
         ret = 0;
     }
     return ret;

@@ -582,7 +582,7 @@ static unsigned int lcm_esd_check(void)
     dsi_set_cmdq(array, 1, 1);
 
     read_reg_v2(0x36, buffer, 1);
-    printk("%s, xxh esd check, read 0xBA = 0x%08x\n", __func__, buffer[0]);
+    pr_debug("%s, xxh esd check, read 0xBA = 0x%08x\n", __func__, buffer[0]);
 
     if(buffer[0]==0x90)
     {
@@ -631,7 +631,7 @@ static unsigned int lcm_compare_id(void)
     #ifdef BUILD_LK
         printf("%s, LK nt35590 debug: nt35590 id = 0x%08x\n", __func__, id);
     #else
-        printk("%s, kernel nt35590 horse debug: nt35590 id = 0x%08x\n", __func__, id);
+        pr_debug("%s, kernel nt35590 horse debug: nt35590 id = 0x%08x\n", __func__, id);
     #endif
 
     if(id == LCM_ID_NT35590)
@@ -663,21 +663,21 @@ static unsigned int lcm_esd_check(void)
     read_reg_v2(0x0F, buffer, 1);
     if(buffer[0] != 0xc0)
     {
-        printk("[LCM ERROR] [0x0F]=0x%02x\n", buffer[0]);
+        pr_debug("[LCM ERROR] [0x0F]=0x%02x\n", buffer[0]);
         ret++;
     }
 
     read_reg_v2(0x05, buffer, 1);
     if(buffer[0] != 0x00)
     {
-        printk("[LCM ERROR] [0x05]=0x%02x\n", buffer[0]);
+        pr_debug("[LCM ERROR] [0x05]=0x%02x\n", buffer[0]);
         ret++;
     }
 
     read_reg_v2(0x0A, buffer, 1);
     if((buffer[0]&0xf)!=0x0C)
     {
-        printk("[LCM ERROR] [0x0A]=0x%02x\n", buffer[0]);
+        pr_debug("[LCM ERROR] [0x0A]=0x%02x\n", buffer[0]);
         ret++;
     }
 
@@ -718,7 +718,7 @@ unsigned int lcm_ata_check(unsigned char *buffer)
 
     unsigned int data_array[3];
     unsigned char read_buf[4];
-    printk("ATA check size = 0x%x,0x%x,0x%x,0x%x\n",x0_MSB,x0_LSB,x1_MSB,x1_LSB);
+    pr_debug("ATA check size = 0x%x,0x%x,0x%x,0x%x\n",x0_MSB,x0_LSB,x1_MSB,x1_LSB);
     data_array[0]= 0x0005390A;//HS packet
     data_array[1]= (x1_MSB<<24)|(x0_LSB<<16)|(x0_MSB<<8)|0x2a;
     data_array[2]= (x1_LSB);

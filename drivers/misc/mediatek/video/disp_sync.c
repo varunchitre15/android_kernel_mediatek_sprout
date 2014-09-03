@@ -37,7 +37,7 @@
 // external variables declarations
 ///==========================
 extern BOOL isAEEEnabled;
-static BOOL log_on = 1;
+static BOOL log_on = 0;
 void disp_sync_log_on(BOOL on) {
 	log_on = on;
 }
@@ -497,7 +497,7 @@ static struct sw_sync_timeline* disp_sync_create_timeline (UINT layer) {
 	timeline = timeline_create(name);
 	sync_timelines[layer] = timeline;
 	if (timeline == NULL) {
-		XLOG_ERR("L%d cannot create timeline! \n");
+        XLOG_ERR("L%d cannot create timeline! \n", layer);
 		return timeline;
 	}
 	XLOG_DBG("L%d create timeline: %s\n", layer, name);

@@ -57,7 +57,7 @@
 #define DAL_LOCK()                                                          \
     do {                                                                    \
         if (down_interruptible(&dal_sem)) {                                 \
-            DISP_LOG_PRINT(ANDROID_LOG_WARN, "DAL", "Can't get semaphore in %s()\n",          \
+            pr_warn("[DAL] Can't get semaphore in %s()\n",          \
                    __FUNCTION__);                                           \
             return DAL_STATUS_LOCK_FAIL;                                    \
         }                                                                   \
@@ -73,7 +73,7 @@
     do {                                                                    \
         MFC_STATUS ret = (expr);                                            \
         if (MFC_STATUS_OK != ret) {                                         \
-            DISP_LOG_PRINT(ANDROID_LOG_WARN, "DAL", "Warning: call MFC_XXX function failed "           \
+            pr_warn("[DAL] Warning: call MFC_XXX function failed "           \
                    "in %s(), line: %d, ret: %x\n",                          \
                    __FUNCTION__, __LINE__, ret);                            \
             return ret;                                                     \
@@ -85,7 +85,7 @@
     do {                                                                    \
         DISP_STATUS ret = (expr);                                           \
         if (DISP_STATUS_OK != ret) {                                        \
-            DISP_LOG_PRINT(ANDROID_LOG_WARN, "DAL", "Warning: call DISP_XXX function failed "          \
+            pr_warn("[DAL] Warning: call DISP_XXX function failed "          \
                    "in %s(), line: %d, ret: %x\n",                          \
                    __FUNCTION__, __LINE__, ret);                            \
             return ret;                                                     \
@@ -94,7 +94,7 @@
 
 #define DAL_LOG(fmt, arg...) \
     do { \
-        DISP_LOG_PRINT(ANDROID_LOG_INFO, "DAL", fmt, ##arg); \
+        pr_debug("[DAL]"fmt, ##arg); \
     }while (0)
 // ---------------------------------------------------------------------------
 
@@ -144,7 +144,7 @@ static DAL_STATUS Show_LowMemory(void)
 	if(!dal_shown){//only need show lowmemory assert
 		update_width = ctxt->font_width * strlen(low_memory_msg);
 		update_height = ctxt->font_height;
-		DISP_LOG_PRINT(ANDROID_LOG_INFO, "DAL", "update size:%d,%d",update_width, update_height);
+        pr_debug("[DAL] update size:%d,%d",update_width, update_height);
         mutex_lock(&OverlaySettingMutex);
         cached_layer_config[ASSERT_LAYER].src_x = DAL_WIDTH - update_width;
         cached_layer_config[ASSERT_LAYER].src_y = 0;
@@ -216,13 +216,13 @@ int DAL_address_burst_align(void)
     {
          align = 0x40;
     }
-    printk("dal address align 0x%x\n",align);
+    pr_debug("dal address align 0x%x\n",align);
     return align;
 }
 
 DAL_STATUS DAL_Init(unsigned long layerVA, unsigned long layerPA)
 {
-    //printk("%s", __func__);
+    //pr_debug("%s", __func__);
 
     int align = DAL_address_burst_align();
     dal_fb_addr = (void *)(layerVA+align);
@@ -256,11 +256,11 @@ DAL_STATUS DAL_Dynamic_Change_FB_Layer(unsigned int isAEEEnabled)
 {
     static int ui_layer_tdshp = 0;
 
-    printk("[DDP] DAL_Dynamic_Change_FB_Layer, isAEEEnabled=%d \n", isAEEEnabled);
+    pr_debug("[DDP] DAL_Dynamic_Change_FB_Layer, isAEEEnabled=%d \n", isAEEEnabled);
     
     if(DISP_DEFAULT_UI_LAYER_ID==DISP_CHANGED_UI_LAYER_ID)
     {
-    	 printk("[DDP] DAL_Dynamic_Change_FB_Layer, no dynamic switch \n");
+         pr_debug("[DDP] DAL_Dynamic_Change_FB_Layer, no dynamic switch \n");
     	 return DAL_STATUS_OK;
     }
     
@@ -288,7 +288,7 @@ DAL_STATUS DAL_Clean(void)
 
     static int dal_clean_cnt = 0;
     MFC_CONTEXT *ctxt = (MFC_CONTEXT *)mfc_handle;
-    printk("[MTKFB_DAL] DAL_Clean\n");
+    pr_debug("[MTKFB_DAL] DAL_Clean\n");
     if (NULL == mfc_handle) 
         return DAL_STATUS_NOT_READY;
 
@@ -311,7 +311,7 @@ DAL_STATUS DAL_Clean(void)
         cached_layer_config[ASSERT_LAYER].isDirty = true;
         
         // DAL disable, switch UI layer to default layer 3
-        printk("[DDP]* isAEEEnabled from 1 to 0, %d \n", dal_clean_cnt++);
+        pr_debug("[DDP]* isAEEEnabled from 1 to 0, %d \n", dal_clean_cnt++);
         isAEEEnabled = 0;
         DAL_Dynamic_Change_FB_Layer(isAEEEnabled);  // restore UI layer to DEFAULT_UI_LAYER
     }
@@ -348,8 +348,8 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
     va_list args;
     uint i;
     DAL_STATUS ret = DAL_STATUS_OK;
-    printk("%s", __func__);
-    //printk("[MTKFB_DAL] DAL_Printf mfc_handle=0x%08X, fmt=0x%08X\n", mfc_handle, fmt);
+    pr_debug("%s", __func__);
+    //pr_debug("[MTKFB_DAL] DAL_Printf mfc_handle=0x%08X, fmt=0x%08X\n", mfc_handle, fmt);
     if (NULL == mfc_handle) 
         return DAL_STATUS_NOT_READY;
     
@@ -360,7 +360,7 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 	mutex_lock(&OverlaySettingMutex);
      if(isAEEEnabled==0)
     {
-        printk("[DDP] isAEEEnabled from 0 to 1, ASSERT_LAYER=%d, dal_fb_pa %x\n", 
+        pr_debug("[DDP] isAEEEnabled from 0 to 1, ASSERT_LAYER=%d, dal_fb_pa %x\n",
             ASSERT_LAYER, dal_fb_pa);
             
         isAEEEnabled = 1;
@@ -591,13 +591,13 @@ DAL_STATUS DAL_SetColor(unsigned int fgColor, unsigned int bgColor)
 }
 DAL_STATUS DAL_Clean(void)
 {
-    printk("[MTKFB_DAL] DAL_Clean is not implemented\n");
+    pr_warn("[MTKFB_DAL] DAL_Clean is not implemented\n");
     return DAL_STATUS_OK;
 }
 DAL_STATUS DAL_Printf(const char *fmt, ...)
 {
     NOT_REFERENCED(fmt);
-    printk("[MTKFB_DAL] DAL_Printf is not implemented\n");
+    pr_warn("[MTKFB_DAL] DAL_Printf is not implemented\n");
     return DAL_STATUS_OK;
 }
 

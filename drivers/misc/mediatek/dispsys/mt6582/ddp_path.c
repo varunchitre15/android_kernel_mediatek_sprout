@@ -94,14 +94,14 @@ static unsigned int g_disp_mutex_reg_update = 0;
 #if 0
 static void dispsys_bypass_color(unsigned int width, unsigned int height)
 {
-    printk("dispsys_bypass_color, width=%d, height=%d \n", width, height);
+    pr_debug("dispsys_bypass_color, width=%d, height=%d \n", width, height);
 
     *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_COLOR + 0xf50) = width;
     *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_COLOR + 0xf54) = height;
     *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_COLOR + 0x400) = 0x2000323c;
     *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_COLOR + 0xf00) = 0x00000001;
 
-    printk("dispsys_bypass_color, 0x%x, 0x%x, 0x%x, 0x%x \n",
+    pr_debug("dispsys_bypass_color, 0x%x, 0x%x, 0x%x, 0x%x \n",
         *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_COLOR + 0x400),
         *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_COLOR + 0xf00),
         *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_COLOR + 0xf50),
@@ -110,7 +110,7 @@ static void dispsys_bypass_color(unsigned int width, unsigned int height)
 
 static void dispsys_bypass_bls(unsigned int width, unsigned int height)
 {
-    printk("dispsys_bypass_bls, width=%d, height=%d, reg=0x%x \n",
+    pr_debug("dispsys_bypass_bls, width=%d, height=%d, reg=0x%x \n",
         width, height, ((height<<16) + width));
 
     *(volatile kal_uint32 *)(DDP_REG_BASE_DISP_BLS + 0x000b0) = 0x00000001;
@@ -210,7 +210,7 @@ int disp_path_get_mutex_()
         cnt++;
         if(cnt>10000)
         {
-            printk("[DDP] disp_path_get_mutex() timeout! \n");
+            pr_warn("[DDP] disp_path_get_mutex() timeout! \n");
             disp_dump_reg(DISP_MODULE_CONFIG);
             break;
         }
@@ -1000,7 +1000,7 @@ int disp_path_config_layer(OVL_CONFIG_STRUCT* pOvlConfig)
 
     }
 
-    //printk("[DDP]disp_path_config_layer() done, addr=0x%x \n", pOvlConfig->addr);
+    //pr_debug("[DDP]disp_path_config_layer() done, addr=0x%x \n", pOvlConfig->addr);
 
     return 0;
 }
@@ -1354,7 +1354,7 @@ int disp_path_config_(struct disp_path_config_struct* pConfig, int mutexId)
             break;
 
             case DISP_MODULE_DPI0:
-                printk("DISI_MODULE_DPI0\n");
+                pr_debug("DISI_MODULE_DPI0\n");
                 if (DISP_IsDecoupleMode()) {
                     DISP_REG_SET(DISP_REG_CONFIG_DISP_OVL_MOUT_EN, 1<<1);  // OVL-->WDMA0
                 } else {
@@ -1368,7 +1368,7 @@ int disp_path_config_(struct disp_path_config_struct* pConfig, int mutexId)
             break;
 
             default:
-               printk("[DDP] error! unknown dstModule=%d \n", pConfig->dstModule);
+               pr_err("[DDP] error! unknown dstModule=%d \n", pConfig->dstModule);
         }
 
         ///> config engines
@@ -1480,7 +1480,7 @@ int disp_path_config_(struct disp_path_config_struct* pConfig, int mutexId)
                 }
 
                 if (DISP_IsDecoupleMode()) {
-                    printk("from de-couple\n");
+                    pr_debug("from de-couple\n");
                     WDMAReset(0);
                     if(decouple_addr==0 ||
                             pConfig->srcROI.width==0    ||
@@ -1539,7 +1539,7 @@ int disp_path_config_(struct disp_path_config_struct* pConfig, int mutexId)
         }
         else  //src module is RDMA1
         {
-            printk("from rdma1\n");
+            pr_debug("from rdma1\n");
             ///config RDMA
             RDMAStop(1);
             RDMAReset(1);
@@ -1602,9 +1602,9 @@ void reg_backup(unsigned int reg_addr)
 {
    *(pRegBackup+reg_offset) = DISP_REG_GET(reg_addr);
 #ifdef DDP_RECORD_REG_BACKUP_RESTORE
-      printk("0x%08x(0x%08x), ", reg_addr, *(pRegBackup+reg_offset));
+      pr_debug("0x%08x(0x%08x), ", reg_addr, *(pRegBackup+reg_offset));
       if((reg_offset+1)%8==0)
-          printk("\n");
+          pr_debug("\n");
 #endif
       reg_offset++;
       if(reg_offset>=DDP_BACKUP_REG_NUM)
@@ -1617,9 +1617,9 @@ void reg_restore(unsigned int reg_addr)
 {
       DISP_REG_SET(reg_addr, *(pRegBackup+reg_offset));
 #ifdef DDP_RECORD_REG_BACKUP_RESTORE
-      printk("0x%08x(0x%08x), ", reg_addr, DISP_REG_GET(reg_addr));
+      pr_debug("0x%08x(0x%08x), ", reg_addr, DISP_REG_GET(reg_addr));
       if((reg_offset+1)%8==0)
-          printk("\n");
+          pr_debug("\n");
 #endif
       reg_offset++;
 

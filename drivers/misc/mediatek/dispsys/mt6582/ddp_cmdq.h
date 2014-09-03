@@ -58,13 +58,13 @@
 #define CMDQ_MSG(string, args...)                                                                                   \
     if(cmdq_core_should_print_msg())                                                                                \
     {                                                                                                               \
-        printk(KERN_DEBUG "[CMDQ]"string, ##args);                                                                 \
+        pr_debug("[CMDQ]"string, ##args);                                                                 \
     }
 
 #define CMDQ_ERR(string, args...)                                                                                   \
     if(1)                                                                                                           \
     {                                                                                                               \
-        printk(KERN_DEBUG "[CMDQ][ERR]"string, ##args);                                                            \
+        pr_err("[CMDQ][ERR]"string, ##args);                                                            \
     }
 
 #define CMDQ_AEE(tag, string, args...)                                                                              \
@@ -72,7 +72,7 @@
         char output[255];                                                                                           \
         sprintf(output, "[CMDQ][AEE]"string, ##args);                                                                   \
 	    aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT | DB_OPT_PROC_CMDQ_INFO, output, string, ##args); \
-	    xlog_printk(ANDROID_LOG_ERROR, tag, string, ##args);                                                        \
+        pr_err("[CMDQ]"string, ##args);                                                        \
     } while(0)
 
 //

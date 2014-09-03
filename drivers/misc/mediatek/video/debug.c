@@ -287,7 +287,7 @@ static void dump_layer_info(void)
 {
     unsigned int i;
     for(i=0;i<4;i++){
-        printk("LayerInfo in LCD driver, layer=%d,layer_en=%d, source=%d, fmt=%d, addr=0x%x, x=%d, y=%d \n\
+        pr_debug("LayerInfo in LCD driver, layer=%d,layer_en=%d, source=%d, fmt=%d, addr=0x%x, x=%d, y=%d \n\
                     w=%d, h=%d, pitch=%d, keyEn=%d, key=%d, aen=%d, alpha=%d \n ", 
                     cached_layer_config[i].layer,   // layer
                     cached_layer_config[i].layer_en,
@@ -394,10 +394,10 @@ void DBG_OnLcdDone(void)
 #if 0   // FIXME
     if (dbg_opt.en_touch_latency_log && tpd_start_profiling) {
 
-        DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", "Touch Latency: %ld ms\n", 
+        pr_debug("[DBG] Touch Latency: %ld ms\n",
                (time - tpd_last_down_time) / 1000);
 
-        DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", "LCD update time %ld ms (TE delay %ld ms + LCD %ld ms)\n",
+        pr_debug("[DBG] LCD update time %ld ms (TE delay %ld ms + LCD %ld ms)\n",
                fps.current_lcd_time_us / 1000,
                fps.current_te_delay_time_us / 1000,
                (fps.current_lcd_time_us - fps.current_te_delay_time_us) / 1000);
@@ -427,7 +427,7 @@ void DBG_OnLcdDone(void)
         long int lcd = (fps.total_lcd_time_us - fps.total_te_delay_time_us) * 100
                        / (1000 * fps.trigger_lcd_count);
 
-        DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", "MTKFB FPS: %ld.%02ld, Avg. update time: %ld.%02ld ms "
+        pr_debug("[DBG] MTKFB FPS: %ld.%02ld, Avg. update time: %ld.%02ld ms "
                "(TE delay %ld.%02ld ms, LCD %ld.%02ld ms)\n",
                f / 100, f % 100,
                update / 100, update % 100,
@@ -464,7 +464,7 @@ void DBG_OnHDMIDone(void)
         long int update = hdmi_fps.total_hdmi_time_us * 100 
                           / (1000 * hdmi_fps.trigger_hdmi_count);
 
-        DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", "[HDMI] FPS: %ld.%02ld, Avg. update time: %ld.%02ld ms\n",
+        pr_debug("[DBG][HDMI] FPS: %ld.%02ld, Avg. update time: %ld.%02ld ms\n",
                f / 100, f % 100,
                update / 100, update % 100);
         
@@ -580,7 +580,7 @@ static void process_dbg_opt(const char *opt)
         unsigned int level = (unsigned int) simple_strtoul(p, &p, 10);
         color = level;
         ret = mtkfb_fm_auto_test();
-        printk("ret = %d, 0x%x\n", ret,color);
+        pr_debug("ret = %d, 0x%x\n", ret,color);
     }
     else if (0 == strncmp(opt, "regw:", 5))
     {
@@ -600,7 +600,7 @@ static void process_dbg_opt(const char *opt)
         unsigned int addr = (unsigned int) simple_strtoul(p, &p, 16);
 
         if (addr) {
-            DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", "Read register 0x%08x: 0x%08x\n", addr, INREG32(addr));
+            pr_debug("[DBG] Read register 0x%08x: 0x%08x\n", addr, INREG32(addr));
         } else {
             goto Error;
         }
@@ -610,7 +610,7 @@ static void process_dbg_opt(const char *opt)
         char *p = (char *)opt + 4;
         unsigned int level = (unsigned int) simple_strtoul(p, &p, 10);
 
-        DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", "process_dbg_opt(), set backlight level = %d\n", level);
+        pr_debug("[DBG] process_dbg_opt(), set backlight level = %d\n", level);
         DISP_SetBacklight(level);
     }
     else if(0 == strncmp(opt, "dither:", 7))
@@ -630,7 +630,7 @@ static void process_dbg_opt(const char *opt)
         p++;
         dbb = (unsigned int) simple_strtoul(p, &p, 16);
         
-        DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", "process_dbg_opt(), %d %d %d %d %d %d\n", lrs, lgs, lbs, dbr, dbg, dbb);
+        pr_debug("[DBG] process_dbg_opt(), %d %d %d %d %d %d\n", lrs, lgs, lbs, dbr, dbg, dbb);
     }
     else if (0 == strncmp(opt, "mtkfblog:", 9))
     {
@@ -804,7 +804,7 @@ static void process_dbg_opt(const char *opt)
     return;
 
 Error:
-    DISP_LOG_PRINT(ANDROID_LOG_INFO, "ERROR", "parse command error!\n\n%s", STR_HELP);
+    pr_err("parse command error!\n\n%s", STR_HELP);
 }
 
 
@@ -812,7 +812,7 @@ static void process_dbg_cmd(char *cmd)
 {
     char *tok;
     
-    DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", "[mtkfb_dbg] %s\n", cmd);
+    pr_debug("[DBG][mtkfb_dbg] %s\n", cmd);
     
     while ((tok = strsep(&cmd, " ")) != NULL)
     {
@@ -890,7 +890,7 @@ static ssize_t layer_debug_open(struct inode *inode, struct file *file)
     dbgopt->working_size = DISP_GetScreenWidth()*DISP_GetScreenHeight()*2 + 32;
     dbgopt->working_buf = (UINT32)vmalloc(dbgopt->working_size);
     if(dbgopt->working_buf == 0)
-        DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", "Vmalloc to get temp buffer failed\n");
+        pr_debug("[DBG] Vmalloc to get temp buffer failed\n");
 
     return 0;
 }
@@ -908,7 +908,7 @@ static ssize_t layer_debug_write(struct file *file,
 {
     MTKFB_LAYER_DBG_OPTIONS *dbgopt = (MTKFB_LAYER_DBG_OPTIONS *)file->private_data;
 
-    DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", "mtkfb_layer%d write is not implemented yet \n", dbgopt->layer_index);
+    pr_debug("[DBG] mtkfb_layer%d write is not implemented yet \n", dbgopt->layer_index);
 
     return count;
 }

@@ -24,9 +24,9 @@
 
 
 unsigned int color_dbg_log = 0;
-#define COLOR_DBG(string, args...) if(color_dbg_log) printk("[COLOR]"string,##args)  // default off, use "adb shell "echo dbg_log:1 > sys/kernel/debug/dispsys" to enable
-#define COLOR_MSG(string, args...) printk("[COLOR]"string,##args)  // default on, important msg, not err
-#define COLOR_ERR(string, args...) printk("[COLOR]error:"string,##args)  //default on, err msg
+#define COLOR_DBG(string, args...) if(color_dbg_log) pr_debug("[COLOR]"string,##args)  // default off, use "adb shell "echo dbg_log:1 > sys/kernel/debug/dispsys" to enable
+#define COLOR_MSG(string, args...) pr_debug("[COLOR]"string,##args)  // default on, important msg, not err
+#define COLOR_ERR(string, args...) pr_err("[COLOR]error:"string,##args)  //default on, err msg
 
 extern unsigned char pq_debug_flag;
 
@@ -910,7 +910,7 @@ DISPLAY_PQ_T * get_Color_index()
 
 void DpEngine_COLORonInit(void)
 {
-       //printk("===================init COLOR =======================\n");
+       //pr_debug("===================init COLOR =======================\n");
 
 
     COLOR_DBG("DpEngine_COLORonInit!\n");
@@ -943,7 +943,7 @@ void DpEngine_COLORonConfig(unsigned int srcWidth,unsigned int srcHeight)
     unsigned char h_series[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
     COLOR_DBG("DpEngine_COLORonConfig!\n");
-    //printk("==========config COLOR g_Color_Param [%d %d %d %d %d %d %d %d %d]\n===============\n", g_Color_Param.u4SatGain, g_Color_Param.u4HueAdj[PURP_TONE], g_Color_Param.u4HueAdj[SKIN_TONE], g_Color_Param.u4HueAdj[GRASS_TONE], g_Color_Param.u4HueAdj[SKY_TONE], g_Color_Param.u4SatAdj[PURP_TONE], g_Color_Param.u4SatAdj[SKIN_TONE], g_Color_Param.u4SatAdj[GRASS_TONE], g_Color_Param.u4SatAdj[SKY_TONE]);
+    //pr_debug("==========config COLOR g_Color_Param [%d %d %d %d %d %d %d %d %d]\n===============\n", g_Color_Param.u4SatGain, g_Color_Param.u4HueAdj[PURP_TONE], g_Color_Param.u4HueAdj[SKIN_TONE], g_Color_Param.u4HueAdj[GRASS_TONE], g_Color_Param.u4HueAdj[SKY_TONE], g_Color_Param.u4SatAdj[PURP_TONE], g_Color_Param.u4SatAdj[SKIN_TONE], g_Color_Param.u4SatAdj[GRASS_TONE], g_Color_Param.u4SatAdj[SKY_TONE]);
 
     DISP_REG_SET((DISPSYS_COLOR_BASE + 0xf50), srcWidth);  //wrapper width
     DISP_REG_SET((DISPSYS_COLOR_BASE + 0xf54), srcHeight); //wrapper height

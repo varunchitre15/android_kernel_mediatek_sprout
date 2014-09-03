@@ -53,11 +53,11 @@ static BOOL disp_drv_dbi_init_context(void)
     if (lcm_drv != NULL && lcm_params!= NULL) 
         return TRUE;
     else 
-        printk("%s, lcm_drv=0x%08x, lcm_params=0x%08x\n", __func__, (unsigned int)lcm_drv, (unsigned int)lcm_params);
+        pr_debug("%s, lcm_drv=0x%08x, lcm_params=0x%08x\n", __func__, (unsigned int)lcm_drv, (unsigned int)lcm_params);
 
-    printk("%s, lcm_drv=0x%08x\n", __func__, (unsigned int)lcm_drv);
+    pr_debug("%s, lcm_drv=0x%08x\n", __func__, (unsigned int)lcm_drv);
     if (NULL == lcm_drv) {
-        printk("%s, lcm_drv is NULL\n", __func__);
+        pr_err("%s, lcm_drv is NULL\n", __func__);
         return FALSE;
     }
 
@@ -97,14 +97,6 @@ static void init_lcd_te_control(void)
     LCD_CHECK_RET(LCD_TE_Enable(FALSE));
 	if(!DISP_IsLcmFound())
         return;
-#ifdef BUILD_UBOOT
-    {
-        extern BOOTMODE g_boot_mode;
-        printf("boot_mode = %d\n",g_boot_mode);
-        if(g_boot_mode == META_BOOT)
-            return;
-    }
-#endif
 
     if (LCM_DBI_TE_MODE_DISABLED == dbi->te_mode) {
         LCD_CHECK_RET(LCD_TE_Enable(FALSE));
