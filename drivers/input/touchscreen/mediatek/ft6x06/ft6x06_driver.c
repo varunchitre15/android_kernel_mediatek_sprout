@@ -954,7 +954,11 @@ void ft6x06_tpd_get_fw_vendor_name(char * fw_vendor_name)
  static int __init tpd_driver_init(void)
  {
     printk("MediaTek FT6x06 touch panel driver init\n");
-    i2c_register_board_info(TPD_I2C_GROUP_ID, &ft6x06_i2c_tpd, sizeof(ft6x06_i2c_tpd)/sizeof(ft6x06_i2c_tpd[0]));
+    i2c_register_board_info(touch_cust_ssb_data.touch_ssb_data[2].i2c_number, &ft6x06_i2c_tpd, sizeof(ft6x06_i2c_tpd)/sizeof(ft6x06_i2c_tpd[0]));
+
+    //add for ssb support
+    tpd_device_driver.tpd_have_button = touch_cust_ssb_data.touch_ssb_data[2].use_tpd_buttom;
+
     if(tpd_driver_add(&tpd_device_driver) < 0)
         TPD_DMESG("add FT6x06 driver failed\n");
     return 0;

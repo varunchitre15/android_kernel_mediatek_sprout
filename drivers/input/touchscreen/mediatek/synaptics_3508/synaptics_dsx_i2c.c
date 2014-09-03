@@ -3225,7 +3225,11 @@ static struct i2c_board_info __initdata i2c_tpd={ I2C_BOARD_INFO("synaptics-tpd"
 static int __init synaptics_rmi4_init(void)
 {
 printk("[s3508]synaptics_rmi4_init\n");
-	i2c_register_board_info(TPD_I2C_BUS, &i2c_tpd, 1);
+    i2c_register_board_info(touch_cust_ssb_data.touch_ssb_data[1].i2c_number, &i2c_tpd, 1);
+
+    //add for ssb support
+    synaptics_rmi4_driver.tpd_have_button = touch_cust_ssb_data.touch_ssb_data[1].use_tpd_buttom;
+
 	if(tpd_driver_add(&synaptics_rmi4_driver) < 0){
 		pr_err("Fail to add tpd driver\n");
 		return -1;
