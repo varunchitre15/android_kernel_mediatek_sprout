@@ -97,7 +97,7 @@ endif
 
 obj-$(CONFIG_ZRAM)	+= mlog/
 #obj-y	+= cam_cal/dummy_eeprom/
-#obj-y	+= lens/
+obj-y	+= lens/
 obj-y	+= imgsensor/src/
 obj-y   += flashlight/src/
 obj-y	+= sync/

@@ -1819,6 +1819,15 @@ static struct platform_device actuator_dev = {
 	.name		  = "lens_actuator",
 	.id		  = -1,
 };
+static struct platform_device actuator_dev2 = {
+	.name		  = "lens_actuator2",
+	.id		  = -1,
+};
+static struct platform_device actuator_dev3 = {
+	.name		  = "lens_actuator3",
+	.id		  = -1,
+};
+
 /*=======================================================================*/
 /* MT6575 jogball                                                        */
 /*=======================================================================*/
@@ -2445,6 +2454,18 @@ retval = platform_device_register(&dummychar_device);
 //=======================================================================
 #if 1  //defined(CONFIG_ACTUATOR)
     retval = platform_device_register(&actuator_dev);
+    if (retval != 0){
+        return retval;
+    }
+#endif
+#if 1  //defined(CONFIG_ACTUATOR)
+    retval = platform_device_register(&actuator_dev2);
+    if (retval != 0){
+        return retval;
+    }
+#endif
+#if 1  //defined(CONFIG_ACTUATOR)
+    retval = platform_device_register(&actuator_dev3);
     if (retval != 0){
         return retval;
     }

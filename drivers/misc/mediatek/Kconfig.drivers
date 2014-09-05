@@ -1219,3 +1219,30 @@ config NAND_OTP_SUPPORT
 	  Select Y here to enable NAND OTP function support
 
 
+
+#
+# LENS
+#
+
+config MTK_LENS_DUMMYLENS_SUPPORT
+       bool "Dummy Lens Driver"
+       default n
+
+config MTK_LENS_DW9714AF_SUPPORT
+       bool "DW9714AF Lens Driver"
+       default n
+
+config MTK_LENS_FM50AF_SUPPORT
+       bool "FM50AF Lens Driver"
+       default n
+config MTK_LENS_GAF001AF_SUPPORT
+       bool "GAF001AF Lens Driver"
+       default n
+
+config MTK_LENS_GAF002AF_SUPPORT
+       bool "GAF002AF Lens Driver"
+       default n
+
+config MTK_LENS_GAF008AF_SUPPORT
+       bool "GAF008AF Lens Driver"
+       default n
