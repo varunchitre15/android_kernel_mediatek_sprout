@@ -2051,6 +2051,7 @@ int __init parse_tag_eint_ssb_fixup(const struct tag *tags)
         if ((dev = find_cust_eint(setting->name)) == NULL) {
             pr_warn("EINT Not found: NAME = %s, num = %d, debounce_cn = %d, type = %d, debounce_en = %d\n",
             setting->name, setting->num, setting->debounce_cn, setting->type, setting->debounce_en);
+			continue;
         }
 
         strncpy(dev->name, setting->name, sizeof(dev->name));
