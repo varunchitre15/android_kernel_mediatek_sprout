@@ -99,7 +99,7 @@ obj-$(CONFIG_ZRAM)	+= mlog/
 #obj-y	+= cam_cal/dummy_eeprom/
 #obj-y	+= lens/
 obj-y	+= imgsensor/src/
-#obj-y   += flashlight/src/
+obj-y   += flashlight/src/
 obj-y	+= sync/
 
 #rtc must compile before power, because they are both in fs_initcall, rtc need initial first for PMIC alarm call back

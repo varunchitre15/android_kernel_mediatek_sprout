@@ -22,14 +22,18 @@
 
 int strobe_getPartId(int sensorDev)
 {
-	/* return 1 or 2 (backup flash part). Other numbers are invalid. */
-	if (sensorDev == e_CAMERA_MAIN_SENSOR) {
-		return 1;
-	} else if (sensorDev == e_CAMERA_SUB_SENSOR) {
-		return 1;
-	} else			/* e_CAMERA_MAIN_2_SENSOR */
-	{
-		return 200;
-	}
-	return 100;
+    // return 1 or 2 (backup flash part). Other numbers are invalid.
+    if(sensorDev == e_CAMERA_MAIN_SENSOR)
+    {
+        return 1;
+    }
+    else if(sensorDev == e_CAMERA_SUB_SENSOR)
+    {
+        return 1;
+    }
+    else //e_CAMERA_MAIN_2_SENSOR
+    {
+        return 200;
+    }
+    return 100;
 }
