@@ -8,7 +8,7 @@ obj-y	+= aee/
 #obj-y   += eccci/
 obj-y	+= fmradio/
 #obj-y	+= gps/
-#obj-y	+= hwmon/
+obj-y	+= hwmon/
 
 obj-$(CONFIG_MTK_CCCI_DRIVER)  +=  ccci/
 obj-$(CONFIG_MTK_CCCI_EXT)     +=  dual_ccci/
@@ -49,10 +49,12 @@ obj-y   += wdk/
 #obj-y   += evdo_support/
 obj-y	+= mt_logger/
 
-#obj-$(CONFIG_CUSTOM_KERNEL_ALSPS) += alsps/
-#obj-$(CONFIG_CUSTOM_KERNEL_ACCELEROMETER) += accelerometer/
-#obj-$(CONFIG_CUSTOM_KERNEL_GYROSCOPE) += gyroscope/
-#obj-$(CONFIG_CUSTOM_KERNEL_MAGNETOMETER) += magnetometer/
+ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
+obj-$(CONFIG_CUSTOM_KERNEL_ALSPS) += alsps/
+obj-$(CONFIG_CUSTOM_KERNEL_ACCELEROMETER) += accelerometer/
+obj-$(CONFIG_CUSTOM_KERNEL_GYROSCOPE) += gyroscope/
+obj-$(CONFIG_CUSTOM_KERNEL_MAGNETOMETER) += magnetometer/
+endif
 #obj-y	+= matv/
 #obj-y	+= touchpanel/
 #obj-y	+= cpu_stress/

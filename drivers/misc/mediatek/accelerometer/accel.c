@@ -1,29 +1,42 @@
+/*
+* Copyright (C) 2011-2014 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "accel.h"
 
-static struct acc_context *acc_context_obj;
+static struct acc_context *acc_context_obj = NULL;
 
 
-static struct acc_init_info *gsensor_init_list[MAX_CHOOSE_G_NUM] = { 0 };	/* modified */
+static struct acc_init_info *gsensor_init_list[MAX_CHOOSE_G_NUM] = { 0 };    /* modified */
 
 static void acc_early_suspend(struct early_suspend *h);
 static void acc_late_resume(struct early_suspend *h);
+struct input_dev *sm_dev =NULL;
 
 static void acc_work_func(struct work_struct *work)
 {
 
 	struct acc_context *cxt = NULL;
-	int out_size;
-	/* hwm_sensor_data sensor_data; */
-	int x, y, z, status, div;
-	int64_t nt;
+    int x=0,y=0,z=0,status=0;
+    int64_t  nt=0;
 	struct timespec time;
-	int err, idx;
+    int err=0;
 
 	cxt = acc_context_obj;
 
 	if (NULL == cxt->acc_data.get_data) {
-		ACC_LOG("acc driver not register data path\n");
+        ACC_ERR("acc driver not register data path\n");
+        return;
 	}
 
 
@@ -31,15 +44,12 @@ static void acc_work_func(struct work_struct *work)
 	time = get_monotonic_coarse();
 	nt = time.tv_sec * 1000000000LL + time.tv_nsec;
 
-	cxt->acc_data.get_data(&x, &y, &z, &status);
+    err = cxt->acc_data.get_data(&x,&y,&z,&status);
 
 	if (err) {
 		ACC_ERR("get acc data fails!!\n");
 		goto acc_loop;
 	} else {
-		if ((x != cxt->drv_data.acc_data.values[0])
-		    || (y != cxt->drv_data.acc_data.values[1])
-		    || (z != cxt->drv_data.acc_data.values[2])) {
 			if (0 == x && 0 == y && 0 == z) {
 				goto acc_loop;
 			}
@@ -51,7 +61,6 @@ static void acc_work_func(struct work_struct *work)
 			cxt->drv_data.acc_data.time = nt;
 
 		}
-	}
 
 	if (true == cxt->is_first_data_after_enable) {
 		cxt->is_first_data_after_enable = false;
@@ -75,14 +84,14 @@ static void acc_work_func(struct work_struct *work)
 
  acc_loop:
 	if (true == cxt->is_polling_run) {
-		mod_timer(&cxt->timer, jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
+          mod_timer(&cxt->timer, jiffies + (cxt->delay)/(1000/HZ));
 	}
 }
 
 static void acc_poll(unsigned long data)
 {
 	struct acc_context *obj = (struct acc_context *)data;
-	if (obj != NULL) {
+    if ((obj != NULL) && (obj->is_polling_run)) {
 		schedule_work(&obj->report);
 	}
 }
@@ -96,16 +105,17 @@ static struct acc_context *acc_context_alloc_object(void)
 		ACC_ERR("Alloc accel object error!\n");
 		return NULL;
 	}
-	atomic_set(&obj->delay, 200);	/*5Hz */* / set work queue delay time 200ms */
+    obj->delay = 200;
 	atomic_set(&obj->wake, 0);
 	INIT_WORK(&obj->report, acc_work_func);
 	init_timer(&obj->timer);
-	obj->timer.expires = jiffies + atomic_read(&obj->delay) / (1000 / HZ);
+    obj->timer.expires = jiffies + (obj->delay)/(1000/HZ);
 	obj->timer.function = acc_poll;
 	obj->timer.data = (unsigned long)obj;
 	obj->is_first_data_after_enable = false;
 	obj->is_polling_run = false;
 	mutex_init(&obj->acc_op_mutex);
+    obj->is_batch_enable = false;//for batch mode init
 	ACC_LOG("acc_context_alloc_object----\n");
 	return obj;
 }
@@ -149,7 +159,6 @@ static int acc_real_enable(int enable)
 static int acc_enable_data(int enable)
 {
 	struct acc_context *cxt = NULL;
-	int err = 0;
 	cxt = acc_context_obj;
 	if (NULL == cxt->acc_ctl.open_report_data) {
 		ACC_ERR("no acc control path\n");
@@ -163,8 +172,7 @@ static int acc_enable_data(int enable)
 		cxt->acc_ctl.open_report_data(1);
 		if (false == cxt->is_polling_run) {
 			if (false == cxt->acc_ctl.is_report_input_direct) {
-				mod_timer(&cxt->timer,
-					  jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
+              mod_timer(&cxt->timer, jiffies + (cxt->delay)/(1000/HZ));
 				cxt->is_polling_run = true;
 			}
 		}
@@ -177,7 +185,9 @@ static int acc_enable_data(int enable)
 		if (true == cxt->is_polling_run) {
 			if (false == cxt->acc_ctl.is_report_input_direct) {
 				cxt->is_polling_run = false;
+				smp_mb();
 				del_timer_sync(&cxt->timer);
+				smp_mb();
 				cancel_work_sync(&cxt->report);
 				cxt->drv_data.acc_data.values[0] = ACC_INVALID_VALUE;
 				cxt->drv_data.acc_data.values[1] = ACC_INVALID_VALUE;
@@ -195,7 +205,6 @@ static int acc_enable_data(int enable)
 int acc_enable_nodata(int enable)
 {
 	struct acc_context *cxt = NULL;
-	int err = 0;
 	cxt = acc_context_obj;
 	if (NULL == cxt->acc_ctl.enable_nodata) {
 		ACC_ERR("acc_enable_nodata:acc ctl path is NULL\n");
@@ -224,10 +233,9 @@ static ssize_t acc_show_enable_nodata(struct device *dev, struct device_attribut
 static ssize_t acc_store_enable_nodata(struct device *dev, struct device_attribute *attr,
 				       const char *buf, size_t count)
 {
+    struct acc_context *cxt = NULL;
 	ACC_LOG("acc_store_enable nodata buf=%s\n", buf);
 	mutex_lock(&acc_context_obj->acc_op_mutex);
-	struct acc_context *cxt = NULL;
-	int err = 0;
 	cxt = acc_context_obj;
 	if (NULL == cxt->acc_ctl.enable_nodata) {
 		ACC_LOG("acc_ctl enable nodata NULL\n");
@@ -244,15 +252,15 @@ static ssize_t acc_store_enable_nodata(struct device *dev, struct device_attribu
 		ACC_ERR(" acc_store enable nodata cmd error !!\n");
 	}
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
+    return count;
 }
 
 static ssize_t acc_store_active(struct device *dev, struct device_attribute *attr,
 				const char *buf, size_t count)
 {
+    struct acc_context *cxt = NULL;
 	ACC_LOG("acc_store_active buf=%s\n", buf);
 	mutex_lock(&acc_context_obj->acc_op_mutex);
-	struct acc_context *cxt = NULL;
-	int err = 0;
 	cxt = acc_context_obj;
 	if (NULL == cxt->acc_ctl.open_report_data) {
 		ACC_LOG("acc_ctl enable NULL\n");
@@ -279,26 +287,22 @@ static ssize_t acc_store_active(struct device *dev, struct device_attribute *att
 static ssize_t acc_show_active(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct acc_context *cxt = NULL;
+    int div = 0;
 	cxt = acc_context_obj;
 
-	int len = 0;
-	ACC_LOG("acc show active not support now\n");
-	int div = cxt->acc_data.vender_div;
+    div = cxt->acc_data.vender_div;
 	ACC_LOG("acc vender_div value: %d\n", div);
 	return snprintf(buf, PAGE_SIZE, "%d\n", div);
 
-	/* return len; */
 }
 
 static ssize_t acc_store_delay(struct device *dev, struct device_attribute *attr,
 			       const char *buf, size_t count)
 {
-	mutex_lock(&acc_context_obj->acc_op_mutex);
-	struct acc_context *devobj = (struct acc_context *)dev_get_drvdata(dev);
-	int delay;
-	int mdelay = 0;
+    int delay = 0;
+    int m_delay = 0;
 	struct acc_context *cxt = NULL;
-	int err = 0;
+    mutex_lock(&acc_context_obj->acc_op_mutex);
 	cxt = acc_context_obj;
 	if (NULL == cxt->acc_ctl.set_delay) {
 		ACC_LOG("acc_ctl set_delay NULL\n");
@@ -313,8 +317,8 @@ static ssize_t acc_store_delay(struct device *dev, struct device_attribute *attr
 	}
 
 	if (false == cxt->acc_ctl.is_report_input_direct) {
-		mdelay = (int)delay / 1000 / 1000;
-		atomic_set(&acc_context_obj->delay, mdelay);
+        m_delay = (int)delay / 1000 / 1000;
+        acc_context_obj->delay = m_delay;
 	}
 	cxt->acc_ctl.set_delay(delay);
 	ACC_LOG(" acc_delay %d ns\n", delay);
@@ -329,6 +333,93 @@ static ssize_t acc_show_delay(struct device *dev, struct device_attribute *attr,
 	return len;
 }
 
+static ssize_t acc_show_sensordevnum(struct device* dev,
+                                 struct device_attribute *attr, char *buf)
+{
+    struct acc_context *cxt = NULL;
+    const char *devname = NULL;
+    cxt = acc_context_obj;
+    devname = dev_name(&cxt->idev->dev);
+    return snprintf(buf, PAGE_SIZE, "%s\n", devname+5);
+}
+
+static ssize_t acc_show_significant_motion_devnum(struct device* dev,
+                                 struct device_attribute *attr, char *buf)
+{
+    const char *devname = NULL;
+    devname = dev_name(&sm_dev->dev);
+    return snprintf(buf, PAGE_SIZE, "%s\n", devname+5);
+}
+
+static ssize_t sm_store_active(struct device* dev, struct device_attribute *attr,
+        const char *buf, size_t count)
+{
+    struct acc_context *cxt = acc_context_obj;
+    int enable = 0;
+
+    if (!strncmp(buf, "1", 1))
+        enable =1;
+    else if (!strncmp(buf, "0", 1))
+        enable =0;
+    cxt->acc_ctl.enable_significant_motion(enable);
+    return count;
+}
+static ssize_t acc_store_batch(struct device* dev, struct device_attribute *attr,
+                                  const char *buf, size_t count)
+{
+
+    struct acc_context *cxt = NULL;
+    mutex_lock(&acc_context_obj->acc_op_mutex);
+    ACC_LOG("acc_store_batch buf=%s\n",buf);
+    cxt = acc_context_obj;
+    if(cxt->acc_ctl.is_support_batch)
+    {
+        if (!strncmp(buf, "1", 1))
+        {
+            cxt->is_batch_enable = true;
+        }
+        else if (!strncmp(buf, "0", 1))
+        {
+            cxt->is_batch_enable = false;
+        }
+        else
+        {
+            ACC_ERR(" acc_store_batch error !!\n");
+        }
+    }
+    else
+    {
+        ACC_LOG(" acc_store_batch mot supported\n");
+    }
+    mutex_unlock(&acc_context_obj->acc_op_mutex);
+    ACC_LOG(" acc_store_batch done: %d\n", cxt->is_batch_enable);
+        return count;
+
+}
+
+static ssize_t acc_show_batch(struct device* dev,
+                                 struct device_attribute *attr, char *buf)
+{
+    return snprintf(buf, PAGE_SIZE, "%d\n", 0);
+}
+
+static ssize_t acc_store_flush(struct device* dev, struct device_attribute *attr,
+                                  const char *buf, size_t count)
+{
+    struct acc_context *devobj =NULL;
+
+    mutex_lock(&acc_context_obj->acc_op_mutex);
+  devobj = (struct acc_context*)dev_get_drvdata(dev);
+    //do read FIFO data function and report data immediately
+    mutex_unlock(&acc_context_obj->acc_op_mutex);
+    return count;
+}
+
+static ssize_t acc_show_flush(struct device* dev,
+                                 struct device_attribute *attr, char *buf)
+{
+    return snprintf(buf, PAGE_SIZE, "%d\n", 0);
+}
 
 static int gsensor_remove(struct platform_device *pdev)
 {
@@ -384,7 +475,7 @@ int acc_driver_add(struct acc_init_info *obj)
 
 
 	for (i = 0; i < MAX_CHOOSE_G_NUM; i++) {
-		if (i == 0) {
+        if ((i == 0) && (NULL == gsensor_init_list[0])) {
 			ACC_LOG("register gensor driver for the first time\n");
 			if (platform_driver_register(&gsensor_driver)) {
 				ACC_ERR("failed to register gensor driver already exist\n");
@@ -419,13 +510,6 @@ static int acc_misc_init(struct acc_context *cxt)
 	return err;
 }
 
-static void acc_input_destroy(struct acc_context *cxt)
-{
-	struct input_dev *dev = cxt->idev;
-
-	input_unregister_device(dev);
-	input_free_device(dev);
-}
 
 static int acc_input_init(struct acc_context *cxt)
 {
@@ -462,11 +546,21 @@ static int acc_input_init(struct acc_context *cxt)
 DEVICE_ATTR(accenablenodata, S_IWUSR | S_IRUGO, acc_show_enable_nodata, acc_store_enable_nodata);
 DEVICE_ATTR(accactive, S_IWUSR | S_IRUGO, acc_show_active, acc_store_active);
 DEVICE_ATTR(accdelay, S_IWUSR | S_IRUGO, acc_show_delay, acc_store_delay);
+DEVICE_ATTR(accbatch,  S_IWUSR | S_IRUGO, acc_show_batch,  acc_store_batch);
+DEVICE_ATTR(accflush,  S_IWUSR | S_IRUGO, acc_show_flush,  acc_store_flush);
+DEVICE_ATTR(accdevnum, S_IWUSR | S_IRUGO, acc_show_sensordevnum,  NULL);
+DEVICE_ATTR(smdevnum,  S_IWUSR | S_IRUGO, acc_show_significant_motion_devnum,  NULL);
+DEVICE_ATTR(smactive,  S_IWUSR | S_IRUGO, NULL,  sm_store_active);
 
 static struct attribute *acc_attributes[] = {
 	&dev_attr_accenablenodata.attr,
 	&dev_attr_accactive.attr,
 	&dev_attr_accdelay.attr,
+    &dev_attr_accbatch.attr,
+    &dev_attr_accflush.attr,
+    &dev_attr_accdevnum.attr,
+    &dev_attr_smdevnum.attr,
+    &dev_attr_smactive.attr,
 	NULL
 };
 
@@ -477,7 +571,6 @@ static struct attribute_group acc_attribute_group = {
 int acc_register_data_path(struct acc_data_path *data)
 {
 	struct acc_context *cxt = NULL;
-	int err = 0;
 	cxt = acc_context_obj;
 	cxt->acc_data.get_data = data->get_data;
 	cxt->acc_data.vender_div = data->vender_div;
@@ -497,6 +590,9 @@ int acc_register_control_path(struct acc_control_path *ctl)
 	cxt->acc_ctl.set_delay = ctl->set_delay;
 	cxt->acc_ctl.open_report_data = ctl->open_report_data;
 	cxt->acc_ctl.enable_nodata = ctl->enable_nodata;
+    cxt->acc_ctl.is_support_batch = ctl->is_support_batch;
+    cxt->acc_ctl.is_report_input_direct= ctl->is_report_input_direct;
+    cxt->acc_ctl.enable_significant_motion= ctl->enable_significant_motion;
 
 	if (NULL == cxt->acc_ctl.set_delay || NULL == cxt->acc_ctl.open_report_data
 	    || NULL == cxt->acc_ctl.enable_nodata) {
@@ -515,6 +611,7 @@ int acc_register_control_path(struct acc_control_path *ctl)
 		return -3;
 	}
 
+    kobject_uevent(&acc_context_obj->mdev.this_device->kobj, KOBJ_ADD);
 	return 0;
 }
 
@@ -529,12 +626,41 @@ int acc_data_report(int x, int y, int z, int status)
 	input_report_abs(cxt->idev, EVENT_TYPE_ACCEL_Z, z);
 	input_report_abs(cxt->idev, EVENT_TYPE_ACCEL_STATUS, status);
 	input_sync(cxt->idev);
+    return err;
 }
 
+int acc_report_motion_detect(int motion)
+{
+    input_report_rel(sm_dev, EVENT_TYPE_SIGNIFICANT_MOTION, motion);
+    input_sync(sm_dev);
+
+    return 0;
+}
+
+static int sm_input_init(void)
+{
+    int err = 0;
+
+    sm_dev = input_allocate_device();
+    if (NULL == sm_dev)
+        return -ENOMEM;
+
+    sm_dev->name = "signifi_motion_input";
+
+    input_set_capability(sm_dev, EV_REL, EVENT_TYPE_SIGNIFICANT_MOTION);
+
+    err = input_register_device(sm_dev);
+    if (err < 0) {
+        input_free_device(sm_dev);
+        return err;
+    }
+
+    return 0;
+}
 static int acc_probe(struct platform_device *pdev)
 {
 
-	int err;
+    int err = 0;
 	ACC_LOG("+++++++++++++accel_probe!!\n");
 
 	acc_context_obj = acc_context_alloc_object();
@@ -553,6 +679,11 @@ static int acc_probe(struct platform_device *pdev)
 	err = acc_input_init(acc_context_obj);
 	if (err) {
 		ACC_ERR("unable to register acc input device!\n");
+        goto exit_alloc_input_dev_failed;
+    }
+    err = sm_input_init();
+    if(err) {
+        ACC_ERR("unable to register sm input device!\n");
 		goto exit_alloc_input_dev_failed;
 	}
 
@@ -562,21 +693,10 @@ static int acc_probe(struct platform_device *pdev)
 	    acc_context_obj->early_drv.resume = acc_late_resume,
 	    register_early_suspend(&acc_context_obj->early_drv);
 
-	wake_lock_init(&(acc_context_obj->read_data_wake_lock), WAKE_LOCK_SUSPEND,
-		       "read_data_wake_lock");
 
 	ACC_LOG("----accel_probe OK !!\n");
 	return 0;
 
- exit_hwmsen_create_attr_failed:
- exit_misc_register_failed:
-
- exit_err_sysfs:
-
-	if (err) {
-		ACC_ERR("sysfs node creation error\n");
-		acc_input_destroy(acc_context_obj);
-	}
 
  real_driver_init_fail:
  exit_alloc_input_dev_failed:
@@ -593,7 +713,6 @@ static int acc_probe(struct platform_device *pdev)
 
 static int acc_remove(struct platform_device *pdev)
 {
-	ACC_FUN(f);
 	int err = 0;
 	input_unregister_device(acc_context_obj->idev);
 	sysfs_remove_group(&acc_context_obj->idev->dev.kobj, &acc_attribute_group);

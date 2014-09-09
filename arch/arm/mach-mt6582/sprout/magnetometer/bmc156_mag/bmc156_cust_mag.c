@@ -18,6 +18,7 @@
 
 
 static struct mag_hw cust_mag_hw = {
+    .i2c_addr[0] = 0x12,
     .i2c_num = 2,
     .direction = 2,
     .power_id = MT65XX_POWER_NONE,  /*!< LDO is not used */

@@ -3,6 +3,7 @@ include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
 # Module project related part
 
+ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
 ifeq ($(CONFIG_MTK_CM36283),y)
 obj-y	+=  alsps/cm36283/
 endif
@@ -44,6 +45,7 @@ obj-y	+=  magnetometer/bmm050-new/
 endif
 ifeq ($(CONFIG_MTK_BMC156_MAG),y)
 obj-y	+=  magnetometer/bmc156_mag/
+endif
 endif
 
 ifneq ($(CONFIG_ARCH_MTK_PROJECT),)

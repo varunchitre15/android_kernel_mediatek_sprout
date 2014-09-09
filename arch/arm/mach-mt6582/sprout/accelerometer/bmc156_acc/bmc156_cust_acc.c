@@ -19,6 +19,7 @@
 
 /*---------------------------------------------------------------------------*/
 static struct acc_hw cust_acc_hw = {
+    .i2c_addr = 0x10,
     .i2c_num = 2,
     .direction = 2,
     .power_id = MT65XX_POWER_NONE,  /*!< LDO is not used */

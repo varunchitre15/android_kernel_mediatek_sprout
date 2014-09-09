@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -69,7 +69,8 @@ static struct accdet_ssb_data accdet_data ;
 struct accdet_ssb_data *accdet_tuning_data = NULL;
 static struct _gpio_usage g_usage;
 struct _gpio_usage *gpio_usage=NULL;
-
+static struct sensor_tuning_data sensors_data;
+struct sensor_tuning_data *sensors_tuning_data;
 struct {
 	u32 base;
 	u32 size;
@@ -774,7 +775,7 @@ static struct platform_device mt_hid_dev = {
     .name = "hid-keyboard",
     .id   = -1,
 };
-#endif 
+#endif
 
 /*=======================================================================*/
 /* MT6575 Touch Panel                                                    */
@@ -1142,7 +1143,7 @@ static void cmdline_filter(struct tag *cmdline_tag, char *default_cmdline)
 	    	    if (memcmp(cs, undesired_cmds[i], strlen(undesired_cmds[i])) == 0) {
 			ck_f = 1;
                         break;
-                    }    		
+                    }
 	    	}
 
                 if(ck_f == 0){
@@ -1388,16 +1389,16 @@ static void parse_boot_reason(char** cmdline) /*parse boot reason*/
 {
     char *br_ptr = NULL, *ptr = NULL;
     int i;
-    
-    if ((br_ptr = strstr(*cmdline, "bootreason=")) != 0) 
+
+    if ((br_ptr = strstr(*cmdline, "bootreason=")) != 0)
 	{
-        /* get boot reason */		
-		typedef struct 
+        /* get boot reason */
+		typedef struct
 		{
 			char* str;
 			boot_reason_t boot_reason;
 		} boot_item;
-		boot_item map_table[] = 
+		boot_item map_table[] =
 		{
 			{"power_key ", BR_POWER_KEY},
 			{"usb ", BR_USB},
@@ -1421,7 +1422,7 @@ static void parse_boot_reason(char** cmdline) /*parse boot reason*/
 				break;
 			}
 		}
-        printk("[dev] boot reason: %s[%d])", ptr, g_boot_reason);            
+        printk("[dev] boot reason: %s[%d])", ptr, g_boot_reason);
     }
     else
     {
@@ -1491,6 +1492,10 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
             parse_tag_videofb_fixup(tags);
         }else if (tags->hdr.tag == ATAG_DEVINFO_DATA){
             parse_tag_devinfo_data_fixup(tags);
+        }
+        else if (tags->hdr.tag == ATAG_SENSORS_TAG) {
+            sensors_data = tags->u.sensors_tuning;
+            sensors_tuning_data = &sensors_data;
         }
         else if(tags->hdr.tag == ATAG_GPIO_USAGE_TAG){
             printk( "fwq gpio use para\n");
@@ -1906,8 +1911,8 @@ static struct platform_device mt_extmem = {
 /* Sim switch driver                                                         */
 /*=======================================================================*/
 #if defined (CONFIG_CUSTOM_KERNEL_SSW)
-static struct platform_device ssw_device = {	
-	.name = "sim-switch",	
+static struct platform_device ssw_device = {
+	.name = "sim-switch",
 	.id = -1};
 #endif
 
@@ -2072,7 +2077,6 @@ __init int mt_board_init(void)
     printk("register 8193_CKGEN device\n");
     retval = platform_device_register(&mtk_ckgen_dev);
     if (retval != 0){
-        
         printk("register 8193_CKGEN device FAILS!\n");
         return retval;
     }
@@ -2173,11 +2177,6 @@ if (retval != 0) {
 //    spi_register_board_info(spi_board_devs, ARRAY_SIZE(spi_board_devs));
     platform_device_register(&mt_spi_device);
 #endif
-
-
-
-
-    
 
 #if defined(CONFIG_MTK_TVOUT_SUPPORT)
     retval = platform_device_register(&mt6575_TVOUT_dev);
@@ -2342,7 +2341,7 @@ if (retval != 0) {
         printk("[%s]: sensor_alsps device register fail \n", __func__);
         return retval;
     }
-    printk("[%s]: sensor_alsps device register success \n", __func__);	
+    printk("[%s]: sensor_alsps device register success \n", __func__);
 #endif
 #if defined(CONFIG_CUSTOM_KERNEL_TEMPERATURE)
     retval = platform_device_register(&sensor_temperature);

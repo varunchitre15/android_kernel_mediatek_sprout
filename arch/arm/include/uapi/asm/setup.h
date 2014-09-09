@@ -23,6 +23,7 @@
 #include <mach/accdet_ssb.h>
 #include <mach/gpio_usage_para.h>
 #include <mach/mt_msdc_ssb_cust.h>
+#include <mach/sensors_ssb.h>
 
 #define COMMAND_LINE_SIZE 1024
 
@@ -279,6 +280,7 @@ struct tag {
         struct tag_leds_data         leds_data;
         struct tag_lcminfo_data lcminfo_data;
         struct tag_para_lcm_data lcm_data;
+        struct sensor_tuning_data sensors_tuning;
         struct tag_eint_data eint_data;
         struct tag_battery_info_data battery_data;
 	} u;

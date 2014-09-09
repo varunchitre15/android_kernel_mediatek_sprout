@@ -697,6 +697,37 @@ config MTK_RTC
 	bool "MediaTek Real Time Clock Support"
 	default y
 
+# Accelerometer Sensor
+config MTK_BMC156_ACC
+	bool "MediaTek Accelerometer Support"
+	default n
+
+config MTK_LSM303D
+	bool "MediaTek Accelerometer&Magnetometer Support"
+	default n
+#ALSPS sensor
+config MTK_CM36283
+	bool "MediaTek Ambient and proximity sensor Support"
+	default n
+
+config MTK_TMD2771
+	bool "MediaTek Ambient and proximity sensor Support"
+	default n
+# Magnetometer sensor
+config MTK_BMC156_MAG
+	bool "MediaTek Magnetometer sensor Support"
+	default n
+# Gyroscope
+config MTK_BMG160
+	bool "MediaTek Gyroscope sensor Support"
+	default n
+
+config MTK_L3GD20
+	bool "MediaTek Gyroscope sensor Support"
+	default n
+config MTK_MPU3050C
+	bool "MediaTek Gyroscope sensor Support"
+	default n
 # Serial Port Driver
 menuconfig MTK_SERIAL
 	tristate "MediaTek Serial Port Support"

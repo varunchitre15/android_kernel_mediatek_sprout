@@ -29,10 +29,12 @@
 ******************************************************************************/
 #define C_I2C_FIFO_SIZE         8	/*according i2c_mt6516.c */
 #define HWM_TAG					"<HWMSEN> "
-#define HWM_FUN(f)				printk(HWM_TAG"%s\n", __func__)
-#define HWM_ERR(fmt, args...)	printk(HWM_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define HWM_LOG(fmt, args...)	printk(HWM_TAG fmt, ##args)
-#define HWM_VER(fmt, args...)   printk(HWM_TAG"%s: "fmt, __func__, ##args)	/* ((void)0) */
+#define HWM_FUN(f)				pr_notice(HWM_TAG"%s\n", __func__)
+#define HWM_ERR(fmt, args...)	pr_err(HWM_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define HWM_LOG(fmt, args...)	pr_notice(HWM_TAG fmt, ##args)
+#define HWM_VER(fmt, args...)   pr_notice(HWM_TAG"%s: "fmt, __func__, ##args)
+#define HWM_WARN(fmt, args...)  pr_warn(HWM_TAG"%s: "fmt, __func__, ##args)
+
 /******************************************************************************
  * STRUCTURE & ENUMERATION
 ******************************************************************************/
@@ -93,24 +95,17 @@ extern int hwmsen_clr_bits(struct i2c_client *client, u8 addr, u8 bits);
 extern int hwmsen_read_byte(struct i2c_client *client, u8 addr, u8 *data);
 extern int hwmsen_write_byte(struct i2c_client *client, u8 addr, u8 data);
 extern int hwmsen_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 len);
-extern int hwmsen_write_block(struct i2c_client *client, u8 addr, u8 *data, u8 len);
-extern void hwmsen_single_rw(struct i2c_client *client, struct hwmsen_reg *regs, int num);
-extern void hwmsen_multi_rw(struct i2c_client *client, find_reg_t findreg,
-			    struct hwmsen_reg_test_multi *items, int inum);
-extern ssize_t hwmsen_show_dump(struct i2c_client *client, u8 startAddr, u8 *regtbl, u32 regnum,
-				find_reg_t findreg, char *buf, u32 buflen);
-extern ssize_t hwmsen_read_all_regs(struct i2c_client *client, struct hwmsen_reg *regs, u32 num,
-				    char *buf, u32 buflen);
-extern ssize_t hwmsen_show_reg(struct i2c_client *client, u8 addr, char *buf, u32 buflen);
-extern ssize_t hwmsen_store_reg(struct i2c_client *client, u8 addr, const char *buf, size_t count);
-extern ssize_t hwmsen_show_byte(struct device *dev, struct device_attribute *attr, char *buf,
-				u32 buflen);
-extern ssize_t hwmsen_store_byte(struct device *dev, struct device_attribute *attr, const char *buf,
-				 size_t count);
-extern ssize_t hwmsen_show_word(struct device *dev, struct device_attribute *attr, char *buf,
-				u32 buflen);
-extern ssize_t hwmsen_store_word(struct device *dev, struct device_attribute *attr, const char *buf,
-				 size_t count);
-extern int hwmsen_get_convert(int direction, struct hwmsen_convert *cvt);
+extern int      hwmsen_write_block(struct i2c_client *client, u8 addr, u8 *data, u8 len);
+extern void     hwmsen_single_rw(struct i2c_client *client, struct hwmsen_reg *regs, int num);
+extern void     hwmsen_multi_rw(struct i2c_client *client, find_reg_t findreg, struct hwmsen_reg_test_multi *items, int inum);
+extern ssize_t  hwmsen_show_dump(struct i2c_client *client, u8 startAddr, u8 *regtbl, u32 regnum, find_reg_t findreg, char *buf, u32 buflen);
+extern ssize_t  hwmsen_read_all_regs(struct i2c_client *client, struct hwmsen_reg *regs, u32 num, char *buf, u32 buflen);
+extern ssize_t  hwmsen_show_reg(struct i2c_client *client, u8 addr, char *buf, u32 buflen); 
+extern ssize_t  hwmsen_store_reg(struct i2c_client *client, u8 addr, const char* buf, size_t count);
+extern ssize_t  hwmsen_show_byte(struct device *dev, struct device_attribute *attr, char* buf, u32 buflen);
+extern ssize_t  hwmsen_store_byte(struct device *dev, struct device_attribute *attr, const char* buf, size_t count);
+extern ssize_t  hwmsen_show_word(struct device *dev, struct device_attribute *attr, char* buf, u32 buflen);
+extern ssize_t  hwmsen_store_word(struct device *dev, struct device_attribute *attr, const char* buf, size_t count);
+extern int      hwmsen_get_convert(int direction, struct hwmsen_convert *cvt);
 /*----------------------------------------------------------------------------*/
 #endif
