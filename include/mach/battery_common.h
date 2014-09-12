@@ -102,30 +102,6 @@ typedef enum {
 	TEMP_ABOVE_POS_60
 } temp_state_enum;
 
-
-#define TEMP_POS_60_THRESHOLD  61
-#define TEMP_POS_60_THRES_MINUS_X_DEGREE 57
-
-#define TEMP_POS_45_THRESHOLD  45
-#define TEMP_POS_45_THRES_MINUS_X_DEGREE 39
-
-#define TEMP_POS_10_THRESHOLD  10
-#define TEMP_POS_10_THRES_PLUS_X_DEGREE 16
-
-#define TEMP_POS_0_THRESHOLD  0
-#define TEMP_POS_0_THRES_PLUS_X_DEGREE 6
-
-#ifdef CONFIG_MTK_FAN5405_SUPPORT
-#define TEMP_NEG_10_THRESHOLD  0
-#define TEMP_NEG_10_THRES_PLUS_X_DEGREE  0
-#elif defined(CONFIG_MTK_BQ24158_SUPPORT)
-#define TEMP_NEG_10_THRESHOLD  0
-#define TEMP_NEG_10_THRES_PLUS_X_DEGREE  0
-#else
-#define TEMP_NEG_10_THRESHOLD  0
-#define TEMP_NEG_10_THRES_PLUS_X_DEGREE  0
-#endif
-
 /*****************************************************************************
  *  Normal battery temperature state
  ****************************************************************************/
@@ -192,9 +168,7 @@ extern bool get_usb_current_unlimited(void);
 extern void wake_up_bat(void);
 extern unsigned long BAT_Get_Battery_Voltage(int polling_mode);
 extern void mt_battery_charging_algorithm(void);
-#if defined(MTK_JEITA_STANDARD_SUPPORT)
 extern PMU_STATUS do_jeita_state_machine(void);
-#endif
 
 #else
 

@@ -22,7 +22,17 @@ typedef struct {
 	INT32 BatteryTemp;
 	INT32 TemperatureR;
 } BATT_TEMPERATURE;
+typedef struct _BATTERY_PROFILE_STRUC
+{
+    kal_int32 percentage;
+    kal_int32 voltage;
+} BATTERY_PROFILE_STRUC, *BATTERY_PROFILE_STRUC_P;
 
+typedef struct _R_PROFILE_STRUC
+{
+    kal_int32 resistance; // Ohm
+    kal_int32 voltage;
+} R_PROFILE_STRUC, *R_PROFILE_STRUC_P;
 /* ============================================================ */
 /* External Variables */
 /* ============================================================ */
@@ -49,6 +59,5 @@ extern kal_int32 battery_meter_get_battery_nPercent_UI_SOC(void);	/* tracking po
 extern kal_int32 battery_meter_get_tempR(kal_int32 dwVolt);
 extern kal_int32 battery_meter_get_tempV(void);
 extern kal_int32 battery_meter_get_VSense(void);	/* isense voltage */
-
 
 #endif				/* #ifndef _BATTERY_METER_H */

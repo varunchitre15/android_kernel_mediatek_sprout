@@ -236,6 +236,9 @@ struct tag_leds_data {
     unsigned int end_magic;
 };
 
+struct tag_battery_info_data{
+	u32 battery_buf[1000];
+};
 struct tag {
 	struct tag_header hdr;
 	union {
@@ -277,6 +280,7 @@ struct tag {
         struct tag_lcminfo_data lcminfo_data;
         struct tag_para_lcm_data lcm_data;
         struct tag_eint_data eint_data;
+        struct tag_battery_info_data battery_data;
 	} u;
 };
 

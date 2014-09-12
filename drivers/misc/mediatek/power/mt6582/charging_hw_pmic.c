@@ -52,7 +52,8 @@
 
 #include "cust_battery_meter.h"
 #include <cust_charging.h>
-	 
+#include "mach/battery_ssb.h"
+
  // ============================================================ //
  //define
  // ============================================================ //
@@ -470,49 +471,48 @@ static void hw_bc11_dump_register(void)
 		battery_xlog_printk(BAT_LOG_FULL, "hw_bc11_done() \r\n");
 		hw_bc11_dump_register();
 	}
-    
  }
 #endif
 
- static kal_uint32 charging_hw_init(void *data)
- {
- 	kal_uint32 status = STATUS_OK;
+static kal_uint32 charging_hw_init(void *data)
+{
+	kal_uint32 status = STATUS_OK;
 #if defined(MTK_WIRELESS_CHARGER_SUPPORT)
 	mt_set_gpio_mode(wireless_charger_gpio_number,0); // 0:GPIO mode
 	mt_set_gpio_dir(wireless_charger_gpio_number,0); // 0: input, 1: output
-#endif	
-   	upmu_set_rg_chrwdt_td(0x0);           // CHRWDT_TD, 4s
+#endif
+	upmu_set_rg_chrwdt_td(0x0);           // CHRWDT_TD, 4s
 	upmu_set_rg_chrwdt_int_en(1);         // CHRWDT_INT_EN
 	upmu_set_rg_chrwdt_en(1);             // CHRWDT_EN
 	upmu_set_rg_chrwdt_wr(1);             // CHRWDT_WR
 
 	upmu_set_rg_vcdt_mode(0);       //VCDT_MODE
-	upmu_set_rg_vcdt_hv_en(1);      //VCDT_HV_EN    
+	upmu_set_rg_vcdt_hv_en(1);      //VCDT_HV_EN
 
 	upmu_set_rg_usbdl_set(0);       //force leave USBDL mode
 	upmu_set_rg_usbdl_rst(1);		//force leave USBDL mode
 
 	upmu_set_rg_bc11_bb_ctrl(1);    //BC11_BB_CTRL
 	upmu_set_rg_bc11_rst(1);        //BC11_RST
-    
+
 	upmu_set_rg_csdac_mode(1);      //CSDAC_MODE
 	upmu_set_rg_vbat_ov_en(1);      //VBAT_OV_EN
-#ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
-	upmu_set_rg_vbat_ov_vth(0x2);   //VBAT_OV_VTH, 4.4V,
-#else
-	upmu_set_rg_vbat_ov_vth(0x1);   //VBAT_OV_VTH, 4.3V,
-#endif
+	if (high_battery_volt_enable == 1)
+		upmu_set_rg_vbat_ov_vth(0x2);   //VBAT_OV_VTH, 4.4V,
+	else
+		upmu_set_rg_vbat_ov_vth(0x1);   //VBAT_OV_VTH, 4.3V,
+
 	upmu_set_rg_baton_en(1);        //BATON_EN
 
 	//Tim, for TBAT
 	//upmu_set_rg_buf_pwd_b(1);       //RG_BUF_PWD_B
 	upmu_set_rg_baton_ht_en(0);     //BATON_HT_EN
-    
+
 	upmu_set_rg_ulc_det_en(1);      // RG_ULC_DET_EN=1
 	upmu_set_rg_low_ich_db(1);      // RG_LOW_ICH_DB=000001'b
 
 	return status;
- }
+}
 
 
  static kal_uint32 charging_dump_register(void *data)

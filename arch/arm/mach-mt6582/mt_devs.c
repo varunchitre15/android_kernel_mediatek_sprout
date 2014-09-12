@@ -52,6 +52,7 @@
 #include <mach/mt_msdc_ssb_cust.h>
 #include <mach/mt_leds_cust.h>
 #include <mach/mt_vibrator_cust.h>
+#include <mach/battery_ssb.h>
 
 #define SERIALNO_LEN 32
 static char serial_number[SERIALNO_LEN];
@@ -1160,8 +1161,28 @@ static void cmdline_filter(struct tag *cmdline_tag, char *default_cmdline)
 		panic("Command line length is too long.\n\r");
 	}
 }
+
 /*=======================================================================*/
-/* Parse the framebuffer info						 */
+/* Parse the battery info						 */
+/*=======================================================================*/
+static int __init parse_tag_battery_fixup(const struct tag *tags)
+{
+	int i, size = tags->hdr.size;
+
+	printk(KERN_ALERT "parse_tag_battery_fixup size %d\n", size);
+
+	for (i=0; i< size; i++) {
+		battery_cust_buf[i] = tags->u.battery_data.battery_buf[i];
+
+		//for (j=0; j<BATTERY_NODE_CNT)
+        //    bat_hdr.battery_node[j].label =  tags->u.battery_data.battery_buf[0];
+		//printk(KERN_ALERT "parse_tag_battery_fixup, indx[%d]:%d\n", i, bat_cust_buf[i]);
+	}
+
+	return 0;
+}
+/*=======================================================================*/
+/* Parse the framebuffer info                         */
 /*=======================================================================*/
 static int __init parse_tag_videofb_fixup(const struct tag *tags)
 {
@@ -1532,6 +1553,9 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
             md_inf_from_meta[1]=tags->u.mdinfo_data.md_type[1];
             md_inf_from_meta[2]=tags->u.mdinfo_data.md_type[2]; 
             md_inf_from_meta[3]=tags->u.mdinfo_data.md_type[3];
+        } else if (tags->hdr.tag == ATAG_BATTERY_TAG) {
+            printk(KERN_ALERT "battery tag %d\n", tags->hdr.size);
+            parse_tag_battery_fixup(tags);
         }
     }
 

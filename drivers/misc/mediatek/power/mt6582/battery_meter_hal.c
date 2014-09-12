@@ -19,7 +19,8 @@
 
 #include <mach/battery_meter_hal.h>
 #include <cust_battery_meter.h>
-     
+#include <mach/battery_ssb.h>
+
 //============================================================ //
 //define
 //============================================================ //
@@ -264,8 +265,8 @@ static kal_int32 read_adc_v_charger(void *data)
 #else
     kal_int32 val;
     val = PMIC_IMM_GetOneChannelValue(VCHARGER_CHANNEL_NUMBER,*(kal_int32*)(data),1);
-    val = (((R_CHARGER_1+R_CHARGER_2)*100*val)/R_CHARGER_2)/100;
-	
+    val = (((g_R_CHARGER_1+g_R_CHARGER_2)*100*val)/g_R_CHARGER_2)/100;
+
     *(kal_int32*)(data) = val;
 #endif
 
