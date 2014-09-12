@@ -156,7 +156,7 @@ do {    \
 static void save_localtimer_info(unsigned long evt, int ext);
 
 static unsigned long generic_timer_rate;
-
+static struct delay_timer arch_delay_timer; /*add for big-little arch _delay(busywait)*/
 static struct clock_event_device __percpu **timer_evt;
 static int timer_ppi;
 
@@ -206,7 +206,25 @@ unsigned long localtimer_get_counter(void)
 
     return evt;
 }
+/*
+	read ARM generic timer counter
+*/
+static unsigned long arch_timer_read_current_timer(void)
+{
+    unsigned long evtl, evth;
+    read_cntpct(evtl, evth);
 
+    return evtl;
+}
+
+static inline cycle_t arch_timer_counter_read(void)
+{
+	u64 cval = 0;
+
+	asm volatile("mrrc p15, 0, %Q0, %R0, c14" : "=r" (cval));
+
+	return cval;
+}
 
 /*
  * generic_timer_ack: checks for a local timer interrupt.
@@ -234,41 +252,21 @@ static void generic_timer_stop(struct clock_event_device *clk)
     disable_percpu_irq(clk->irq);
 }
 
+static int get_generic_timer_rate(void)
+{
+	/* get CPUXGPT frequency. */
+	return 13000000;
+}
+
 static void __cpuinit generic_timer_calibrate_rate(void)
 {
-    unsigned long count;
-    u64 waitjiffies;
-
-    /*
-     * If this is the first time round, we need to work out how fast
-     * the timer ticks
-     */
-    if (generic_timer_rate == 0) {
-        printk("Calibrating local timer... ");
-
-        /* Wait for a tick to start */
-        waitjiffies = get_jiffies_64() + 1;
-
-        while (get_jiffies_64() < waitjiffies)
-            udelay(10);
-
-        /* OK, now the tick has started, let's get the timer going */
-        waitjiffies += 5;
-
-        /* enable, no interrupt or reload */
-        write_cntp_ctl(CNTP_CTL_ENABLE | CNTP_CTL_IMASK);
-
-        /* maximum value */
-        write_cntp_tval(0xFFFFFFFFU);
-
-        while (get_jiffies_64() < waitjiffies)
-            udelay(10);
-
-        read_cntp_tval(count);
-        generic_timer_rate = (0xFFFFFFFFU - count) * (HZ / 5);
-
-        printk("%lu.%02luMHz.\n", generic_timer_rate / 1000000,
-            (generic_timer_rate / 10000) % 100);
+	/*
+	 * If this is the first time round, get timer rate, we don't use
+	    "udelay" to get ARM generic timer freq, becuase "udelay" never
+	    be a scale after CPU plug on/off in big-little
+	 */
+	if (generic_timer_rate == 0) {
+		generic_timer_rate = get_generic_timer_rate();
     }
 }
 
@@ -361,6 +359,11 @@ int __init generic_timer_register(void)
     err = local_timer_register(&generic_timer_ops);
     if (err)
         goto out_irq;
+	
+	/* Use the architected timer for the delay loop. */
+	arch_delay_timer.read_current_timer = &arch_timer_read_current_timer;
+	arch_delay_timer.freq = get_generic_timer_rate();
+	register_current_timer_delay(&arch_delay_timer);
 
     return 0;
 

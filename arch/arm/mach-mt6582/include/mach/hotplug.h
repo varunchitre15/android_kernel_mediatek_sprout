@@ -55,7 +55,12 @@
 
 
 /* global variable */
-extern volatile int pen_release;
 extern atomic_t hotplug_cpu_count;
+
+
+/* mt cpu hotplug callback for smp_operations */
+extern int mt_cpu_kill(unsigned int cpu);
+extern void mt_cpu_die(unsigned int cpu);
+extern int mt_cpu_disable(unsigned int cpu);
 
 #endif //enf of #ifndef _HOTPLUG

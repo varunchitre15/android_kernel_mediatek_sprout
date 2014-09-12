@@ -118,13 +118,13 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
 
 
 /*
- * platform_cpu_kill:
+ * mt_cpu_kill:
  * @cpu:
  * Return TBD.
  */
-int platform_cpu_kill(unsigned int cpu)
+int mt_cpu_kill(unsigned int cpu)
 {
-    HOTPLUG_INFO("platform_cpu_kill, cpu: %d\n", cpu);
+    HOTPLUG_INFO("mt_cpu_kill, cpu: %d\n", cpu);
 
 #ifdef CONFIG_HOTPLUG_WITH_POWER_CTRL
     switch(cpu)
@@ -148,15 +148,15 @@ int platform_cpu_kill(unsigned int cpu)
 }
 
 /*
- * platform_cpu_die: shutdown a CPU
+ * mt_cpu_die: shutdown a CPU
  * @cpu:
  */
-void platform_cpu_die(unsigned int cpu)
+void mt_cpu_die(unsigned int cpu)
 {
     int spurious = 0;
     struct wd_api *wd_api = NULL;
 
-    HOTPLUG_INFO("platform_cpu_die, cpu: %d\n", cpu);
+    HOTPLUG_INFO("mt_cpu_die, cpu: %d\n", cpu);
 
     get_wd_api(&wd_api);
     if (wd_api)
@@ -180,16 +180,16 @@ void platform_cpu_die(unsigned int cpu)
 }
 
 /*
- * platform_cpu_disable:
+ * mt_cpu_disable:
  * @cpu:
  * Return error code.
  */
-int platform_cpu_disable(unsigned int cpu)
+int mt_cpu_disable(unsigned int cpu)
 {
     /*
     * we don't allow CPU 0 to be shutdown (it is still too special
     * e.g. clock tick interrupts)
     */
-    HOTPLUG_INFO("platform_cpu_disable, cpu: %d\n", cpu);
+    HOTPLUG_INFO("mt_cpu_disable, cpu: %d\n", cpu);
     return cpu == 0 ? -EPERM : 0;
 }

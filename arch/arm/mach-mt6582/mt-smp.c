@@ -63,7 +63,6 @@ extern void mt_secondary_startup(void);
 extern void irq_raise_softirq(const struct cpumask *mask, unsigned int irq);
 extern void mt_gic_secondary_init(void);
 
-
 extern unsigned int irq_total_secondary_cpus;
 #if !defined (CONFIG_TRUSTONIC_TEE_SUPPORT)
 static unsigned int is_secondary_cpu_first_boot = 0;
@@ -117,7 +116,7 @@ void __cpuinit mt_smp_secondary_init(unsigned int cpu)
     struct wd_api *wd_api = NULL;
 
     printk(KERN_INFO "Slave cpu init\n");
-    HOTPLUG_INFO("platform_secondary_init, cpu: %d\n", cpu);
+    HOTPLUG_INFO("mt_smp_secondary_init, cpu: %d\n", cpu);
 
     mt_gic_secondary_init();
 
@@ -308,7 +307,7 @@ void __init mt_smp_prepare_cpus(unsigned int max_cpus)
     //for (i = 1; i < max_cpus; i++)
 		//(*secure_ctrl_func[i-1])(STA_POWER_DOWN, 1);
   
-    //printk(KERN_CRIT "platform_smp_prepare_cpus !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"); 
+    //printk(KERN_CRIT "mt_smp_prepare_cpus !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"); 
     
 	//reg_write(BOOTROM_PWR_CTRL, reg_read(BOOTROM_PWR_CTRL) | 0x80000000);
     //BOOTROM_PWR_CTRL not accessible from NW...
@@ -322,7 +321,7 @@ struct smp_operations __initdata mt_smp_ops = {
     .smp_prepare_cpus       = mt_smp_prepare_cpus,
     .smp_secondary_init     = mt_smp_secondary_init,
     .smp_boot_secondary     = mt_smp_boot_secondary,
-#ifdef CONFIG_HOTPLUG_CPU$
+#ifdef CONFIG_HOTPLUG_CPU
     .cpu_kill               = mt_cpu_kill,
     .cpu_die                = mt_cpu_die,
     .cpu_disable            = mt_cpu_disable,
