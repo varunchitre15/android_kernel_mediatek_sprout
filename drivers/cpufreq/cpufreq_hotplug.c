@@ -1647,9 +1647,7 @@ static int hp_init(struct dbs_data *dbs_data)
 	tuners->cpu_down_avg_times = DEF_CPU_DOWN_AVG_TIMES;
 	tuners->cpu_num_limit = num_possible_cpus();
 	tuners->cpu_num_base = 1;
-	//FIXME: temporary turn off cpu hotplug strategy
-	//tuners->is_cpu_hotplug_disable = (tuners->cpu_num_limit > 1) ? 0 : 1;
-	tuners->is_cpu_hotplug_disable = 1;
+	tuners->is_cpu_hotplug_disable = (tuners->cpu_num_limit > 1) ? 0 : 1;
 	tuners->cpu_input_boost_enable = DEF_CPU_INPUT_BOOST_ENABLE;
 	tuners->cpu_input_boost_num = DEF_CPU_INPUT_BOOST_NUM;
 	tuners->cpu_rush_boost_enable = DEF_CPU_RUSH_BOOST_ENABLE;
