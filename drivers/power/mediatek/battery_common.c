@@ -108,7 +108,6 @@ struct timespec g_bat_time_before_sleep;
 int g_smartbook_update = 0;
 
 kal_uint32 g_batt_temp_status = TEMP_POS_NORMAL;
-extern int g_temp_status;
 kal_bool battery_suspended = KAL_FALSE;
 
 /* ////////////////////////////////////////////////////////////////////////////// */
@@ -2206,27 +2205,26 @@ static void mt_battery_notify_ICharging_check(void)
 static void mt_battery_notify_VBatTemp_check(void)
 {
 	if (jeita_enable == 1) {
-	if (g_temp_status >= TEMP_ABOVE_POS_60) {
-		g_BatteryNotifyCode |= 0x0002;
-		battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too high)\n",
-				    g_temp_status);
-	}
-	else if (g_temp_status < TEMP_BELOW_NEG_10) {
-		g_BatteryNotifyCode |= 0x0020;
-		battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too low)\n",
-				    g_temp_status);
-	}
+		if (BMT_status.temperature >= TEMP_ABOVE_POS_60) {
+			g_BatteryNotifyCode |= 0x0002;
+			battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too high)\n",
+					    BMT_status.temperature);
+		}
+		else if (BMT_status.temperature < TEMP_BELOW_NEG_10) {
+			g_BatteryNotifyCode |= 0x0020;
+			battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too low)\n",
+					    BMT_status.temperature);
+		}
 	} else {
-
-	if(BMT_status.temperature >= MAX_CHARGE_TEMPERATURE) {
-		g_BatteryNotifyCode |= 0x0002;
-		battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too high)\n", BMT_status.temperature);		
+		if (BMT_status.temperature >= MAX_CHARGE_TEMPERATURE) {
+			g_BatteryNotifyCode |= 0x0002;
+			battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too high)\n", BMT_status.temperature);
 		} else if (low_temperature_protect_enable == 1) { 
 			if (BMT_status.temperature < MIN_CHARGE_TEMPERATURE) {
-		g_BatteryNotifyCode |= 0x0020;
-		battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too low)\n",
-				    BMT_status.temperature);
-	}
+				g_BatteryNotifyCode |= 0x0020;
+				battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too low)\n",
+						    BMT_status.temperature);
+			}
 		}
 	}
 
@@ -2304,8 +2302,6 @@ void mt_battery_notify_check(void)
 
 static void mt_battery_thermal_check(void)
 {
-	/* for Sporout MMX special request (shutdown temperature > 60 degree)*/
-	int thermal_shut_down = t_high_discharge_zone+5;
 	if ((g_battery_thermal_throttling_flag == 1) || (g_battery_thermal_throttling_flag == 3)) {
 		if (battery_cmd_thermal_test_mode == 1) {
 			BMT_status.temperature = battery_cmd_thermal_test_mode_value;
@@ -2313,9 +2309,7 @@ static void mt_battery_thermal_check(void)
 					    "[Battery] In thermal_test_mode , Tbat=%d\n",
 					    BMT_status.temperature);
 		}
-
-		/* for Sporout MMX special request (shutdown temperature > 60 degree)*/
-		if(BMT_status.temperature >= thermal_shut_down) {
+		if(BMT_status.temperature >= 60) {
 #if defined(CONFIG_POWER_EXT)
 			battery_xlog_printk(BAT_LOG_CRTI,
 					    "[BATTERY] CONFIG_POWER_EXT, no update battery update power down.\n");
@@ -2333,7 +2327,7 @@ static void mt_battery_thermal_check(void)
 
 					battery_xlog_printk(BAT_LOG_CRTI,
 							    "[Battery] Tbat(%d)>=%d, system need power down.\n",
-							    BMT_status.temperature, thermal_shut_down);
+							    BMT_status.temperature, 60);
 
 					bat_data->BAT_CAPACITY = 0;
 
