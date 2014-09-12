@@ -121,8 +121,8 @@ typedef enum
 }temp_state_enum;
 
     
-#define TEMP_POS_60_THRESHOLD  61
-#define TEMP_POS_60_THRES_MINUS_X_DEGREE 57
+#define TEMP_POS_60_THRESHOLD  55
+#define TEMP_POS_60_THRES_MINUS_X_DEGREE 50  
 
 #define TEMP_POS_45_THRESHOLD  45
 #define TEMP_POS_45_THRES_MINUS_X_DEGREE 45
