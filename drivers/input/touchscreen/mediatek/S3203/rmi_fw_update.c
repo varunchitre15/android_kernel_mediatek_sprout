@@ -1349,11 +1349,11 @@ int synaptics_fw_updater_s3203(unsigned char *fw_data)
         updateflag = 0;
        retval = fwu_start_reflash();
 
-	msleep(10);  	
-	mt_set_gpio_out(GPIO_CTP_RST_PIN, GPIO_OUT_ZERO);
-	msleep(2);
-	mt_set_gpio_out(GPIO_CTP_RST_PIN, GPIO_OUT_ONE);
-	msleep(100);
+    msleep(10);
+    mt_set_gpio_out(GPIO_CTP_RST_PIN, GPIO_OUT_ZERO);
+    msleep(2);
+    mt_set_gpio_out(GPIO_CTP_RST_PIN, GPIO_OUT_ONE);
+    msleep(100);
     }
 #else
       retval = fwu_start_reflash();

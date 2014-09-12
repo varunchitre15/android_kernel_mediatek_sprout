@@ -1801,6 +1801,21 @@ void synaptics_chip_reset()
 }
 EXPORT_SYMBOL(synaptics_chip_reset);
 
+struct task_struct *firmware_thread = NULL;
+static int tpd_firmware_updater(void *unused)
+{
+    int retval = 0;
+
+    synaptics_rmi4_detection_work(NULL);
+    synaptics_fw_updater_s3203(synaImage);
+
+    retval = tpd_rmi4_read_pdt(ts);
+    if (retval <= 0) {
+        TPD_DMESG("TPD_UPDATE_FIRMWARE Failed to tpd_rmi4_read_pdt\n");
+    }
+    return retval;
+}
+
 static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
     u8 ii;
@@ -1894,12 +1909,11 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 #endif
 
 #ifdef TPD_UPDATE_FIRMWARE
-    synaptics_rmi4_detection_work(NULL);
-    synaptics_fw_updater_s3203(synaImage);
-	
-    retval = tpd_rmi4_read_pdt(ts);
-    if (retval <= 0) {
-        TPD_DMESG("TPD_UPDATE_FIRMWARE Failed to tpd_rmi4_read_pdt\n");
+    firmware_thread = kthread_run(tpd_firmware_updater, 0, "firmware_updater");
+    if (IS_ERR(firmware_thread))
+    {
+        retval = PTR_ERR(firmware_thread);
+        TPD_DMESG(TPD_DEVICE " failed to create kernel thread: %d\n", retval);
     }
 #endif
 
