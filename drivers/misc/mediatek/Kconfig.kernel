@@ -277,9 +277,6 @@ config MTK_SCHED_RQAVG_KS
 	help
 	  TLP estimation for kernel space CPUfreq governors, e.g., hotplug
 
-config MTK_STORAGE_PID_LOGGER
-	bool "support MTK storage pid logger"
-	default y
 endmenu
 
 menu "MTK Large Memory mode support"
