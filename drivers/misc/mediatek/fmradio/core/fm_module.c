@@ -1344,7 +1344,7 @@ static ssize_t fm_proc_write(struct file *file, const char *buffer, size_t count
 	return count;
 }
 
-#define FM_DEV_STATIC_ALLOC
+//#define FM_DEV_STATIC_ALLOC
 #define FM_DEV_MAJOR    193
 static int FM_major = FM_DEV_MAJOR;	/* dynamic allocation */
 
