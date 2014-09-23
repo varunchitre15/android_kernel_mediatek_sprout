@@ -1591,7 +1591,7 @@ static void battery_update(struct battery_data *bat_data)
 
 	} else {		/* Only Battery */
 
-		bat_data->BAT_STATUS = POWER_SUPPLY_STATUS_NOT_CHARGING;
+		bat_data->BAT_STATUS = POWER_SUPPLY_STATUS_DISCHARGING;
 		if (BMT_status.bat_vol <= v_0percent_sync)
 			resetBatteryMeter = mt_battery_0Percent_tracking_check();
 		else
