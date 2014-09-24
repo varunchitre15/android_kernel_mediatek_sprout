@@ -1054,10 +1054,10 @@ static kal_uint16 OV5648MIPI_SetGain(kal_uint16 iGain)
 }   /*  OV5648MIPI_SetGain  */
 
 
-static void OV5648MIPI_Set_Mirror_Flip(kal_uint8 image_mirror)
+static void OV5648MIPI_Set_Mirror_Flip(kal_uint8 image_mirror, kal_uint8 image_flip)
 {
-    SENSORDB("image_mirror = %d", image_mirror);
-
+    kal_uint8 HV;
+    // SENSORDB("image_mirror = %d,flip = %d", image_mirror, image_flip);
     /********************************************************
        *
        *   0x3820[2] ISP Vertical flip
@@ -1070,7 +1070,9 @@ static void OV5648MIPI_Set_Mirror_Flip(kal_uint8 image_mirror)
        *
        ********************************************************/
 
-    switch (image_mirror)
+    HV = image_mirror | (image_flip << 1);
+    SENSORDB("image_mirror = %d,flip = %d HV = %d", image_mirror, image_flip, HV);
+     switch (HV)
     {
         case IMAGE_NORMAL:
             OV5648MIPI_write_cmos_sensor(0x3820,((OV5648MIPI_read_cmos_sensor(0x3820) & 0xF9) | 0x00));
@@ -2157,7 +2159,7 @@ UINT32 OV5648MIPITrulyGetInfo(MSDK_SCENARIO_ID_ENUM ScenarioId,
     pSensorInfo->VideoDelayFrame = 2;
 
     pSensorInfo->SensorMasterClockSwitch = 0; /* not use */
-    pSensorInfo->SensorDrivingCurrent = ISP_DRIVING_6MA;
+    pSensorInfo->SensorDrivingCurrent = ISP_DRIVING_2MA;
 
     pSensorInfo->AEShutDelayFrame = 0;          /* The frame of setting shutter default 0 for TG int */
     pSensorInfo->AESensorGainDelayFrame = 0;    /* The frame of setting sensor gain */
@@ -2455,7 +2457,7 @@ UINT32 OV5648MIPITrulyFeatureControl(MSDK_SENSOR_FEATURE_ENUM FeatureId,
     //MSDK_SENSOR_ENG_INFO_STRUCT *pSensorEngInfo=(MSDK_SENSOR_ENG_INFO_STRUCT *) pFeaturePara;
 
 #ifdef OV5648MIPITRULY_DRIVER_TRACE
-    SENSORDB("FeatureId = %d", FeatureId);
+    //SENSORDB("FeatureId = %d", FeatureId);
 #endif
 
     switch (FeatureId)
@@ -2599,6 +2601,10 @@ UINT32 OV5648MIPITrulyFeatureControl(MSDK_SENSOR_FEATURE_ENUM FeatureId,
             *pFeatureReturnPara32= OV5648MIPITRULY_TEST_PATTERN_CHECKSUM;
             *pFeatureParaLen=4;
              break;
+        case SENSOR_FEATURE_SET_MIRROR_FLIP:
+            //SENSORDB("[SENSOR_FEATURE_SET_MIRROR_FLIP]Mirror:%d, Flip:%d\n", *pFeatureData32,*(pFeatureData32+1));
+            OV5648MIPI_Set_Mirror_Flip(*pFeatureData32, *(pFeatureData32+1));
+            break;
         default:
             break;
     }

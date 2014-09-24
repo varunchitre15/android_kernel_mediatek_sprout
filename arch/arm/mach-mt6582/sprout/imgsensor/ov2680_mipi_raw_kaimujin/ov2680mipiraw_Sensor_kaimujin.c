@@ -1817,6 +1817,47 @@ UINT32 OV2680KAISetVideoMode(UINT16 u2FrameRate)
     return ERROR_NONE;
 }
 
+static void OV2680MIPI_Set_Mirror_Flip(kal_uint8 image_mirror, kal_uint8 image_flip)
+{
+    kal_uint8 HV;
+    // SENSORDB("image_mirror = %d,flip = %d", image_mirror, image_flip);
+    /********************************************************
+       *
+       *   0x3820[2] ISP Vertical flip
+       *   0x3820[1] Sensor Vertical flip
+       *
+       *   0x3821[2] ISP Horizontal mirror
+       *   0x3821[1] Sensor Horizontal mirror
+       *
+       *   ISP and Sensor flip or mirror register bit should be the same!!
+       *
+       ********************************************************/
+
+    HV = image_mirror | (image_flip << 1);
+    SENSORDB("image_mirror = %d,flip = %d HV = %d", image_mirror, image_flip, HV);
+     switch (HV)
+    {
+        case IMAGE_NORMAL:
+            OV2680KAI_write_cmos_sensor(0x3820,((OV2680KAI_read_cmos_sensor(0x3820) & 0xF9) | 0x00));
+            OV2680KAI_write_cmos_sensor(0x3821,((OV2680KAI_read_cmos_sensor(0x3821) & 0xF9) | 0x06));
+            break;
+        case IMAGE_H_MIRROR:
+            OV2680KAI_write_cmos_sensor(0x3820,((OV2680KAI_read_cmos_sensor(0x3820) & 0xF9) | 0x00));
+            OV2680KAI_write_cmos_sensor(0x3821,((OV2680KAI_read_cmos_sensor(0x3821) & 0xF9) | 0x00));
+            break;
+        case IMAGE_V_MIRROR:
+            OV2680KAI_write_cmos_sensor(0x3820,((OV2680KAI_read_cmos_sensor(0x3820) & 0xF9) | 0x06));
+            OV2680KAI_write_cmos_sensor(0x3821,((OV2680KAI_read_cmos_sensor(0x3821) & 0xF9) | 0x06));
+            break;
+        case IMAGE_HV_MIRROR:
+            OV2680KAI_write_cmos_sensor(0x3820,((OV2680KAI_read_cmos_sensor(0x3820) & 0xF9) | 0x06));
+            OV2680KAI_write_cmos_sensor(0x3821,((OV2680KAI_read_cmos_sensor(0x3821) & 0xF9) | 0x00));
+            break;
+        default:
+            SENSORDB("Error image_mirror setting");
+    }
+
+}
 
 UINT32 OV2680KAIFeatureControl(MSDK_SENSOR_FEATURE_ENUM FeatureId,
         UINT8 *pFeaturePara,UINT32 *pFeatureParaLen)
@@ -1976,6 +2017,11 @@ UINT32 OV2680KAIFeatureControl(MSDK_SENSOR_FEATURE_ENUM FeatureId,
         case SENSOR_FEATURE_GET_TEST_PATTERN_CHECKSUM_VALUE://for factory mode auto testing
             *pFeatureReturnPara32=OV2680KAI_TEST_PATTERN_CHECKSUM;
             *pFeatureParaLen=4;
+            break;
+        case SENSOR_FEATURE_SET_MIRROR_FLIP:
+            //SENSORDB("[SENSOR_FEATURE_SET_MIRROR_FLIP]Mirror:%d, Flip:%d\n", *pFeatureData32,*(pFeatureData32+1));
+            OV2680MIPI_Set_Mirror_Flip(*pFeatureData32, *(pFeatureData32+1));
+            break;
             break;
         default:
             break;
