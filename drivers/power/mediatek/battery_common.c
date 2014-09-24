@@ -1577,7 +1577,17 @@ static void battery_update(struct battery_data *bat_data)
 	kal_bool resetBatteryMeter = KAL_FALSE;
 
 	bat_data->BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LION;
-	bat_data->BAT_HEALTH = POWER_SUPPLY_HEALTH_GOOD;
+
+	if (BMT_status.temperature == ERR_CHARGE_TEMPERATURE) {
+		bat_data->BAT_HEALTH = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
+	} else if (BMT_status.temperature < MIN_CHARGE_TEMPERATURE) {
+		bat_data->BAT_HEALTH = POWER_SUPPLY_HEALTH_COLD;
+	} else if (BMT_status.temperature >= MAX_CHARGE_TEMPERATURE) {
+		bat_data->BAT_HEALTH = POWER_SUPPLY_HEALTH_OVERHEAT;
+	} else {
+		bat_data->BAT_HEALTH = POWER_SUPPLY_HEALTH_GOOD;
+	}
+
 	bat_data->BAT_batt_vol = BMT_status.bat_vol;
 	bat_data->BAT_batt_temp = BMT_status.temperature * 10;
 	bat_data->BAT_PRESENT = BMT_status.bat_exist;
