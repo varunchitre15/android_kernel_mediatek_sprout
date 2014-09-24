@@ -120,6 +120,7 @@ extern LCM_DRIVER nt35590_hd720_dsi_cmd_auo_fwvga_lcm_drv;
 extern LCM_DRIVER nt35590_hd720_dsi_cmd_auo_wvga_lcm_drv;
 extern LCM_DRIVER nt35590_hd720_dsi_cmd_auo_qhd_lcm_drv;
 extern LCM_DRIVER nt35590_hd720_dsi_cmd_cmi_lcm_drv;
+extern LCM_DRIVER nt35590_dsi_cmd_6571_fwvga_lcm_drv;
 extern LCM_DRIVER nt35516_qhd_dsi_cmd_ipsboe_lcm_drv;
 extern LCM_DRIVER nt35516_qhd_dsi_cmd_ipsboe_wvga_lcm_drv;
 extern LCM_DRIVER nt35516_qhd_dsi_cmd_ips9k1431_drv;
@@ -185,6 +186,10 @@ LCM_DRIVER* lcm_driver_list[] =
 {
 #if defined(OTM8018B_DSI_VDO_BOE_G6)
     &otm8018b_dsi_vdo_boe_g6_lcm_drv,
+#endif
+
+#if defined(NT35590_DSI_CMD_6571_FWVGA)
+    &nt35590_dsi_cmd_6571_fwvga_lcm_drv,
 #endif
 
 #if defined(ILI9806C_DSI_VDO_TXD_IPS)
