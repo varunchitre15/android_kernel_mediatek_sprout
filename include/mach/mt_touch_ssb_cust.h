@@ -15,22 +15,26 @@
 #ifndef _MT_TOUCH_SSB_CUST_H_
 #define _MT_TOUCH_SSB_CUST_H_
 
+#define NAME_LENGTH 20
+#define TOUCH_DRIVER_NUM 20
+
 struct tag_para_touch_ssb_data_single
 {
-    unsigned int identifier;
+    char identifier[NAME_LENGTH];
     unsigned int i2c_number;
+    unsigned int i2c_addr;
     unsigned int power_id;
     int tpd_key_local[3];
     int tpd_key_dim_local[3][4];
     int tpd_resolution[2];
-    int use_tpd_buttom;
+    int use_tpd_button;
     unsigned int endflag;
 };
 
 struct tag_para_touch_ssb_data
 {
     unsigned int version;
-    struct tag_para_touch_ssb_data_single touch_ssb_data[20];
+    struct tag_para_touch_ssb_data_single touch_ssb_data[TOUCH_DRIVER_NUM];
     unsigned int endflag;
 };
 

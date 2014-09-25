@@ -88,6 +88,8 @@ static int tpd_calmat_local[8]     = TPD_CALIBRATION_MATRIX;
 static int tpd_def_calmat_local[8] = TPD_CALIBRATION_MATRIX;
 #endif
 
+static struct tag_para_touch_ssb_data_single touch_ssb_data = {0};
+
 static struct point {
     int x;
     int raw_x;
@@ -1326,7 +1328,7 @@ static void tpd_down(int x, int y, int p ,int id)
     input_mt_report_pointer_emulation(tpd->dev, true);
 
 
-    if(touch_cust_ssb_data.touch_ssb_data[3].use_tpd_buttom == 1){
+    if(touch_ssb_data.use_tpd_button == 1){
     /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
     if (FACTORY_BOOT == boot_mode || RECOVERY_BOOT == boot_mode)
     /*END PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
@@ -1355,7 +1357,7 @@ static void tpd_down(int x, int y, int p,int id)
     input_mt_sync(tpd->dev);
 #endif
 
-    if(touch_cust_ssb_data.touch_ssb_data[3].use_tpd_buttom == 1){
+    if(touch_ssb_data.use_tpd_button == 1){
     /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
     if (FACTORY_BOOT == boot_mode || RECOVERY_BOOT == boot_mode)
     /*END PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
@@ -1381,7 +1383,7 @@ static void tpd_up(int x, int y,int id)
         input_mt_report_pointer_emulation(tpd->dev, true);
 
 
-    if(touch_cust_ssb_data.touch_ssb_data[3].use_tpd_buttom == 1){
+    if(touch_ssb_data.use_tpd_button == 1){
     /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
     if (FACTORY_BOOT == boot_mode || RECOVERY_BOOT == boot_mode)
     /*END PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
@@ -1407,7 +1409,7 @@ static void tpd_up(int x, int y ,int id)
         input_mt_sync(tpd->dev);
 #endif
 
-    if(touch_cust_ssb_data.touch_ssb_data[3].use_tpd_buttom == 1){
+    if(touch_ssb_data.use_tpd_button == 1){
     /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
     if (FACTORY_BOOT == boot_mode || RECOVERY_BOOT == boot_mode)
     /*END PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
@@ -1852,6 +1854,7 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
     struct synaptics_rmi4_data *rmi4_data;
     struct synaptics_rmi4_device_info *rmi;
     TPD_DMESG("%s:enter \n",__func__);
+
     mutex_init(&tp_mutex);
 
     synaptics_chip_reset();
@@ -1988,8 +1991,8 @@ static int tpd_local_init(void)
         return -1;
     }
 
-    if(touch_cust_ssb_data.touch_ssb_data[3].use_tpd_buttom == 1)
-         tpd_button_setting(TPD_KEY_COUNT, touch_cust_ssb_data.touch_ssb_data[3].tpd_key_local, touch_cust_ssb_data.touch_ssb_data[3].tpd_key_dim_local);
+    if(touch_ssb_data.use_tpd_button == 1)
+         tpd_button_setting(TPD_KEY_COUNT, touch_ssb_data.tpd_key_local, touch_ssb_data.tpd_key_dim_local);
 
 #if (defined(TPD_WARP_START) && defined(TPD_WARP_END))
     TPD_DO_WARP = 1;
@@ -2061,6 +2064,7 @@ static struct tpd_driver_t tpd_device_driver = {
 #endif
 };
 
+
 static int __init tpd_driver_init(void)
 {
 #ifdef  SYNAPTICS_DEBUG_IF
@@ -2070,14 +2074,30 @@ static int __init tpd_driver_init(void)
         return -1;
     }
 #endif
-    printk("synaptics touch panel driver init\n");
+    int err = 0;
+    char name[20] = "s3203";
+    printk("s3203 synaptics touch panel driver init\n");
+    err = tpd_ssb_data_match(name, &touch_ssb_data);
+    if(err != 0){
+        printk("touch tpd_ssb_data_match error\n");
+        return -1;
+    }
+    printk("s3203 touch_ssb_data:: name:(%s), endflag:0x%x, i2c_number:0x%x, i2c_addr:0x%x,power_id:%d, use_tpd_button:%d\n",
+    touch_ssb_data.identifier,
+    touch_ssb_data.endflag,
+    touch_ssb_data.i2c_number,
+    touch_ssb_data.i2c_addr,
+    touch_ssb_data.power_id,
+    touch_ssb_data.use_tpd_button
+    );
 
-    printk("touch tpd_driver_init, i2c_number:%d\n", touch_cust_ssb_data.touch_ssb_data[3].i2c_number);
 
-    i2c_register_board_info(touch_cust_ssb_data.touch_ssb_data[3].i2c_number, &i2c_tpd, 1);
+    i2c_tpd.addr = touch_ssb_data.i2c_addr;
+
+    i2c_register_board_info(touch_ssb_data.i2c_number, &i2c_tpd, 1);
 
     //add for ssb support
-    tpd_device_driver.tpd_have_button = touch_cust_ssb_data.touch_ssb_data[3].use_tpd_buttom;
+    tpd_device_driver.tpd_have_button = touch_ssb_data.use_tpd_button;
 
     if(tpd_driver_add(&tpd_device_driver) < 0)
         TPD_DMESG("Error Add synaptics driver failed\n");

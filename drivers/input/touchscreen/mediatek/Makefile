@@ -15,10 +15,6 @@ ifeq ($(CONFIG_TOUCHSCREEN_MTK_GT9XX),y)
 obj-y	+=  GT9XX/
 endif
 
-ifeq ($(CONFIG_MTK_GT9XX),y)
-obj-y	+=  GT9XX/
-endif
-
 ifeq ($(CONFIG_MTK_MMS134),y)
 obj-y	+=  mms134/
 endif
@@ -45,6 +41,10 @@ endif
 
 ifeq ($(CONFIG_MTK_S3203),y)
 obj-y	+=  S3203/
+endif
+
+ifeq ($(CONFIG_MTK_GT9XX),y)
+obj-y	+=  GT9XX/
 endif
 
 obj-$(CONFIG_TOUCHSCREEN_MTK_GT9XX_HOTKNOT_SCP)	+=  GT9XX_hotknot_SCP/

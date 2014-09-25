@@ -12,7 +12,8 @@
 
 #include <linux/mmprofile.h>
 #include <linux/device.h>
-#include <linux/proc_fs.h>	/*proc */
+#include <linux/proc_fs.h>    /*proc */
+#include <mach/mt_touch_ssb_cust.h>
 
 #if !defined(__devinit)
 #define __devinit
@@ -38,10 +39,10 @@ static int tpd_polling_time = 50;
 static DECLARE_WAIT_QUEUE_HEAD(waiter);
 static DEFINE_MUTEX(i2c_access);
 
-#ifdef TPD_HAVE_BUTTON
 static int tpd_keys_local[TPD_KEY_COUNT] = TPD_KEYS;
 static int tpd_keys_dim_local[TPD_KEY_COUNT][4] = TPD_KEYS_DIM;
-#endif
+
+static struct tag_para_touch_ssb_data_single touch_ssb_data = {0};
 
 #if GTP_HAVE_TOUCH_KEY
 const u16 touch_key_array[] = TPD_KEYS;
@@ -390,7 +391,7 @@ static int gt91xx_config_write_proc(struct file *file, const char *buffer, size_
 	GTP_DEBUG("write count %ld\n", (unsigned long)count);
 
 	if (count > GTP_CONFIG_MAX_LENGTH) {
-		GTP_ERROR("size not match [%d:%ld]", GTP_CONFIG_MAX_LENGTH, count);
+        GTP_ERROR("size not match [%d:%ld]", GTP_CONFIG_MAX_LENGTH, (long)count);
 		return -EFAULT;
 	}
 
@@ -888,11 +889,9 @@ static int tpd_power_on(struct i2c_client *client)
 	GTP_GPIO_OUTPUT(GTP_RST_PORT, 0);
 	msleep(10);
 	/* power on, need confirm with SA */
-#ifdef TPD_POWER_SOURCE_CUSTOM
-	hwPowerOn(TPD_POWER_SOURCE_CUSTOM, VOL_2800, "TP");
-#else
-	hwPowerOn(MT65XX_POWER_LDO_VGP2, VOL_2800, "TP");
-#endif
+
+	hwPowerOn(touch_ssb_data.power_id, VOL_2800, "TP");
+
 #ifdef TPD_POWER_SOURCE_1800
 	hwPowerOn(TPD_POWER_SOURCE_1800, VOL_1800, "TP");
 #endif
@@ -1244,12 +1243,12 @@ static void tpd_down(s32 x, s32 y, s32 size, s32 id)
 	tpd_history_y = y;
 
 	MMProfileLogEx(MMP_TouchPanelEvent, MMProfileFlagPulse, 1, x + y);
-#ifdef TPD_HAVE_BUTTON
 
-	if (FACTORY_BOOT == get_boot_mode() || RECOVERY_BOOT == get_boot_mode()) {
-		tpd_button(x, y, 1);
-	}
-#endif
+    if(touch_ssb_data.use_tpd_button == 1){
+        if (FACTORY_BOOT == get_boot_mode() || RECOVERY_BOOT == get_boot_mode()) {
+            tpd_button(x, y, 1);
+        }
+    }
 }
 
 static void tpd_up(s32 x, s32 y, s32 id)
@@ -1264,12 +1263,11 @@ static void tpd_up(s32 x, s32 y, s32 id)
 	tpd_history_y = 0;
 	MMProfileLogEx(MMP_TouchPanelEvent, MMProfileFlagPulse, 0, x + y);
 
-#ifdef TPD_HAVE_BUTTON
-
-	if (FACTORY_BOOT == get_boot_mode() || RECOVERY_BOOT == get_boot_mode()) {
-		tpd_button(x, y, 0);
-	}
-#endif
+    if(touch_ssb_data.use_tpd_button == 1){
+        if (FACTORY_BOOT == get_boot_mode() || RECOVERY_BOOT == get_boot_mode()) {
+            tpd_button(x, y, 0);
+        }
+    }
 }
 
 static int touch_event_handler(void *unused)
@@ -1473,9 +1471,10 @@ static int tpd_local_init(void)
 		return -1;
 	}
 	input_set_abs_params(tpd->dev, ABS_MT_TRACKING_ID, 0, (GTP_MAX_TOUCH - 1), 0, 0);
-#ifdef TPD_HAVE_BUTTON
-	tpd_button_setting(TPD_KEY_COUNT, tpd_keys_local, tpd_keys_dim_local);	/* initialize tpd button data */
-#endif
+
+    if(touch_ssb_data.use_tpd_button == 1){
+        tpd_button_setting(TPD_KEY_COUNT, touch_ssb_data.tpd_key_local, touch_ssb_data.tpd_key_dim_local);    /* initialize tpd button data */
+    }
 
 #if (defined(TPD_WARP_START) && defined(TPD_WARP_END))
 	TPD_DO_WARP = 1;
@@ -1536,11 +1535,8 @@ static s8 gtp_enter_sleep(struct i2c_client *client)
 	GTP_GPIO_OUTPUT(GTP_RST_PORT, 0);
 	msleep(5);
 
-#ifdef TPD_POWER_SOURCE_CUSTOM
-	hwPowerDown(TPD_POWER_SOURCE_CUSTOM, "TP");
-#else
-	hwPowerDown(MT65XX_POWER_LDO_VGP2, "TP");
-#endif
+    hwPowerDown(touch_ssb_data.power_id, "TP");
+
 #ifdef TPD_POWER_SOURCE_1800
 	hwPowerDown(TPD_POWER_SOURCE_1800, "TP");
 #endif
@@ -1676,11 +1672,8 @@ static void tpd_resume(struct early_suspend *h)
 static void tpd_off(void)
 {
 
-#ifdef TPD_POWER_SOURCE_CUSTOM
-	hwPowerDown(TPD_POWER_SOURCE_CUSTOM, "TP");
-#else
-	hwPowerDown(MT65XX_POWER_LDO_VGP2, "TP");
-#endif
+    hwPowerDown(touch_ssb_data.power_id, "TP");
+
 #ifdef TPD_POWER_SOURCE_1800
 	hwPowerDown(TPD_POWER_SOURCE_1800, "TP");
 #endif
@@ -1734,12 +1727,31 @@ static struct tpd_driver_t tpd_device_driver = {
 /* called when loaded into kernel */
 static int __init tpd_driver_init(void)
 {
-	GTP_INFO("MediaTek gt91xx touch panel driver init");
-#if defined(TPD_I2C_NUMBER)
-	i2c_register_board_info(TPD_I2C_NUMBER, &i2c_tpd, 1);
-#else
-	i2c_register_board_info(0, &i2c_tpd, 1);
-#endif
+    int err = 0;
+    char name[20] = "gt913";
+    GTP_INFO("MediaTek gt91xx touch panel driver init");
+    err = tpd_ssb_data_match(name, &touch_ssb_data);
+    if(err != 0){
+        GTP_ERROR("touch tpd_ssb_data_match error\n");
+        return -1;
+    }
+    GTP_INFO("gt913 touch_ssb_data:: name:(%s), endflag:0x%x, i2c_number:0x%x, i2c_addr:0x%x,power_id:%d, use_tpd_button:%d\n",
+    touch_ssb_data.identifier,
+    touch_ssb_data.endflag,
+    touch_ssb_data.i2c_number,
+    touch_ssb_data.i2c_addr,
+    touch_ssb_data.power_id,
+    touch_ssb_data.use_tpd_button
+    );
+
+
+    i2c_tpd.addr = touch_ssb_data.i2c_addr;
+
+    i2c_register_board_info(touch_ssb_data.i2c_number, &i2c_tpd, 1);
+
+    //add for ssb support
+    tpd_device_driver.tpd_have_button = touch_ssb_data.use_tpd_button;
+
 	if (tpd_driver_add(&tpd_device_driver) < 0)
 		GTP_INFO("add generic driver failed");
 

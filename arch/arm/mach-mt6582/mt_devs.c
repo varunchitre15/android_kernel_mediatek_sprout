@@ -85,8 +85,9 @@ struct tag_para_touch_ssb_data touch_cust_ssb_data = {
     0x6789,
     {
     {
-        0x2133,
+        "msg2133",
         0x0,
+        0x26,
         5,
         {139, 172, 158},
         {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
@@ -95,8 +96,9 @@ struct tag_para_touch_ssb_data touch_cust_ssb_data = {
         0x2222,
     },
     {
-        0x3508,
+        "s3508",
         0x0,
+        0x20,
         5,
         {139, 172, 158},
         {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
@@ -105,8 +107,9 @@ struct tag_para_touch_ssb_data touch_cust_ssb_data = {
         0x2222,
     },
     {
-        0x6106,
+        "ft6x06",
         0x0,
+        0x38,
         5,
         {139, 172, 158},
         {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
@@ -115,8 +118,20 @@ struct tag_para_touch_ssb_data touch_cust_ssb_data = {
         0x2222,
     },
     {
-        0x3203,
+        "s3203",
         0x0,
+        0x39,
+        5,
+        {139, 172, 158},
+        {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
+        {480, 854},
+        0,
+        0x2222,
+    },
+    {
+        "gt913",
+        0x0,
+        0x5d,
         5,
         {139, 172, 158},
         {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
@@ -1281,20 +1296,25 @@ static int __init parse_tag_touch_data_fixup(const struct tag *tags)
     int i = 0;
     int j = 0;
 
-    for(index = 0; index < 20; index++){
+    for(index = 0; index < TOUCH_DRIVER_NUM; index++){
         touch_cust_ssb_data.touch_ssb_data[index].endflag = tags->u.touch_ssb_cust.touch_ssb_data[index].endflag;
         touch_cust_ssb_data.touch_ssb_data[index].i2c_number = tags->u.touch_ssb_cust.touch_ssb_data[index].i2c_number;
-        touch_cust_ssb_data.touch_ssb_data[index].identifier = tags->u.touch_ssb_cust.touch_ssb_data[index].identifier;
+        touch_cust_ssb_data.touch_ssb_data[index].i2c_addr= tags->u.touch_ssb_cust.touch_ssb_data[index].i2c_addr;
         touch_cust_ssb_data.touch_ssb_data[index].power_id = tags->u.touch_ssb_cust.touch_ssb_data[index].power_id;
-        touch_cust_ssb_data.touch_ssb_data[index].use_tpd_buttom = tags->u.touch_ssb_cust.touch_ssb_data[index].use_tpd_buttom;
-        /*printk("parse_tag_touch_data_fixup, index(%d):: identifier:%d, endflag:%d, i2c_number:%d, power_id:%d, use_tpd_buttom:%d\n",
-        index,
-        touch_cust_ssb_data.touch_ssb_data[index].identifier,
-        touch_cust_ssb_data.touch_ssb_data[index].endflag,
-        touch_cust_ssb_data.touch_ssb_data[index].i2c_number,
-        touch_cust_ssb_data.touch_ssb_data[index].power_id,
-        touch_cust_ssb_data.touch_ssb_data[index].use_tpd_buttom
-        );*/
+        touch_cust_ssb_data.touch_ssb_data[index].use_tpd_button = tags->u.touch_ssb_cust.touch_ssb_data[index].use_tpd_button;
+
+        //printk("parse_tag_touch_data_fixup, index(%d):: endflag:0x%x, i2c_number:0x%x, i2c_addr:0x%x,power_id:%d, use_tpd_buttom:%d\n",
+        //index,
+        //touch_cust_ssb_data.touch_ssb_data[index].endflag,
+        //touch_cust_ssb_data.touch_ssb_data[index].i2c_number,
+        //touch_cust_ssb_data.touch_ssb_data[index].i2c_addr,
+        //touch_cust_ssb_data.touch_ssb_data[index].power_id,
+        //touch_cust_ssb_data.touch_ssb_data[index].use_tpd_button
+        //);
+
+        for(i = 0; i < NAME_LENGTH; i++){
+            touch_cust_ssb_data.touch_ssb_data[index].identifier[i] = (tags->u.touch_ssb_cust.touch_ssb_data[index].identifier[i]);
+        }
 
         for(i = 0; i < 2; i++){
             touch_cust_ssb_data.touch_ssb_data[index].tpd_resolution[i] = tags->u.touch_ssb_cust.touch_ssb_data[index].tpd_resolution[i];
@@ -1310,7 +1330,7 @@ static int __init parse_tag_touch_data_fixup(const struct tag *tags)
             for(j = 0; j < 4; j++){
                 touch_cust_ssb_data.touch_ssb_data[index].tpd_key_dim_local[i][j] = tags->u.touch_ssb_cust.touch_ssb_data[index].tpd_key_dim_local[i][j];
                 //printk("parse_tag_touch_data_fixup, index(%d)::tpd_key_dim_local[%d][%d]:%d\n",index,i,j,touch_cust_ssb_data.touch_ssb_data[index].tpd_key_dim_local[i][j]);
-                }
+            }
         }
     }
     return 0;
