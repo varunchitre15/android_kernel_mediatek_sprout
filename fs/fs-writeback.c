@@ -939,8 +939,8 @@ static void fs_bdi_log(void)
 		}	
 		if(ptr_flag)
 		{		
-			xlog_printk(ANDROID_LOG_DEBUG, "BLOCK_TAG", "BDI_Flush statistic in timeline %lld\n", fs_bdi_last_t); 
-			xlog_printk(ANDROID_LOG_DEBUG, "BLOCK_TAG", "%s\n", xlog_buf);			
+			//xlog_printk(ANDROID_LOG_DEBUG, "BLOCK_TAG", "BDI_Flush statistic in timeline %lld\n", fs_bdi_last_t); 
+			//xlog_printk(ANDROID_LOG_DEBUG, "BLOCK_TAG", "%s\n", xlog_buf);			
 		}		
 		for (i=0;i<ID_CNT;i++)	//clear
 		{

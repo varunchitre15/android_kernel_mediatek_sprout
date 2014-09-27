@@ -266,15 +266,15 @@ static int esd_recovery_kthread(void *data)
 {
     //struct sched_param param = { .sched_priority = RTPM_PRIO_SCRN_UPDATE };
     //sched_setscheduler(current, SCHED_RR, &param);
-    MTKFB_INFO("enter esd_recovery_kthread()\n");
+    // MTKFB_INFO("enter esd_recovery_kthread()\n");
     for( ;; ) {
 
         if (kthread_should_stop())
             break;
 
-        MTKFB_INFO("sleep start in esd_recovery_kthread()\n");
+        // MTKFB_INFO("sleep start in esd_recovery_kthread()\n");
         msleep(2000);       //2s
-        MTKFB_INFO("sleep ends in esd_recovery_kthread()\n");
+      //  MTKFB_INFO("sleep ends in esd_recovery_kthread()\n");
 
         if(!esd_kthread_pause)
         {
@@ -284,15 +284,15 @@ static int esd_recovery_kthread(void *data)
                 continue;
             }
             ///execute ESD check and recover flow
-            MTKFB_INFO("DISP_EsdCheck starts\n");
+           // MTKFB_INFO("DISP_EsdCheck starts\n");
             need_esd_check = 1;
             wait_event_interruptible(esd_check_wq, !need_esd_check);
-            MTKFB_INFO("DISP_EsdCheck ends\n");
+         //   MTKFB_INFO("DISP_EsdCheck ends\n");
        }
     }
 
 
-    MTKFB_INFO("exit esd_recovery_kthread()\n");
+  //  MTKFB_INFO("exit esd_recovery_kthread()\n");
     return 0;
 }
 
@@ -1846,7 +1846,7 @@ static int mtkfb_ioctl(struct file *file, struct fb_info *info, unsigned int cmd
 
     case MTKFB_TRIG_OVERLAY_OUT:
     {
-        MTKFB_INFO(" mtkfb_ioctl():MTKFB_TRIG_OVERLAY_OUT\n");
+       // MTKFB_INFO(" mtkfb_ioctl():MTKFB_TRIG_OVERLAY_OUT\n");
         MMProfileLog(MTKFB_MMP_Events.TrigOverlayOut, MMProfileFlagPulse);
         return mtkfb_update_screen(info);
     }

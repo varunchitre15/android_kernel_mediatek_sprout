@@ -394,8 +394,8 @@ mutex_lock(&fsync_mutex);
 		}	
 		if(ptr_flag)
 		{		
-			xlog_printk(ANDROID_LOG_DEBUG, "BLOCK_TAG", "Fsync statistic in timeline %lld\n", fsync_last_t); 
-			xlog_printk(ANDROID_LOG_DEBUG, "BLOCK_TAG", "%s\n", xlog_buf);			
+			//xlog_printk(ANDROID_LOG_DEBUG, "BLOCK_TAG", "Fsync statistic in timeline %lld\n", fsync_last_t); 
+			//xlog_printk(ANDROID_LOG_DEBUG, "BLOCK_TAG", "%s\n", xlog_buf);			
 		}		
 		for (i=0;i<ID_CNT;i++)	//clear
 		{

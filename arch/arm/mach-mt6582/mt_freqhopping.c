@@ -1424,9 +1424,9 @@ static int mt_fh_hal_dfs_armpll(unsigned int current_freq, unsigned int target_f
 	unsigned long 	flags;
 	unsigned int	target_dds=0;
 	
-	FH_MSG("EN: %s:",__func__);
-	FH_MSG("current freq:%d target freq:%d", current_freq, target_freq);
-	FH_MSG("current dds(ARMPLL_CON1): 0x%x",(fh_read32(ARMPLL_CON1)&0x1FFFFF));
+	// FH_MSG("EN: %s:",__func__);
+	//FH_MSG("current freq:%d target freq:%d", current_freq, target_freq);
+	//FH_MSG("current dds(ARMPLL_CON1): 0x%x",(fh_read32(ARMPLL_CON1)&0x1FFFFF));
 
 	//TODO: provelock issue spin_lock(&freqhopping_lock);
 	spin_lock_irqsave(&freqhopping_lock, flags);
@@ -1435,7 +1435,7 @@ static int mt_fh_hal_dfs_armpll(unsigned int current_freq, unsigned int target_f
 	fh_set_field(REG_FHCTL0_CFG, FH_SFSTRX_EN, 0);  //disable dvfs mode
     fh_set_field(REG_FHCTL0_CFG, FH_FHCTLX_EN, 0);  //disable hopping control 		
 	target_dds = (((target_freq/100) * (((fh_read32(ARMPLL_CON1)&0x1FFFFF)*1000)/(current_freq/100)))/1000);
-	FH_MSG("target dds: 0x%x",target_dds);
+	//FH_MSG("target dds: 0x%x",target_dds);
 	
 	mt_fh_hal_dvfs(MT658X_FH_ARM_PLL, target_dds); 
 

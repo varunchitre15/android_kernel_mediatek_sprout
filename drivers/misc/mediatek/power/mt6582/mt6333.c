@@ -7440,11 +7440,11 @@ static int mt6333_thread_kthread(void *x)
     while (1) {
         mutex_lock(&mt6333_mutex);
 
-        xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[mt6333_thread_kthread] running\n");
+     //   xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[mt6333_thread_kthread] running\n");
 
         //--------------------------------------------------------------------------------
         int_status_val_0 = mt6333_get_reg_value(MT6333_INT_STATUS0);
-        xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[INT] int_status_val_0=0x%x\n", int_status_val_0);
+        //xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[INT] int_status_val_0=0x%x\n", int_status_val_0);
 
         if( (((int_status_val_0)&(0x0001))>>0) == 1 )  { chr_complete_int_handler();     }
         if( (((int_status_val_0)&(0x0002))>>1) == 1 )  { thermal_sd_int_handler();       }         
@@ -7456,7 +7456,7 @@ static int mt6333_thread_kthread(void *x)
         if( (((int_status_val_0)&(0x0080))>>7) == 1 )  { otg_drvcdt_short_int_handler(); }                     
         //--------------------------------------------------------------------------------
         int_status_val_1 = mt6333_get_reg_value(MT6333_INT_STATUS1);
-        xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[INT] int_status_val_1=0x%x\n", int_status_val_1);
+       // xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[INT] int_status_val_1=0x%x\n", int_status_val_1);
 
         if( (((int_status_val_0)&(0x0001))>>0) == 1 )  { chrwdt_flag_int_handler();       }
         if( (((int_status_val_0)&(0x0002))>>1) == 1 )  { buck_vcore_oc_int_handler();     }          
