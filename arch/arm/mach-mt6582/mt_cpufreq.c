@@ -178,7 +178,6 @@ static bool mt_cpufreq_pause = false;
 static bool mt_cpufreq_ptpod_disable = false;
 static bool mt_cpufreq_ptpod_voltage_down = false;
 //static bool mt_cpufreq_max_freq_overdrive = false;
-static bool mt_cpufreq_limit_max_freq_early_suspend = false;
 static bool mt_cpufreq_earlysuspend_allow_deepidle_control_vproc = false;
 static bool mt_cpufreq_freq_table_allocated = false;
 
@@ -386,28 +385,6 @@ bool mt_cpufreq_earlysuspend_status_get(void)
     return mt_cpufreq_earlysuspend_allow_deepidle_control_vproc;
 }
 EXPORT_SYMBOL(mt_cpufreq_earlysuspend_status_get);
-
-/************************************************
-* Limited max frequency in 1.05GHz when early suspend 
-*************************************************/
-static unsigned int mt_cpufreq_limit_max_freq_by_early_suspend(void)
-{
-    struct cpufreq_policy *policy;
-
-    policy = cpufreq_cpu_get(0);
-
-    if (!policy)
-        goto no_policy;
-
-    cpufreq_driver_target(policy, DVFS_F2, CPUFREQ_RELATION_L);
-
-    xlog_printk(ANDROID_LOG_INFO, "Power/DVFS", "mt_cpufreq limited max freq by early suspend %d\n", DVFS_F2);
-
-    cpufreq_cpu_put(policy);
-
-no_policy:
-    return g_cur_freq;
-}
 
 #if 0
 /* Check the mapping for DVFS voltage and pmic wrap voltage */
@@ -1257,16 +1234,6 @@ static int mt_cpufreq_target(struct cpufreq_policy *policy, unsigned int target_
         freqs.new = policy->max;
     }
 
-    /************************************************
-    * DVFS keep at 1.05GHz/1.15V in earlysuspend when max freq overdrive.
-    *************************************************/
-    if(mt_cpufreq_limit_max_freq_early_suspend == true)
-    {
-        freqs.new = DVFS_F2;
-        dprintk("mt_cpufreq_limit_max_freq_early_suspend, freqs.new = %d\n", freqs.new);
-    }
-	
-
     freqs.new = mt_thermal_limited_verify(freqs.new);
 
     if (freqs.new < g_limited_min_freq)
@@ -1445,9 +1412,6 @@ void mt_cpufreq_early_suspend(struct early_suspend *h)
 
     mt_cpufreq_state_set(0);
 
-    mt_cpufreq_limit_max_freq_early_suspend = true;
-    mt_cpufreq_limit_max_freq_by_early_suspend();
-
     /* Deep idle could control vproc now. */
     mt_cpufreq_earlysuspend_allow_deepidle_control_vproc = true;
     #endif
@@ -1464,8 +1428,6 @@ void mt_cpufreq_late_resume(struct early_suspend *h)
     /* Deep idle could NOT control vproc now. */
     mt_cpufreq_earlysuspend_allow_deepidle_control_vproc = false;
 
-    mt_cpufreq_limit_max_freq_early_suspend = false;
-	
     mt_cpufreq_state_set(1);
 
     #endif
