@@ -132,7 +132,7 @@ static void early_suspend(struct work_struct *work)
         if (pos->suspend != NULL) {
             if (!(forbid_id & (0x1 << count))) {
                 //if (earlysuspend_debug_mask & DEBUG_VERBOSE)
-                    pr_warn("ES handlers %d: [%pf], level: %d\n", count, pos->suspend, pos->level);
+           //         pr_warn("ES handlers %d: [%pf], level: %d\n", count, pos->suspend, pos->level);
                 pos->suspend(pos);
             }
             count++; 

@@ -263,7 +263,7 @@ static enum hrtimer_restart alarmtimer_fired(struct hrtimer *timer)
 	int restart = ALARMTIMER_NORESTART;
 
 	//pr_alarm(INT, "alarmtimer_fired \n");
-	xlog_printk(ANDROID_LOG_DEBUG, "Power/Alarm", "alarmtimer_fired \n");
+	//xlog_printk(ANDROID_LOG_DEBUG, "Power/Alarm", "alarmtimer_fired \n");
 		
 		
 	spin_lock_irqsave(&base->lock, flags);
