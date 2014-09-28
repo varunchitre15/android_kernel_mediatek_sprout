@@ -3687,7 +3687,7 @@ static ssize_t AudDrv_write(struct file *fp, const char __user *data, size_t cou
     //tout = sched_clock();
     //tout = tout - tin;
     //PRINTK_AUDDRV("AudDrv_write A %d %llu %d",written_size,tout,DL1_Interrupt_Interval);
-    PRINTK_AUDDRV("AWD %d",written_size);
+   // PRINTK_AUDDRV("AWD %d",written_size);
     return written_size;
 }
 
