@@ -253,7 +253,7 @@ static irqreturn_t mpu_violation_irq(int irq, void *dev_id)
     // Hong-Rong: need DEVAPC owner porting 
     if ((readl(IOMEM(DEVAPC0_D0_VIO_STA_0)) & ABORT_EMI_BUS_INTERFACE) == 0 
         && (readl(IOMEM(DEVAPC0_D0_VIO_STA_3)) & ABORT_EMI) == 0) {
-        printk(KERN_INFO "Not EMI MPU violation.\n");
+        pr_debug("Not EMI MPU violation.\n");
         return IRQ_NONE;
     }
     

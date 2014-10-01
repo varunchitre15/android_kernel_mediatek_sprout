@@ -2294,8 +2294,8 @@ int __m4u_dealloc_mva(M4U_MODULE_ID_ENUM eModuleID,
 
     int ret;
     
-    M4UINFO("m4u_dealloc_mva, module=%s, addr=0x%x, size=0x%x, MVA=0x%x, mva_end=0x%x\n",
-        m4u_get_module_name(eModuleID), BufAddr, BufSize, MVA, MVA+BufSize-1 );
+ /*    M4UINFO("m4u_dealloc_mva, module=%s, addr=0x%x, size=0x%x, MVA=0x%x, mva_end=0x%x\n",
+        m4u_get_module_name(eModuleID), BufAddr, BufSize, MVA, MVA+BufSize-1 ); */
 
 
     MMProfileLogEx(M4U_MMP_Events[PROFILE_DEALLOC_MVA], MMProfileFlagStart, eModuleID, BufAddr);

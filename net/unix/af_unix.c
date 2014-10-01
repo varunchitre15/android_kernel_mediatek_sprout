@@ -3480,14 +3480,14 @@ again:
                 {
 				   if(other && other->sk_socket ){
 				   	
-                     printk(KERN_INFO " sockdbg: recvmsg[%lu:%lu]:exit read due to peer shutdown  \n" ,SOCK_INODE(sk->sk_socket)->i_ino,SOCK_INODE(other->sk_socket)->i_ino);
+                     pr_debug("sockdbg: recvmsg[%lu:%lu]:exit read due to peer shutdown  \n" ,SOCK_INODE(sk->sk_socket)->i_ino,SOCK_INODE(other->sk_socket)->i_ino);
 				   
 				   }else{				   
-                     printk(KERN_INFO " sockdbg: recvmsg[%lu:null]:exit read due to peer shutdown  \n" ,SOCK_INODE(sk->sk_socket)->i_ino);
+                     pr_debug("sockdbg: recvmsg[%lu:null]:exit read due to peer shutdown  \n" ,SOCK_INODE(sk->sk_socket)->i_ino);
 				     }				   
 				 }
 				else{	
-				   printk(KERN_INFO " sockdbg: recvmsg: exit read due to peer shutdown \n" );
+				   pr_debug("sockdbg: recvmsg: exit read due to peer shutdown \n" );
 				}
 				goto unlock;
 			}

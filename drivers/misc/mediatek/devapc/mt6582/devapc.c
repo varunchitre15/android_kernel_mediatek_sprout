@@ -331,11 +331,11 @@ static irqreturn_t devapc_violation_irq(int irq, void *dev_id)
        
     if(r_w_violation == 1)
     {
-      xlog_printk(ANDROID_LOG_INFO, DEVAPC_TAG ,"Vio Addr:0x%x , Master ID:0x%x , Dom ID:0x%x, W\n", dbg1, master_ID, domain_ID);
+      pr_debug("Vio Addr:0x%x , Master ID:0x%x , Dom ID:0x%x, W\n", dbg1, master_ID, domain_ID);
     }
     else
     {
-      xlog_printk(ANDROID_LOG_INFO, DEVAPC_TAG ,"Vio Addr:0x%x , Master ID:0x%x , Dom ID:0x%x, R\n", dbg1, master_ID, domain_ID);
+      pr_debug("Vio Addr:0x%x , Master ID:0x%x , Dom ID:0x%x, R\n", dbg1, master_ID, domain_ID);
     }
 
 

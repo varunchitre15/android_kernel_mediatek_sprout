@@ -1449,7 +1449,7 @@ SYSCALL_DEFINE4(socketpair, int, family, int, type, int, protocol,
 	{
        if(sock1 && SOCK_INODE(sock1) && sock2&& SOCK_INODE(sock2) )
        {
-	     printk(KERN_INFO "socketpair:fd1[%lu]=%d, fd2[%lu]=%d \n", SOCK_INODE(sock1)->i_ino,fd1,SOCK_INODE(sock2)->i_ino,fd2);
+	     pr_debug("socketpair:fd1[%lu]=%d, fd2[%lu]=%d \n", SOCK_INODE(sock1)->i_ino,fd1,SOCK_INODE(sock2)->i_ino,fd2);
 #ifdef CONFIG_UNIX_SOCKET_TRACK_TOOL	  
            if (family == PF_LOCAL)
            {

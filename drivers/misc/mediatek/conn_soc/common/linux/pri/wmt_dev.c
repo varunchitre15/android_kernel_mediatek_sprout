@@ -1701,7 +1701,7 @@ LONG wmt_dev_tm_temp_query(void)
        if(temp_table[index] >= TEMP_THRESHOLD)
        {
             query_cond = 1;
-            WMT_INFO_FUNC("temperature table is still intial value, we should query temp temperature..\n");
+          //  WMT_INFO_FUNC("temperature table is still intial value, we should query temp temperature..\n");
        }            
     }
 

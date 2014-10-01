@@ -4738,11 +4738,6 @@ static void binder_deferred_release(struct binder_proc *proc)
 				     incoming_refs, death);
 		}
 	}
-#ifdef MTK_BINDER_DEBUG
-	printk(KERN_INFO "binder: %d:%s exits %s system_server DeathNotify\n",
-			 proc->pid, proc->tsk ? proc->tsk->comm : "",
-			 sys_reg ? "with" : "W/O");
-#endif
 	outgoing_refs = 0;
 	while ((n = rb_first(&proc->refs_by_desc))) {
 		struct binder_ref *ref = rb_entry(n, struct binder_ref,
