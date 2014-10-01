@@ -280,7 +280,7 @@ static int esd_recovery_kthread(void *data)
         {
             if(is_early_suspended)
             {
-                MTKFB_INFO("is_early_suspended in esd_recovery_kthread()\n");
+                //MTKFB_INFO("is_early_suspended in esd_recovery_kthread()\n");
                 continue;
             }
             ///execute ESD check and recover flow
@@ -2505,7 +2505,7 @@ static void mtkfb_fb_565_to_8888(struct fb_info *fb_info)
     }
 
 
-    MTKFB_INFO("exit esd_recovery_kthread()\n");
+   // MTKFB_INFO("exit esd_recovery_kthread()\n");
     return 0;
 }
 #endif

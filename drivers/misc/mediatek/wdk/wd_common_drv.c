@@ -297,7 +297,7 @@ static int kwdt_thread(void *arg)
 				local_bit |= (1<<cpu);
 				//aee_rr_rec_wdk_kick_jiffies(jiffies);
 			   }
-			   printk_sched("[WDK], local_bit:0x%x, cpu:%d, check bit0x:%x,RT[%lld]\n", local_bit, cpu, wk_check_kick_bit(),sched_clock());
+			  // printk_sched("[WDK], local_bit:0x%x, cpu:%d, check bit0x:%x,RT[%lld]\n", local_bit, cpu, wk_check_kick_bit(),sched_clock());
 			   if(local_bit == wk_check_kick_bit())
 			   {
 			     // printk_sched("[WDK]: kick Ex WDT,RT[%lld]\n",sched_clock());
