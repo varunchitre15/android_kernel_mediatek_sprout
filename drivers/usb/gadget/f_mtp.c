@@ -1374,16 +1374,16 @@ static long mtp_ioctl(struct file *fp, unsigned code, unsigned long value)
 	switch (code)
 	{
 	case MTP_SEND_FILE:
-		xlog_printk(ANDROID_LOG_INFO, "USB", "%s: MTP_SEND_FILE, code = 0x%x\n", __func__, code);
+		//xlog_printk(ANDROID_LOG_INFO, "USB", "%s: MTP_SEND_FILE, code = 0x%x\n", __func__, code);
 		break;
 	case MTP_RECEIVE_FILE:
-		xlog_printk(ANDROID_LOG_INFO, "USB", "%s: MTP_RECEIVE_FILE, code = 0x%x\n", __func__, code);
+		//xlog_printk(ANDROID_LOG_INFO, "USB", "%s: MTP_RECEIVE_FILE, code = 0x%x\n", __func__, code);
 		break;
 	case MTP_SEND_FILE_WITH_HEADER:
-		xlog_printk(ANDROID_LOG_INFO, "USB", "%s: MTP_SEND_FILE_WITH_HEADER, code = 0x%x\n", __func__, code);
+		//xlog_printk(ANDROID_LOG_INFO, "USB", "%s: MTP_SEND_FILE_WITH_HEADER, code = 0x%x\n", __func__, code);
 		break;
 	case MTP_SEND_EVENT:
-		xlog_printk(ANDROID_LOG_INFO, "USB", "%s: MTP_SEND_EVENT, code = 0x%x\n", __func__, code);
+		//xlog_printk(ANDROID_LOG_INFO, "USB", "%s: MTP_SEND_EVENT, code = 0x%x\n", __func__, code);
 		break;
 	}
 //Added Modification for ALPS00255822, bug from WHQL test
