@@ -1055,6 +1055,17 @@ static struct platform_device mtk_m4u_dev = {
 	}
 };
 
+static u64 mtk_cmdq_dmamask = ~(u32)0;
+
+static struct platform_device mtk_cmdq_dev = {
+    .name          = "mtk_cmdq",
+    .id          = -1,
+    .dev              = {
+        .dma_mask = &mtk_cmdq_dmamask,
+        .coherent_dma_mask = 0xffffffffUL
+        //.coherent_dma_mask = DMA_BIT_MASK(64)
+    }
+};
 
 /*=======================================================================*/
 /* MT6573 GPS module                                                    */
@@ -2072,6 +2083,13 @@ __init int mt_board_init(void)
 
 
 //===========================
+
+    printk("register CMDQ device: %d\n", retval);
+    retval = platform_device_register(&mtk_cmdq_dev);
+    printk("[%s]: mtk_cmdq_dev, retval=%d \n", __func__, retval);
+    if (retval != 0) {
+        return retval;
+    }
 
 #ifdef CONFIG_MTK_MT8193_SUPPORT
     printk("register 8193_CKGEN device\n");

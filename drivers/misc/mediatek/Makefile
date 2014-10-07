@@ -19,7 +19,7 @@ obj-y	+= m4u/
 #obj-y	+= mhl/
 obj-y	+= mtprof/
 
-#obj-y   += cmdq/
+obj-y   += cmdq/
 obj-y   += video/
 ifeq ($(CONFIG_MTK_HDMI_SUPPORT),y)
 #obj-y	+= hdmi/

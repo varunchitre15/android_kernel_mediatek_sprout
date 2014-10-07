@@ -12,29 +12,6 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __CMDQ_MMP_H__
-#define __CMDQ_MMP_H__
-
-#include <linux/mmprofile.h>
-#include "cmdq_core.h"
-
-typedef struct {
-	MMP_Event CMDQ;
-	MMP_Event CMDQ_IRQ;
-	MMP_Event thread_en;
-	MMP_Event warning;
-	MMP_Event loopBeat;
-	MMP_Event autoRelease_add;
-	MMP_Event autoRelease_done;
-	MMP_Event consume_add;
-	MMP_Event consume_done;
-	MMP_Event alloc_task;
-	MMP_Event wait_task;
-	MMP_Event wait_thread;
-	MMP_Event MDP_reset;
-} CMDQ_MMP_Events_t;
-
-void cmdq_mmp_init(void);
-CMDQ_MMP_Events_t *cmdq_mmp_get_event(void);
-
-#endif				/* __CMDQ_MMP_H__ */
+/* msb     id   group        reg-base-name */
+DECLARE_CMDQ_SUBSYS(0x1400, 0, MMSYS, MMSYS_CONFIG_BASE)
+    DECLARE_CMDQ_SUBSYS(0x1500, 1, CAM, IMGSYS_BASE)

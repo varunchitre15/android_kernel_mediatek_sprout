@@ -16,7 +16,6 @@ obj-y += cmdq_driver.o
 obj-y += cmdq_mmp.o
 obj-y += cmdq_test.o
 obj-y += cmdq_mdp_common.o
-obj-y += cmdq_test.o
 
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 

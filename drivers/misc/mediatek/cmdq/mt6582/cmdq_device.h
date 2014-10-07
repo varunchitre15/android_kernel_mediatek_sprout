@@ -12,29 +12,20 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __CMDQ_MMP_H__
-#define __CMDQ_MMP_H__
+#ifndef __CMDQ_DEVICE_H__
+#define __CMDQ_DEVICE_H__
 
-#include <linux/mmprofile.h>
-#include "cmdq_core.h"
+#include <linux/platform_device.h>
+#include <linux/device.h>
 
-typedef struct {
-	MMP_Event CMDQ;
-	MMP_Event CMDQ_IRQ;
-	MMP_Event thread_en;
-	MMP_Event warning;
-	MMP_Event loopBeat;
-	MMP_Event autoRelease_add;
-	MMP_Event autoRelease_done;
-	MMP_Event consume_add;
-	MMP_Event consume_done;
-	MMP_Event alloc_task;
-	MMP_Event wait_task;
-	MMP_Event wait_thread;
-	MMP_Event MDP_reset;
-} CMDQ_MMP_Events_t;
+struct device *cmdq_dev_get(void);
+const uint32_t cmdq_dev_get_irq_id(void);
+const uint32_t cmdq_dev_get_irq_secure_id(void);
 
-void cmdq_mmp_init(void);
-CMDQ_MMP_Events_t *cmdq_mmp_get_event(void);
+const long cmdq_dev_alloc_module_base_VA_by_name(const char *name);
+void cmdq_dev_free_module_base_VA(const long VA);
 
-#endif				/* __CMDQ_MMP_H__ */
+void cmdq_dev_init(struct platform_device *pDevice);
+void cmdq_dev_deinit(void);
+
+#endif				/* __CMDQ_DEVICE_H__ */

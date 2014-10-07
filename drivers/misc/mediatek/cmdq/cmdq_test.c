@@ -1,3 +1,17 @@
+/*
+* Copyright (C) 2011-2014 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/fs.h>
@@ -788,13 +802,7 @@ void testcase_clkmgr_impl(enum cg_clk_id gateId,
 static void testcase_clkmgr(void)
 {
 	CMDQ_MSG("%s\n", __func__);
-	testcase_clkmgr_impl(MT_CG_INFRA_GCE,
-			"CMDQ_TEST",
-			CMDQ_GPR_R32(CMDQ_DATA_REG_DEBUG),
-			0xFFFFDEAD,
-			CMDQ_GPR_R32(CMDQ_DATA_REG_DEBUG),
-			true);
-
+	testcase_clkmgr_cmdq();
 	testcase_clkmgr_mdp();
 
 	CMDQ_MSG("%s END\n", __func__);
@@ -1056,8 +1064,13 @@ static void testcase_write_address(void)
 	value = cmdqCoreReadWriteAddress(pa + (4 * 20));
 	CMDQ_LOG("value 80: 0x%08x\n", value);
 
-	cmdqCoreFreeWriteAddress(pa);
+	/* free invalid start address fist to verify error handle */
+	CMDQ_LOG("cmdqCoreFreeWriteAddress, pa:0, it's a error case\n");
 	cmdqCoreFreeWriteAddress(0);
+
+	/* ok case */
+	CMDQ_LOG("cmdqCoreFreeWriteAddress, pa:%pa, it's a ok case\n", &pa);
+	cmdqCoreFreeWriteAddress(pa);
 
 	CMDQ_MSG("%s END\n", __func__);
 }
@@ -1077,7 +1090,7 @@ static void testcase_write_from_data_reg(void)
 	/* clean dst register value*/
 	CMDQ_REG_SET32(dstRegVA, 0x0);
 
-	/* int GPR as value 0xFFFFDEAD */
+	/* init GPR as value 0xFFFFDEAD */
 	CMDQ_REG_SET32(CMDQ_GPR_R32(srcGprId), PATTERN);
 	value = CMDQ_REG_GET32(CMDQ_GPR_R32(srcGprId));
 	if (PATTERN != value) {
@@ -1181,8 +1194,77 @@ static void testcase_read_to_data_reg(void)
 #endif
 }
 
+static void testcase_write_reg_from_slot(void)
+{
+#ifdef CMDQ_GPR_SUPPORT
+	const uint32_t PATTEN = 0xBCBCBCBC;
+	cmdqRecHandle handle;
+	cmdqBackupSlotHandle hSlot = 0;
+	uint32_t value = 0;
+	long long value64 = 0LL;
+	const CMDQ_DATA_REGISTER_ENUM dstRegId = CMDQ_DATA_REG_DEBUG;
+	const CMDQ_DATA_REGISTER_ENUM srcRegId = CMDQ_DATA_REG_DEBUG_DST;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	/* init */
+	CMDQ_REG_SET32(CMDQ_TEST_MMSYS_DUMMY_VA, 0xdeaddead);
+	CMDQ_REG_SET32(CMDQ_GPR_R32(dstRegId), 0xdeaddead);
+	CMDQ_REG_SET64_GPR_PX(srcRegId, 0xdeaddeaddeaddead);
+
+	cmdqBackupAllocateSlot(&hSlot, 1);
+	cmdqBackupWriteSlot(hSlot, 0, PATTEN);
+	cmdqBackupReadSlot(hSlot, 0, &value);
+	if (PATTEN != value) {
+		CMDQ_ERR("%s, slot init failed\n", __func__);
+	}
+
+	/* Create cmdqRec */
+	cmdqRecCreate(CMDQ_SCENARIO_DEBUG, &handle);
+
+	/* Reset command buffer */
+	cmdqRecReset(handle);
+
+	//cmdqRecSetSecure(handle, gCmdqTestSecure);
+
+	/* Insert commands to write register with slot's value */
+	cmdqRecBackupWriteRegisterFromSlot(handle, hSlot, 0, CMDQ_TEST_MMSYS_DUMMY_PA);
+
+	/* Execute commands */
+	cmdqRecFlush(handle);
+
+	/* debug dump command instructions */
+	cmdqRecDumpCommand(handle);
+
+	/* we can destroy cmdqRec handle after flush. */
+	cmdqRecDestroy(handle);
+
+	/* verify */
+	value = CMDQ_REG_GET32(CMDQ_TEST_MMSYS_DUMMY_VA);
+	if (PATTEN != value) {
+		CMDQ_ERR("%s failed, value:0x%x\n", __func__, value);
+	}
+
+	value = CMDQ_REG_GET32(CMDQ_GPR_R32(dstRegId));
+	value64 = CMDQ_REG_GET64_GPR_PX(srcRegId);
+	CMDQ_LOG("srcGPR(%x):0x%llx\n", srcRegId, value64);
+	CMDQ_LOG("dstGPR(%x):0x%08x\n", dstRegId, value);
+
+	/* release result free slot */
+	cmdqBackupFreeSlot(hSlot);
+
+	CMDQ_MSG("%s END\n", __func__);
+
+	return;
+#else
+	CMDQ_ERR("func:%s failed since CMDQ dosen't support GPR\n", __func__);
+	return;
+#endif
+}
+
 static void testcase_backup_reg_to_slot(void)
 {
+#ifdef CMDQ_GPR_SUPPORT
 	cmdqRecHandle handle;
 	unsigned long MMSYS_DUMMY_REG = CMDQ_TEST_MMSYS_DUMMY_VA;
 	cmdqBackupSlotHandle hSlot = 0;
@@ -1243,10 +1325,15 @@ static void testcase_backup_reg_to_slot(void)
 	CMDQ_MSG("%s END\n", __func__);
 
 	return;
+#else
+	CMDQ_ERR("func:%s failed since CMDQ dosen't support GPR\n", __func__);
+	return;
+#endif
 }
 
 static void testcase_update_value_to_slot(void)
 {
+#ifdef CMDQ_GPR_SUPPORT
 	int32_t i;
 	uint32_t value;
 	cmdqRecHandle handle;
@@ -1285,6 +1372,10 @@ static void testcase_update_value_to_slot(void)
 	cmdqBackupFreeSlot(hSlot);
 
 	CMDQ_MSG("%s END\n", __func__);
+#else
+	CMDQ_ERR("func:%s failed since CMDQ dosen't support GPR\n", __func__);
+	return;
+#endif
 }
 
 static void testcase_poll(void)
@@ -1831,6 +1922,12 @@ ssize_t cmdq_test_proc(struct file *fp, char __user *u, size_t s, loff_t *l)
 		break;
 	case 72:
 		testcase_update_value_to_slot();
+		break;
+	case 71:
+		testcase_poll();
+		break;
+	case 70:
+		testcase_write_reg_from_slot();
 		break;
 	case CMDQ_TESTCASE_ERROR:
 		testcase_errors();
