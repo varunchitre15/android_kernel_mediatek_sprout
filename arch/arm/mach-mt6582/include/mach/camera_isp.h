@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -16,6 +16,8 @@
 #define _MT_ISP_H
 
 #include <linux/ioctl.h>
+//89serial IC , for HW FBC
+#define _89SERIAL_
 
 /*******************************************************************************
 *
@@ -31,31 +33,21 @@
 #define ISP_IRQ_INT_STATUS_TG1_ST2              ((unsigned int)1 << 2)
 #define ISP_IRQ_INT_STATUS_EXPDON1_ST           ((unsigned int)1 << 3)
 #define ISP_IRQ_INT_STATUS_TG1_ERR_ST           ((unsigned int)1 << 4)
-//#define ISP_IRQ_INT_STATUS_VS2_ST               ((unsigned int)1 << 5)
-//#define ISP_IRQ_INT_STATUS_TG2_ST1              ((unsigned int)1 << 6)
-//#define ISP_IRQ_INT_STATUS_TG2_ST2              ((unsigned int)1 << 7)
-//#define ISP_IRQ_INT_STATUS_EXPDON2_ST           ((unsigned int)1 << 8)
-//#define ISP_IRQ_INT_STATUS_TG2_ERR_ST           ((unsigned int)1 << 9)
 #define ISP_IRQ_INT_STATUS_PASS1_TG1_DON_ST     ((unsigned int)1 << 10)
-//#define ISP_IRQ_INT_STATUS_PASS1_TG2_DON_ST     ((unsigned int)1 << 11)
 #define ISP_IRQ_INT_STATUS_SOF1_INT_ST          ((unsigned int)1 << 12)
 #define ISP_IRQ_INT_STATUS_CQ_ERR_ST            ((unsigned int)1 << 13)
 #define ISP_IRQ_INT_STATUS_PASS2_DON_ST         ((unsigned int)1 << 14)
 #define ISP_IRQ_INT_STATUS_TPIPE_DON_ST         ((unsigned int)1 << 15)
 #define ISP_IRQ_INT_STATUS_AF_DON_ST            ((unsigned int)1 << 16)
 #define ISP_IRQ_INT_STATUS_FLK_DON_ST           ((unsigned int)1 << 17)
-//#define ISP_IRQ_INT_STATUS_FMT_DON_ST           ((unsigned int)1 << 18)
 #define ISP_IRQ_INT_STATUS_CQ_DON_ST            ((unsigned int)1 << 19)
 #define ISP_IRQ_INT_STATUS_IMGO_ERR_ST          ((unsigned int)1 << 20)
 #define ISP_IRQ_INT_STATUS_AAO_ERR_ST           ((unsigned int)1 << 21)
-//#define ISP_IRQ_INT_STATUS_LCSO_ERR_ST          ((unsigned int)1 << 22)
 #define ISP_IRQ_INT_STATUS_IMG2O_ERR_ST         ((unsigned int)1 << 23)
 #define ISP_IRQ_INT_STATUS_ESFKO_ERR_ST         ((unsigned int)1 << 24)
 #define ISP_IRQ_INT_STATUS_FLK_ERR_ST           ((unsigned int)1 << 25)
 #define ISP_IRQ_INT_STATUS_LSC_ERR_ST           ((unsigned int)1 << 26)
-#define ISP_IRQ_INT_STATUS_LSC2_ERR_ST          ((unsigned int)1 << 27)
-#define ISP_IRQ_INT_STATUS_BPC_ERR_ST           ((unsigned int)1 << 28)
-//#define ISP_IRQ_INT_STATUS_LCE_ERR_ST           ((unsigned int)1 << 29)
+#define ISP_IRQ_INT_STATUS_FBC_IMGO_DONE_ST     ((unsigned int)1 << 28)
 #define ISP_IRQ_INT_STATUS_DMA_ERR_ST           ((unsigned int)1 << 30)
 //CAM_CTL_DMA_INT
 #define ISP_IRQ_DMA_INT_IMGO_DONE_ST            ((unsigned int)1 << 0)
@@ -281,7 +273,7 @@ typedef struct {
     unsigned int   memID;
     unsigned int   size;
     unsigned int   base_vAddr;
-    unsigned int   base_pAddr;        
+    unsigned int   base_pAddr;
     unsigned int   timeStampS;
     unsigned int   timeStampUs;
     unsigned int   bFilled;
@@ -289,16 +281,16 @@ typedef struct {
 //
 typedef struct  {
     unsigned int           count;
-    ISP_RT_BUF_INFO_STRUCT  data[ISP_RT_BUF_SIZE];   
+    ISP_RT_BUF_INFO_STRUCT  data[ISP_RT_BUF_SIZE];
 }ISP_DEQUE_BUF_INFO_STRUCT;
 //
 typedef struct  {
     unsigned int           start;          //current DMA accessing buffer
     unsigned int           total_count;    //total buffer number.Include Filled and empty
     unsigned int           empty_count;    //total empty buffer number include current DMA accessing buffer
-    unsigned int           pre_empty_count;//previous total empty buffer number include current DMA accessing buffer    
+    unsigned int           pre_empty_count;//previous total empty buffer number include current DMA accessing buffer
     unsigned int           active;
-    ISP_RT_BUF_INFO_STRUCT  data[ISP_RT_BUF_SIZE];   
+    ISP_RT_BUF_INFO_STRUCT  data[ISP_RT_BUF_SIZE];
 }ISP_RT_RING_BUF_INFO_STRUCT;
 //
 typedef enum
@@ -330,7 +322,7 @@ typedef enum
 typedef struct  {
     ISP_RTBC_STATE_ENUM state;
     unsigned long dropCnt;
-    ISP_RT_RING_BUF_INFO_STRUCT  ring_buf[_rt_dma_max_]; 
+    ISP_RT_RING_BUF_INFO_STRUCT  ring_buf[_rt_dma_max_];
 }ISP_RT_BUF_STRUCT;
 //
 typedef struct  {
@@ -363,7 +355,7 @@ typedef enum
 typedef struct  {
     ISP_REF_CNT_CTRL_ENUM   ctrl;
     ISP_REF_CNT_ID_ENUM     id;
-    unsigned long           data_ptr; 
+    unsigned long           data_ptr;
 }ISP_REF_CNT_CTRL_STRUCT;
 
 
@@ -452,9 +444,9 @@ typedef enum
     ISP_CMD_CLEAR_IRQ,      //Clear IRQ
     ISP_CMD_DUMP_REG,       //Dump ISP registers , for debug usage
     ISP_CMD_SET_USER_PID,   //for signal
-    ISP_CMD_RT_BUF_CTRL,   //for pass buffer control    
+    ISP_CMD_RT_BUF_CTRL,   //for pass buffer control
     ISP_CMD_REF_CNT,        //get imem reference count
-    ISP_CMD_DEBUG_FLAG,      //Dump message level 
+    ISP_CMD_DEBUG_FLAG,      //Dump message level
     ISP_CMD_SENSOR_FREQ_CTRL      // sensor frequence control
 }ISP_CMD_ENUM;
 //
@@ -477,6 +469,15 @@ typedef enum
 //
 bool ISP_RegCallback(ISP_CALLBACK_STRUCT* pCallback);
 bool ISP_UnregCallback(ISP_CALLBACK_ENUM   Type);
+
+bool ISP_ControlMdpClock(bool en);
+int32_t ISP_MDPClockOnCallback(uint64_t engineFlag);
+int32_t ISP_MDPDumpCallback(uint64_t engineFlag,
+                            int level);
+int32_t ISP_MDPResetCallback(uint64_t engineFlag);
+
+int32_t ISP_MDPClockOffCallback(uint64_t engineFlag);
+
 //
 #endif
 
