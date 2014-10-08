@@ -25,6 +25,9 @@
 #include <linux/tick.h>
 #include <linux/types.h>
 #include <linux/cpu.h>
+#include <linux/sched.h>
+#include <linux/sched/rt.h>
+#include <linux/kthread.h>
 #include <linux/input.h>	/* <-XXX */
 #include <linux/slab.h>		/* <-XXX */
 #include "mach/mt_cpufreq.h"	/* <-XXX */
@@ -120,6 +123,7 @@ static long g_cpu_down_load_history[MAX_CPU_DOWN_AVG_TIMES] = { 0 };
 cpu_hotplug_work_type_t g_trigger_hp_work;
 static unsigned int g_next_hp_action;
 static struct delayed_work hp_work;
+struct workqueue_struct *hp_wq = NULL;
 
 int g_tlp_avg_current;	/* set global for information purpose */
 int g_tlp_avg_sum;
@@ -387,7 +391,11 @@ void hp_based_cpu_num(int num)
 
 		dbs_freq_increase(policy, policy->max);
 		g_trigger_hp_work = CPU_HOTPLUG_WORK_TYPE_BASE;
-		schedule_delayed_work_on(0, &hp_work, 0);
+		/* schedule_delayed_work_on(0, &hp_work, 0); */
+		if (hp_wq == NULL)
+			pr_emerg("[power/hotplug] %s():%d, impossible\n", __func__, __LINE__);
+		else
+			queue_delayed_work_on(0, hp_wq, &hp_work, 0);
 	}
 #endif
 
@@ -715,7 +723,11 @@ static void hp_check_cpu(int cpu, unsigned int load_freq)
 					g_next_hp_action = num_possible_cpus();
 
 				g_trigger_hp_work = CPU_HOTPLUG_WORK_TYPE_RUSH;
-				schedule_delayed_work_on(0, &hp_work, 0);
+				/* schedule_delayed_work_on(0, &hp_work, 0); */
+				if (hp_wq == NULL)
+					pr_emerg("[power/hotplug] %s():%d, impossible\n", __func__, __LINE__);
+				else
+					queue_delayed_work_on(0, hp_wq, &hp_work, 0);
 
 				goto hp_check_end;
 			}
@@ -726,7 +738,11 @@ static void hp_check_cpu(int cpu, unsigned int load_freq)
 			dbs_freq_increase(policy, policy->max);
 			pr_debug("dbs_check_cpu: turn on CPU\n");
 			g_trigger_hp_work = CPU_HOTPLUG_WORK_TYPE_BASE;
-			schedule_delayed_work_on(0, &hp_work, 0);
+			/* schedule_delayed_work_on(0, &hp_work, 0); */
+			if (hp_wq == NULL)
+				pr_emerg("[power/hotplug] %s():%d, impossible\n", __func__, __LINE__);
+			else
+				queue_delayed_work_on(0, hp_wq, &hp_work, 0);
 
 			goto hp_check_end;
 		}
@@ -735,7 +751,11 @@ static void hp_check_cpu(int cpu, unsigned int load_freq)
 			dbs_freq_increase(policy, policy->max);
 			pr_debug("dbs_check_cpu: turn off CPU\n");
 			g_trigger_hp_work = CPU_HOTPLUG_WORK_TYPE_LIMIT;
-			schedule_delayed_work_on(0, &hp_work, 0);
+			/* schedule_delayed_work_on(0, &hp_work, 0); */
+			if (hp_wq == NULL)
+				pr_emerg("[power/hotplug] %s():%d, impossible\n", __func__, __LINE__);
+			else
+				queue_delayed_work_on(0, hp_wq, &hp_work, 0);
 
 			goto hp_check_end;
 		}
@@ -770,7 +790,11 @@ static void hp_check_cpu(int cpu, unsigned int load_freq)
 						pr_debug("dbs_check_cpu: turn on CPU\n");
 						g_next_hp_action = online_cpus_count + 1;
 						g_trigger_hp_work = CPU_HOTPLUG_WORK_TYPE_UP;
-						schedule_delayed_work_on(0, &hp_work, 0);
+						/* schedule_delayed_work_on(0, &hp_work, 0); */
+						if (hp_wq == NULL)
+							pr_emerg("[power/hotplug] %s():%d, impossible\n", __func__, __LINE__);
+						else
+							queue_delayed_work_on(0, hp_wq, &hp_work, 0);
 
 						goto hp_check_end;
 					}
@@ -825,7 +849,11 @@ static void hp_check_cpu(int cpu, unsigned int load_freq)
 					dbs_freq_increase(policy, policy->max);
 					pr_debug("dbs_check_cpu: turn off CPU\n");
 					g_trigger_hp_work = CPU_HOTPLUG_WORK_TYPE_DOWN;
-					schedule_delayed_work_on(0, &hp_work, 0);
+					/* schedule_delayed_work_on(0, &hp_work, 0); */
+					if (hp_wq == NULL)
+						pr_emerg("[power/hotplug] %s():%d, impossible\n", __func__, __LINE__);
+					else
+						queue_delayed_work_on(0, hp_wq, &hp_work, 0);
 				}
 			}
 #ifdef DEBUG_LOG
@@ -919,30 +947,29 @@ static struct common_dbs_data hp_dbs_cdata;
 static void update_sampling_rate(struct dbs_data *dbs_data, unsigned int new_rate)
 {
 	struct hp_dbs_tuners *hp_tuners = dbs_data->tuners;
-	int cpu;
 
 	hp_tuners->sampling_rate = new_rate = max(new_rate, dbs_data->min_sampling_rate);
 
-	for_each_online_cpu(cpu) {
+	{
 		struct cpufreq_policy *policy;
 		struct hp_cpu_dbs_info_s *dbs_info;
 		unsigned long next_sampling, appointed_at;
 
-		policy = cpufreq_cpu_get(cpu);
+		policy = cpufreq_cpu_get(0);
 		if (!policy)
-			continue;
+			return;
 		if (policy->governor != &cpufreq_gov_hotplug) {
 			cpufreq_cpu_put(policy);
-			continue;
+			return;
 		}
-		dbs_info = &per_cpu(hp_cpu_dbs_info, cpu);
+		dbs_info = &per_cpu(hp_cpu_dbs_info, 0);
 		cpufreq_cpu_put(policy);
 
 		mutex_lock(&dbs_info->cdbs.timer_mutex);
 
 		if (!delayed_work_pending(&dbs_info->cdbs.work)) {
 			mutex_unlock(&dbs_info->cdbs.timer_mutex);
-			continue;
+			return;
 		}
 
 		next_sampling = jiffies + usecs_to_jiffies(new_rate);
@@ -961,6 +988,52 @@ static void update_sampling_rate(struct dbs_data *dbs_data, unsigned int new_rat
 		mutex_unlock(&dbs_info->cdbs.timer_mutex);
 	}
 }
+
+void hp_enable_timer(int enable)
+{
+#if 1
+	struct dbs_data *dbs_data = per_cpu(hp_cpu_dbs_info, 0).cdbs.cur_policy->governor_data; /* TODO: FIXME, cpu = 0 */
+	static unsigned int sampling_rate_backup = 0;
+
+	if (!dbs_data || dbs_data->cdata->governor != GOV_HOTPLUG || (enable && !sampling_rate_backup))
+		return;
+
+	if (enable)
+		update_sampling_rate(dbs_data, sampling_rate_backup);
+	else {
+		struct hp_dbs_tuners *hp_tuners = dbs_data->tuners;
+
+		sampling_rate_backup = hp_tuners->sampling_rate;
+		update_sampling_rate(dbs_data, 30000 * 100);
+	}
+#else
+	struct dbs_data *dbs_data = per_cpu(hp_cpu_dbs_info, 0).cdbs.cur_policy->governor_data; /* TODO: FIXME, cpu = 0 */
+	int cpu = 0;
+	struct cpufreq_policy *policy;
+	struct hp_dbs_tuners *hp_tuners;
+	struct hp_cpu_dbs_info_s *dbs_info;
+
+	policy = cpufreq_cpu_get(cpu);
+	if (!policy)
+		continue;
+	if (policy->governor != &cpufreq_gov_hotplug) {
+		cpufreq_cpu_put(policy);
+		continue;
+	}
+	dbs_info = &per_cpu(hp_cpu_dbs_info, cpu);
+	cpufreq_cpu_put(policy);
+
+	if (enable) {
+		hp_tuners = dbs_data->tuners;
+		mutex_lock(&dbs_info->cdbs.timer_mutex);
+		gov_queue_work(dbs_data, dbs_info->cdbs.cur_policy, usecs_to_jiffies(hp_tuners->sampling_rate), true);
+		mutex_unlock(&dbs_info->cdbs.timer_mutex);
+	} else
+		cancel_delayed_work_sync(&dbs_info->cdbs.work);
+	}
+#endif
+}
+EXPORT_SYMBOL(hp_enable_timer);
 
 static ssize_t store_sampling_rate(struct dbs_data *dbs_data, const char *buf, size_t count)
 {
@@ -1236,7 +1309,11 @@ static ssize_t store_cpu_num_base(struct dbs_data *dbs_data, const char *buf, si
 
 		dbs_freq_increase(policy, policy->max);
 		g_trigger_hp_work = CPU_HOTPLUG_WORK_TYPE_BASE;
-		schedule_delayed_work_on(0, &hp_work, 0);
+		/* schedule_delayed_work_on(0, &hp_work, 0); */
+		if (hp_wq == NULL)
+			pr_emerg("[power/hotplug] %s():%d, impossible\n", __func__, __LINE__);
+		else
+			queue_delayed_work_on(0, hp_wq, &hp_work, 0);
 	}
 #endif
 
@@ -1496,6 +1573,30 @@ static struct attribute_group hp_attr_group_gov_pol = {
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< */
 
 #ifdef CONFIG_HOTPLUG_CPU
+
+static struct task_struct *freq_up_task;
+
+static int touch_freq_up_task(void *data)
+{
+	struct cpufreq_policy *policy;
+
+	while (1) {
+		policy = cpufreq_cpu_get(0);
+		dbs_freq_increase(policy, policy->max);
+		cpufreq_cpu_put(policy);
+		/* mt_cpufreq_set_ramp_down_count_const(0, 100); */
+		pr_debug("@%s():%d\n", __func__, __LINE__);
+
+		set_current_state(TASK_INTERRUPTIBLE);
+		schedule();
+
+		if (kthread_should_stop())
+			break;
+	}
+
+	return 0;
+}
+
 static void dbs_input_event(struct input_handle *handle, unsigned int type,
 			    unsigned int code, int value)
 {
@@ -1527,9 +1628,18 @@ static void dbs_input_event(struct input_handle *handle, unsigned int type,
 		/* { */
 		unsigned int online_cpus_count = num_online_cpus();
 
-		if (online_cpus_count < hp_tuners->cpu_input_boost_num
-		    && online_cpus_count < hp_tuners->cpu_num_limit)
-			schedule_delayed_work_on(0, &hp_work, 0);
+		pr_debug("@%s():%d, online_cpus_count = %d, cpu_input_boost_num = %d\n", __func__, __LINE__, online_cpus_count, hp_tuners->cpu_input_boost_num);
+
+		if (online_cpus_count < hp_tuners->cpu_input_boost_num && online_cpus_count < hp_tuners->cpu_num_limit) {
+			/* schedule_delayed_work_on(0, &hp_work, 0); */
+			if (hp_wq == NULL)
+				pr_emerg("[power/hotplug] %s():%d, impossible\n", __func__, __LINE__);
+			else
+				queue_delayed_work_on(0, hp_wq, &hp_work, 0);
+		}
+
+		if (online_cpus_count <= hp_tuners->cpu_input_boost_num && online_cpus_count <= hp_tuners->cpu_num_limit)
+			wake_up_process(freq_up_task);
 
 		/* } */
 	}
@@ -1657,6 +1767,7 @@ static int hp_init(struct dbs_data *dbs_data)
 
 #ifdef CONFIG_HOTPLUG_CPU
 	INIT_DEFERRABLE_WORK(&hp_work, hp_work_handler);
+	hp_wq = alloc_workqueue("hp_work_handler", WQ_HIGHPRI, 0);
 	g_next_hp_action = num_online_cpus();
 #endif
 
@@ -1702,6 +1813,13 @@ static int hp_init(struct dbs_data *dbs_data)
 
 static void hp_exit(struct dbs_data *dbs_data)
 {
+/* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< */
+#ifdef CONFIG_HOTPLUG_CPU
+	cancel_delayed_work_sync(&hp_work);
+	if (hp_wq)
+		destroy_workqueue(hp_wq);
+#endif
+/* >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
 	kfree(dbs_data->tuners);
 }
 
@@ -1844,18 +1962,25 @@ struct cpufreq_governor cpufreq_gov_hotplug = {
 
 static int __init cpufreq_gov_dbs_init(void)
 {
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+
+	freq_up_task = kthread_create(touch_freq_up_task, NULL, "touch_freq_up_task");
+
+	if (IS_ERR(freq_up_task))
+		return PTR_ERR(freq_up_task);
+
+	sched_setscheduler_nocheck(freq_up_task, SCHED_FIFO, &param);
+	get_task_struct(freq_up_task);
+
 	return cpufreq_register_governor(&cpufreq_gov_hotplug);
 }
 
 static void __exit cpufreq_gov_dbs_exit(void)
 {
-/* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< */
-#ifdef CONFIG_HOTPLUG_CPU
-	cancel_delayed_work_sync(&hp_work);
-#endif
-/* >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
-
 	cpufreq_unregister_governor(&cpufreq_gov_hotplug);
+
+	kthread_stop(freq_up_task);
+	put_task_struct(freq_up_task);
 }
 
 MODULE_AUTHOR("Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>");

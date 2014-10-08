@@ -44,6 +44,7 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
 	struct hp_dbs_tuners *hp_tuners = dbs_data->tuners;
 	struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
 	struct cpufreq_policy *policy;
+	int freq_avg;
 	unsigned int max_load = 0;
 	unsigned int ignore_nice;
 	unsigned int j;
@@ -135,7 +136,7 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
 		if (dbs_data->cdata->governor == GOV_ONDEMAND
 		    || dbs_data->cdata->governor == GOV_HOTPLUG // <-XXX
 		   ) {
-			int freq_avg = __cpufreq_driver_getavg(policy, j);
+			freq_avg = __cpufreq_driver_getavg(policy, j);
 
 			if (freq_avg <= 0)
 				freq_avg = policy->cur;
@@ -315,6 +316,15 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 
 			cpufreq_register_notifier(cs_ops->notifier_block,
 						  CPUFREQ_TRANSITION_NOTIFIER);
+		// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+		} else if (   (cdata->governor == GOV_HOTPLUG)
+			   && (!policy->governor->initialized)
+			   && (!cpu)
+			   ) {
+			hp_ops = dbs_data->cdata->gov_ops;
+			rc = input_register_handler(hp_ops->input_handler);
+			pr_debug("@%s(CPUFREQ_GOV_POLICY_INIT), rc = %d\n", __func__, rc);
+		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 		}
 
 		if (!have_governor_per_policy())
@@ -323,6 +333,14 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 		return 0;
 
 	case CPUFREQ_GOV_POLICY_EXIT:
+		// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+		if ((dbs_data->cdata->governor == GOV_HOTPLUG) && (!cpu)) {
+			hp_ops = dbs_data->cdata->gov_ops;
+			input_unregister_handler(hp_ops->input_handler);
+			pr_debug("@%s(CPUFREQ_GOV_POLICY_EXIT), rc = %d\n", __func__, rc);
+		}
+		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
 		if (!--dbs_data->usage_count) {
 			sysfs_remove_group(get_governor_parent_kobj(policy),
 					   get_sysfs_attr(dbs_data));
@@ -387,8 +405,8 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 				j_cdbs->prev_cpu_nice =
 					kcpustat_cpu(j).cpustat[CPUTIME_NICE];
 
+			mutex_init(&j_cdbs->timer_mutex);
 			if (j == 0 || dbs_data->cdata->governor != GOV_HOTPLUG) { // <-XXX
-				mutex_init(&j_cdbs->timer_mutex);
 				INIT_DEFERRABLE_WORK(&j_cdbs->work,
 						     dbs_data->cdata->gov_dbs_timer);
 			}
@@ -406,10 +424,6 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 			hp_dbs_info->rate_mult = 1;
 			hp_dbs_info->sample_type = HP_NORMAL_SAMPLE;
 			hp_ops->powersave_bias_init_cpu(cpu);
-			// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-			if (!cpu)
-				rc = input_register_handler(hp_ops->input_handler);
-			// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 		} else {
 			od_dbs_info->rate_mult = 1;
 			od_dbs_info->sample_type = OD_NORMAL_SAMPLE;
@@ -433,10 +447,6 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 
 		mutex_lock(&dbs_data->mutex);
 		mutex_destroy(&cpu_cdbs->timer_mutex);
-		// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-		if ((dbs_data->cdata->governor == GOV_HOTPLUG) && (!cpu))
-			input_unregister_handler(hp_ops->input_handler);
-		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 		mutex_unlock(&dbs_data->mutex);
 
 		break;
