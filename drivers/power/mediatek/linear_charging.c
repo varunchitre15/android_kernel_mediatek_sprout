@@ -192,7 +192,7 @@ PMU_STATUS do_jeita_state_machine(void)
         if( ((g_temp_status == TEMP_POS_45_TO_POS_60) && (BMT_status.temperature >= TEMP_POS_45_THRES_MINUS_X_DEGREE)) ||
             ((g_temp_status == TEMP_POS_0_TO_POS_10 ) && (BMT_status.temperature <= TEMP_POS_10_THRES_PLUS_X_DEGREE ))    ) 
         {
-            pr_debug(BAT_LOG_CRTI, "[BATTERY] Battery Temperature not recovery to normal temperature charging mode yet!!\n\r");     
+            pr_debug("[BATTERY] Battery Temperature not recovery to normal temperature charging mode yet!!\n\r");     
         }
         else
         {
@@ -214,7 +214,7 @@ PMU_STATUS do_jeita_state_machine(void)
         {
 			if (g_temp_status == TEMP_NEG_10_TO_POS_0)
 			{
-            	pr_debug(BAT_LOG_CRTI, "[BATTERY] Battery Temperature between %d and %d !!\n\r", TEMP_POS_0_THRES_PLUS_X_DEGREE, TEMP_POS_10_THRESHOLD); 
+            	pr_debug("[BATTERY] Battery Temperature between %d and %d !!\n\r", TEMP_POS_0_THRES_PLUS_X_DEGREE, TEMP_POS_10_THRESHOLD); 
 			}
 			if (g_temp_status == TEMP_BELOW_NEG_10)
 			{
