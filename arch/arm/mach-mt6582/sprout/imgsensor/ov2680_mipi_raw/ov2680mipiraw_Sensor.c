@@ -899,6 +899,7 @@ static void OV2680MIPI_Sensor_Init(void)
     OV2680_write_cmos_sensor(0x5002, 0x30);
     OV2680_write_cmos_sensor(0x5080, 0x00);
     OV2680_write_cmos_sensor(0x5081, 0x41);
+    OV2680_write_cmos_sensor(0x3021, 0x23);
     OV2680_write_cmos_sensor(0x0100, 0x01);
 
 
