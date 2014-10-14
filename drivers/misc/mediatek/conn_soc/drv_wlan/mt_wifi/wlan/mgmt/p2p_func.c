@@ -2853,7 +2853,8 @@ p2pFuncProcessP2pProbeRsp (
         prProbeRspFrame = (P_WLAN_PROBE_RSP_FRAME_T)((UINT_32)prMgmtTxMsdu->prPacket + MAC_TX_RESERVED_FIELD);
         ASSERT_BREAK((prProbeRspFrame->u2FrameCtrl & MASK_FRAME_TYPE) == MAC_FRAME_PROBE_RSP);
 
-        prProbeRspFrame->u2BeaconInterval = prP2pBssInfo->u2BeaconInterval;
+	if (prP2pBssInfo->u2BeaconInterval)
+            prProbeRspFrame->u2BeaconInterval = prP2pBssInfo->u2BeaconInterval;
 
         //3 Get the importent P2P IE.
         u2ProbeRspHdrLen = (WLAN_MAC_MGMT_HEADER_LEN + TIMESTAMP_FIELD_LEN + BEACON_INTERVAL_FIELD_LEN + CAP_INFO_FIELD_LEN);
