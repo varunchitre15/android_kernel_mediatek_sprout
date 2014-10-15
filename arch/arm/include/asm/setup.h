@@ -174,6 +174,27 @@ struct tag_ddr_dfs_info_data{
    u32 dfs_enable;
 };
 
+/*Para bins information*/
+#define ATAG_TOUCH_CUST_TAG  (0x41000817)
+#define ATAG_SENSORS_TAG     (0x41000818)
+#define ATAG_GPIO_USAGE_TAG  (0x41000819)
+#define ATAG_GPIO_BOOT_TAG   (0x4100081A)
+#define ATAG_LCM_TAG         (0x4100081B)
+#define ATAG_KEYPAD_TAG      (0x4100081C)
+#define ATAG_AUXADC_TAG      (0x4100081D)
+#define ATAG_ACCDET_TAG      (0x4100081E)
+#define ATAG_MSDC0_TAG       (0x4100081F)
+#define ATAG_MSDC1_TAG       (0x41000820)
+#define ATAG_LEDS_TAG        (0x41000821)
+#define ATAG_VIBRATOR_TAG    (0x41000822)
+#define ATAG_BATTERY_TAG     (0x41000823)
+#define ATAG_EINT_TAG        (0x41000824)
+#define ATAG_AUDIOPA_TAG     (0x41000825)
+#define ATAG_MODEL_VERSION_TAG (0x41000826)
+struct tag_model_version_info_data {
+    char model[32];
+    unsigned int version;
+};
 struct tag {
 	struct tag_header hdr;
 	union {
@@ -196,12 +217,13 @@ struct tag {
 		 * DC21285 specific
 		 */
 		struct tag_memclk	memclk;
-                struct tag_boot         boot;
-                struct tag_meta_com     meta_com;
-                struct tag_devinfo_data devinfo_data;
-                tag_dfo_boot     dfo_data;
-                struct tag_mdinfo_data mdinfo_data;
-                struct tag_ddr_dfs_info_data dfs_data;
+		struct tag_boot         boot;
+		struct tag_meta_com     meta_com;
+		struct tag_devinfo_data devinfo_data;
+		tag_dfo_boot     dfo_data;
+		struct tag_mdinfo_data mdinfo_data;
+		struct tag_ddr_dfs_info_data dfs_data;
+		struct tag_model_version_info_data model_version_data;
 	} u;
 };
 

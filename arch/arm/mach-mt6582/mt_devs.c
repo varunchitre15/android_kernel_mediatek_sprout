@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -54,7 +54,8 @@ extern u32 g_devinfo_data[];
 extern u32 g_devinfo_data_size;
 extern void adjust_kernel_cmd_line_setting_for_console(char*, char*);
 unsigned int mtk_get_max_DRAM_size(void);
-
+char g_para_model[32];
+unsigned int g_para_version=0;
 struct {
 	u32 base;
 	u32 size;
@@ -1084,6 +1085,22 @@ static void cmdline_filter(struct tag *cmdline_tag, char *default_cmdline)
 	}
 }
 /*=======================================================================*/
+/* Parse the model version info                         */
+/*=======================================================================*/
+static int __init parse_tag_model_version_fixup(const struct tag *tags)
+{
+    int i;
+
+    for (i=0; i< 32; i++) {
+        g_para_model[i] = tags->u.model_version_data.model[i];
+
+    }
+    g_para_version = tags->u.model_version_data.version;
+    printk(KERN_ALERT "g_para_model %s\n", g_para_model);
+    printk(KERN_ALERT "g_para_version %d\n", g_para_version);
+    return 0;
+}
+/*=======================================================================*/
 /* Parse the framebuffer info						 */
 /*=======================================================================*/
 static int __init parse_tag_videofb_fixup(const struct tag *tags)
@@ -1235,13 +1252,15 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
             printk(KERN_ALERT "md_inf[3]=%d\n",tags->u.mdinfo_data.md_type[3]);
             md_inf_from_meta[0]=tags->u.mdinfo_data.md_type[0];
             md_inf_from_meta[1]=tags->u.mdinfo_data.md_type[1];
-            md_inf_from_meta[2]=tags->u.mdinfo_data.md_type[2]; 
+            md_inf_from_meta[2]=tags->u.mdinfo_data.md_type[2];
             md_inf_from_meta[3]=tags->u.mdinfo_data.md_type[3];
+        } else if (tags->hdr.tag == ATAG_MODEL_VERSION_TAG) {
+            parse_tag_model_version_fixup(tags);
         }
     }
 
     if ((g_boot_mode == META_BOOT) || (g_boot_mode == ADVMETA_BOOT)) {
-        /* 
+        /*
          * Always use default dfo setting in META mode.
          * We can fix abnormal dfo setting this way.
          */
