@@ -17,6 +17,7 @@
 #include <linux/types.h>
 #include <mach/dfo_boot.h>
 #include <mach/mt_devinfo.h>
+#include <mach/gpio_usage_para.h>
 
 #define COMMAND_LINE_SIZE 1024
 
@@ -222,6 +223,7 @@ struct tag {
 		struct tag_devinfo_data devinfo_data;
 		tag_dfo_boot     dfo_data;
 		struct tag_mdinfo_data mdinfo_data;
+		struct _gpio_usage gpio_usage_data;
 		struct tag_ddr_dfs_info_data dfs_data;
 		struct tag_model_version_info_data model_version_data;
 	} u;

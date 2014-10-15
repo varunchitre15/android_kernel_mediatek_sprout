@@ -44,6 +44,7 @@
 #include <linux/aee.h>
 #include <linux/mrdump.h>
 #include <mach/i2c.h>
+#include <cust_gpio_usage.h>
 
 #define SERIALNO_LEN 32
 static char serial_number[SERIALNO_LEN];
@@ -54,6 +55,8 @@ extern u32 g_devinfo_data[];
 extern u32 g_devinfo_data_size;
 extern void adjust_kernel_cmd_line_setting_for_console(char*, char*);
 unsigned int mtk_get_max_DRAM_size(void);
+static struct _gpio_usage g_usage;
+struct _gpio_usage *gpio_usage=NULL;
 char g_para_model[32];
 unsigned int g_para_version=0;
 struct {
@@ -1126,6 +1129,77 @@ static int __init parse_tag_devinfo_data_fixup(const struct tag *tags)
 	return 0;
 }
 
+static int __init parse_tag_gpio_use_data_fixup(const struct tag *tags)
+{
+
+  int gpio_map_len=0;
+  int i;
+  g_usage  = tags->u.gpio_usage_data;
+  gpio_usage = &g_usage;
+
+  gpio_map_len = sizeof(tags->u.gpio_usage_data)/sizeof(int);
+  printk("gu map len=%d,ver=%x \n",gpio_map_len,gpio_usage->version);
+
+  printk( "gu start =(%x,%x)\n",gpio_usage->als_eint_pin,GPIO_ALS_EINT_PIN);
+  printk( "gu end =(%x,%x)\n",gpio_usage->msdc1_dat3_m_msdc1_dat,GPIO_MSDC1_DAT3_M_MSDC1_DAT);
+  /*
+  for(i=0;i<gpio_map_len;i++){
+    printk("fwq gpiouse map %d \n", *ptr);
+    ptr++;
+  }
+*/
+}
+static struct _gpio_usage default_value=
+        {     0xff00,
+   0, 0, 1, 0, 1, 0, 3, 1, 0, 2,
+   0, 1, 3, 6, 0, 0, -1, 3, 0, 1,
+   4, 6, 0, 1, -1, 4, 0, 1, 0, 2,
+   -1, 5, 0, 6, 0, 7, 0, 9, 0, 1,
+   5, 2, 3, 4, 4, -1, 10, 0, 1, 5,
+   0, 5, -1, 0, 11, 0, 1, 3, 2, 0,
+   4, -1, 12, 0, 1, 3, 2, 5, -1, 13,
+   0, 4, 14, 0, 4, 2, 3, 5, 7, 16,
+   0, 17, 0, 2, 0, -1, 17, 0, 2, 0,
+   -1, 18, 0, 18, 0, 19, 0, 4, 1, -1,
+   19, 0, 4, 1, -1, 20, 0, 4, 2, -1,
+   25, 0, 0, 29, 0, 1, 2, 30, 0, 3,
+   1, 2, 31, 0, 1, 2, 32, 0, 1, 2,
+   33, 0, 3, 1, 2, 34, 0, 1, 2, 7,
+   39, 0, 5, 6, 1, 2, 3, 4, 40, 0,
+   6, 1, 2, 3, 4, 5, 41, 0, 6, 5,
+   1, 2, 3, 4, 42, 0, 6, 5, 1, 2,
+   3, 4, 43, 0, 1, 44, 0, 45, 0, 46,
+   0, 47, 0, 2, 1, 3, 7, 74, 0, 1,
+   75, 0, 1, 81, 0, 84, 0, 1, 85, 0,
+   1, 86, 0, 1, 87, 0, 1, 88, 0, 2,
+   1, 89, 0, 2, 1, 108, 0, 1, 2, 3,
+   7, 109, 0, 1, 2, 3, 4, 7, 110, 0,
+   1, 2, 3, 7, 111, 0, 1, 2, 3, 4,
+   7, 124, 0, 1, 125, 0, 1, 126, 0, 1,
+   127, 0, 1, 128, 0, 1, 129, 0, 1
+};
+
+void gpio_usage_set_default(void)
+{
+    int gpio_map_len=0;
+    //int i=0;
+    gpio_usage = &default_value;
+    gpio_map_len = sizeof(default_value)/sizeof(int);
+
+    printk("gu default map len=%d,ver=%x \n",gpio_map_len,gpio_usage->version);
+
+      printk( "gu default start =(%x,%x)\n",gpio_usage->als_eint_pin,GPIO_ALS_EINT_PIN);
+      printk( "gu default end =(%x,%x)\n",gpio_usage->msdc1_dat3_m_msdc1_dat,GPIO_MSDC1_DAT3_M_MSDC1_DAT);
+    /*
+    for(i=0;i<gpio_map_len;i++){
+        printk("fwq gpiouse default %d \n", *ptr);
+        ptr++;
+    }
+
+    */
+
+}
+
 extern unsigned int mtkfb_parse_dfo_setting(void *dfo_tbl, int num);
 
 static void parse_boot_reason(char** cmdline) /*parse boot reason*/
@@ -1235,6 +1309,11 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
         }else if (tags->hdr.tag == ATAG_DEVINFO_DATA){
             parse_tag_devinfo_data_fixup(tags);
         }
+        else if(tags->hdr.tag == ATAG_GPIO_USAGE_TAG){
+            printk( "fwq gpio use para\n");
+            parse_tag_gpio_use_data_fixup(tags);
+
+        }
         else if(tags->hdr.tag == ATAG_META_COM)
         {
           g_meta_com_type = tags->u.meta_com.meta_com_type;
@@ -1259,6 +1338,11 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
         }
     }
 
+    if(NULL == gpio_usage)
+    {
+            //set default value
+            gpio_usage_set_default();
+    }
     if ((g_boot_mode == META_BOOT) || (g_boot_mode == ADVMETA_BOOT)) {
         /*
          * Always use default dfo setting in META mode.
