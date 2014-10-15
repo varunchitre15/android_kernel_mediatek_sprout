@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -63,6 +63,12 @@
 // ---------------------------------------------------------------------------
 
 static LCM_UTIL_FUNCS lcm_util ;
+static struct LCM_setting_table *para_init_table = NULL;
+static unsigned int para_init_size = 0;
+static LCM_PARAMS *para_params = NULL;
+
+static unsigned int lcm_driver_id = 0x0;
+static unsigned int lcm_module_id = 0x0;
 
 #define SET_RESET_PIN(v)    					(lcm_util.set_reset_pin((v)))
 
@@ -377,9 +383,43 @@ static void init_lcm_registers(void)
 
 }
 
+
+static void push_table(struct LCM_setting_table *table, unsigned int count, unsigned char force_update)
+{
+    unsigned int i;
+
+    for(i = 0; i < count; i++) {
+
+        unsigned cmd;
+        cmd = table[i].cmd;
+
+        switch (cmd) {
+
+            case REGFLAG_DELAY :
+                MDELAY(table[i].count);
+                break;
+
+            case REGFLAG_END_OF_TABLE :
+                break;
+
+            default:
+                dsi_set_cmdq_V2(cmd, table[i].count, table[i].para_list, force_update);
+           }
+    }
+
+}
+
+
 // ---------------------------------------------------------------------------
 //  LCM Driver Implementations
 // ---------------------------------------------------------------------------
+
+static void lcm_get_id(unsigned int* driver_id, unsigned int* module_id)
+{
+    *driver_id = lcm_driver_id;
+    *module_id = lcm_module_id;
+}
+
 
 static void lcm_set_util_funcs(const LCM_UTIL_FUNCS *util)
 {
@@ -387,11 +427,24 @@ static void lcm_set_util_funcs(const LCM_UTIL_FUNCS *util)
 }
 
 
+static void lcm_set_params(struct LCM_setting_table *init_table, unsigned int init_size, LCM_PARAMS *params)
+{
+    para_init_table = init_table;
+    para_init_size = init_size;
+    para_params = params;
+}
+
+
 static void lcm_get_params(LCM_PARAMS *params)
 {
-
 		memset(params, 0, sizeof(LCM_PARAMS));
 	
+    if (para_params != NULL)
+    {
+        memcpy(params, para_params, sizeof(LCM_PARAMS));
+    }
+    else
+    {
 		params->type   = LCM_TYPE_DSI;
 
 		params->width  = FRAME_WIDTH;
@@ -439,12 +492,15 @@ static void lcm_get_params(LCM_PARAMS *params)
 		params->dsi.fbk_div =7;    // fref=26MHz, fvco=fref*(fbk_div+1)*2/(div1_real*div2_real)	
 #endif
 		//params->dsi.compatibility_for_nvk = 1;		// this parameter would be set to 1 if DriverIC is NTK's and when force match DSI clock for NTK's
-
+    }
 }
 
 
 static void lcm_init(void)
 {
+    int i, j;
+    int size;
+
     SET_RESET_PIN(1);
     MDELAY(20);
     SET_RESET_PIN(0);
@@ -452,8 +508,14 @@ static void lcm_init(void)
     SET_RESET_PIN(1);
     MDELAY(120);
 
-	init_lcm_registers();
-
+    if (para_init_table != NULL)
+    {
+        push_table(para_init_table, para_init_size, 1);
+    }
+    else
+    {
+        init_lcm_registers();
+    }
 }
 
 
@@ -559,21 +621,22 @@ static unsigned int lcm_compare_id(void)
 	id = buffer[0];
 	//id_low = buffer[1];
 	//id = (id_high<<8) | id_low;
-	
+
+	lcm_driver_id = id;
+	// TBD
+	lcm_module_id = 0x0;
+
 	#ifdef BUILD_LK
 
 		printf("ILI9806 uboot %s \n", __func__);
 		printf("%s id = 0x%08x \n", __func__, id);
 
 	#else
-		printk("ILI9806 kernel %s \n", __func__);
-		printk("%s id = 0x%08x \n", __func__, id);
-
+	    pr_debug("ILI9806 kernel %s \n", __func__);
+	    pr_debug("%s id = 0x%08x \n", __func__, id);
 	#endif
 
-
 	return (LCM_ID_HX8379 == id)?1:0;
-
 }
 
 // zhoulidong  add for lcm detect (start)
@@ -588,28 +651,28 @@ static unsigned int rgk_lcm_compare_id(void)
     res = IMM_GetOneChannelValue(AUXADC_LCM_VOLTAGE_CHANNEL,data,&rawdata);
     if(res < 0)
 
-    { 
+    {
 	#ifdef BUILD_LK
 	printf("[adc_uboot]: get data error\n");
 	#endif
 	return 0;
-		   
+
     }
 #endif
     lcm_vol = data[0]*1000+data[1]*10;
 
-	
+
     #ifdef BUILD_LK
     printf("@@@@@@@[adc_uboot]: lcm_vol= %d , file : %s, line : %d\n",lcm_vol, __FILE__, __LINE__);
     #endif
-	
+
     if (lcm_vol>=MIN_VOLTAGE &&lcm_vol <= MAX_VOLTAGE &&lcm_compare_id())
     {
 	return 1;
     }
 
     return 0;
-	
+
 }
 // zhoulidong add for eds(start)
 static unsigned int lcm_esd_check(void)
@@ -617,8 +680,8 @@ static unsigned int lcm_esd_check(void)
 	#ifdef BUILD_LK
 		//printf("lcm_esd_check()\n");
 	#else
-		//printk("lcm_esd_check()\n");
-	#endif 
+	    //pr_debug("lcm_esd_check()\n");
+	#endif
  #ifndef BUILD_LK
 	char  buffer[3];
 	int   array[4];
@@ -638,17 +701,17 @@ static unsigned int lcm_esd_check(void)
 		//#ifdef BUILD_LK
 		//printf("%s %d\n FALSE", __func__, __LINE__);
 		//#else
-		//printk("%s %d\n FALSE", __func__, __LINE__);
+		    //pr_debug("%s %d\n FALSE", __func__, __LINE__);
 		//#endif
 		return FALSE;
 	}
 	else
-	{	
+	{
 		//#ifdef BUILD_LK
 		//printf("%s %d\n FALSE", __func__, __LINE__);
 		//#else
-		//printk("%s %d\n FALSE", __func__, __LINE__);
-		//#endif		 
+		    //pr_debug("%s %d\n FALSE", __func__, __LINE__);
+		//#endif
 		return TRUE;
 	}
  #endif
@@ -657,22 +720,24 @@ static unsigned int lcm_esd_check(void)
 
 static unsigned int lcm_esd_recover(void)
 {
-	
+
 	#ifdef BUILD_LK
 		printf("lcm_esd_recover()\n");
 	#else
-		printk("lcm_esd_recover()\n");
-	#endif	
-	
-	lcm_init();	
+	    pr_debug("lcm_esd_recover()\n");
+	#endif
+
+	lcm_init();
 
 	return TRUE;
 }
 // zhoulidong add for eds(end)
-LCM_DRIVER hx8379a_dsi_vdo_azet_ips_lcm_drv = 
+LCM_DRIVER hx8379a_dsi_vdo_azet_ips_lcm_drv =
 {
-    	.name			= "hx8379a_dsi_vdo_azet_ips",
+	.name			= "hx8379a_dsi_vdo_azet_ips",
 	.set_util_funcs = lcm_set_util_funcs,
+	.set_params     = lcm_set_params,
+	.get_id         = lcm_get_id,
 	.get_params     = lcm_get_params,
 	.init           = lcm_init,
 	.suspend        = lcm_suspend,
@@ -681,7 +746,6 @@ LCM_DRIVER hx8379a_dsi_vdo_azet_ips_lcm_drv =
 //	.esd_check = lcm_esd_check,
 //	.esd_recover = lcm_esd_recover,
 #if (LCM_DSI_CMD_MODE)
-
     .update         = lcm_update,
 #endif
 };

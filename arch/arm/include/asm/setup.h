@@ -169,6 +169,15 @@ struct tag_mdinfo_data{
 };
 
 
+#define ATAG_LCMINFO_DATA         (0x41000807)
+struct tag_lcminfo_data{
+   u32 lcm_index;
+};
+
+
+struct tag_para_lcm_data{
+    u32 version;
+};
 
 #define ATAG_DDR_DFSINFO_DATA 0x41000700
 struct tag_ddr_dfs_info_data{
@@ -230,6 +239,8 @@ struct tag {
 		tag_dfo_boot     dfo_data;
 		struct tag_mdinfo_data mdinfo_data;
 		struct _gpio_usage gpio_usage_data;
+		struct tag_lcminfo_data lcminfo_data;
+		struct tag_para_lcm_data lcm_data;
 		struct tag_ddr_dfs_info_data dfs_data;
 		struct tag_eint_data eint_data;
 		struct tag_model_version_info_data model_version_data;

@@ -1204,6 +1204,9 @@ void gpio_usage_set_default(void)
 
 extern unsigned int mtkfb_parse_dfo_setting(void *dfo_tbl, int num);
 
+extern int parse_tag_lcminfo_data_fixup(unsigned int index);
+extern int parse_tag_lcm_fixup(void *buf, unsigned int size);
+
 static void parse_boot_reason(char** cmdline) /*parse boot reason*/
 {
     char *br_ptr = NULL, *ptr = NULL;
@@ -1316,6 +1319,12 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
             printk( "fwq gpio use para\n");
             parse_tag_gpio_use_data_fixup(tags);
 
+        }
+        else if (tags->hdr.tag == ATAG_LCMINFO_DATA){
+            parse_tag_lcminfo_data_fixup(tags->u.lcminfo_data.lcm_index);
+        }
+        else if (tags->hdr.tag == ATAG_LCM_TAG){
+            parse_tag_lcm_fixup(&(tags->u.lcm_data), ((tags->hdr.size << 2)-sizeof(struct tag_header)));
         }
         else if(tags->hdr.tag == ATAG_META_COM)
         {

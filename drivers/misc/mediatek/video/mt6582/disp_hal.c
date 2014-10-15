@@ -42,6 +42,10 @@ static LCD_IF_ID ctrl_if = LCD_IF_PARALLEL_0;
 static LCM_PARAMS s_lcm_params= {0};
 static BOOL disp_use_mmu;
 LCM_PARAMS *lcm_params = &s_lcm_params;
+
+static BOOL isLCMParaLoaded                     = FALSE;
+
+
 int disp_module_clock_on(DISP_MODULE_ENUM module, char* caller_name);
 int disp_module_clock_off(DISP_MODULE_ENUM module, char* caller_name);
 
@@ -643,14 +647,125 @@ int disphal_prepare_suspend(void)
     return 0;
 }
 
+
+unsigned char lcm_buf[10 * 1024];  // preserve 10K buffer
+unsigned int lcm_size = 0;
+unsigned int lcm_initialization_size_ssb;
+struct LCM_setting_table lcm_initialization_ssb[MAX_INIT_CNT];
+LCM_PARAMS lcm_params_ssb;
+unsigned int lcm_index_ssb = 0xFF;
+
+
+int parse_tag_lcm_fixup(void *buf, unsigned int size)
+{
+    printk("[LCM] read buf = 0x%x, %d\n", (unsigned int)buf, size);
+    if (size > 10 * 1024)
+    {
+        pr_err("%s size is overflow(%d)!! \n", "lcm.bin", size);
+        return -1;
+    }
+
+    memcpy(lcm_buf, (unsigned char*)buf, size);
+    lcm_size = size;
+
+    return 0;
+}
+
+
+int parse_tag_lcminfo_data_fixup(unsigned int index)
+{
+    printk("[LCM] read index = %d\n", index);
+
+    if (0xFF != index)
+    {
+        lcm_index_ssb = index;
+    }
+
+    return 0;
+}
+
+
+int disp_drv_read_para(unsigned char *buf, unsigned int* list, unsigned int* count, unsigned int driver_id[], unsigned int module_id[])
+{
+    int result = 0;
+    int index=0,offset,len,inaddr;
+    int i, j, curr;
+    unsigned int size = 0;
+    struct lcm_para_header *pfile_header;
+    struct lcm_custom_header *pcustom_header;
+
+
+    if (NULL == buf)
+    {
+        return -1;
+    }
+
+    pfile_header = (struct lcm_para_header *)buf;
+
+    *list = pfile_header->list;
+    *count = pfile_header->count;
+    if (pfile_header->count > MAX_LCM_CNT)
+    {
+        pr_err("lcm count is overflow(%d)!! \n", pfile_header->count);
+        return -1;
+    }
+
+    for(i=0; i<pfile_header->count; i++)
+    {
+        pcustom_header = &(pfile_header->header_list[i]);
+        driver_id[i] = pcustom_header->driver_id;
+        module_id[i] = pcustom_header->module_id;
+    }
+
+    return 0;
+}
+
+
 const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm_index)
 {
+    int result = 0;
+    unsigned int list = 0;
+    unsigned int count = 0;
+    unsigned int size = 0;
+    unsigned char* buf = NULL;
+    unsigned int driver_id[MAX_LCM_CNT];
+    unsigned int module_id[MAX_LCM_CNT];
+
     LCM_DRIVER *lcm = NULL;
     bool isLCMFound = false;
+
+
     printk("[LCM Auto Detect], we have %d lcm drivers built in\n", lcm_count);
     printk("[LCM Auto Detect], try to find driver for [%s]\n", 
         (lcm_name==NULL)?"unknown":lcm_name);
 
+    if (FALSE == isLCMParaLoaded)
+    {
+        if (0 != lcm_size)
+        {
+            size = lcm_size;
+            buf = lcm_buf;
+
+            printk("%s read_para_size() is 0x%x, %d\n", "lcm.bin", (unsigned int)buf, size);
+
+            memset(driver_id, 0x0, sizeof(unsigned int)*MAX_LCM_CNT);
+            memset(module_id, 0x0, sizeof(unsigned int)*MAX_LCM_CNT);
+            result = disp_drv_read_para(buf, &list, &count, driver_id, module_id);
+            if (result < 0)
+            {
+                pr_err("%s read_para() is failed! \n", "lcm.bin");
+                ASSERT(0);
+            }
+        }
+        else
+        {
+            pr_warn("%s does not exist. \n", "lcm.bin");
+        }
+
+        isLCMParaLoaded = TRUE;
+    }
+
+#if 0
     if(lcm_count == 1)
     {
         // we need to verify whether the lcm is connected
@@ -663,10 +778,20 @@ const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm
         goto done;
     }
     else
+#endif
     {
         int i;
         for(i = 0;i < lcm_count;i++)
         {
+            // index search for speeding up
+            if ((0 == result) && (0 != size))
+            {
+                if ((list & (0x1 << i)) == 0)
+                {
+                    continue;
+                }
+            }
+
             lcm = lcm_driver_list[i];
             printk("[LCM Auto Detect] [%d] - [%s]\t", i, (lcm->name==NULL)?"unknown":lcm->name);
             lcm->set_util_funcs(&lcm_utils);
@@ -717,6 +842,74 @@ const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm
 done:
     if (isLCMFound)
     {
+        int ret = 0;
+        int i, j, index = 0;
+        int curr;
+        int offset,len,inaddr;
+        BOOL para_match = FALSE;
+        unsigned int data_array[3];
+        UINT8 buffer[4];
+        unsigned int lcm_driver_id = 0, lcm_module_id = 0;
+        struct lcm_para_header *pfile_header;
+        struct lcm_custom_header *pcustom_header;
+
+
+        para_match = TRUE;
+        index = lcm_index_ssb;
+        printk("[LCM] para update =%d,%d,%d\n", index, count, size);
+        if ((TRUE == para_match) && (index < count) && (0 != size))
+        {
+            printk("[LCM] para matched!! index=%d\n", index);
+
+            pfile_header = (struct lcm_para_header *)buf;
+            pcustom_header = &(pfile_header->header_list[index]);
+
+            curr = pcustom_header->node_list[0].offset;
+            len = pcustom_header->node_list[0].len;
+
+            // load first initial para
+            i = 0;
+            offset = curr + len;
+            while (curr < offset)
+            {
+                lcm_initialization_ssb[i].cmd = buf[curr];
+                curr++;
+                lcm_initialization_ssb[i].count = buf[curr];
+                curr++;
+
+                if (REGFLAG_DELAY != lcm_initialization_ssb[i].cmd)
+                {
+                    for (j=0; j<lcm_initialization_ssb[i].count; j++)
+                    {
+                        lcm_initialization_ssb[i].para_list[j] = buf[curr+j];
+                    }
+                    curr += j;
+                }
+                i++;
+
+                if ((i == MAX_INIT_CNT) && (curr < offset))
+                {
+                    pr_err("lcm initialization ssb out of range error!\n");
+                }
+            }
+            lcm_initialization_size_ssb = i;
+
+            // load second initial para
+            curr = pcustom_header->node_list[1].offset;
+            len = pcustom_header->node_list[1].len;
+            memcpy(&lcm_params_ssb, buf+curr, len);
+
+            // update lcm initial table & parameter
+            if (NULL != lcm->set_params)
+            {
+                lcm->set_params(&(lcm_initialization_ssb[0]), lcm_initialization_size_ssb, &lcm_params_ssb);
+            }
+            else
+            {
+                pr_warn("[LCM] set para failed. \n");
+            }
+        }
+
         memset((void*)&s_lcm_params, 0, sizeof(LCM_PARAMS));
         lcm->get_params(&s_lcm_params);
         return lcm;

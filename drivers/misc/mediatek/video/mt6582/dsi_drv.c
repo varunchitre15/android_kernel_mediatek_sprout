@@ -2584,7 +2584,7 @@ void DSI_set_cmdq_V2(unsigned cmd, unsigned char count, unsigned char *para_list
         DSI_VM_CMD_CON_REG vm_cmdq;
         OUTREG32(&vm_cmdq, AS_UINT32(&DSI_REG->DSI_VM_CMD_CON));
         printk("set cmdq in VDO mode in set_cmdq_V2\n");
-        if (cmd < 0xB0)
+
         {
             if (count > 1)
             {
@@ -2623,44 +2623,6 @@ void DSI_set_cmdq_V2(unsigned cmd, unsigned char count, unsigned char *para_list
                 OUTREG32(&DSI_REG->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
             }
         }
-        else{
-            if (count > 1)
-            {
-                vm_cmdq.LONG_PKT = 1;
-                vm_cmdq.CM_DATA_ID = DSI_GERNERIC_LONG_PACKET_ID;
-                vm_cmdq.CM_DATA_0 = count+1;
-                OUTREG32(&DSI_REG->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
-
-                goto_addr = (UINT32)(&DSI_VM_CMD_REG->data[0].byte0);
-                mask_para = (0xFF<<((goto_addr&0x3)*8));
-                set_para = (cmd<<((goto_addr&0x3)*8));
-                MASKREG32(goto_addr&(~0x3), mask_para, set_para);
-
-                for(i=0; i<count; i++)
-                {
-                    goto_addr = (UINT32)(&DSI_VM_CMD_REG->data[0].byte1) + i;
-                    mask_para = (0xFF<<((goto_addr&0x3)*8));
-                    set_para = (para_list[i]<<((goto_addr&0x3)*8));
-                    MASKREG32(goto_addr&(~0x3), mask_para, set_para);
-                }
-            }
-            else
-            {
-                vm_cmdq.LONG_PKT = 0;
-                vm_cmdq.CM_DATA_0 = cmd;
-                if (count)
-                {
-                    vm_cmdq.CM_DATA_ID = DSI_GERNERIC_SHORT_PACKET_ID_2;
-                    vm_cmdq.CM_DATA_1 = para_list[0];
-                }
-                else
-                {
-                    vm_cmdq.CM_DATA_ID = DSI_GERNERIC_SHORT_PACKET_ID_1;
-                    vm_cmdq.CM_DATA_1 = 0;
-                }
-                OUTREG32(&DSI_REG->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
-            }
-        }
         //start DSI VM CMDQ
         if(force_update){
             MMProfileLogEx(MTKFB_MMP_Events.DSICmd, MMProfileFlagStart, *(unsigned int*)(&DSI_VM_CMD_REG->data[0]), *(unsigned int*)(&DSI_VM_CMD_REG->data[1]));
@@ -2686,7 +2648,7 @@ void DSI_set_cmdq_V2(unsigned cmd, unsigned char count, unsigned char *para_list
     }
 #endif
     _WaitForEngineNotBusy();
-    if (cmd < 0xB0)
+
     {
         if (count > 1)
         {
@@ -2723,50 +2685,6 @@ void DSI_set_cmdq_V2(unsigned cmd, unsigned char count, unsigned char *para_list
             else
             {
                 t0.Data_ID = DSI_DCS_SHORT_PACKET_ID_0;
-                t0.Data1 = 0;
-            }
-            OUTREG32(&DSI_CMDQ_REG->data[0], AS_UINT32(&t0));
-            OUTREG32(&DSI_REG->DSI_CMDQ_SIZE, 1);
-        }
-    }
-    else
-    {
-        if (count > 1)
-        {
-            t2.CONFG = 2;
-            t2.Data_ID = DSI_GERNERIC_LONG_PACKET_ID;
-            t2.WC16 = count+1;
-
-            OUTREG32(&DSI_CMDQ_REG->data[0], AS_UINT32(&t2));
-
-            goto_addr = (UINT32)(&DSI_CMDQ_REG->data[1].byte0);
-            mask_para = (0xFF<<((goto_addr&0x3)*8));
-            set_para = (cmd<<((goto_addr&0x3)*8));
-            MASKREG32(goto_addr&(~0x3), mask_para, set_para);
-
-            for(i=0; i<count; i++)
-            {
-                goto_addr = (UINT32)(&DSI_CMDQ_REG->data[1].byte1) + i;
-                mask_para = (0xFF<<((goto_addr&0x3)*8));
-                set_para = (para_list[i]<<((goto_addr&0x3)*8));
-                MASKREG32(goto_addr&(~0x3), mask_para, set_para);
-            }
-
-            OUTREG32(&DSI_REG->DSI_CMDQ_SIZE, 2+(count)/4);
-
-        }
-        else
-        {
-            t0.CONFG = 0;
-            t0.Data0 = cmd;
-            if (count)
-            {
-                t0.Data_ID = DSI_GERNERIC_SHORT_PACKET_ID_2;
-                t0.Data1 = para_list[0];
-            }
-            else
-            {
-                t0.Data_ID = DSI_GERNERIC_SHORT_PACKET_ID_1;
                 t0.Data1 = 0;
             }
             OUTREG32(&DSI_CMDQ_REG->data[0], AS_UINT32(&t0));
