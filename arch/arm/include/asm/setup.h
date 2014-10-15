@@ -175,6 +175,12 @@ struct tag_ddr_dfs_info_data{
    u32 dfs_enable;
 };
 
+struct tag_eint_data {
+    char magic[4];
+    u32 count;
+    char payload[1];
+};
+
 /*Para bins information*/
 #define ATAG_TOUCH_CUST_TAG  (0x41000817)
 #define ATAG_SENSORS_TAG     (0x41000818)
@@ -225,6 +231,7 @@ struct tag {
 		struct tag_mdinfo_data mdinfo_data;
 		struct _gpio_usage gpio_usage_data;
 		struct tag_ddr_dfs_info_data dfs_data;
+		struct tag_eint_data eint_data;
 		struct tag_model_version_info_data model_version_data;
 	} u;
 };
