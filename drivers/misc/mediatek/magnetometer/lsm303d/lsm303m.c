@@ -37,6 +37,7 @@
 #include <mach/mt_typedefs.h>
 #include <mach/mt_gpio.h>
 #include <mach/mt_pm_ldo.h>
+#include <mach/sensors_ssb.h>
 
 #define POWER_NONE_MACRO MT65XX_POWER_NONE
 #define SW_CALIBRATION
@@ -67,7 +68,6 @@ static atomic_t dev_open_count;
 
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id lsm303m_i2c_id[] = {{LSM303M_DEV_NAME,0},{}};
-static struct i2c_board_info __initdata i2c_lsm303m={ I2C_BOARD_INFO("lsm303m", 0x3C>>1)};
 /*the adapter id will be available in customization*/
 static int lsm303m_init_flag =-1; // 0<==>OK -1 <==> fail
 static int lsm303m_local_init(void);
@@ -1712,6 +1712,157 @@ static void lsm303m_late_resume(struct early_suspend *h)
     atomic_set(&obj->suspend, 0);
 }
 
+static int lsm303m_m_enable(int en)
+{
+    int value =en;
+    int i;
+    int err;
+    struct lsm303m_i2c_data *obj = obj_i2c_data;
+    read_lock(&lsm303mmid_data.ctrllock);
+    if(value == 1)
+    {
+        MSE_LOG("lsm303m SENSOR_ENABLE");
+        for (i=0; i<3; i++) {
+            err = lsm303m_SetPowerMode( obj->client, 1);
+            if(err ==0)
+                break;
+            }
+        if(i>=3) {
+            MSE_ERR("lsm303m enable error");
+            }
+        lsm303mmid_data.controldata[7] |= SENSOR_MAGNETIC;
+        atomic_set(&m_flag, 1);
+        atomic_set(&open_flag, 1);
+    }
+    else
+    {    MSE_LOG("lsm303m SENSOR_DISENABLE");
+        for (i=0; i<3; i++) {
+            err = lsm303m_SetPowerMode( obj->client, 0);
+            if(err ==0)
+                break;
+            }
+        if(i>=3) {
+            MSE_ERR("lsm303m disable error");
+            }
+        lsm303mmid_data.controldata[7] &= ~SENSOR_MAGNETIC;
+        atomic_set(&m_flag, 0);
+        if(atomic_read(&o_flag) == 0)
+        {
+            atomic_set(&open_flag, 0);
+        }
+    }
+    wake_up(&open_wq);
+    read_unlock(&lsm303mmid_data.ctrllock);
+
+    return 0;
+
+}
+static int lsm303m_m_set_delay(u64 ns)
+{
+    int value= 0;
+    int sample_delay=0;
+    int err;
+    struct lsm303m_i2c_data *obj = obj_i2c_data;
+    value = (int)ns/1000/1000;
+
+    MSE_LOG("Set delay parameter %d!\n", value);
+    if(value <= 5)
+    {
+        sample_delay = LSM303M_MAG_ODR50;
+    }
+    else if(value <= 10)
+    {
+        sample_delay = LSM303M_MAG_ODR50;
+    }
+    else
+    {
+        sample_delay = LSM303M_MAG_ODR50;
+    }
+
+    err = lsm303m_SetBWRate(obj->client, sample_delay);
+    if(err != LSM303M_SUCCESS ) //0x2C->BW=100Hz
+    {
+        MSE_ERR("Set delay parameter error!\n");
+    }
+
+    if(value <= 20)
+    {
+        value = 20;
+    }
+
+    lsm303mmid_data.controldata[0] = value;  // Loop Delay
+
+    return 0;
+}
+static int lsm303m_m_open_report_data(int open)
+{
+    return 0;
+}
+
+static int lsm303m_o_enable(int en)
+{
+    int value =en;
+    int i;
+    int err;
+    struct lsm303m_i2c_data *obj = obj_i2c_data;
+
+    read_lock(&lsm303mmid_data.ctrllock);
+    if(value == 1)
+    {
+        for (i=0; i<10; i++) {
+            err = lsm303m_SetPowerMode( obj->client, 1);
+            if(err ==0)
+                break;
+            }
+        if(i>=10) {
+            MSE_ERR("lsm303m orientation enable error");
+            }
+        lsm303mmid_data.controldata[7] |= SENSOR_ORIENTATION;
+        atomic_set(&o_flag, 1);
+        atomic_set(&open_flag, 1);
+    }
+    else
+    {
+        for (i=0; i<10; i++) {
+            err = lsm303m_SetPowerMode( obj->client, 0);
+            if(err ==0)
+                break;
+            }
+        if(i>=10) {
+            MSE_ERR("lsm303m orientation disable error");
+            }
+        lsm303mmid_data.controldata[7] &= ~SENSOR_ORIENTATION;
+        atomic_set(&o_flag, 0);
+        if(atomic_read(&m_flag) == 0)
+        {
+            atomic_set(&open_flag, 0);
+        }
+    }
+    wake_up(&open_wq);
+    read_unlock(&lsm303mmid_data.ctrllock);
+
+    return 0;
+}
+
+static int lsm303m_o_set_delay(u64 ns)
+{
+    int value=0;
+    int sample_delay=0;
+    value = (int)ns/1000/1000;
+    MSE_LOG("***orientation SENSOR_DELAY****");
+    if(value <= 20)
+    {
+        sample_delay = 20;
+    }
+
+    lsm303mmid_data.controldata[0] = sample_delay;    // Loop Delay
+
+    return 0;
+}
+static int lsm303m_o_open_report_data(int open)
+{
+    return 0;
+}
 
 
 /*----------------------------------------------------------------------------*/
@@ -1723,6 +1874,8 @@ static int lsm303m_i2c_probe(struct i2c_client *client, const struct i2c_device_
         struct lsm303m_i2c_data *data;
         int err = 0;
         struct mag_drv_obj sobj_m, sobj_o;
+        struct mag_control_path ctl={0};
+        struct mag_data_path mag_data={0};
 
         MSE_FUN(f);
 
@@ -1788,6 +1941,31 @@ static int lsm303m_i2c_probe(struct i2c_client *client, const struct i2c_device_
         if((err = mag_attach(ID_M_V_ORIENTATION, &sobj_o)))
         {
             MSE_ERR("attach fail = %d\n", err);
+            goto exit_kfree;
+        }
+
+        ctl.m_enable = lsm303m_m_enable;
+        ctl.m_set_delay  = lsm303m_m_set_delay;
+        ctl.m_open_report_data = lsm303m_m_open_report_data;
+        ctl.o_enable = lsm303m_o_enable;
+        ctl.o_set_delay  = lsm303m_o_set_delay;
+        ctl.o_open_report_data = lsm303m_o_open_report_data;
+        ctl.is_report_input_direct = false;
+
+        err = mag_register_control_path(&ctl);
+        if(err)
+        {
+            MAG_ERR("register mag control path err\n");
+            goto exit_kfree;
+        }
+
+        mag_data.div_m = CONVERT_M_DIV;
+        mag_data.div_o = CONVERT_O_DIV;
+
+        err = mag_register_data_path(&mag_data);
+        if(err)
+        {
+            MAG_ERR("register data control path err\n");
             goto exit_kfree;
         }
 
@@ -1868,12 +2046,29 @@ static int    lsm303m_local_init(void)
     return 0;
 }
 
+static int update_mag_data(void)
+{
+    struct mag_hw_ssb *lsm303d_mag_data;
+    const char *name = "lsm303d";
+    int err = 0;
 
+    if ((lsm303d_mag_data = find_mag_data(name))) {
+        lsm303d_get_cust_mag_hw()->i2c_addr[0]  = lsm303d_mag_data->i2c_addr;
+        lsm303d_get_cust_mag_hw()->i2c_num   = lsm303d_mag_data->i2c_num;
+        lsm303d_get_cust_mag_hw()->direction = lsm303d_mag_data->direction;
+        MAG_LOG("[%s]lsm303d success update addr=0x%x,i2c_num=%d,direction=%d\n",
+        __func__,lsm303d_mag_data->i2c_addr,lsm303d_mag_data->i2c_num,lsm303d_mag_data->direction);
+    }
+    return err;
+}
 static int __init lsm303m_init(void)
 {
 
-    struct mag_hw *hw = lsm303d_get_cust_mag_hw();
+    struct mag_hw *hw = NULL;
+    update_mag_data();
+    hw = lsm303d_get_cust_mag_hw();
     MSE_LOG("%s: i2c_number=%d\n", __func__,hw->i2c_num);
+    struct i2c_board_info i2c_lsm303m={ I2C_BOARD_INFO("lsm303m", hw->i2c_num)};
     i2c_register_board_info(hw->i2c_num, &i2c_lsm303m, 1);
     mag_driver_add(&lsm303m_init_info);
     return 0;

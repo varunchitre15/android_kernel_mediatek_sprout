@@ -40,6 +40,7 @@
 #include <mach/mt_boot.h>
 #include <gyroscope.h>
 #include <linux/batch.h>
+#include <mach/sensors_ssb.h>
 
 #define POWER_NONE_MACRO MT65XX_POWER_NONE
 
@@ -60,7 +61,6 @@
 #define L3GD20_DEV_NAME        "L3GD20"
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id l3gd20_i2c_id[] = {{L3GD20_DEV_NAME,0},{}};
-static struct i2c_board_info __initdata i2c_l3gd20={ I2C_BOARD_INFO(L3GD20_DEV_NAME, (L3GD20_I2C_SLAVE_ADDR>>1))};
 
 
 /*----------------------------------------------------------------------------*/
@@ -1461,11 +1461,28 @@ static int l3gd20_local_init(void)
     }
     return 0;
 }
+static int update_gyro_data(void)
+{
+    struct gyro_hw_ssb *l3gd20_gyro_data =NULL;
+    const char *name = "l3gd20";
+    int err = 0;
 
+    if ((l3gd20_gyro_data = find_gyro_data(name))) {
+        l3gd20_get_cust_gyro_hw()->addr  = l3gd20_gyro_data->i2c_addr;
+        l3gd20_get_cust_gyro_hw()->i2c_num   = l3gd20_gyro_data->i2c_num;
+        l3gd20_get_cust_gyro_hw()->direction = l3gd20_gyro_data->direction;
+        l3gd20_get_cust_gyro_hw()->firlen    = l3gd20_gyro_data->firlen;
+        GYRO_LOG("[%s]l3gd20 success update addr=0x%x,i2c_num=%d,direction=%d\n",
+        __func__,l3gd20_gyro_data->i2c_addr,l3gd20_gyro_data->i2c_num,l3gd20_gyro_data->direction);
+    }
+    return err;
+}
 static int __init l3gd20_init(void)
 {
-    struct gyro_hw *hw = l3gd20_get_cust_gyro_hw();
-    GYRO_LOG("%s: i2c_number=%d\n", __func__,hw->i2c_num);
+    struct gyro_hw *hw = NULL;
+    update_gyro_data();
+    hw = l3gd20_get_cust_gyro_hw();
+    struct i2c_board_info i2c_l3gd20={ I2C_BOARD_INFO(L3GD20_DEV_NAME, hw->addr)};
     i2c_register_board_info(hw->i2c_num, &i2c_l3gd20, 1);
     gyro_driver_add(&l3gd20_init_info);
 

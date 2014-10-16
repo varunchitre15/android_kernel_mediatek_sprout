@@ -41,6 +41,7 @@
 #include <linux/sched.h>
 #include <alsps.h>
 #include <linux/batch.h>
+#include <mach/sensors_ssb.h>
 /******************************************************************************
  * configuration
 *******************************************************************************/
@@ -85,7 +86,6 @@ static int cm36283_i2c_resume(struct i2c_client *client);
 
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id cm36283_i2c_id[] = {{CM36283_DEV_NAME,0},{}};
-static struct i2c_board_info __initdata i2c_cm36283={ I2C_BOARD_INFO(CM36283_DEV_NAME, 0x60)};
 static unsigned long long int_top_time = 0;
 /*----------------------------------------------------------------------------*/
 extern struct alsps_hw* cm36283_get_cust_alsps_hw(void);
@@ -1997,11 +1997,35 @@ static int  cm36283_local_init(void)
     return 0;
 }
 
+static int update_alsps_data(void)
+{
+    struct alsps_hw_ssb *cm36283_alsps_data = NULL;
+    int err ,i=0;
+    const char *name = "cm36283";
+
+
+    if ((cm36283_alsps_data = find_alsps_data(name))) {
+        cm36283_get_cust_alsps_hw()->i2c_addr[0]      = cm36283_alsps_data->i2c_addr[0];
+        cm36283_get_cust_alsps_hw()->i2c_num           = cm36283_alsps_data->i2c_num;
+        cm36283_get_cust_alsps_hw()->ps_threshold_high      = cm36283_alsps_data->ps_threshold_high;
+        cm36283_get_cust_alsps_hw()->ps_threshold_low    = cm36283_alsps_data->ps_threshold_low;
+
+        for (i=0; i<15; i++)
+            cm36283_get_cust_alsps_hw()->als_level[i] = cm36283_alsps_data->als_level[i];
+        for (i=0; i<16; i++)
+            cm36283_get_cust_alsps_hw()->als_value[i] = cm36283_alsps_data->als_value[i];
+        APS_LOG("[%s]cm36283 success update addr=0x%x,i2c_num=%d,threshold_high=%d,threshold_low=%d\n",
+        __func__,cm36283_alsps_data->i2c_addr[0],cm36283_alsps_data->i2c_num,cm36283_alsps_data->ps_threshold_high,cm36283_alsps_data->ps_threshold_low);
+    }
+    return 0;
+}
 static int __init cm36283_init(void)
 {
+    struct alsps_hw *hw = NULL;
     //APS_FUN();
-    struct alsps_hw *hw = cm36283_get_cust_alsps_hw();
-    APS_LOG("%s: i2c_number=%d, i2c_addr: 0x%x\n", __func__, hw->i2c_num, hw->i2c_addr[0]);
+    update_alsps_data();
+    hw = cm36283_get_cust_alsps_hw();
+    struct i2c_board_info i2c_cm36283={ I2C_BOARD_INFO(CM36283_DEV_NAME, hw->i2c_addr[0])};
     i2c_register_board_info(hw->i2c_num, &i2c_cm36283, 1);
     alsps_driver_add(&cm36283_init_info);
     return 0;

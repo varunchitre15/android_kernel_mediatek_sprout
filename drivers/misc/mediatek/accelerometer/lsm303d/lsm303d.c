@@ -36,6 +36,7 @@
 #include <mach/mt_typedefs.h>
 #include <mach/mt_gpio.h>
 #include <mach/mt_pm_ldo.h>
+#include <mach/sensors_ssb.h>
 
 #define POWER_NONE_MACRO MT65XX_POWER_NONE
 extern struct acc_hw* lsm303d_get_cust_acc_hw(void);
@@ -58,7 +59,6 @@ extern struct acc_hw* lsm303d_get_cust_acc_hw(void);
 #define LSM303D_DEV_NAME        "lsm303d"
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id lsm303d_i2c_id[] = {{LSM303D_DEV_NAME,0},{}};
-static struct i2c_board_info __initdata i2c_lsm303d={ I2C_BOARD_INFO("lsm303d", 0x3C>>1)};
 /*the adapter id will be available in customization*/
 
 /*----------------------------------------------------------------------------*/
@@ -2209,11 +2209,28 @@ static int  lsm303d_acc_local_init(void)
     return 0;
 }
 
+static int update_acc_data(void)
+{
+    struct acc_hw_ssb *lsm303d_acc_data = NULL;
+    const char *name = "lsm303d";
 
+    if ((lsm303d_acc_data = find_acc_data(name))) {
+        lsm303d_get_cust_acc_hw()->i2c_addr  = lsm303d_acc_data->i2c_addr;
+        lsm303d_get_cust_acc_hw()->i2c_num   = lsm303d_acc_data->i2c_num;
+        lsm303d_get_cust_acc_hw()->direction = lsm303d_acc_data->direction;
+        lsm303d_get_cust_acc_hw()->firlen    = lsm303d_acc_data->firlen;
+        GSE_LOG("[%s]lsm303d success update addr=0x%x,i2c_num=%d,direction=%d\n",
+        __func__,lsm303d_acc_data->i2c_addr,lsm303d_acc_data->i2c_num,lsm303d_acc_data->direction);
+    }
+    return 0;
+}
 static int __init lsm303d_init(void)
 {
-    struct acc_hw *hw = lsm303d_get_cust_acc_hw();
+    struct acc_hw *hw = NULL;
     GSE_FUN();
+    update_acc_data();
+    hw = lsm303d_get_cust_acc_hw();
+    struct i2c_board_info i2c_lsm303d={ I2C_BOARD_INFO("lsm303d", hw->i2c_addr)};
     i2c_register_board_info(hw->i2c_num, &i2c_lsm303d, 1);
     acc_driver_add(&lsm303d_acc_init_info);
     return 0;

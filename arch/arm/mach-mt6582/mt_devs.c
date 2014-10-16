@@ -60,6 +60,8 @@ extern u32 g_devinfo_data[];
 extern u32 g_devinfo_data_size;
 extern void adjust_kernel_cmd_line_setting_for_console(char*, char*);
 unsigned int mtk_get_max_DRAM_size(void);
+static struct sensor_tuning_data sensors_data;
+struct sensor_tuning_data *sensors_tuning_data;
 static struct _gpio_usage g_usage;
 struct _gpio_usage *gpio_usage=NULL;
 char g_para_model[32];
@@ -1490,6 +1492,10 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
         }
         else if (tags->hdr.tag == ATAG_LCM_TAG){
             parse_tag_lcm_fixup(&(tags->u.lcm_data), ((tags->hdr.size << 2)-sizeof(struct tag_header)));
+        }
+        else if (tags->hdr.tag == ATAG_SENSORS_TAG) {
+            sensors_data = tags->u.sensors_tuning;
+            sensors_tuning_data = &sensors_data;
         }
         else if(tags->hdr.tag == ATAG_META_COM)
         {
