@@ -46,6 +46,7 @@
 
 #include <linux/string.h>
 
+#include <mach/accdet_ssb.h>
 #include <mach/mt_typedefs.h>
 #include <mach/mt_reg_base.h>
 #include <mach/irqs.h>

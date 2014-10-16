@@ -46,6 +46,7 @@
 #include <mach/i2c.h>
 #include <mach/mt_keypad_ssb_cust.h>
 #include <mach/mt_auxadc_ssb_cust.h>
+#include <mach/accdet_ssb.h>
 #include <cust_gpio_usage.h>
 
 #include <mach/mt_touch_ssb_cust.h>
@@ -64,6 +65,8 @@ static struct sensor_tuning_data sensors_data;
 struct sensor_tuning_data *sensors_tuning_data;
 static struct _gpio_usage g_usage;
 struct _gpio_usage *gpio_usage=NULL;
+static struct accdet_ssb_data accdet_data ;
+struct accdet_ssb_data *accdet_tuning_data = NULL;
 char g_para_model[32];
 unsigned int g_para_version=0;
 struct {
@@ -1508,6 +1511,10 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
         } else if (tags->hdr.tag == ATAG_EINT_TAG) {
             parse_tag_eint_ssb_fixup(tags);
             eint_ssb_bin_exist = 1;
+        }
+        else if (tags->hdr.tag == ATAG_ACCDET_TAG){
+            accdet_data = tags->u.accdet_mode_data;
+            accdet_tuning_data = &accdet_data;
         }
 		else if(tags->hdr.tag == ATAG_MDINFO_DATA) {
             printk(KERN_ALERT "Get MD inf from META\n");
