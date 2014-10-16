@@ -19,6 +19,7 @@
 #include <mach/mt_devinfo.h>
 #include <mach/mt_keypad_ssb_cust.h>
 #include <mach/mt_auxadc_ssb_cust.h>
+#include <mach/mt_msdc_ssb_cust.h>
 #include <mach/sensors_ssb.h>
 #include <mach/accdet_ssb.h>
 #include <mach/gpio_usage_para.h>
@@ -253,6 +254,8 @@ struct tag {
 		struct tag_ddr_dfs_info_data dfs_data;
 		struct tag_eint_data eint_data;
 		struct tag_model_version_info_data model_version_data;
+		struct tag_msdc_hw_para msdc0_data;
+		struct tag_msdc_hw_para msdc1_data;
 		struct sensor_tuning_data sensors_tuning;
 	} u;
 };

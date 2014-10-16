@@ -46,6 +46,7 @@
 #include <mach/i2c.h>
 #include <mach/mt_keypad_ssb_cust.h>
 #include <mach/mt_auxadc_ssb_cust.h>
+#include <mach/mt_msdc_ssb_cust.h>
 #include <mach/accdet_ssb.h>
 #include <cust_gpio_usage.h>
 
@@ -76,6 +77,8 @@ struct {
 
 static int use_bl_fb = 0;
 struct tag_para_auxadc_ssb_data auxadc_cust_ssb_data = {0x6789, -1, 13, -1, 0, 0x9876};
+static struct tag_msdc_hw_para    msdc_para_hw_data[2];
+struct tag_msdc_hw_para *msdc_para_hw_datap[2] = { NULL,NULL};
 struct tag_para_touch_ssb_data touch_cust_ssb_data = {
     0x6789,
     {
@@ -1483,6 +1486,12 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
         }
         else if (tags->hdr.tag == ATAG_AUXADC_TAG){
             parse_tag_auxadc_data_fixup(tags);
+        } else if (tags->hdr.tag == ATAG_MSDC0_TAG){
+            msdc_para_hw_data[0] = tags->u.msdc0_data ;
+            msdc_para_hw_datap[0] = &msdc_para_hw_data[0];
+        } else if (tags->hdr.tag == ATAG_MSDC1_TAG){
+            msdc_para_hw_data[1] = tags->u.msdc0_data ;
+            msdc_para_hw_datap[1] = &msdc_para_hw_data[1];
         }
         else if (tags->hdr.tag == ATAG_TOUCH_CUST_TAG){
             parse_tag_touch_data_fixup(tags);
