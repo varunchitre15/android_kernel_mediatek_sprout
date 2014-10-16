@@ -51,6 +51,9 @@
 #include <cust_gpio_usage.h>
 
 #include <mach/mt_touch_ssb_cust.h>
+#include <mach/mt_leds_cust.h>
+#include <mach/mt_vibrator_cust.h>
+
 #define SERIALNO_LEN 32
 static char serial_number[SERIALNO_LEN];
 
@@ -1320,6 +1323,29 @@ void gpio_usage_set_default(void)
 
 }
 
+struct led_cust_data led_cust_data_fromtag = {false,{0},{0}};
+
+static int __init parse_tag_leds_data_fixup(const struct tag *tags)
+{
+    int i = 0;
+
+    for(i = 0; i < 3; i++) {
+        led_cust_data_fromtag.led_mode[i] = tags->u.leds_data.led_mode[i];
+        led_cust_data_fromtag.led_pmic[i] = tags->u.leds_data.led_pmic[i];
+        printk("led[%d] 's mode is :%d  pmic is :%d \n",i,led_cust_data_fromtag.led_mode[i],led_cust_data_fromtag.led_pmic[i]);
+    }
+    led_cust_data_fromtag.isInited = true;
+}
+
+struct vibrator_cust_data vibrator_cust_data_fromtag = {false,0};
+
+static int __init parse_tag_vibrator_data_fixup(const struct tag *tags)
+{
+    vibrator_cust_data_fromtag.vib_vol = tags->u.vibrator_data.vib_vol;
+    printk("the vibrator value is %d \n",vibrator_cust_data_fromtag.vib_vol);
+    vibrator_cust_data_fromtag.isInited = true;
+}
+
 static int __init parse_tag_touch_data_fixup(const struct tag *tags)
 {
     int index = 0;
@@ -1508,6 +1534,12 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
         else if (tags->hdr.tag == ATAG_SENSORS_TAG) {
             sensors_data = tags->u.sensors_tuning;
             sensors_tuning_data = &sensors_data;
+        }
+        else if (tags->hdr.tag == ATAG_LEDS_TAG){
+            parse_tag_leds_data_fixup(tags);
+        }
+        else if (tags->hdr.tag == ATAG_VIBRATOR_TAG){
+            parse_tag_vibrator_data_fixup(tags);
         }
         else if(tags->hdr.tag == ATAG_META_COM)
         {

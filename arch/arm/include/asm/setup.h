@@ -213,6 +213,20 @@ struct tag_eint_data {
 #define ATAG_EINT_TAG        (0x41000824)
 #define ATAG_AUDIOPA_TAG     (0x41000825)
 #define ATAG_MODEL_VERSION_TAG (0x41000826)
+
+struct tag_vibrator_data {
+    unsigned int magic;
+    int vib_vol;
+    unsigned int end_magic;
+};
+
+struct tag_leds_data {
+    unsigned int magic;
+    int led_mode[3];
+    int led_pmic[3];
+    unsigned int end_magic;
+};
+
 struct tag_model_version_info_data {
     char model[32];
     unsigned int version;
@@ -257,6 +271,8 @@ struct tag {
 		struct tag_msdc_hw_para msdc0_data;
 		struct tag_msdc_hw_para msdc1_data;
 		struct sensor_tuning_data sensors_tuning;
+		struct tag_vibrator_data vibrator_data;
+		struct tag_leds_data leds_data;
 	} u;
 };
 
