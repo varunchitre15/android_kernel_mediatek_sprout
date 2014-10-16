@@ -15,6 +15,7 @@
 #include <mach/hal_pub_kpd.h>
 #include <mach/hal_priv_kpd.h>
 #include <mach/mt_clkmgr.h>
+#include <mach/mt_keypad_ssb_cust.h>
 
 #define KPD_DEBUG	KPD_YES
 
@@ -399,7 +400,7 @@ void kpd_init_keymap(u16 keymap[])
 {
 	int i = 0;
 	for(i = 0;i < KPD_NUM_KEYS;i++){
-	keymap[i] = kpd_keymap[i];
+        keymap[i] = keypad_cust_ssb_data.kpd_keymap_cust[i];
 	}
 }
 
@@ -420,14 +421,14 @@ void kpd_set_debounce(u16 val)
 
 /********************************************************************/
 void kpd_pmic_rstkey_hal(unsigned long pressed){
-#ifdef KPD_PMIC_RSTKEY_MAP
-		input_report_key(kpd_input_dev, KPD_PMIC_RSTKEY_MAP, pressed);
+    if(keypad_cust_ssb_data.pmic_rst != -1){
+        input_report_key(kpd_input_dev, keypad_cust_ssb_data.pmic_rst, pressed);
 		input_sync(kpd_input_dev);
 		if (kpd_show_hw_keycode) {
 			printk(KPD_SAY "(%s) HW keycode =%d using PMIC\n",
-			       pressed ? "pressed" : "released", KPD_PMIC_RSTKEY_MAP);
+                   pressed ? "pressed" : "released", keypad_cust_ssb_data.pmic_rst);
 		}
-#endif
+    }
 }
 
 void kpd_pmic_pwrkey_hal(unsigned long pressed){

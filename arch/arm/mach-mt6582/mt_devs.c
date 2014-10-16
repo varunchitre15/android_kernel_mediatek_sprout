@@ -44,6 +44,7 @@
 #include <linux/aee.h>
 #include <linux/mrdump.h>
 #include <mach/i2c.h>
+#include <mach/mt_keypad_ssb_cust.h>
 #include <mach/mt_auxadc_ssb_cust.h>
 #include <cust_gpio_usage.h>
 
@@ -133,6 +134,14 @@ struct tag_para_touch_ssb_data touch_cust_ssb_data = {
     0x9876,
 };
 
+struct tag_para_keypad_ssb_data keypad_cust_ssb_data = {
+    0x6789,
+    {[0] = 115,},
+    0,
+    32,
+    114,
+    0x9876,
+};
 /*=======================================================================*/
 /* MT6582 USB GADGET                                                     */
 /*=======================================================================*/
@@ -1210,6 +1219,28 @@ static int __init parse_tag_auxadc_data_fixup(const struct tag *tags)
     return 0;
 }
 
+static int __init parse_tag_keypad_data_fixup(const struct tag *tags)
+{
+    int i = 0;
+
+    keypad_cust_ssb_data.version = tags->u.keypad_ssb_cust.version;
+    keypad_cust_ssb_data.volume_down = tags->u.keypad_ssb_cust.volume_down;
+    keypad_cust_ssb_data.volume_up = tags->u.keypad_ssb_cust.volume_up;
+    keypad_cust_ssb_data.endflag = tags->u.keypad_ssb_cust.endflag;
+    keypad_cust_ssb_data.pmic_rst = tags->u.keypad_ssb_cust.pmic_rst;
+    memcpy(keypad_cust_ssb_data.kpd_keymap_cust, tags->u.keypad_ssb_cust.kpd_keymap_cust, sizeof(keypad_cust_ssb_data.kpd_keymap_cust[72]));
+    /*printk("%s: version(0x%x), volume_down(%d), volume_up(%d), pmic_rst(%d), endflag(0x%x)\n"
+        ,__func__
+        ,keypad_cust_ssb_data.version
+        ,keypad_cust_ssb_data.volume_down
+        ,keypad_cust_ssb_data.volume_up
+        ,keypad_cust_ssb_data.pmic_rst
+        ,keypad_cust_ssb_data.endflag);*/
+
+    for(i = 0; i < 72; i++)
+        keypad_cust_ssb_data.kpd_keymap_cust[i]= tags->u.keypad_ssb_cust.kpd_keymap_cust[i];
+    return 0;
+}
 static int __init parse_tag_gpio_use_data_fixup(const struct tag *tags)
 {
 
@@ -1450,6 +1481,9 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
         }
         else if (tags->hdr.tag == ATAG_TOUCH_CUST_TAG){
             parse_tag_touch_data_fixup(tags);
+        }
+        else if (tags->hdr.tag == ATAG_KEYPAD_TAG){
+            parse_tag_keypad_data_fixup(tags);
         }
         else if (tags->hdr.tag == ATAG_LCMINFO_DATA){
             parse_tag_lcminfo_data_fixup(tags->u.lcminfo_data.lcm_index);

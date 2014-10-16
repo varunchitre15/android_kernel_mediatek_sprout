@@ -17,6 +17,7 @@
 #include <linux/types.h>
 #include <mach/dfo_boot.h>
 #include <mach/mt_devinfo.h>
+#include <mach/mt_keypad_ssb_cust.h>
 #include <mach/mt_auxadc_ssb_cust.h>
 #include <mach/gpio_usage_para.h>
 #include <mach/mt_touch_ssb_cust.h>
@@ -241,6 +242,7 @@ struct tag {
 		tag_dfo_boot     dfo_data;
 		struct tag_mdinfo_data mdinfo_data;
 		struct _gpio_usage gpio_usage_data;
+		struct tag_para_keypad_ssb_data keypad_ssb_cust;
 		struct tag_para_auxadc_ssb_data auxadc_ssb_cust;
 		struct tag_lcminfo_data lcminfo_data;
 		struct tag_para_lcm_data lcm_data;
