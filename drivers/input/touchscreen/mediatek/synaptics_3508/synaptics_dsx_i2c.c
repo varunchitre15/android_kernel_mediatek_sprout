@@ -110,12 +110,16 @@ static struct task_struct *thread = NULL;
 static DECLARE_WAIT_QUEUE_HEAD(waiter);
 static int tpd_halt = 0;
 static int tpd_flag = 0;
-#ifdef TPD_HAVE_BUTTON 
+#ifdef TPD_HAVE_BUTTON
+static int tpd_keys_local[TPD_KEY_COUNT] = TPD_KEYS;
 static int tpd_keys_local[TPD_KEY_COUNT] = TPD_KEYS;
 static int tpd_keys_dim_local[TPD_KEY_COUNT][3] = TPD_KEYS_DIM;
 #endif
 static u8 boot_mode;
 extern  struct tpd_device  *tpd;//kai
+
+static struct tag_para_touch_ssb_data_single touch_ssb_data = {0};
+
 // for DMA accessing
 static u8 *gpwDMABuf_va = NULL;
 static u32 gpwDMABuf_pa = NULL;
@@ -912,12 +916,13 @@ printk("[s3508_11]finger = %d\n",finger);
 			input_mt_sync(rmi4_data->input_dev);
 #endif
 
-#ifdef TPD_HAVE_BUTTON
-			if (NORMAL_BOOT != boot_mode)
-			{   
-				tpd_button(x, y, 1);  
-			}	
-#endif
+        if(touch_ssb_data.use_tpd_button == 1){
+            if (NORMAL_BOOT != boot_mode)
+            {
+                tpd_button(x, y, 1);
+            }
+        }
+
 printk("[s3508_11]x = %d  y = %d\n", x, y);
 			dev_dbg(&rmi4_data->i2c_client->dev,
 					"%s: Finger %d:\n"
@@ -942,14 +947,15 @@ printk("[s3508_11]");
 #ifndef TYPE_B_PROTOCOL
 		input_mt_sync(rmi4_data->input_dev);
 #endif
-#ifdef TPD_HAVE_BUTTON
-		if (NORMAL_BOOT != boot_mode)
-		{   
-			tpd_button(x, y, 0); 
-		}   
-		printk("[s3508_11_button]x = %d  y = %d\n", x, y);
-#endif
-	}
+
+    if(touch_ssb_data.use_tpd_button == 1){
+            if (NORMAL_BOOT != boot_mode)
+            {
+                tpd_button(x, y, 0);
+            }
+            printk("[s3508_11_button]x = %d  y = %d\n", x, y);
+        }
+    }
 
 	input_sync(rmi4_data->input_dev);
 
@@ -1538,9 +1544,10 @@ static int synaptics_rmi4_f11_init(struct synaptics_rmi4_data *rmi4_data,
 			((control[7] & MASK_4BIT) << 8);
 	rmi4_data->sensor_max_y = ((control[8] & MASK_8BIT) << 0) |
 			((control[9] & MASK_4BIT) << 8);
-#ifdef TPD_HAVE_BUTTON
-	rmi4_data->sensor_max_y = rmi4_data->sensor_max_y * TPD_DISPLAY_HEIGH_RATIO / TPD_TOUCH_HEIGH_RATIO;
-#endif
+
+    if(touch_ssb_data.use_tpd_button == 1)
+        rmi4_data->sensor_max_y = rmi4_data->sensor_max_y * TPD_DISPLAY_HEIGH_RATIO / TPD_TOUCH_HEIGH_RATIO;
+
 	dev_dbg(&rmi4_data->i2c_client->dev,
 			"%s: Function %02x max x = %d max y = %d\n",
 			__func__, fhandler->fn_number,
@@ -1733,9 +1740,10 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
 	rmi4_data->sensor_max_y =
 			((unsigned short)ctrl_8.max_y_coord_lsb << 0) |
 			((unsigned short)ctrl_8.max_y_coord_msb << 8);
-#ifdef TPD_HAVE_BUTTON
-	rmi4_data->sensor_max_y = rmi4_data->sensor_max_y * TPD_DISPLAY_HEIGH_RATIO / TPD_TOUCH_HEIGH_RATIO;
-#endif
+
+    if(touch_ssb_data.use_tpd_button == 1)
+        rmi4_data->sensor_max_y = rmi4_data->sensor_max_y * TPD_DISPLAY_HEIGH_RATIO / TPD_TOUCH_HEIGH_RATIO;
+
 	dev_dbg(&rmi4_data->i2c_client->dev,
 			"%s: Function %02x max x = %d max y = %d\n",
 			__func__, fhandler->fn_number,
@@ -2707,7 +2715,7 @@ printk("[s3508]synaptics_rmi4_probe\n");
   	mt_set_gpio_out(GPIO_CTP_RST_PIN, GPIO_OUT_ONE);
 
 	// power up sequence
-	hwPowerOn(TPD_POWER_SOURCE, VOL_2800, "TP");
+    hwPowerOn(touch_ssb_data.power_id, VOL_2800, "TP");
 	hwPowerOn(MT65XX_POWER_LDO_VIO28, VOL_1800, "TP");
 	hwPowerOn(MT65XX_POWER_LDO_VGP1, VOL_2800, "TP");
     hwPowerOn(MT6323_POWER_LDO_VGP1, VOL_2800, "TP");
@@ -2745,12 +2753,13 @@ printk("[s3508]synaptics_rmi4_probe\n");
 
 	i2c_set_clientdata(client, rmi4_data);
 //#if 1
-    #ifdef TPD_HAVE_BUTTON
-    for(retval =0; retval < 3; retval ++)
-    {
-	input_set_capability(tpd->dev,EV_KEY,tpd_keys_local[retval]);//kai
+
+    if(touch_ssb_data.use_tpd_button == 1){
+        for(retval =0; retval < 3; retval ++)
+        {
+            input_set_capability(tpd->dev,EV_KEY,touch_ssb_data.tpd_key_local[retval]);//kai
+        }
     }
-    #endif
 
 	retval = synaptics_rmi4_set_input_dev(rmi4_data);
 	if (retval < 0) {
@@ -3171,18 +3180,19 @@ static int tpd_local_init(void)
 		TPD_DMESG("tangjie Error unable to add i2c driver.\n");
 		return -1;
 	}
-#ifdef TPD_HAVE_BUTTON     
-	tpd_button_setting(TPD_KEY_COUNT, tpd_keys_local, tpd_keys_dim_local);// initialize tpd button data
-#endif 
+
+    if(touch_ssb_data.use_tpd_button == 1)
+        tpd_button_setting(TPD_KEY_COUNT, touch_ssb_data.tpd_key_local, touch_ssb_data.tpd_key_dim_local);// initialize tpd button data
+
 	boot_mode = get_boot_mode();
 	if (boot_mode == 3) {
 		boot_mode = NORMAL_BOOT;
-	}  
+    }
 	return 0;
 }
 
 static struct tpd_driver_t synaptics_rmi4_driver = {
-	.tpd_device_name = "synaptics_tpd",
+    .tpd_device_name = "synaptics_tpd_s3508",
 	.tpd_local_init = tpd_local_init,
 	.suspend = synaptics_rmi4_suspend,
 	.resume = synaptics_rmi4_resume,
@@ -3206,8 +3216,30 @@ static struct i2c_board_info __initdata i2c_tpd={ I2C_BOARD_INFO("synaptics-tpd"
  */
 static int __init synaptics_rmi4_init(void)
 {
-printk("[s3508]synaptics_rmi4_init\n");
-	i2c_register_board_info(TPD_I2C_BUS, &i2c_tpd, 1);
+    int err = 0;
+    char name[20] = "s3508";
+    printk("[s3508]synaptics_rmi4_init\n");
+    err = tpd_ssb_data_match(name, &touch_ssb_data);
+    if(err != 0){
+        printk("touch tpd_ssb_data_match error\n");
+        return -1;
+    }
+    printk("s3508 touch_ssb_data:: name:(%s), endflag:0x%x, i2c_number:0x%x, i2c_addr:0x%x,power_id:%d, use_tpd_button:%d\n",
+    touch_ssb_data.identifier,
+    touch_ssb_data.endflag,
+    touch_ssb_data.i2c_number,
+    touch_ssb_data.i2c_addr,
+    touch_ssb_data.power_id,
+    touch_ssb_data.use_tpd_button
+    );
+
+
+    i2c_tpd.addr =     touch_ssb_data.i2c_addr;
+
+    i2c_register_board_info(touch_ssb_data.i2c_number, &i2c_tpd, 1);
+
+    //add for ssb support
+    synaptics_rmi4_driver.tpd_have_button = touch_ssb_data.use_tpd_button;
 	if(tpd_driver_add(&synaptics_rmi4_driver) < 0){
 		pr_err("Fail to add tpd driver\n");
 		return -1;

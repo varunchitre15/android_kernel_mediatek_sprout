@@ -34,10 +34,8 @@
 #define TPD_KEYS_DIM            {{80,850,160,TPD_BUTTON_HEIGH},{260,850,160,TPD_BUTTON_HEIGH},{440,850,160,TPD_BUTTON_HEIGH}}
 
 /* Define the touch dimension */
-#ifdef TPD_HAVE_BUTTON
 #define TPD_TOUCH_HEIGH_RATIO	80
 #define TPD_DISPLAY_HEIGH_RATIO	73
-#endif
 
 /* Define the 0D button mapping */
 #ifdef TPD_HAVE_BUTTON

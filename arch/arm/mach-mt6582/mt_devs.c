@@ -47,6 +47,7 @@
 #include <mach/mt_auxadc_ssb_cust.h>
 #include <cust_gpio_usage.h>
 
+#include <mach/mt_touch_ssb_cust.h>
 #define SERIALNO_LEN 32
 static char serial_number[SERIALNO_LEN];
 
@@ -69,6 +70,69 @@ struct {
 
 static int use_bl_fb = 0;
 struct tag_para_auxadc_ssb_data auxadc_cust_ssb_data = {0x6789, -1, 13, -1, 0, 0x9876};
+struct tag_para_touch_ssb_data touch_cust_ssb_data = {
+    0x6789,
+    {
+    {
+        "msg2133",
+        0x0,
+        0x26,
+        5,
+        {139, 172, 158},
+        {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
+        {480, 854},
+        0,
+        0x2222,
+    },
+    {
+        "s3508",
+        0x0,
+        0x20,
+        5,
+        {139, 172, 158},
+        {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
+        {480, 854},
+        0,
+        0x2222,
+    },
+    {
+        "ft6x06",
+        0x0,
+        0x38,
+        5,
+        {139, 172, 158},
+        {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
+        {480, 854},
+        1,
+        0x2222,
+    },
+    {
+        "s3203",
+        0x0,
+        0x39,
+        5,
+        {139, 172, 158},
+        {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
+        {480, 854},
+        0,
+        0x2222,
+    },
+    {
+        "gt913",
+        0x0,
+        0x5d,
+        5,
+        {139, 172, 158},
+        {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
+        {480, 854},
+        0,
+        0x2222,
+    },
+    {0},
+    },
+    0x9876,
+};
+
 /*=======================================================================*/
 /* MT6582 USB GADGET                                                     */
 /*=======================================================================*/
@@ -1217,6 +1281,52 @@ void gpio_usage_set_default(void)
 
 }
 
+static int __init parse_tag_touch_data_fixup(const struct tag *tags)
+{
+    int index = 0;
+    int i = 0;
+    int j = 0;
+
+    for(index = 0; index < TOUCH_DRIVER_NUM; index++){
+        touch_cust_ssb_data.touch_ssb_data[index].endflag = tags->u.touch_ssb_cust.touch_ssb_data[index].endflag;
+        touch_cust_ssb_data.touch_ssb_data[index].i2c_number = tags->u.touch_ssb_cust.touch_ssb_data[index].i2c_number;
+        touch_cust_ssb_data.touch_ssb_data[index].i2c_addr= tags->u.touch_ssb_cust.touch_ssb_data[index].i2c_addr;
+        touch_cust_ssb_data.touch_ssb_data[index].power_id = tags->u.touch_ssb_cust.touch_ssb_data[index].power_id;
+        touch_cust_ssb_data.touch_ssb_data[index].use_tpd_button = tags->u.touch_ssb_cust.touch_ssb_data[index].use_tpd_button;
+
+        //printk("parse_tag_touch_data_fixup, index(%d):: endflag:0x%x, i2c_number:0x%x, i2c_addr:0x%x,power_id:%d, use_tpd_buttom:%d\n",
+        //index,
+        //touch_cust_ssb_data.touch_ssb_data[index].endflag,
+        //touch_cust_ssb_data.touch_ssb_data[index].i2c_number,
+        //touch_cust_ssb_data.touch_ssb_data[index].i2c_addr,
+        //touch_cust_ssb_data.touch_ssb_data[index].power_id,
+        //touch_cust_ssb_data.touch_ssb_data[index].use_tpd_button
+        //);
+
+        for(i = 0; i < NAME_LENGTH; i++){
+            touch_cust_ssb_data.touch_ssb_data[index].identifier[i] = (tags->u.touch_ssb_cust.touch_ssb_data[index].identifier[i]);
+        }
+
+        for(i = 0; i < 2; i++){
+            touch_cust_ssb_data.touch_ssb_data[index].tpd_resolution[i] = tags->u.touch_ssb_cust.touch_ssb_data[index].tpd_resolution[i];
+            //printk("parse_tag_touch_data_fixup, index(%d)::tpd_resolution[%d]:%d\n",index,i,touch_cust_ssb_data.touch_ssb_data[index].tpd_resolution[i]);
+        }
+
+        for(i = 0; i < 3; i++){
+            touch_cust_ssb_data.touch_ssb_data[index].tpd_key_local[i] = tags->u.touch_ssb_cust.touch_ssb_data[index].tpd_key_local[i];
+            //printk("parse_tag_touch_data_fixup, index(%d)::tpd_key_local[%d]:%d\n",index,i,touch_cust_ssb_data.touch_ssb_data[index].tpd_key_local[i]);
+        }
+        for(i = 0; i < 3; i++)
+        {
+            for(j = 0; j < 4; j++){
+                touch_cust_ssb_data.touch_ssb_data[index].tpd_key_dim_local[i][j] = tags->u.touch_ssb_cust.touch_ssb_data[index].tpd_key_dim_local[i][j];
+                //printk("parse_tag_touch_data_fixup, index(%d)::tpd_key_dim_local[%d][%d]:%d\n",index,i,j,touch_cust_ssb_data.touch_ssb_data[index].tpd_key_dim_local[i][j]);
+            }
+        }
+    }
+    return 0;
+}
+
 extern unsigned int mtkfb_parse_dfo_setting(void *dfo_tbl, int num);
 
 extern int parse_tag_lcminfo_data_fixup(unsigned int index);
@@ -1337,6 +1447,9 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
         }
         else if (tags->hdr.tag == ATAG_AUXADC_TAG){
             parse_tag_auxadc_data_fixup(tags);
+        }
+        else if (tags->hdr.tag == ATAG_TOUCH_CUST_TAG){
+            parse_tag_touch_data_fixup(tags);
         }
         else if (tags->hdr.tag == ATAG_LCMINFO_DATA){
             parse_tag_lcminfo_data_fixup(tags->u.lcminfo_data.lcm_index);

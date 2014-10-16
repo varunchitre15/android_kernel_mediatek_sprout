@@ -39,6 +39,7 @@
 #include <linux/kobject.h>
 #include <linux/earlysuspend.h>
 //#include "tpd_custom.h"
+#include <mach/mt_touch_ssb_cust.h>
 
 /* debug macros */
 ////#define TPD_DEBUG
@@ -135,7 +136,7 @@ u16 tpd_read(int position);
 u16 tpd_read_adc(u16 pos);
 u16 tpd_read_status(void);
 #endif
-
+extern int tpd_ssb_data_match(char *name, struct tag_para_touch_ssb_data_single *data);
 extern int tpd_driver_add(struct tpd_driver_t *tpd_drv);
 extern int tpd_driver_remove(struct tpd_driver_t *tpd_drv);
 void tpd_button_setting(int keycnt, void *keys, void *keys_dim);
