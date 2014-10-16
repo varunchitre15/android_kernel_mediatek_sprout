@@ -44,6 +44,7 @@
 #include <linux/aee.h>
 #include <linux/mrdump.h>
 #include <mach/i2c.h>
+#include <mach/mt_auxadc_ssb_cust.h>
 #include <cust_gpio_usage.h>
 
 #define SERIALNO_LEN 32
@@ -67,7 +68,7 @@ struct {
 } bl_fb = {0, 0};
 
 static int use_bl_fb = 0;
-
+struct tag_para_auxadc_ssb_data auxadc_cust_ssb_data = {0x6789, -1, 13, -1, 0, 0x9876};
 /*=======================================================================*/
 /* MT6582 USB GADGET                                                     */
 /*=======================================================================*/
@@ -1131,6 +1132,20 @@ static int __init parse_tag_devinfo_data_fixup(const struct tag *tags)
 	return 0;
 }
 
+static int __init parse_tag_auxadc_data_fixup(const struct tag *tags)
+{
+    auxadc_cust_ssb_data.TEMPERATURE_CHANNEL = tags->u.auxadc_ssb_cust.TEMPERATURE_CHANNEL;
+    auxadc_cust_ssb_data.ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL = tags->u.auxadc_ssb_cust.ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL;
+    auxadc_cust_ssb_data.HF_MIC_CHANNEL = tags->u.auxadc_ssb_cust.HF_MIC_CHANNEL;
+    auxadc_cust_ssb_data.LCM_VOLTAGE = tags->u.auxadc_ssb_cust.LCM_VOLTAGE;
+    /*printk("%s: TEMPERATURE_CHANNEL(%d), ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL(%d), HF_MIC_CHANNEL(%d)\n"
+        ,__func__
+        ,auxadc_cust_ssb_data.TEMPERATURE_CHANNEL
+        ,auxadc_cust_ssb_data.ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL
+        ,auxadc_cust_ssb_data.HF_MIC_CHANNEL);*/
+    return 0;
+}
+
 static int __init parse_tag_gpio_use_data_fixup(const struct tag *tags)
 {
 
@@ -1319,6 +1334,9 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
             printk( "fwq gpio use para\n");
             parse_tag_gpio_use_data_fixup(tags);
 
+        }
+        else if (tags->hdr.tag == ATAG_AUXADC_TAG){
+            parse_tag_auxadc_data_fixup(tags);
         }
         else if (tags->hdr.tag == ATAG_LCMINFO_DATA){
             parse_tag_lcminfo_data_fixup(tags->u.lcminfo_data.lcm_index);
