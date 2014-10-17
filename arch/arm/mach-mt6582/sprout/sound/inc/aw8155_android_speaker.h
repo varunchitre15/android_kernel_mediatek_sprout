@@ -16,7 +16,7 @@
  *
  * Filename:
  * ---------
- * Yusu_android_speaker.h
+ * aw8155_android_speaker.h
  *
  * Project:
  * --------
@@ -78,75 +78,55 @@
 #include <linux/spinlock.h>
 #include <linux/semaphore.h>
 #include <mach/mt_typedefs.h>
+#include "yusu_android_speaker.h"
 
-#ifndef _YUSU_ANDROID_SPEAKER_H_
-#define _YUSU_ANDROID_SPEAKER_H_
+#ifndef _AW8155_ANDROID_SPEAKER_H_
+#define _AW8155_ANDROID_SPEAKER_H_
 
-  enum EAMP_CONTROL_SUBCOMMAND
- {
-	EAMP_SPEAKER_CLOSE =0,
-	EAMP_SPEAKER_OPEN,
-	EAMP_HEADPHONE_OPEN,
-	EAMP_HEADPHONE_CLOSE,
-	EAMP_EARPIECE_OPEN,
-	EAMP_EARPIECE_CLOSE,
-	EAMP_GETREGISTER_VALUE,
-	EAMP_SETREGISTER_VALUE,
-	EAMP_SETAMP_GAIN,
-	EAMP_GETAMP_GAIN,
-	EAMP_GET_CTRP_NUM ,
-	EAMP_GET_CTRP_BITS,
-	EAMP_GET_CTRP_TABLE,
-	EAMP_SETMODE,
- };
-
-enum AUDIO_AMP_CONTROL_COMMAND{
-    AUD_AMP_GET_CTRP_NUM ,
-    AUD_AMP_GET_CTRP_BITS,
-    AUD_AMP_GET_CTRP_TABLE,
-    AUD_AMP_GET_REGISTER,
-    AUD_AMP_SET_REGISTER,
-    AUD_AMP_SET_AMPGAIN,  // gain is use for low 24bits as external amp , device should base on control point set to AMPLL_CON0_REG
-    AUD_AMP_GET_AMPGAIN,
-    AUD_AMP_SET_MODE,
-    NUM_AUD_AMP_COMMAND
-};
-
-typedef struct {
-	unsigned long int command;
-	unsigned long int param1;
-	unsigned long int param2;
-}AMP_Control;
-
-enum SPEAKER_CHANNEL
-{
-      Channel_None = 0 ,
-      Channel_Right,
-      Channel_Left,
-      Channel_Stereo
-};
-
-struct loudspeaker_amp_operations {
-bool (*Speaker_Init)(void);
-bool (*Speaker_DeInit)(void);
-bool (*Speaker_Register)(void);
-int  (*ExternalAmp)(void);
-void (*Sound_Speaker_Turnon)(int channel);
-void (*Sound_Speaker_Turnoff)(int channel);
-void (*Sound_Speaker_SetVolLevel)(int level);
-void (*Sound_Headset_Turnon)(void);
-void (*Sound_Headset_Turnoff)(void);
+bool AW8155_Speaker_Init(void);
+bool AW8155_Speaker_DeInit(void);
+bool AW8155_Speaker_Register(void);
+int  AW8155_ExternalAmp(void);
+void AW8155_Sound_Speaker_Turnon(int channel);
+void AW8155_Sound_Speaker_Turnoff(int channel);
+void AW8155_Sound_Speaker_SetVolLevel(int level);
+void AW8155_Sound_Headset_Turnon(void);
+void AW8155_Sound_Headset_Turnoff(void);
 //now for  kernal use
-void (*AudioAMPDevice_Suspend)(void);
-void (*AudioAMPDevice_Resume)(void);
+void AW8155_AudioAMPDevice_Suspend(void);
+void AW8155_AudioAMPDevice_Resume(void);
 // used for AEE beep sound
-void (*AudioAMPDevice_SpeakerLouderOpen)(void); //some times kernal need to force  speaker for notification
-void (*AudioAMPDevice_SpeakerLouderClose)(void);
-void (*AudioAMPDevice_mute)(void);
-int (*Audio_eamp_command)(unsigned int type, unsigned long args, unsigned int count);
-kal_int32 (*Sound_ExtFunction)(const char* name, void* param, int param_size);
-};
+void AW8155_AudioAMPDevice_SpeakerLouderOpen(void); //some times kernal need to force  speaker for notification
+void AW8155_AudioAMPDevice_SpeakerLouderClose(void);
+void AW8155_AudioAMPDevice_mute(void);
+int AW8155_Audio_eamp_command(unsigned int type, unsigned long args, unsigned int count);
+kal_int32 AW8155_Sound_ExtFunction(const char* name, void* param, int param_size);
+#if 0
+struct loudspeaker_amp_operations  aw8155_spk_amp = {
 
+.Speaker_Init = AW8155_Speaker_Init,
+.Speaker_DeInit = AW8155_Speaker_DeInit,
+.Speaker_Register = AW8155_Speaker_Register,
+.ExternalAmp = AW8155_ExternalAmp,
+.Sound_Speaker_Turnon = AW8155_Sound_Speaker_Turnon,
+.Sound_Speaker_Turnoff = AW8155_Sound_Speaker_Turnoff,
+.Sound_Speaker_SetVolLevel = AW8155_Sound_Speaker_SetVolLevel,
+.Sound_Headset_Turnon = AW8155_Sound_Headset_Turnon,
+.Sound_Headset_Turnoff = AW8155_Sound_Headset_Turnoff,
+//now for  kernal use
+.AudioAMPDevice_Suspend = AW8155_AudioAMPDevice_Suspend,
+.AudioAMPDevice_Resume = AW8155_AudioAMPDevice_Resume,
+// used for AEE beep sound
+.AudioAMPDevice_SpeakerLouderOpen = AW8155_AudioAMPDevice_SpeakerLouderOpen,
+.AudioAMPDevice_SpeakerLouderClose = AW8155_AudioAMPDevice_SpeakerLouderClose,
+.AudioAMPDevice_mute = AW8155_AudioAMPDevice_mute,
+.Audio_eamp_command = AW8155_Audio_eamp_command,
+.Sound_ExtFunction = AW8155_Sound_ExtFunction,
+
+};
+#else
+extern struct loudspeaker_amp_operations  aw8155_spk_amp;
+#endif
 #endif
 
 

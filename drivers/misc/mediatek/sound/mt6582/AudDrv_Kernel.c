@@ -102,6 +102,8 @@
 
 
 #include "yusu_android_speaker.h"
+#include "pmic_android_speaker.h"
+#include "aw8155_android_speaker.h"
 #if defined(CONFIG_MTK_COMBO) || defined(CONFIG_MTK_COMBO_MODULE)
 #include <mach/mtk_wcn_cmb_stub.h>
 #endif
@@ -213,6 +215,8 @@ extern int        Afe_Mem_Pwr_on;
 extern int        Aud_AFE_Clk_cntr;
 int  Aud_Ext_Mem_Flag = 0; //bits indicate MEMIF_BUFFER_TYPE. 0:MEM_DL1, 1:MEM_DL2, 2:MEM_VUL, 3:MEM_DAI, 4:MEM_I2S, 5:MEM_AWB, 6:MEM_MOD_DAI
 int  Aud_Int_Mem_Flag = 0; //bits indicate MEMIF_BUFFER_TYPE. 0:MEM_DL1, 1:MEM_DL2, 2:MEM_VUL, 3:MEM_DAI, 4:MEM_I2S, 5:MEM_AWB, 6:MEM_MOD_DAI
+int mtk_get_sound_pa_id = 0;
+static struct loudspeaker_amp_operations spk_amp_fops = {NULL};
 
 static bool CheckNullPointer(void *pointer)
 {
@@ -1030,9 +1034,17 @@ static int AudDrv_probe(struct platform_device *dev)
 #ifdef AUDIO_MEM_IOREMAP
     AFE_BASE_ADDRESS = ioremap_nocache(AUDIO_HW_PHYSICAL_BASE, 0x10000);
 #endif
+    if (mtk_get_sound_pa_id == SPK_AMP_USE_AW8155)
+    {
+        memcpy ((void *)&spk_amp_fops, (void *)&aw8155_spk_amp, sizeof(struct loudspeaker_amp_operations));
+    }
+    else
+    {
+        memcpy ((void *)&spk_amp_fops, (void *)&pmic_spk_amp, sizeof(struct loudspeaker_amp_operations));
+    }
+    PRINTK_AUDDRV("-AudDrv_probe mtk_get_sound_pa_id [%d]\n",mtk_get_sound_pa_id);
 
-    PRINTK_AUDDRV("-AudDrv_probe \n");
-    Speaker_Init();
+    spk_amp_fops.Speaker_Init();
     if (Auddrv_First_bootup == true)
     {
         power_init();
@@ -3311,19 +3323,19 @@ static long AudDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
         }
         case SET_SPEAKER_VOL:
             PRINTK_AUDDRV("AudDrv SET_SPEAKER_VOL level:%lu \n", arg);
-            Sound_Speaker_SetVolLevel((int)arg);
+            spk_amp_fops.Sound_Speaker_SetVolLevel((int)arg);
             break;
         case SET_SPEAKER_ON:
             PRINTK_AUDDRV("AudDrv SET_SPEAKER_ON arg:%lu \n", arg);
             mutex_lock(&gamp_mutex);
-            Sound_Speaker_Turnon((int)arg);
+            spk_amp_fops.Sound_Speaker_Turnon((int)arg);
             AuddrvSpkStatus = true;
             mutex_unlock(&gamp_mutex);
             break;
         case SET_SPEAKER_OFF:
             PRINTK_AUDDRV("AudDrv SET_SPEAKER_OFF arg:%lu \n", arg);
             mutex_lock(&gamp_mutex);
-            Sound_Speaker_Turnoff((int)arg);
+            spk_amp_fops.Sound_Speaker_Turnoff((int)arg);
             AuddrvSpkStatus = false;
             mutex_unlock(&gamp_mutex);
             break;
@@ -3332,36 +3344,36 @@ static long AudDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
             PRINTK_AUDDRV("!! AudDrv SET_HEADSET_STATE arg:%lu \n", arg);
             if (arg)
             {
-                Sound_Headset_Turnon();
+                spk_amp_fops.Sound_Headset_Turnon();
             }
             else
             {
-                Sound_Headset_Turnoff();
+                spk_amp_fops.Sound_Headset_Turnoff();
             }
             mutex_unlock(&gamp_mutex);
             break;
         case SET_HEADPHONE_ON:
             PRINTK_AUDDRV("AudDrv SET_HEADPHONE_ON arg:%lu \n", arg);
             mutex_lock(&gamp_mutex);
-            Audio_eamp_command(EAMP_HEADPHONE_OPEN, arg, 1);
+            spk_amp_fops.Audio_eamp_command(EAMP_HEADPHONE_OPEN, arg, 1);
             mutex_unlock(&gamp_mutex);
             break;
         case SET_HEADPHONE_OFF:
             PRINTK_AUDDRV("AudDrv SET_HEADPHONE_OFF arg:%lu \n", arg);
             mutex_lock(&gamp_mutex);
-            Audio_eamp_command(EAMP_HEADPHONE_CLOSE, arg, 1);
+            spk_amp_fops.Audio_eamp_command(EAMP_HEADPHONE_CLOSE, arg, 1);
             mutex_unlock(&gamp_mutex);
             break;
         case SET_EARPIECE_ON:
             PRINTK_AUDDRV("AudDrv SET_EARPIECE_ON arg:%lu \n", arg);
             mutex_lock(&gamp_mutex);
-            Audio_eamp_command(EAMP_EARPIECE_OPEN, arg, 1);
+            spk_amp_fops.Audio_eamp_command(EAMP_EARPIECE_OPEN, arg, 1);
             mutex_unlock(&gamp_mutex);
             break;
         case SET_EARPIECE_OFF:
             PRINTK_AUDDRV("AudDrv SET_EARPIECE_OFF arg:%lu \n", arg);
             mutex_lock(&gamp_mutex);
-            Audio_eamp_command(EAMP_EARPIECE_CLOSE, arg, 1);
+            spk_amp_fops.Audio_eamp_command(EAMP_EARPIECE_CLOSE, arg, 1);
             mutex_unlock(&gamp_mutex);
             break;
         case SET_AUDIO_STATE:
@@ -3426,6 +3438,12 @@ static long AudDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
             adc_return = PMIC_IMM_GetOneChannelValue(arg, 1, 0);
             printk(KERN_EMERG "+AudDrv_GetAuxAdc arg %lu, adc_return 0x%x", arg, adc_return);
             ret = adc_return;
+            break;
+        }
+        case AUDDRV_GET_EXT_AMP_SUPPORT:
+        {
+            PRINTK_AUDDRV("mtk_get_sound_pa_id = %d", mtk_get_sound_pa_id);
+            ret = mtk_get_sound_pa_id;
             break;
         }
         case AUDDRV_AEE_IOCTL:

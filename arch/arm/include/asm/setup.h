@@ -196,6 +196,14 @@ struct tag_eint_data {
     char payload[1];
 };
 
+#define AUDIOPA_NAME_LEN   (8)
+
+struct tag_audiopa_data {
+    u32 version;
+    int pa_type;
+    char stName[AUDIOPA_NAME_LEN];
+};
+
 /*Para bins information*/
 #define ATAG_TOUCH_CUST_TAG  (0x41000817)
 #define ATAG_SENSORS_TAG     (0x41000818)
@@ -267,6 +275,7 @@ struct tag {
 		struct tag_para_touch_ssb_data touch_ssb_cust;
 		struct tag_ddr_dfs_info_data dfs_data;
 		struct tag_eint_data eint_data;
+		struct tag_audiopa_data audiopa_data;
 		struct tag_model_version_info_data model_version_data;
 		struct tag_msdc_hw_para msdc0_data;
 		struct tag_msdc_hw_para msdc1_data;
