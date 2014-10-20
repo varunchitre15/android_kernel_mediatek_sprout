@@ -3,6 +3,4 @@
 #
 include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
-obj-y += AD5823AF.o
-
-
+obj-y += GAF002AF.o
