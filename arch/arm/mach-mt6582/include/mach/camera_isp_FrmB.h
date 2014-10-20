@@ -58,6 +58,8 @@ typedef struct
 
 typedef struct
 {
+    unsigned int    tLastSig_sec;                       /* time stamp of the latest occuring signal*/
+    unsigned int    tLastSig_usec;                  /* time stamp of the latest occuring signal*/
     unsigned int    tMark2WaitSig_sec;            /* time period from marking a signal to user try to wait and get the signal*/
     unsigned int    tMark2WaitSig_usec;            /* time period from marking a signal to user try to wait and get the signal*/
     unsigned int    tLastSig2GetSig_sec;         /* time period from latest occuring signal to user try to wait and get the signal*/

@@ -34,6 +34,9 @@
 #include "kd_imgsensor_errcode.h"
 
 #include "kd_sensorlist.h"
+#include <mach/mt_reg_base.h>
+#include <mach/sync_write.h>
+#include <mach/mt_gpio.h>
 
 static DEFINE_SPINLOCK(kdsensor_drv_lock);
 
@@ -71,6 +74,8 @@ static struct i2c_board_info __initdata i2c_devs1={I2C_BOARD_INFO(CAMERA_HW_DRVN
 
 #endif
 
+#define SENSOR_RD32(addr)          ioread32(addr)
+#define SENSOR_WR32(addr, data)    iowrite32(data, addr)
 /*******************************************************************************
 * Proifling
 ********************************************************************************/
@@ -1580,6 +1585,131 @@ inline static int adopt_CAMERA_HW_Close(void)
 }    /* adopt_CAMERA_HW_Close() */
 
 
+inline static int kdSetSensorGpio(int* pBuf)
+{
+    int ret = 0;
+    unsigned int temp = 0;
+    ACDK_SENSOR_GPIO_STRUCT *pSensorgpio = (ACDK_SENSOR_GPIO_STRUCT*)pBuf;
+
+    PK_DBG("[CAMERA SENSOR] kdSetSensorGpio device=%d, enable=%d, type=%d\n",
+        pSensorgpio->mSensorDev,pSensorgpio->GpioEnable,pSensorgpio->SensroInterfaceType);
+    //Please use DCT to set correct GPIO setting (below message only for debug)
+    if(pSensorgpio->SensroInterfaceType == SENSOR_INTERFACE_TYPE_PARALLEL)
+    {
+        //disable mipi pin
+        temp = SENSOR_RD32((void *)(GPIO_BASE + 0x910));//GPI*_IES = 1 for Parallel CAM
+        SENSOR_WR32((void *)(GPIO_BASE + 0x910),temp|0x80);
+
+        //Change to use gpio API to set mode
+        //mode 2 for parallel pin  (GPIO141~146, 153~156)
+        temp = SENSOR_RD32((void *)(GPIO_BASE + 0x7C0));
+        SENSOR_WR32((void *)(GPIO_BASE + 0x7C0),(temp&0x7)|0x2490);
+        temp = SENSOR_RD32((void *)(GPIO_BASE + 0x7D0));
+        SENSOR_WR32((void *)(GPIO_BASE + 0x7D0),(temp&0xFFC0)|0x12);
+        temp = SENSOR_RD32((void *)(GPIO_BASE + 0x7E0));
+        SENSOR_WR32((void *)(GPIO_BASE + 0x7E0),(temp&0x1FF)|0x2400);
+        temp = SENSOR_RD32((void *)(GPIO_BASE + 0x7F0));
+        SENSOR_WR32((void *)(GPIO_BASE + 0x7F0),(temp&0xFFC0)|0x12);
+        //mode 1 for parallel pin (GPIO120~123)
+        temp = SENSOR_RD32((void *)(GPIO_BASE + 0x780));
+        SENSOR_WR32((void *)(GPIO_BASE + 0x780),(temp&0xF000)|0x249);
+
+      /*
+        // mode 2 for parallel pin  (GPIO141~146, 153~156)
+        mt_set_gpio_mode(GPIO141, GPIO_MODE_02);
+        mt_set_gpio_mode(GPIO142, GPIO_MODE_02);
+        mt_set_gpio_mode(GPIO143, GPIO_MODE_02);
+        mt_set_gpio_mode(GPIO144, GPIO_MODE_02);
+        mt_set_gpio_mode(GPIO145, GPIO_MODE_02);
+        mt_set_gpio_mode(GPIO146, GPIO_MODE_02);
+        mt_set_gpio_mode(GPIO153, GPIO_MODE_02);
+        mt_set_gpio_mode(GPIO154, GPIO_MODE_02);
+        mt_set_gpio_mode(GPIO155, GPIO_MODE_02);
+        mt_set_gpio_mode(GPIO156, GPIO_MODE_02);
+        // mode 1 for parallel pin (GPIO120~123)
+        mt_set_gpio_mode(GPIO120, GPIO_MODE_01);
+        mt_set_gpio_mode(GPIO121, GPIO_MODE_01);
+        mt_set_gpio_mode(GPIO122, GPIO_MODE_01);
+        mt_set_gpio_mode(GPIO123, GPIO_MODE_01);
+        */
+        //mode 1 for parallel pin (GPIO120~123)
+        PK_DBG("GPIO121~GPIO123 0x%x\n",SENSOR_RD32((void *)(GPIO_BASE + 0x780)));
+        //mode 2 for parallel pin  (GPIO141~146, 153~156)
+        PK_DBG("GPIO141~GPIO146 0x%x, 0x%x\n",SENSOR_RD32((void *)(GPIO_BASE + 0x7C0)),SENSOR_RD32((void *)(GPIO_BASE + 0x7D0)));
+        PK_DBG("GPIO153~GPIO156 0x%x, 0x%x\n",SENSOR_RD32((void *)(GPIO_BASE + 0x7E0)),SENSOR_RD32((void *)(GPIO_BASE + 0x7E0)));
+
+    }
+    else
+    {
+        if(pSensorgpio->GpioEnable)
+        {
+            //disable parallel pin
+            temp = SENSOR_RD32((void *)(GPIO_BASE + 0x910));
+            SENSOR_WR32((void *)(GPIO_BASE + 0x910),temp&(~0x0080));
+
+            // for mipi gpio setting debug
+            if(pSensorgpio->mSensorDev == DUAL_CAMERA_MAIN_SENSOR)
+            {
+                //Change to use gpio API to set mode
+                //mode 1   (GPIO147~156)
+                temp = SENSOR_RD32((void *)(GPIO_BASE + 0x7D0));
+                SENSOR_WR32((void *)(GPIO_BASE + 0x7D0),(temp&0x3F)|0x1240);
+                temp = SENSOR_RD32((void *)(GPIO_BASE + 0x7E0));
+                SENSOR_WR32((void *)(GPIO_BASE + 0x7E0),(temp&0x0)|0x1249);
+                temp = SENSOR_RD32((void *)(GPIO_BASE + 0x7F0));
+                SENSOR_WR32((void *)(GPIO_BASE + 0x7F0),(temp&0xFFC0)|0x9);
+
+                /*
+                // mode 1   (GPIO147~156)
+                mt_set_gpio_mode(GPIO147, GPIO_MODE_01);
+                mt_set_gpio_mode(GPIO148, GPIO_MODE_01);
+                mt_set_gpio_mode(GPIO149, GPIO_MODE_01);
+                mt_set_gpio_mode(GPIO150, GPIO_MODE_01);
+                mt_set_gpio_mode(GPIO151, GPIO_MODE_01);
+                mt_set_gpio_mode(GPIO152, GPIO_MODE_01);
+                mt_set_gpio_mode(GPIO153, GPIO_MODE_01);
+                mt_set_gpio_mode(GPIO154, GPIO_MODE_01);
+                mt_set_gpio_mode(GPIO155, GPIO_MODE_01);
+                mt_set_gpio_mode(GPIO156, GPIO_MODE_01);
+                */
+
+                //mode 1   (GPIO147~156)
+                PK_DBG("GPIO147~GPIO156 0x%x, 0x%x, 0x%x\n",SENSOR_RD32((void *)(GPIO_BASE + 0x7d0)),
+                SENSOR_RD32((void *)(GPIO_BASE + 0x7E0)), SENSOR_RD32((void *)(GPIO_BASE + 0x7f0)));
+            }
+            else
+            {
+
+                //mode 1   (GPIO141~146)
+                temp = SENSOR_RD32((void *)(GPIO_BASE + 0x7C0));
+                SENSOR_WR32((void *)(GPIO_BASE + 0x7C0),((temp&0x7)|0x1248));
+                temp = SENSOR_RD32((void *)(GPIO_BASE + 0x7D0));
+                SENSOR_WR32((void *)(GPIO_BASE + 0x7D0),(temp&0xFFC0)|0x9);
+
+                /*
+                //mode 1   (GPIO141~146)
+                mt_set_gpio_mode(GPIO141, GPIO_MODE_01);
+                mt_set_gpio_mode(GPIO142, GPIO_MODE_01);
+                mt_set_gpio_mode(GPIO143, GPIO_MODE_01);
+                mt_set_gpio_mode(GPIO144, GPIO_MODE_01);
+                mt_set_gpio_mode(GPIO145, GPIO_MODE_01);
+                mt_set_gpio_mode(GPIO146, GPIO_MODE_01);
+                */
+                //mode 1   (GPIO141~146)
+                PK_DBG("GPIO141~GPIO146 0x%x, 0x%x\n",SENSOR_RD32((void *)(GPIO_BASE + 0x7c0)),
+                SENSOR_RD32((void *)(GPIO_BASE + 0x7d0)));
+            }
+        }
+        else
+        {
+            //disable mipi pin
+            temp = SENSOR_RD32((void *)(GPIO_BASE + 0x910));//GPI*_IES = 1 for Parallel CAM
+            SENSOR_WR32((void *)(GPIO_BASE + 0x910),temp|0x80);
+        }
+    }
+
+    return ret;
+}
 
 /*******************************************************************************
 * CAMERA_HW_Ioctl
@@ -1667,6 +1797,10 @@ static long CAMERA_HW_Ioctl(
 
         case KDIMGSENSORIOC_X_SET_SHUTTER_GAIN_WAIT_DONE:
             i4RetValue = kdSensorSetExpGainWaitDone((int*)pBuff);
+            break;
+
+        case KDIMGSENSORIOC_X_SET_GPIO:
+            i4RetValue = kdSetSensorGpio(pBuff);
             break;
 
         default :

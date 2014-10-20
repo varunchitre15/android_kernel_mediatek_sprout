@@ -3738,11 +3738,40 @@ static MINT32 ISP_GET_MARKtoQEURY_TIME(ISP_WAIT_IRQ_STRUCT_FRMB* irqinfo)
     spin_lock_irqsave(&(IspInfo_FrmB.SpinLockIrq[eIrq]), flags);
     if(irqinfo->UserInfo.Status & IspInfo_FrmB.IrqInfo.MarkedFlag[irqinfo->UserInfo.UserKey][irqinfo->UserInfo.Type])
     {
+        //
+        irqinfo->TimeInfo.passedbySigcnt = IspInfo_FrmB.IrqInfo.PassedBySigCnt[irqinfo->UserInfo.UserKey][irqinfo->UserInfo.Type][idx];
+        //
         irqinfo->TimeInfo.tMark2WaitSig_usec = (time_ready2return.tv_usec - IspInfo_FrmB.IrqInfo.MarkedTime_usec[irqinfo->UserInfo.UserKey][irqinfo->UserInfo.Type][idx]);
         irqinfo->TimeInfo.tMark2WaitSig_sec = (time_ready2return.tv_sec - IspInfo_FrmB.IrqInfo.MarkedTime_sec[irqinfo->UserInfo.UserKey][irqinfo->UserInfo.Type][idx]);
-        irqinfo->TimeInfo.tLastSig2GetSig_usec = (time_ready2return.tv_usec - IspInfo_FrmB.IrqInfo.LastestSigTime_usec[irqinfo->UserInfo.Type][idx]);
-        irqinfo->TimeInfo.tLastSig2GetSig_sec = (time_ready2return.tv_sec - IspInfo_FrmB.IrqInfo.LastestSigTime_sec[irqinfo->UserInfo.Type][idx]);
-        irqinfo->TimeInfo.passedbySigcnt = IspInfo_FrmB.IrqInfo.PassedBySigCnt[irqinfo->UserInfo.UserKey][irqinfo->UserInfo.Type][idx];
+        if((int)(irqinfo->TimeInfo.tMark2WaitSig_usec)<0)
+        {
+            irqinfo->TimeInfo.tMark2WaitSig_sec=irqinfo->TimeInfo.tMark2WaitSig_sec-1;
+            if((int)(irqinfo->TimeInfo.tMark2WaitSig_sec) <0)
+            {
+                irqinfo->TimeInfo.tMark2WaitSig_sec=0;
+            }
+            irqinfo->TimeInfo.tMark2WaitSig_usec = 1*1000000+irqinfo->TimeInfo.tMark2WaitSig_usec;
+        }
+        //
+        if(irqinfo->TimeInfo.passedbySigcnt>0)
+        {
+            irqinfo->TimeInfo.tLastSig2GetSig_usec = (time_ready2return.tv_usec - IspInfo_FrmB.IrqInfo.LastestSigTime_usec[irqinfo->UserInfo.Type][idx]);
+            irqinfo->TimeInfo.tLastSig2GetSig_sec = (time_ready2return.tv_sec - IspInfo_FrmB.IrqInfo.LastestSigTime_sec[irqinfo->UserInfo.Type][idx]);
+            if((int)(irqinfo->TimeInfo.tLastSig2GetSig_usec)<0)
+            {
+                irqinfo->TimeInfo.tLastSig2GetSig_sec=irqinfo->TimeInfo.tLastSig2GetSig_sec-1;
+                if((int)(irqinfo->TimeInfo.tLastSig2GetSig_sec) <0)
+                {
+                    irqinfo->TimeInfo.tLastSig2GetSig_sec=0;
+                }
+                irqinfo->TimeInfo.tLastSig2GetSig_usec = 1*1000000+irqinfo->TimeInfo.tLastSig2GetSig_usec;
+            }
+        }
+       else
+       {
+            irqinfo->TimeInfo.tLastSig2GetSig_usec=0;
+            irqinfo->TimeInfo.tLastSig2GetSig_sec=0;
+        }
     }
     else
     {
@@ -3801,11 +3830,12 @@ static MINT32 ISP_WaitIrq_FrmB(ISP_WAIT_IRQ_STRUCT_FRMB* WaitIrq)
     if(IspInfo_FrmB.DebugMask & ISP_DBG_INT)
     {
         if(WaitIrq->UserInfo.Status& (ISP_IRQ_INT_STATUS_SOF1_INT_ST|ISP_IRQ_INT_STATUS_PASS1_TG1_DON_ST/*|ISP_IRQ_P1_STATUS_D_SOF1_INT_ST|ISP_IRQ_P1_STATUS_D_PASS1_DON_ST*/)){
-            LOG_DBG("+WaitIrq Clear(%d), Type(%d), Status(0x%08X), Timeout(%d)",
+            LOG_DBG("+WaitIrq Clear(%d), Type(%d), Status(0x%08X), Timeout(%d),user(%d)",
                         WaitIrq->Clear,
                         WaitIrq->UserInfo.Type,
                         WaitIrq->UserInfo.Status,
-                        WaitIrq->Timeout);
+                        WaitIrq->Timeout,
+                        WaitIrq->UserInfo.UserKey);
         }
     }
 
@@ -3914,7 +3944,8 @@ static MINT32 ISP_WaitIrq_FrmB(ISP_WAIT_IRQ_STRUCT_FRMB* WaitIrq)
     if(Timeout == 0)
     {   //timeout
         spin_lock_irqsave(&(IspInfo_FrmB.SpinLockIrq[eIrq]), flags);
-        LOG_ERR("WaitIrq Timeout Clear(%d), Type(%d), IrqStatus(0x%08X), WaitStatus(0x%08X), Timeout(%d)",
+        LOG_ERR("WaitIrq Timeout User(%d),Clear(%d), Type(%d), IrqStatus(0x%08X), WaitStatus(0x%08X), Timeout(%d)",
+                                    WaitIrq->UserInfo.UserKey,
                                     WaitIrq->Clear,
                                     WaitIrq->UserInfo.Type,
                                     IspInfo_FrmB.IrqInfo.Status[WaitIrq->UserInfo.UserKey][WaitIrq->UserInfo.Type],
@@ -3934,12 +3965,36 @@ static MINT32 ISP_WaitIrq_FrmB(ISP_WAIT_IRQ_STRUCT_FRMB* WaitIrq)
     //3. get interrupt and update time related information that would be return to user
     do_gettimeofday(&time_ready2return);
     spin_lock_irqsave(&(IspInfo_FrmB.SpinLockIrq[eIrq]), flags);
+    //signal time stamp for eis
+    WaitIrq->TimeInfo.tLastSig_sec=WaitIrq->TimeInfo.tLastSig2GetSig_sec=IspInfo_FrmB.IrqInfo.LastestSigTime_sec[WaitIrq->UserInfo.Type][idx];
+    WaitIrq->TimeInfo.tLastSig_usec=WaitIrq->TimeInfo.tLastSig2GetSig_sec=IspInfo_FrmB.IrqInfo.LastestSigTime_usec[WaitIrq->UserInfo.Type][idx];
+    //time period for 3A
     if(WaitIrq->UserInfo.Status & IspInfo_FrmB.IrqInfo.MarkedFlag[WaitIrq->UserInfo.UserKey][WaitIrq->UserInfo.Type])
     {
         WaitIrq->TimeInfo.tMark2WaitSig_usec = (time_getrequest.tv_usec - IspInfo_FrmB.IrqInfo.MarkedTime_usec[WaitIrq->UserInfo.UserKey][WaitIrq->UserInfo.Type][idx]);
         WaitIrq->TimeInfo.tMark2WaitSig_sec = (time_getrequest.tv_sec - IspInfo_FrmB.IrqInfo.MarkedTime_sec[WaitIrq->UserInfo.UserKey][WaitIrq->UserInfo.Type][idx]);
+        if((int)(WaitIrq->TimeInfo.tMark2WaitSig_usec)<0)
+        {
+            WaitIrq->TimeInfo.tMark2WaitSig_sec=WaitIrq->TimeInfo.tMark2WaitSig_sec-1;
+            if((int)(WaitIrq->TimeInfo.tMark2WaitSig_sec) <0)
+            {
+                WaitIrq->TimeInfo.tMark2WaitSig_sec=0;
+            }
+            WaitIrq->TimeInfo.tMark2WaitSig_usec = 1*1000000+WaitIrq->TimeInfo.tMark2WaitSig_usec;
+        }
+        //
         WaitIrq->TimeInfo.tLastSig2GetSig_usec = (time_ready2return.tv_usec - IspInfo_FrmB.IrqInfo.LastestSigTime_usec[WaitIrq->UserInfo.Type][idx]);
         WaitIrq->TimeInfo.tLastSig2GetSig_sec = (time_ready2return.tv_sec - IspInfo_FrmB.IrqInfo.LastestSigTime_sec[WaitIrq->UserInfo.Type][idx]);
+        if((int)(WaitIrq->TimeInfo.tLastSig2GetSig_usec)<0)
+        {
+            WaitIrq->TimeInfo.tLastSig2GetSig_sec=WaitIrq->TimeInfo.tLastSig2GetSig_sec-1;
+            if((int)(WaitIrq->TimeInfo.tLastSig2GetSig_sec) <0)
+            {
+                WaitIrq->TimeInfo.tLastSig2GetSig_sec=0;
+            }
+            WaitIrq->TimeInfo.tLastSig2GetSig_usec = 1*1000000+WaitIrq->TimeInfo.tLastSig2GetSig_usec;
+        }
+        //
         if(freeze_passbysigcnt)
         {
              WaitIrq->TimeInfo.passedbySigcnt = IspInfo_FrmB.IrqInfo.PassedBySigCnt[WaitIrq->UserInfo.UserKey][WaitIrq->UserInfo.Type][idx]- 1;
@@ -3949,8 +4004,9 @@ static MINT32 ISP_WaitIrq_FrmB(ISP_WAIT_IRQ_STRUCT_FRMB* WaitIrq)
             WaitIrq->TimeInfo.passedbySigcnt = IspInfo_FrmB.IrqInfo.PassedBySigCnt[WaitIrq->UserInfo.UserKey][WaitIrq->UserInfo.Type][idx];
         }
     }
-    LOG_DBG(" [WAITIRQ] mark sec/usec (%d/%d), irq sec/usec (%d/%d),user(0x%x)",WaitIrq->TimeInfo.tMark2WaitSig_sec,WaitIrq->TimeInfo.tMark2WaitSig_usec,\
-        WaitIrq->TimeInfo.tLastSig2GetSig_sec,WaitIrq->TimeInfo.tLastSig2GetSig_usec,WaitIrq->UserInfo.UserKey);
+    LOG_DBG(" [WAITIRQv3]user(%d)  sigNum(%d/%d), d0 sec/usec (%d/%d), d1 sec/usec (%d/%d)\n",WaitIrq->UserInfo.UserKey,\
+             IspInfo_FrmB.IrqInfo.PassedBySigCnt[WaitIrq->UserInfo.UserKey][WaitIrq->UserInfo.Type][idx],WaitIrq->TimeInfo.passedbySigcnt,WaitIrq->TimeInfo.tMark2WaitSig_sec,WaitIrq->TimeInfo.tMark2WaitSig_usec,\
+            WaitIrq->TimeInfo.tLastSig2GetSig_sec,WaitIrq->TimeInfo.tLastSig2GetSig_usec);
     //
     #if 0
     if(IspInfo_FrmB.DebugMask & ISP_DBG_INT)
@@ -4150,6 +4206,10 @@ static void ISP_Irq_FrmB(MUINT32 *IrqStatus)
         do_div( sec, 1000 );    //usec
         usec = do_div( sec, 1000000);    //sec and usec
 
+        //update pass1 done time stamp for eis user(need match with the time stamp in image header)
+        IspInfo_FrmB.IrqInfo.LastestSigTime_usec[ISP_IRQ_TYPE_INT][10]=(unsigned int)(sec);
+        IspInfo_FrmB.IrqInfo.LastestSigTime_sec[ISP_IRQ_TYPE_INT][10]=(unsigned int) (usec);
+
         ISP_DONE_Buf_Time_FrmB(_IRQ,sec,usec,p1_fbc);
         /*Check Timesamp reverse*/
         //what's this?
@@ -4275,6 +4335,11 @@ static void ISP_Irq_FrmB(MUINT32 *IrqStatus)
 #endif
             do_div( sec, 1000 );    //usec
             usec = do_div( sec, 1000000);    //sec and usec
+
+            //update SOF time stamp for eis user(need match with the time stamp in image header)
+            IspInfo_FrmB.IrqInfo.LastestSigTime_usec[ISP_IRQ_TYPE_INT][12]=(unsigned int)(sec);
+            IspInfo_FrmB.IrqInfo.LastestSigTime_sec[ISP_IRQ_TYPE_INT][12]=(unsigned int) (usec);
+            
             if(sof_pass1done[0] == 1)
                 ISP_SOF_Buf_Get_FrmB(_IRQ,sec,usec,MTRUE,p1_fbc,curr_pa);
             else
