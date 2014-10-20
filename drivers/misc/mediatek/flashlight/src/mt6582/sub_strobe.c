@@ -1,16 +1,17 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License along with this program.
 * If not, see <http://www.gnu.org/licenses/>.
 */
+
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -31,12 +32,12 @@
 #include "kd_flashlight.h"
 #include <asm/io.h>
 #include <asm/uaccess.h>
-#include "kd_camera_hw.h"  
+#include "kd_camera_hw.h"
 #include <cust_gpio_usage.h>
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
 #include <linux/xlog.h>
-#include <linux/version.h>  
+#include <linux/version.h>
 /******************************************************************************
  * Debug configuration
 ******************************************************************************/
@@ -70,36 +71,39 @@
 #endif
 
 
-static int strobe_ioctl(MUINT32 cmd, MUINT32 arg)
+static int sub_strobe_ioctl(MUINT32 cmd, MUINT32 arg)
 {
 	PK_DBG("sub dummy ioctl");
-	return 0;
+    return 0;
 }
 
-static int strobe_open(void *pArg)
+static int sub_strobe_open(void *pArg)
 {
     PK_DBG("sub dummy open");
     return 0;
+
 }
 
-static int strobe_release(void *pArg)
+static int sub_strobe_release(void *pArg)
 {
     PK_DBG("sub dummy release");
     return 0;
+
 }
 
-static FLASHLIGHT_FUNCTION_STRUCT	strobeFunc=
+FLASHLIGHT_FUNCTION_STRUCT	subStrobeFunc=
 {
-	strobe_open,
-	strobe_release,
-	strobe_ioctl
+	sub_strobe_open,
+	sub_strobe_release,
+	sub_strobe_ioctl
 };
 
-MUINT32 mainStrobe2Init(PFLASHLIGHT_FUNCTION_STRUCT *pfFunc)
+
+MUINT32 subStrobeInit(PFLASHLIGHT_FUNCTION_STRUCT *pfFunc)
 {
     if (pfFunc != NULL)
     {
-        *pfFunc = &strobeFunc;
+        *pfFunc = &subStrobeFunc;
     }
     return 0;
 }

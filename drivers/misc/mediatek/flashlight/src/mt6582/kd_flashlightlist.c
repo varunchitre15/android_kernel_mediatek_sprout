@@ -1,16 +1,17 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License along with this program.
 * If not, see <http://www.gnu.org/licenses/>.
 */
+
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -46,8 +47,10 @@ MUINT32 constantFlashlightInit(PFLASHLIGHT_FUNCTION_STRUCT *pfFunc);
 
 int strobe_getPartId(int sensorDev);
 MUINT32 subStrobeInit(PFLASHLIGHT_FUNCTION_STRUCT *pfFunc);
-MUINT32 subStrobe2Init(PFLASHLIGHT_FUNCTION_STRUCT *pfFunc);
-MUINT32 mainStrobe2Init(PFLASHLIGHT_FUNCTION_STRUCT *pfFunc);
+MUINT32 strobeInit_sub_sid1_part2(PFLASHLIGHT_FUNCTION_STRUCT *pfFunc);
+MUINT32 strobeInit_main_sid1_part2(PFLASHLIGHT_FUNCTION_STRUCT *pfFunc);
+
+
 KD_FLASHLIGHT_INIT_FUNCTION_STRUCT kdFlashlightList[] =
 {
     {defaultFlashlightInit},
@@ -83,19 +86,7 @@ KD_FLASHLIGHT_INIT_FUNCTION_STRUCT kdFlashlightList[] =
 /* device name and major number */
 #define FLASHLIGHT_DEVNAME            "kd_camera_flashlight"
 
-#define DELAY_MS(ms) {mdelay(ms);}//unit: ms(10^-3)
-#define DELAY_US(us) {mdelay(us);}//unit: us(10^-6)
-#define DELAY_NS(ns) {mdelay(ns);}//unit: ns(10^-9)
-/*
-    non-busy dealy(/kernel/timer.c)(CANNOT be used in interrupt context):
-        ssleep(sec)
-        msleep(msec)
-        msleep_interruptible(msec)
 
-    kernel timer
-
-
-*/
 /******************************************************************************
  * Debug configuration
 ******************************************************************************/
@@ -131,7 +122,6 @@ static int g_strobePartIdMainSecond=1;
 /*****************************************************************************
 
 *****************************************************************************/
-
 
 MINT32 default_flashlight_open(void *pArg) {
     PK_DBG("[default_flashlight_open] E\n");
@@ -198,10 +188,10 @@ int kdSetFlashlightDrv(unsigned int *pSensorId)
 		defaultFlashlightInit(&g_pFlashlightFunc);
 
 #else
-		if(partId==1)
+		//@@if(partId==1)
 			constantFlashlightInit(&g_pFlashlightFunc);
-		else //if(partId==2)
-			mainStrobe2Init(&g_pFlashlightFunc);
+		//@@else //if(partId==2)
+			//@@strobeInit_main_sid1_part2(&g_pFlashlightFunc);
 #endif
 	}
 	else if(*pSensorId==e_CAMERA_SUB_SENSOR && partId==1)
@@ -210,12 +200,15 @@ int kdSetFlashlightDrv(unsigned int *pSensorId)
 	}
 	else if(*pSensorId==e_CAMERA_SUB_SENSOR && partId==2)
 	{
-		subStrobe2Init(&g_pFlashlightFunc);
+		//@@strobeInit_sub_sid1_part2(&g_pFlashlightFunc);
+
 	}
 	else
 	{
 		defaultFlashlightInit(&g_pFlashlightFunc);
 	}
+
+
 
 
 /*
@@ -254,7 +247,10 @@ static int flashlight_ioctl(struct inode *inode, struct file *file, unsigned int
 	int partId;
     int i4RetValue = 0;
 
-    PK_DBG("XXflashlight_ioctl cmd,arg= %x, %x +\n",cmd,(unsigned int)arg);
+
+
+
+    PK_DBG("tflashlight_ioctl cmd,arg = 0x%x, %x ln=%d+\n",cmd,(unsigned int)arg,__LINE__);
 
     switch(cmd)
     {

@@ -1,16 +1,17 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License along with this program.
 * If not, see <http://www.gnu.org/licenses/>.
 */
+
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -40,7 +41,7 @@
 /******************************************************************************
  * Debug configuration
 ******************************************************************************/
-// availible parameter 
+// availible parameter
 // ANDROID_LOG_ASSERT
 // ANDROID_LOG_ERROR
 // ANDROID_LOG_WARNING
@@ -76,7 +77,6 @@ static int strobe_ioctl(MUINT32 cmd, MUINT32 arg)
 	return 0;
 }
 
-
 static int strobe_open(void *pArg)
 {
     PK_DBG("sub dummy open");
@@ -96,7 +96,7 @@ static FLASHLIGHT_FUNCTION_STRUCT	strobeFunc=
 	strobe_ioctl
 };
 
-MUINT32 subStrobe2Init(PFLASHLIGHT_FUNCTION_STRUCT *pfFunc)
+MUINT32 mainStrobe2Init(PFLASHLIGHT_FUNCTION_STRUCT *pfFunc)
 {
     if (pfFunc != NULL)
     {

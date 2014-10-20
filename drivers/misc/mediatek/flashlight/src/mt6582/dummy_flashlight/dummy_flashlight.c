@@ -1,16 +1,17 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License along with this program.
 * If not, see <http://www.gnu.org/licenses/>.
 */
+
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -41,25 +42,23 @@
 /* device name and major number */
 #define STROBE_DEVNAME            "leds_strobe"
 
-#define DELAY_MS(ms) {mdelay(ms);}//unit: ms(10^-3)
-#define DELAY_US(us) {mdelay(us);}//unit: us(10^-6)
-#define DELAY_NS(ns) {mdelay(ns);}//unit: ns(10^-9)
+
 
 /******************************************************************************
  * Debug configuration
 ******************************************************************************/
 #define TAG_NAME "[dummy_flashlight.c]"
 #define PK_DBG_NONE(fmt, arg...)    do {} while (0)
-#define PK_DBG_FUNC(fmt, arg...)    xlog_printk(ANDROID_LOG_DEBUG  , TAG_NAME, KERN_INFO  "%s: " fmt, __FUNCTION__ ,##arg)
-#define PK_WARN(fmt, arg...)        xlog_printk(ANDROID_LOG_WARNING, TAG_NAME, KERN_WARNING  "%s: " fmt, __FUNCTION__ ,##arg)
-#define PK_NOTICE(fmt, arg...)      xlog_printk(ANDROID_LOG_DEBUG  , TAG_NAME, KERN_NOTICE  "%s: " fmt, __FUNCTION__ ,##arg)
-#define PK_INFO(fmt, arg...)        xlog_printk(ANDROID_LOG_INFO   , TAG_NAME, KERN_INFO  "%s: " fmt, __FUNCTION__ ,##arg)
-#define PK_TRC_FUNC(f)              xlog_printk(ANDROID_LOG_DEBUG  , TAG_NAME,  "<%s>\n", __FUNCTION__);
-#define PK_TRC_VERBOSE(fmt, arg...) xlog_printk(ANDROID_LOG_VERBOSE, TAG_NAME,  fmt, ##arg)
-#define PK_ERROR(fmt, arg...)       xlog_printk(ANDROID_LOG_ERROR  , TAG_NAME, KERN_ERR "%s: " fmt, __FUNCTION__ ,##arg)
+#define PK_DBG_FUNC(fmt, arg...)    pr_debug(ANDROID_LOG_DEBUG  , TAG_NAME, KERN_INFO  "%s: " fmt, __FUNCTION__ ,##arg)
+#define PK_WARN(fmt, arg...)        pr_debug(ANDROID_LOG_WARNING, TAG_NAME, KERN_WARNING  "%s: " fmt, __FUNCTION__ ,##arg)
+#define PK_NOTICE(fmt, arg...)      pr_debug(ANDROID_LOG_DEBUG  , TAG_NAME, KERN_NOTICE  "%s: " fmt, __FUNCTION__ ,##arg)
+#define PK_INFO(fmt, arg...)        pr_debug(ANDROID_LOG_INFO   , TAG_NAME, KERN_INFO  "%s: " fmt, __FUNCTION__ ,##arg)
+#define PK_TRC_FUNC(f)              pr_debug(ANDROID_LOG_DEBUG  , TAG_NAME,  "<%s>\n", __FUNCTION__);
+#define PK_TRC_VERBOSE(fmt, arg...) pr_debug(ANDROID_LOG_VERBOSE, TAG_NAME,  fmt, ##arg)
+#define PK_ERROR(fmt, arg...)       pr_debug(ANDROID_LOG_ERROR  , TAG_NAME, KERN_ERR "%s: " fmt, __FUNCTION__ ,##arg)
 
 
-#define DEBUG_LEDS_STROBE
+//#define DEBUG_LEDS_STROBE
 #ifdef  DEBUG_LEDS_STROBE
 	#define PK_DBG PK_DBG_FUNC
 	#define PK_VER PK_TRC_VERBOSE
