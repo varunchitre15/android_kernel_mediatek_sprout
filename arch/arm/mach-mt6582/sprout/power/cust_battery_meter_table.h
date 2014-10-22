@@ -47,24 +47,6 @@
 // ============================================================
 // typedef
 // ============================================================
-typedef struct _BATTERY_PROFILE_STRUC
-{
-    kal_int32 percentage;
-    kal_int32 voltage;
-} BATTERY_PROFILE_STRUC, *BATTERY_PROFILE_STRUC_P;
-
-typedef struct _R_PROFILE_STRUC
-{
-    kal_int32 resistance; // Ohm
-    kal_int32 voltage;
-} R_PROFILE_STRUC, *R_PROFILE_STRUC_P;
-
-typedef enum
-{
-    T1_0C,
-    T2_25C,
-    T3_50C
-} PROFILE_TEMPERATURE;
 
 // ============================================================
 // External Variables
@@ -78,7 +60,6 @@ typedef enum
 // <DOD, Battery_Voltage> Table
 // ============================================================
 #if (BAT_NTC_10 == 1)
-#define TABLE_NUM 23
     BATT_TEMPERATURE Batt_Temperature_Table[] = {
     	 {-30,124607},
     	 {-25,94918},
@@ -107,7 +88,6 @@ typedef enum
 #endif
 
 #if (BAT_NTC_47 == 1)
-#define TABLE_NUM 17
     BATT_TEMPERATURE Batt_Temperature_Table[] = {
         {-20,483954},
         {-15,360850},
@@ -125,7 +105,7 @@ typedef enum
         { 45,20048},
         { 50,16433},
         { 55,13539},
-        { 60,11210}        
+        { 60,11210}
     };
 #endif
 
@@ -190,10 +170,10 @@ BATTERY_PROFILE_STRUC battery_profile_t0[] =
     {96  ,  3618  },
     {97  ,  3565  },
     {99  ,  3483  },
-    {100 ,  3319  } 	       
-};      
-        
-// T1 0C 
+    {100 ,  3319  }
+};
+
+// T1 0C
 BATTERY_PROFILE_STRUC battery_profile_t1[] =
 {
     {0   ,  4335  },
@@ -254,8 +234,8 @@ BATTERY_PROFILE_STRUC battery_profile_t1[] =
     {95  ,  3662  },
     {97  ,  3609  },
     {98  ,  3528  },
-    {100 ,  3384  } 	       
-};           
+    {100 ,  3384  }
+};
 
 // T2 25C
 BATTERY_PROFILE_STRUC battery_profile_t2[] =
@@ -318,7 +298,7 @@ BATTERY_PROFILE_STRUC battery_profile_t2[] =
     {96  ,   3650 },
     {98  ,   3577 },
     {99  ,   3469 },
-    {100 ,   3258 } 	     
+    {100 ,   3258 }
 };     
 
 // T3 50C
@@ -382,72 +362,8 @@ BATTERY_PROFILE_STRUC battery_profile_t3[] =
     {96 ,  3635 },
     {98 ,  3565 },
     {99 ,  3466 },
-    {100,  3287 }    
-};           
-
-// battery profile for actual temperature. The size should be the same as T1, T2 and T3
-BATTERY_PROFILE_STRUC battery_profile_temperature[] =
-{
-  	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },  
-	{0  , 0 }, 
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },  
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 },
-	{0  , 0 }
-};    
+    {100,  3287 }
+};
 
 // ============================================================
 // <Rbat, Battery_Voltage> Table
@@ -513,8 +429,8 @@ R_PROFILE_STRUC r_profile_t0[] =
     {2071 ,   3618},
     {2440 ,   3565},
     {2493 ,   3483},
-    {3120 ,   3319} 	       
-};      
+    {3120 ,   3319}
+};
 
 // T1 0C
 R_PROFILE_STRUC r_profile_t1[] =
@@ -577,8 +493,8 @@ R_PROFILE_STRUC r_profile_t1[] =
     {1357 ,   3662},
     {1497 ,   3609},
     {1838 ,   3528},
-    {1987 ,   3384} 	       
-};     
+    {1987 ,   3384}
+};
 
 // T2 25C
 R_PROFILE_STRUC r_profile_t2[] =
@@ -641,8 +557,8 @@ R_PROFILE_STRUC r_profile_t2[] =
     {177 ,    3650},
     {188 ,    3577},
     {220 ,    3469},
-    {344 ,    3258} 	       
-}; 
+    {344 ,    3258}
+};
 
 // T3 50C
 R_PROFILE_STRUC r_profile_t3[] =
@@ -705,12 +621,13 @@ R_PROFILE_STRUC r_profile_t3[] =
     {98  ,   3635 },
     {107 ,   3565 },
     {123 ,   3466 },
-    {195 ,   3287 } 	       
-}; 
+    {195 ,   3287 }
+};
 
+#if 1
 // r-table profile for actual temperature. The size should be the same as T1, T2 and T3
 R_PROFILE_STRUC r_profile_temperature[] =
-{       
+{
     {0  , 0 },
     {0  , 0 },
     {0  , 0 },
@@ -738,11 +655,11 @@ R_PROFILE_STRUC r_profile_temperature[] =
     {0  , 0 },
     {0  , 0 },
     {0  , 0 },
-    {0  , 0 },  
+    {0  , 0 },
     {0  , 0 }, 
     {0  , 0 },
     {0  , 0 },
-    {0  , 0 },  
+    {0  , 0 },
     {0  , 0 },
     {0  , 0 },
     {0  , 0 },
@@ -770,16 +687,11 @@ R_PROFILE_STRUC r_profile_temperature[] =
     {0  , 0 },
     {0  , 0 },
     {0  , 0 }
-};    
-
+};
+#endif
 // ============================================================
 // function prototype
 // ============================================================
-int fgauge_get_saddles(void);
-BATTERY_PROFILE_STRUC_P fgauge_get_profile(kal_uint32 temperature);
-
-int fgauge_get_saddles_r_table(void);
-R_PROFILE_STRUC_P fgauge_get_profile_r_table(kal_uint32 temperature);
 
 #endif	//#ifndef _CUST_BATTERY_METER_TABLE_H
 

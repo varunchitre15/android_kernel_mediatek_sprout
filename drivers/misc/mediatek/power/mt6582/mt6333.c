@@ -54,6 +54,9 @@
 
 #include <mach/mt6333.h>
 #include <mach/upmu_common.h>
+#include <mach/charging.h>
+#include <mach/battery_ssb.h>
+#include <mach/charging_hw_common.h>
 
 extern void pmu_drv_tool_customization_init(void);
 extern void dump_ldo_status_read_debug(void);
@@ -85,9 +88,6 @@ static struct i2c_driver mt6333_driver = {
 kal_bool mt6333_hw_init_done = KAL_FALSE;
 kal_int32 g_mt6333_cid = 0;
 
-#ifdef CONFIG_MTK_SWCHR_SUPPORT
-kal_bool chargin_hw_init_done = KAL_FALSE;
-#endif
 
 /**********************************************************
   *
@@ -7239,7 +7239,7 @@ void mt6333_hw_init(void)
   *   [MT6333 Interrupt Function] 
   *
   *********************************************************/
-#if defined(CONFIG_POWER_EXT)
+#if 1
 //----------------------------------------------------------------------
 #define CUST_EINT_POLARITY_LOW              0
 #define CUST_EINT_POLARITY_HIGH             1
@@ -9682,30 +9682,33 @@ static int __init mt6333_init(void)
     int ret=0;
     
     printk("[mt6333_init] init start\n");
-    
-    i2c_register_board_info(mt6333_BUSNUM, &i2c_mt6333, 1);
 
-    if(i2c_add_driver(&mt6333_driver)!=0)
-    {
-        printk("[mt6333_init] failed to register mt6333 i2c driver.\n");
-    }
-    else
-    {
-        printk("[mt6333_init] Success to register mt6333 i2c driver.\n");
-    }
+	parsing_battery_init_para(FEATURE_LABEL_CODE);
+	
+	if (ext_chr_ic_id == EXT_BQ24158) {    
+	    i2c_register_board_info(mt6333_BUSNUM, &i2c_mt6333, 1);
 
-    // mt6333 user space access interface
-    ret = platform_device_register(&mt6333_user_space_device);
-    if (ret) {
-        printk("****[mt6333_init] Unable to device register(%d)\n", ret);
-        return ret;
-    }    
-    ret = platform_driver_register(&mt6333_user_space_driver);
-    if (ret) {
-        printk("****[mt6333_init] Unable to register driver (%d)\n", ret);
-        return ret;
-    }
-    
+	    if(i2c_add_driver(&mt6333_driver)!=0)
+	    {
+	        printk("[mt6333_init] failed to register mt6333 i2c driver.\n");
+	    }
+	    else
+	    {
+	        printk("[mt6333_init] Success to register mt6333 i2c driver.\n");
+	    }
+
+	    // mt6333 user space access interface
+	    ret = platform_device_register(&mt6333_user_space_device);
+	    if (ret) {
+	        printk("****[mt6333_init] Unable to device register(%d)\n", ret);
+	        return ret;
+	    }    
+	    ret = platform_driver_register(&mt6333_user_space_driver);
+	    if (ret) {
+	        printk("****[mt6333_init] Unable to register driver (%d)\n", ret);
+	        return ret;
+	    }
+	}
     return 0;        
 }
 

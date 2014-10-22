@@ -20,9 +20,9 @@
 // ============================================================
 // define
 // ============================================================
-//#define SOC_BY_AUXADC
-//#define SOC_BY_HW_FG
-#define SOC_BY_SW_FG
+#define SOC_BY_AUXADC 0
+#define SOC_BY_HW_FG 1
+#define SOC_BY_SW_FG 2
 
 //#define CONFIG_DIS_CHECK_BATTERY
 //#define FIXED_TBAT_25

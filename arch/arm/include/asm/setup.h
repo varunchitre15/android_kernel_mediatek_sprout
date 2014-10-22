@@ -235,6 +235,10 @@ struct tag_leds_data {
     unsigned int end_magic;
 };
 
+struct tag_battery_info_data{
+	u32 battery_buf[1000];
+};
+
 struct tag_model_version_info_data {
     char model[32];
     unsigned int version;
@@ -282,6 +286,7 @@ struct tag {
 		struct sensor_tuning_data sensors_tuning;
 		struct tag_vibrator_data vibrator_data;
 		struct tag_leds_data leds_data;
+		struct tag_battery_info_data battery_data;
 	} u;
 };
 
