@@ -1188,6 +1188,7 @@ static int __init parse_tag_model_version_fixup(const struct tag *tags)
         g_para_model[i] = tags->u.model_version_data.model[i];
 
     }
+    g_para_model[31] = '\0'; //trailing NUL char at string end
     g_para_version = tags->u.model_version_data.version;
     printk(KERN_ALERT "g_para_model %s\n", g_para_model);
     printk(KERN_ALERT "g_para_version %d\n", g_para_version);
