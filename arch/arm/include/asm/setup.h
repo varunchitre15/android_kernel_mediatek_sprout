@@ -24,6 +24,8 @@
 #include <mach/accdet_ssb.h>
 #include <mach/gpio_usage_para.h>
 #include <mach/mt_touch_ssb_cust.h>
+#include <mach/mt_audio_ssb_cust.h>
+
 
 #define COMMAND_LINE_SIZE 1024
 
@@ -194,14 +196,6 @@ struct tag_eint_data {
     char magic[4];
     u32 count;
     char payload[1];
-};
-
-#define AUDIOPA_NAME_LEN   (8)
-
-struct tag_audiopa_data {
-    u32 version;
-    int pa_type;
-    char stName[AUDIOPA_NAME_LEN];
 };
 
 /*Para bins information*/
