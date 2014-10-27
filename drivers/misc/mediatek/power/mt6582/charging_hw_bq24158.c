@@ -189,13 +189,13 @@ static kal_uint32 charging_enable_bq24158(void *data)
 #if defined(CONFIG_USB_MTK_HDRC_HCD)
 		if(mt_usb_is_device())
 #endif
-	{
-	        mt_set_gpio_mode(gpio_number,gpio_off_mode);
-	        mt_set_gpio_dir(gpio_number,gpio_off_dir);
-	        mt_set_gpio_out(gpio_number,gpio_off_out);
+		{
+			mt_set_gpio_mode(gpio_number,gpio_off_mode);
+			mt_set_gpio_dir(gpio_number,gpio_off_dir);
+			mt_set_gpio_out(gpio_number,gpio_off_out);
 
-	       // bq24158_set_ce(1);
-	}
+			// bq24158_set_ce(1);
+		}
 	}
 
 	return status;
@@ -276,7 +276,7 @@ static kal_uint32 charging_set_input_current_bq24158(void *data)
 	bq24158_set_input_charging_current(register_value);
 
 	return status;
- }
+}
 
 
 static kal_uint32 charging_get_charging_status_bq24158(void *data)
@@ -302,7 +302,7 @@ static kal_uint32 charging_reset_watch_dog_timer_bq24158(void *data)
 	 bq24158_set_tmr_rst(1);
 
 	 return status;
- }
+}
 
 
 static kal_uint32 charging_set_hv_threshold_bq24158(void *data)
@@ -325,16 +325,16 @@ static kal_uint32 charging_set_hv_threshold_bq24158(void *data)
 
 static kal_uint32 charging_get_hv_status_bq24158(void *data)
 {
-	   kal_uint32 status = STATUS_OK;
+	kal_uint32 status = STATUS_OK;
 
-	   *(kal_bool*)(data) = upmu_get_rgs_vcdt_hv_det();
+	*(kal_bool*)(data) = upmu_get_rgs_vcdt_hv_det();
 
-	   return status;
+	return status;
 }
 
 kal_uint32 (* const charging_func_bq24158[CHARGING_CMD_NUMBER])(void *data)=
 {
-	  charging_hw_init_bq24158
+	charging_hw_init_bq24158
 	,charging_dump_register_bq24158
 	,charging_enable_bq24158
 	,charging_set_cv_voltage_bq24158

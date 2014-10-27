@@ -155,58 +155,54 @@ static kal_uint32 charging_hw_init_pmic(void *data)
  	kal_uint32 status = STATUS_OK;
 
 	kal_uint32 reg_val = 0;
-    kal_uint32 reg_num = CHR_CON0;
-    kal_uint32 i = 0;
+	kal_uint32 reg_num = CHR_CON0;
+	kal_uint32 i = 0;
 
-    for(i=reg_num ; i<=CHR_CON29 ; i+=2)
-    {
-        reg_val = upmu_get_reg_value(i);
-        battery_xlog_printk(BAT_LOG_FULL, "Chr Reg[0x%x]=0x%x \r\n", i, reg_val);
-    }
+	for(i=reg_num ; i<=CHR_CON29 ; i+=2) {
+		reg_val = upmu_get_reg_value(i);
+		battery_xlog_printk(BAT_LOG_FULL, "Chr Reg[0x%x]=0x%x \r\n", i, reg_val);
+	}
 
 	return status;
- }
- 	
+}
 
- static kal_uint32 charging_enable_pmic(void *data)
- {
+static kal_uint32 charging_enable_pmic(void *data)
+{
  	kal_uint32 status = STATUS_OK;
 	kal_uint32 enable = *(kal_uint32*)(data);
 
 	if(KAL_TRUE == enable)
 	{
-	    upmu_set_rg_csdac_dly(0x4);             // CSDAC_DLY
-	    upmu_set_rg_csdac_stp(0x1);             // CSDAC_STP
-	    upmu_set_rg_csdac_stp_inc(0x1);         // CSDAC_STP_INC
-	    upmu_set_rg_csdac_stp_dec(0x2);         // CSDAC_STP_DEC
-	    upmu_set_rg_cs_en(1);                   // CS_EN, check me
+		upmu_set_rg_csdac_dly(0x4);             // CSDAC_DLY
+		upmu_set_rg_csdac_stp(0x1);             // CSDAC_STP
+		upmu_set_rg_csdac_stp_inc(0x1);         // CSDAC_STP_INC
+		upmu_set_rg_csdac_stp_dec(0x2);         // CSDAC_STP_DEC
+		upmu_set_rg_cs_en(1);                   // CS_EN, check me
 
-	    upmu_set_rg_hwcv_en(1);
-	    
-	    upmu_set_rg_vbat_cv_en(1);              // CV_EN
-	    upmu_set_rg_csdac_en(1);                // CSDAC_EN
+		upmu_set_rg_hwcv_en(1);
 
-	    upmu_set_rg_chr_en(1); 				// CHR_EN
+		upmu_set_rg_vbat_cv_en(1);              // CV_EN
+		upmu_set_rg_csdac_en(1);                // CSDAC_EN
 
-	    if(Enable_BATDRV_LOG == BAT_LOG_FULL)
-	        charging_dump_register_pmic(NULL);
-	}
-	else
-	{
-	    upmu_set_rg_chrwdt_int_en(0);    // CHRWDT_INT_EN
-	    upmu_set_rg_chrwdt_en(0);        // CHRWDT_EN
-	    upmu_set_rg_chrwdt_flag_wr(0);   // CHRWDT_FLAG
-	    
-	    upmu_set_rg_csdac_en(0);         // CSDAC_EN
-	    upmu_set_rg_chr_en(0);           // CHR_EN
-	    upmu_set_rg_hwcv_en(0);          // RG_HWCV_EN
+		upmu_set_rg_chr_en(1); 				// CHR_EN
+
+		if(Enable_BATDRV_LOG == BAT_LOG_FULL)
+			charging_dump_register_pmic(NULL);
+	} else {
+		upmu_set_rg_chrwdt_int_en(0);    // CHRWDT_INT_EN
+		upmu_set_rg_chrwdt_en(0);        // CHRWDT_EN
+		upmu_set_rg_chrwdt_flag_wr(0);   // CHRWDT_FLAG
+
+		upmu_set_rg_csdac_en(0);         // CSDAC_EN
+		upmu_set_rg_chr_en(0);           // CHR_EN
+		upmu_set_rg_hwcv_en(0);          // RG_HWCV_EN
 	}
 	return status;
- }
+}
 
 
- static kal_uint32 charging_set_cv_voltage_pmic(void *data)
- {
+static kal_uint32 charging_set_cv_voltage_pmic(void *data)
+{
  	kal_uint32 status = STATUS_OK;
 	kal_uint16 register_value;
 	
@@ -214,11 +210,11 @@ static kal_uint32 charging_hw_init_pmic(void *data)
 	upmu_set_rg_vbat_cv_vth(register_value); 
 
 	return status;
- }
+}
 
 
- static kal_uint32 charging_get_current_pmic(void *data)
- {
+static kal_uint32 charging_get_current_pmic(void *data)
+{
 	kal_uint32 status = STATUS_OK;
 	kal_uint32 array_size;
 	kal_uint32 reg_value;
@@ -228,29 +224,27 @@ static kal_uint32 charging_hw_init_pmic(void *data)
 	*(kal_uint32 *)data = charging_value_to_parameter(CS_VTH_PMIC,array_size,reg_value);
 	
 	return status;
- }  
-  
+}
 
-
- static kal_uint32 charging_set_current_pmic(void *data)
- {
- 	kal_uint32 status = STATUS_OK;
+static kal_uint32 charging_set_current_pmic(void *data)
+{
+	kal_uint32 status = STATUS_OK;
 	kal_uint32 set_chr_current;
 	kal_uint32 array_size;
 	kal_uint32 register_value;
-	
+
 	array_size = GETARRAYNUM(CS_VTH_PMIC);
 	set_chr_current = bmt_find_closest_level(CS_VTH_PMIC, array_size, *(kal_uint32 *)data);
 	register_value = charging_parameter_to_value(CS_VTH_PMIC, array_size ,set_chr_current);
 	upmu_set_rg_cs_vth(register_value);
 
 	return status;
- }
+}
 
 
 static kal_uint32 charging_set_input_current_pmic(void *data)
 {
- 	kal_uint32 status = STATUS_OK;
+	kal_uint32 status = STATUS_OK;
 	return status;
 }
 
@@ -260,23 +254,22 @@ static kal_uint32 charging_get_charging_status_pmic(void *data)
 	return status;
 }
 
- 
 static kal_uint32 charging_reset_watch_dog_timer_pmic(void *data)
 {
-    kal_uint32 status = STATUS_OK;
+	kal_uint32 status = STATUS_OK;
 
-    upmu_set_rg_chrwdt_td(0x0);           // CHRWDT_TD, 4s
-    upmu_set_rg_chrwdt_wr(1);             // CHRWDT_WR
-    upmu_set_rg_chrwdt_int_en(1);         // CHRWDT_INT_EN
-    upmu_set_rg_chrwdt_en(1);             // CHRWDT_EN
-    upmu_set_rg_chrwdt_flag_wr(1);        // CHRWDT_WR
+	upmu_set_rg_chrwdt_td(0x0);           // CHRWDT_TD, 4s
+	upmu_set_rg_chrwdt_wr(1);             // CHRWDT_WR
+	upmu_set_rg_chrwdt_int_en(1);         // CHRWDT_INT_EN
+	upmu_set_rg_chrwdt_en(1);             // CHRWDT_EN
+	upmu_set_rg_chrwdt_flag_wr(1);        // CHRWDT_WR
 
-    return status;
+	return status;
 }
 
 
- static kal_uint32 charging_set_hv_threshold_pmic(void *data)
- {
+static kal_uint32 charging_set_hv_threshold_pmic(void *data)
+{
 	kal_uint32 status = STATUS_OK;
 
 	kal_uint32 set_hv_voltage;
@@ -290,17 +283,17 @@ static kal_uint32 charging_reset_watch_dog_timer_pmic(void *data)
 	upmu_set_rg_vcdt_hv_vth(register_value);
 
 	return status;
- }
+}
 
 
- static kal_uint32 charging_get_hv_status_pmic(void *data)
- {
-	  kal_uint32 status = STATUS_OK;
+static kal_uint32 charging_get_hv_status_pmic(void *data)
+{
+	kal_uint32 status = STATUS_OK;
 
-	  *(kal_bool*)(data) = upmu_get_rgs_vcdt_hv_det();
+	*(kal_bool*)(data) = upmu_get_rgs_vcdt_hv_det();
 
-	  return status;
- }
+	return status;
+}
 
 kal_uint32 (*charging_func_pmic[CHARGING_CMD_NUMBER])(void *data)=
 {

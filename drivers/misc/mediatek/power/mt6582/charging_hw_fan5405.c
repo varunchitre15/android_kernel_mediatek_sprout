@@ -177,8 +177,8 @@ static kal_uint32 charging_enable_fan5405(void *data)
 	gpio_on_mode = GPIO_SWCHARGER_EN_PIN_M_GPIO;
 
 	mt_set_gpio_mode(gpio_number,gpio_on_mode);
-    mt_set_gpio_dir(gpio_number,gpio_on_dir);
-    mt_set_gpio_out(gpio_number,gpio_on_out);
+	mt_set_gpio_dir(gpio_number,gpio_on_dir);
+	mt_set_gpio_out(gpio_number,gpio_on_out);
 
 	if(KAL_TRUE == enable)
 	{
@@ -192,13 +192,13 @@ static kal_uint32 charging_enable_fan5405(void *data)
 #if defined(CONFIG_USB_MTK_HDRC_HCD)
 		if(mt_usb_is_device())
 #endif
-	{
-	        mt_set_gpio_mode(gpio_number,gpio_off_mode);
-	        mt_set_gpio_dir(gpio_number,gpio_off_dir);
-	        mt_set_gpio_out(gpio_number,gpio_off_out);
+		{
+			mt_set_gpio_mode(gpio_number,gpio_off_mode);
+			mt_set_gpio_dir(gpio_number,gpio_off_dir);
+			mt_set_gpio_out(gpio_number,gpio_off_out);
 
-	        fan5405_set_ce(1);
-	}
+			fan5405_set_ce(1);
+		}
 	}
 
 	return status;
@@ -323,16 +323,16 @@ static kal_uint32 charging_set_hv_threshold_fan5405(void *data)
 
 static kal_uint32 charging_get_hv_status_fan5405(void *data)
 {
-	   kal_uint32 status = STATUS_OK;
+	kal_uint32 status = STATUS_OK;
 
-	   *(kal_bool*)(data) = upmu_get_rgs_vcdt_hv_det();
+	*(kal_bool*)(data) = upmu_get_rgs_vcdt_hv_det();
 
-	   return status;
+	return status;
 }
 
 kal_uint32 (* const charging_func_fan5405[CHARGING_CMD_NUMBER])(void *data)=
 {
-	 charging_hw_init_fan5405
+	charging_hw_init_fan5405
 	,charging_dump_register_fan5405
 	,charging_enable_fan5405
 	,charging_set_cv_voltage_fan5405

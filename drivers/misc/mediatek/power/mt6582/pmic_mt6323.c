@@ -228,10 +228,10 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 	kal_int32 u4Sample_times = 0;
 	kal_int32 u4channel=0;
 	kal_int32 adc_result_temp=0;
-       kal_int32 r_val_temp=0;
+	kal_int32 r_val_temp=0;
 	kal_int32 adc_result=0;
-    kal_int32 ret=0;
-    kal_int32 adc_reg_val=0;
+	kal_int32 ret=0;
+	kal_int32 adc_reg_val=0;
 
     /*
         0 : BATON2 **

@@ -25,7 +25,7 @@
 #include <mach/gpio_usage_para.h>
 #include <mach/mt_touch_ssb_cust.h>
 #include <mach/mt_audio_ssb_cust.h>
-
+#include <mach/battery_ssb.h>
 
 #define COMMAND_LINE_SIZE 1024
 
@@ -230,7 +230,7 @@ struct tag_leds_data {
 };
 
 struct tag_battery_info_data{
-	u32 battery_buf[1000];
+	u32 battery_buf[MAX_BATTERY_PARA_SIZE];
 };
 
 struct tag_model_version_info_data {

@@ -15,7 +15,6 @@
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <mach/mt_typedefs.h>
-#include "cust_battery_para.h"
 #include <mach/battery_common.h>
 #include "mach/battery_ssb.h"
 #include <mach/battery_meter.h>
@@ -28,7 +27,7 @@
 
 battery_header battery_hdr;
 battery_data_type battery_cust_data;
-unsigned int battery_cust_buf[1000];
+unsigned int battery_cust_buf[MAX_BATTERY_PARA_SIZE];
 
 kal_int32 fg_vbat_avg_size = 18;
 /*wake up voltage {VBAT_NORMAL_WAKEUP, VBAT_LOW_POWER_WAKEUP}*/

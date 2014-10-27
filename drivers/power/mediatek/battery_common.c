@@ -150,6 +150,7 @@ kal_bool temp_error_recovery_chr_flag = KAL_TRUE;
 #define ADC_CHANNEL_READ _IOW('k', 4, int)
 #define BAT_STATUS_READ _IOW('k', 5, int)
 #define Set_Charger_Current _IOW('k', 6, int)
+#define Get_Cust_Rsense _IOW('k', 7, int)
 /* add for meta tool----------------------------------------- */
 #define Get_META_BAT_VOL _IOW('k', 10, int)
 #define Get_META_BAT_SOC _IOW('k', 11, int)
@@ -2823,6 +2824,15 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		wake_up_bat();
 		battery_xlog_printk(BAT_LOG_CRTI, "**** unlocked_ioctl : set_Charger_Current:%d\n",
 				    charging_level_data[0]);
+		break;
+
+	case Get_Cust_Rsense:	/* For Factory Mode */
+		user_data_addr = (int *)arg;
+		ret = copy_from_user(battery_in_data, user_data_addr, 4);
+		battery_out_data[0] = g_R_CUST_SENSE;
+		ret = copy_to_user(user_data_addr, battery_out_data, 4);
+		battery_xlog_printk(BAT_LOG_CRTI, "**** unlocked_ioctl : g_R_CUST_SENSE:%d\n",
+				    g_R_CUST_SENSE);
 		break;
 		/* add for meta tool------------------------------- */
 	case Get_META_BAT_VOL:

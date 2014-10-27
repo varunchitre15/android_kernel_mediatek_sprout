@@ -1204,14 +1204,17 @@ static int __init parse_tag_battery_fixup(const struct tag *tags)
 
 	printk(KERN_ALERT "parse_tag_battery_fixup size %d\n", size);
 
-	for (i=0; i< size; i++) {
-		battery_cust_buf[i] = tags->u.battery_data.battery_buf[i];
-
-		//for (j=0; j<BATTERY_NODE_CNT)
-		//	bat_hdr.battery_node[j].label =  tags->u.battery_data.battery_buf[0];
-		//printk(KERN_ALERT "parse_tag_battery_fixup, indx[%d]:%d\n", i, bat_cust_buf[i]);
+	if (size > MAX_BATTERY_PARA_SIZE) {
+		printk(KERN_ALERT "size is out of bound %d/%d, stop parsing\n", size, MAX_BATTERY_PARA_SIZE);
+	} else {
+		for (i=0; i< size; i++) {
+			battery_cust_buf[i] = tags->u.battery_data.battery_buf[i];
+	
+			//for (j=0; j<BATTERY_NODE_CNT)
+			//	bat_hdr.battery_node[j].label =  tags->u.battery_data.battery_buf[0];
+			//printk(KERN_ALERT "parse_tag_battery_fixup, indx[%d]:%d\n", i, bat_cust_buf[i]);
+		}
 	}
-
 	return 0;
 }
 

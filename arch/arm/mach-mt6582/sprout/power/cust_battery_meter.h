@@ -35,8 +35,8 @@
 #define VBATTEMP_CHANNEL_NUMBER  5
 
 /* ADC resistor  */
-#define R_BAT_SENSE 4					
-#define R_I_SENSE 4						
+#define R_BAT_SENSE 4
+#define R_I_SENSE 4
 #define R_CHARGER_1 330
 #define R_CHARGER_2 39
 
