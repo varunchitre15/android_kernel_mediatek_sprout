@@ -50,7 +50,7 @@ static void mag_work_func(struct work_struct *work)
 
        if((0 == cxt->drv_obj[i]->polling) || !(cxt->active_data_sensor&(0x01<<i)))
        {
-           MAG_LOG("mag_type(%d) polling(%d) enabled(%d)\n",i, cxt->drv_obj[i]->polling,cxt->active_data_sensor);
+           //MAG_LOG("mag_type(%d) polling(%d) enabled(%d)\n",i, cxt->drv_obj[i]->polling,cxt->active_data_sensor);
            continue;
        }
 
