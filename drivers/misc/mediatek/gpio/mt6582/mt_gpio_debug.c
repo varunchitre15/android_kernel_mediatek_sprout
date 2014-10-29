@@ -862,6 +862,10 @@ static int __init mtk_gpio_debug_init(void)
     mt_gpio_info[13].name ="GPIO_SIM_SWITCH_DAT";
     mt_gpio_info[13].num = GPIO_SIM_SWITCH_DAT_PIN;
 #endif
+#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_4TH_PIN
+    strcpy(mt_gpio_info[14].name ,"GPIO_FDD_Band_Support_Detection_4");
+    mt_gpio_info[14].num = GPIO_FDD_BAND_SUPPORT_DETECT_4TH_PIN;
+#endif
 
     for(i=0;i<ARRAY_SIZE(mt_gpio_info);i++){
         printk("md debugGPIO number=%d,%s\n", mt_gpio_info[i].num, mt_gpio_info[i].name);
