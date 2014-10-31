@@ -7,7 +7,7 @@ obj-y	+= aee/
 #obj-y	+= dual_ccci/
 #obj-y   += eccci/
 obj-y	+= fmradio/
-#obj-y	+= gps/
+obj-y	+= gps/
 obj-y	+= hwmon/
 
 obj-$(CONFIG_MTK_CCCI_DRIVER)  +=  ccci/
