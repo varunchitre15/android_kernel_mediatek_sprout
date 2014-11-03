@@ -71,6 +71,8 @@ static struct _gpio_usage g_usage;
 struct _gpio_usage *gpio_usage=NULL;
 static struct sensor_tuning_data sensors_data;
 struct sensor_tuning_data *sensors_tuning_data;
+char g_para_model[32];
+unsigned int g_para_version=0;
 struct {
 	u32 base;
 	u32 size;
@@ -1194,6 +1196,23 @@ static int __init parse_tag_battery_fixup(const struct tag *tags)
 	return 0;
 }
 /*=======================================================================*/
+/* Parse the model version info                         */
+/*=======================================================================*/
+static int __init parse_tag_model_version_fixup(const struct tag *tags)
+{
+    int i;
+
+    for (i=0; i< 32; i++) {
+        g_para_model[i] = tags->u.model_version_data.model[i];
+
+    }
+    g_para_model[31] = '\0'; //trailing NUL char at string end
+    g_para_version = tags->u.model_version_data.version;
+    printk(KERN_ALERT "g_para_model %s\n", g_para_model);
+    printk(KERN_ALERT "g_para_version %d\n", g_para_version);
+    return 0;
+}
+/*=======================================================================*/
 /* Parse the framebuffer info                         */
 /*=======================================================================*/
 static int __init parse_tag_videofb_fixup(const struct tag *tags)
@@ -1572,6 +1591,8 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
         } else if (tags->hdr.tag == ATAG_BATTERY_TAG) {
             printk(KERN_ALERT "battery tag %d\n", tags->hdr.size);
             parse_tag_battery_fixup(tags);
+        } else if (tags->hdr.tag == ATAG_MODEL_VERSION_TAG) {
+            parse_tag_model_version_fixup(tags);
         }
     }
 

@@ -223,6 +223,7 @@ struct tag_eint_data {
 #define ATAG_VIBRATOR_TAG    (0x41000822)
 #define ATAG_BATTERY_TAG     (0x41000823)
 #define ATAG_EINT_TAG        (0x41000824)
+#define ATAG_MODEL_VERSION_TAG (0x41000826)
 
 struct tag_vibrator_data {
     unsigned int magic;
@@ -239,6 +240,10 @@ struct tag_leds_data {
 
 struct tag_battery_info_data{
 	u32 battery_buf[1000];
+};
+struct tag_model_version_info_data {
+    char model[32];
+    unsigned int version;
 };
 struct tag {
 	struct tag_header hdr;
@@ -263,26 +268,27 @@ struct tag {
 		 * DC21285 specific
 		 */
 		struct tag_memclk	memclk;
-		struct tag_boot		boot;
-		struct tag_meta_com	meta_com;
-		struct tag_devinfo_data	devinfo_data;
-                tag_dfo_boot     dfo_data;
-                struct tag_mdinfo_data mdinfo_data;
+		struct tag_boot         boot;
+		struct tag_meta_com     meta_com;
+		struct tag_devinfo_data devinfo_data;
+		tag_dfo_boot     dfo_data;
+		struct tag_mdinfo_data mdinfo_data;
 		mem_desc_t tee_reserved_mem;
-        struct _gpio_usage gpio_usage_data;
-        struct tag_para_touch_ssb_data touch_ssb_cust;
-        struct tag_para_keypad_ssb_data keypad_ssb_cust;
-        struct tag_para_auxadc_ssb_data auxadc_ssb_cust;
-        struct accdet_ssb_data accdet_mode_data;
-        struct tag_msdc_hw_para msdc0_data;
-        struct tag_msdc_hw_para msdc1_data;
-        struct tag_vibrator_data     vibrator_data;
-        struct tag_leds_data         leds_data;
-        struct tag_lcminfo_data lcminfo_data;
-        struct tag_para_lcm_data lcm_data;
-        struct sensor_tuning_data sensors_tuning;
-        struct tag_eint_data eint_data;
-        struct tag_battery_info_data battery_data;
+		struct _gpio_usage gpio_usage_data;
+		struct tag_para_touch_ssb_data touch_ssb_cust;
+		struct tag_para_keypad_ssb_data keypad_ssb_cust;
+		struct tag_para_auxadc_ssb_data auxadc_ssb_cust;
+		struct accdet_ssb_data accdet_mode_data;
+		struct tag_msdc_hw_para msdc0_data;
+		struct tag_msdc_hw_para msdc1_data;
+		struct tag_vibrator_data     vibrator_data;
+		struct tag_leds_data         leds_data;
+		struct tag_lcminfo_data lcminfo_data;
+		struct tag_para_lcm_data lcm_data;
+		struct sensor_tuning_data sensors_tuning;
+		struct tag_eint_data eint_data;
+		struct tag_battery_info_data battery_data;
+		struct tag_model_version_info_data model_version_data;
 	} u;
 };
 
