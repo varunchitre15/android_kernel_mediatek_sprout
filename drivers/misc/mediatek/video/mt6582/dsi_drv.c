@@ -2584,7 +2584,10 @@ void DSI_set_cmdq_V2(unsigned cmd, unsigned char count, unsigned char *para_list
         DSI_VM_CMD_CON_REG vm_cmdq;
         OUTREG32(&vm_cmdq, AS_UINT32(&DSI_REG->DSI_VM_CMD_CON));
         pr_debug("set cmdq in VDO mode in set_cmdq_V2\n");
+
+#if 0
         if (cmd < 0xB0)
+#endif
         {
             if (count > 1)
             {
@@ -2623,6 +2626,7 @@ void DSI_set_cmdq_V2(unsigned cmd, unsigned char count, unsigned char *para_list
                 OUTREG32(&DSI_REG->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
             }
         }
+#if 0
         else{
             if (count > 1)
             {
@@ -2661,6 +2665,7 @@ void DSI_set_cmdq_V2(unsigned cmd, unsigned char count, unsigned char *para_list
                 OUTREG32(&DSI_REG->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
             }
         }
+#endif
         //start DSI VM CMDQ
         if(force_update){
             MMProfileLogEx(MTKFB_MMP_Events.DSICmd, MMProfileFlagStart, *(unsigned int*)(&DSI_VM_CMD_REG->data[0]), *(unsigned int*)(&DSI_VM_CMD_REG->data[1]));
@@ -2686,7 +2691,10 @@ void DSI_set_cmdq_V2(unsigned cmd, unsigned char count, unsigned char *para_list
     }
 #endif
     _WaitForEngineNotBusy();
+
+#if 0
     if (cmd < 0xB0)
+#endif
     {
         if (count > 1)
         {
@@ -2729,6 +2737,7 @@ void DSI_set_cmdq_V2(unsigned cmd, unsigned char count, unsigned char *para_list
             OUTREG32(&DSI_REG->DSI_CMDQ_SIZE, 1);
         }
     }
+#if 0
     else
     {
         if (count > 1)
@@ -2773,6 +2782,7 @@ void DSI_set_cmdq_V2(unsigned cmd, unsigned char count, unsigned char *para_list
             OUTREG32(&DSI_REG->DSI_CMDQ_SIZE, 1);
         }
     }
+#endif
 
 //    for (i = 0; i < AS_UINT32(&DSI_REG->DSI_CMDQ_SIZE); i++)
 //        pr_debug("[DSI] DSI_set_cmdq_V2. DSI_CMDQ+%04x : 0x%08x\n", i*4, INREG32(DSI_BASE + 0x180 + i*4));

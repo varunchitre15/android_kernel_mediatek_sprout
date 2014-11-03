@@ -659,6 +659,11 @@ unsigned int lcm_index_ssb = 0xFF;
 int parse_tag_lcm_fixup(void *buf, unsigned int size)
 {
     pr_debug("[LCM] read buf = 0x%x, %d\n", (unsigned int)buf, size);
+    if (size > 10 * 1024)
+    {
+        pr_err("%s size is overflow(%d)!! \n", "lcm.bin", size);
+        return -1;
+    }
 
     memcpy(lcm_buf, (unsigned char*)buf, size);
     lcm_size = size;
@@ -680,7 +685,7 @@ int parse_tag_lcminfo_data_fixup(unsigned int index)
 }
 
 
-int disp_drv_read_para(unsigned char *buf, unsigned int* count, unsigned int driver_id[], unsigned int module_id[])
+int disp_drv_read_para(unsigned char *buf, unsigned int* list, unsigned int* count, unsigned int driver_id[], unsigned int module_id[])
 {
     int result = 0;
     int index=0,offset,len,inaddr;
@@ -697,7 +702,14 @@ int disp_drv_read_para(unsigned char *buf, unsigned int* count, unsigned int dri
 
     pfile_header = (struct lcm_para_header *)buf;
 
+    *list = pfile_header->list;
     *count = pfile_header->count;
+    if (pfile_header->count > MAX_LCM_CNT)
+    {
+        pr_err("lcm count is overflow(%d)!! \n", pfile_header->count);
+        return -1;
+    }
+
     for(i=0; i<pfile_header->count; i++)
     {
         pcustom_header = &(pfile_header->header_list[i]);
@@ -712,6 +724,7 @@ int disp_drv_read_para(unsigned char *buf, unsigned int* count, unsigned int dri
 const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm_index)
 {
     int result = 0;
+    unsigned int list = 0;
     unsigned int count = 0;
     unsigned int size = 0;
     unsigned char* buf = NULL;
@@ -737,7 +750,7 @@ const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm
 
             memset(driver_id, 0x0, sizeof(unsigned int)*MAX_LCM_CNT);
             memset(module_id, 0x0, sizeof(unsigned int)*MAX_LCM_CNT);
-            result = disp_drv_read_para(buf, &count, driver_id, module_id);
+            result = disp_drv_read_para(buf, &list, &count, driver_id, module_id);
             if (result < 0)
             {
                 pr_err("%s read_para() is failed! \n", "lcm.bin");
@@ -770,6 +783,15 @@ const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm
         int i;
         for(i = 0;i < lcm_count;i++)
         {
+            // index search for speeding up
+            if ((0 == result) && (0 != size))
+            {
+                if ((list & (0x1 << i)) == 0)
+                {
+                    continue;
+                }
+            }
+
             lcm = lcm_driver_list[i];
             pr_debug("[LCM Auto Detect] [%d] - [%s]\t", i, (lcm->name==NULL)?"unknown":lcm->name);
             lcm->set_util_funcs(&lcm_utils);

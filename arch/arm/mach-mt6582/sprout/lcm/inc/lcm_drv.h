@@ -662,6 +662,7 @@ struct lcm_custom_header
 struct lcm_para_header
 {
     unsigned int version;
+    unsigned int list;
     unsigned int count;
     unsigned int size;
     struct lcm_custom_header header_list[MAX_LCM_CNT];
