@@ -863,6 +863,7 @@ typedef struct mbr_part_info {
 #define MBR_PART_NUM  6
 #define __MMC_ERASE_ARG        0x00000000
 #define __MMC_TRIM_ARG         0x00000001
+#define __MMC_DISCARD_ARG      0x00000003
 
 struct __mmc_blk_data {
     spinlock_t    lock;
@@ -990,6 +991,7 @@ static int simple_mmc_get_disk_info(struct mbr_part_info* mpi, unsigned char* na
 static int simple_mmc_erase_func(unsigned int start, unsigned int size)
 {
     struct msdc_host *host;
+    unsigned int arg; 
 
     /* emmc always in slot0 */
     host = msdc_get_host(MSDC_EMMC,MSDC_BOOT_EN,0);
@@ -999,18 +1001,30 @@ static int simple_mmc_erase_func(unsigned int start, unsigned int size)
 
     mmc_claim_host(host->mmc);
 
-    if (!mmc_can_trim(host->mmc->card)){
-        printk("emmc card can't support trim\n");
-        return 0;
+    if(mmc_can_discard(host->mmc->card))
+    {
+        arg = __MMC_DISCARD_ARG; 
+    }else if (host->mmc->card->ext_csd.sec_feature_support & EXT_CSD_SEC_GB_CL_EN){
+        /* for Hynix eMMC chip£¬do trim even if it is  MMC_QUIRK_TRIM_UNSTABLE */
+        arg = __MMC_TRIM_ARG; 
+    }else if(mmc_can_erase(host->mmc->card)){
+        /* mmc_erase() will remove the erase group un-aligned part, 
+         * msdc_command_start() will do trim for old combo erase un-aligned issue 
+         */
+        arg = __MMC_ERASE_ARG; 
+    }else {
+        printk("[%s]: emmc card can't support trim / discard / erase\n", __func__);
+        goto end;
     }
 
-    mmc_erase(host->mmc->card, start, size,
-             __MMC_TRIM_ARG);
+    printk("[%s]: start=0x%x, size=%d, arg=0x%x, can_trim=(0x%x),EXT_CSD_SEC_GB_CL_EN=0x%lx\n", 
+                    __func__, start, size, arg, host->mmc->card->ext_csd.sec_feature_support, EXT_CSD_SEC_GB_CL_EN); 
+    mmc_erase(host->mmc->card, start, size, arg);
 
 #if DEBUG_MMC_IOCTL
-    printk("erase done....\n");
+    printk("[%s]: erase done....arg=0x%x\n", __func__, arg);
 #endif
-
+end:
     mmc_release_host(host->mmc);
 
     return 0;

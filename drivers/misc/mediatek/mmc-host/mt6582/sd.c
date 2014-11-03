@@ -3233,6 +3233,7 @@ EXPORT_SYMBOL(msdc_get_capacity);
 
 u32 erase_start = 0;
 u32 erase_end = 0;
+u32 erase_bypass = 0;
 extern     int mmc_erase_group_aligned(struct mmc_card *card, unsigned int from,unsigned int nr);
 
 /*--------------------------------------------------------------------------*/
@@ -3406,17 +3407,24 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
            host->mmc->card                                               &&
            host->hw->host_function == MSDC_EMMC                          &&
            host->hw->boot == MSDC_BOOT_EN                                &&
-           (!mmc_erase_group_aligned(host->mmc->card,erase_start,erase_end))){
+           (!mmc_erase_group_aligned(host->mmc->card, erase_start, erase_end - erase_start + 1))){
+        if(mmc_can_trim(host->mmc->card)){
         if(cmd->arg == MMC_SECURE_ERASE_ARG && mmc_can_secure_erase_trim(host->mmc->card))
             rawarg = MMC_SECURE_TRIM1_ARG;
         else if(cmd->arg == MMC_ERASE_ARG ||(cmd->arg == MMC_SECURE_ERASE_ARG && !mmc_can_secure_erase_trim(host->mmc->card)))
             rawarg = MMC_TRIM_ARG;
+        }else {
+            erase_bypass = 1; 
+            ERR_MSG("cancel format,cmd<%d> arg=0x%x, start=0x%x, end=0x%x, size=%d, erase_bypass=%d", 
+                    cmd->opcode, rawarg, erase_start, erase_end, (erase_end - erase_start + 1), erase_bypass); 
+            goto end; 
+        }
     }
 #endif
 
     sdc_send_cmd(rawcmd, rawarg);
 
-    //end:
+end:
     return 0;  // irq too fast, then cmd->error has value, and don't call msdc_command_resp, don't tune.
 }
 
@@ -3431,11 +3439,18 @@ static unsigned int msdc_command_resp_polling(struct msdc_host   *host,
     //u32 status;
     unsigned long tmo;
     //struct mmc_data   *data = host->data;
-
     u32 cmdsts = MSDC_INT_CMDRDY  | MSDC_INT_RSPCRCERR  | MSDC_INT_CMDTMO;
-
 #ifdef MTK_MSDC_USE_CMD23
     struct mmc_command *sbc =  NULL;
+#endif
+
+    if(erase_bypass && (cmd->opcode == MMC_ERASE)){
+        erase_bypass = 0; 
+        ERR_MSG("bypass cmd<%d>, erase_bypass=%d", cmd->opcode, erase_bypass); 
+        goto out; 
+    }
+
+#ifdef MTK_MSDC_USE_CMD23
     if (host->autocmd & MSDC_AUTOCMD23){
         if (host->data && host->data->mrq && host->data->mrq->sbc)
             sbc =  host->data->mrq->sbc;
@@ -6719,7 +6734,7 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc, struct mmc_request *mr
         }
 
         // bring the card to "tran" state
-        if (data) {
+        if (data || ((cmd->opcode == MMC_SWITCH) && (host->hw->host_function != MSDC_SDIO))) {
             if (msdc_abort_data(host)) {
                 ERR_MSG("abort failed");
                 data_abort = 1;
@@ -7002,7 +7017,7 @@ static void msdc_tune_async_request(struct mmc_host *mmc, struct mmc_request *mr
 
         // bring the card to "tran" state
         // tuning param done if cmd crc error
-        if (data) {
+        if (data || ((cmd->opcode == MMC_SWITCH) && (host->hw->host_function != MSDC_SDIO))) {
             if (msdc_abort_data(host)) {
                 ERR_MSG("abort failed");
                 data_abort = 1;
