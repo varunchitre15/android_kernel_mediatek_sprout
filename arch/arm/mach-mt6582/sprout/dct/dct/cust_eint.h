@@ -17,21 +17,32 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#define CUST_EINTF_TRIGGER_RISING                 1    //High Polarity and Edge Sensitive
-#define CUST_EINTF_TRIGGER_FALLING                2    //Low Polarity and Edge Sensitive
-#define CUST_EINTF_TRIGGER_HIGH                      4    //High Polarity and Level Sensitive
-#define CUST_EINTF_TRIGGER_LOW                       8    //Low Polarity and Level Sensitive
+
+#define CUST_EINTF_TRIGGER_RISING						 1
+#define CUST_EINTF_TRIGGER_FALLING                      2
+#define CUST_EINTF_TRIGGER_HIGH                         4
+#define CUST_EINTF_TRIGGER_LOW                          8
+
+
+
 #define CUST_EINT_DEBOUNCE_DISABLE          0
 #define CUST_EINT_DEBOUNCE_ENABLE           1
 ////////////////////////////////////////////////////
 
 struct cust_eint{
-	char name[64];
-	int num;
+    char name[64];
+    int num;
 	int debounce_cn;
-	int type;
-	int debounce_en;
+    int type;
+    int debounce_en;
 };
+
+extern struct cust_eint cust_eint_chr_stat;
+
+#define CUST_EINT_CHR_STAT_NUM					cust_eint_chr_stat.num
+#define CUST_EINT_CHR_STAT_DEBOUNCE_CN			cust_eint_chr_stat.debounce_cn
+#define CUST_EINT_CHR_STAT_TYPE					cust_eint_chr_stat.type
+#define CUST_EINT_CHR_STAT_DEBOUNCE_EN			cust_eint_chr_stat.debounce_en
 
 extern struct cust_eint cust_eint_als;
 
@@ -68,13 +79,6 @@ extern struct cust_eint cust_eint_gse_1;
 #define CUST_EINT_GSE_1_TYPE					cust_eint_gse_1.type
 #define CUST_EINT_GSE_1_DEBOUNCE_EN			cust_eint_gse_1.debounce_en
 
-extern struct cust_eint cust_eint_otg_iddig;
-
-#define CUST_EINT_OTG_IDDIG_NUM					cust_eint_otg_iddig.num
-#define CUST_EINT_OTG_IDDIG_DEBOUNCE_CN			cust_eint_otg_iddig.debounce_cn
-#define CUST_EINT_OTG_IDDIG_TYPE					cust_eint_otg_iddig.type
-#define CUST_EINT_OTG_IDDIG_DEBOUNCE_EN			cust_eint_otg_iddig.debounce_en
-
 extern struct cust_eint cust_eint_mt6323_pmic;
 
 #define CUST_EINT_MT6323_PMIC_NUM					cust_eint_mt6323_pmic.num
@@ -86,7 +90,6 @@ extern struct cust_eint cust_eint_mt6323_pmic;
 
 #ifdef __cplusplus
 }
+
 #endif
-#endif //_CUST_EINT_H
-
-
+#endif

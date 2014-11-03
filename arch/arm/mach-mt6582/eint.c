@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -17,7 +17,6 @@
 #include <linux/wakelock.h>
 #include <linux/module.h>
 #include <linux/device.h>
-//#include <linux/miscdevice.h>
 #include <linux/platform_device.h>
 #include <linux/timer.h>
 #include <asm/setup.h>
@@ -77,7 +76,7 @@ typedef enum
 #endif
 
 
-typedef struct 
+typedef struct
 {
     void (*eint_func[EINT_MAX_CHANNEL]) (void);
     unsigned int eint_auto_umask[EINT_MAX_CHANNEL];
@@ -137,137 +136,6 @@ static unsigned int mt_eint_get_mask(unsigned int eint_num)
 
     return st;
 }
-
-#if 0
-void mt_eint_mask_all(void)
-{
-    unsigned int base;
-    unsigned int val = 0xFFFFFFFF, ap_cnt = (EINT_MAX_CHANNEL / 32), i;
-    if (EINT_MAX_CHANNEL % 32)
-        ap_cnt++;
-    dbgmsg("[EINT] cnt:%d\n", ap_cnt);
-
-    base = EINT_MASK_SET_BASE;
-    for (i = 0; i < ap_cnt; i++) {
-        writel(val, IOMEM(base + (i * 4)));
-        dbgmsg("[EINT] mask addr:%x = %x\n", EINT_MASK_BASE + (i * 4),
-               readl(IOMEM(EINT_MASK_BASE + (i * 4))));
-    }
-}
-
-/*
- * mt_eint_unmask_all: Mask the specified EINT number.
- */
-void mt_eint_unmask_all(void)
-{
-    unsigned int base;
-    unsigned int val = 0xFFFFFFFF, ap_cnt = (EINT_MAX_CHANNEL / 32), i;
-    if (EINT_MAX_CHANNEL % 32)
-        ap_cnt++;
-    dbgmsg("[EINT] cnt:%d\n", ap_cnt);
-
-    base = EINT_MASK_CLR_BASE;
-    for (i = 0; i < ap_cnt; i++) {
-        writel(val, IOMEM(base + (i * 4)));
-        dbgmsg("[EINT] unmask addr:%x = %x\n", EINT_MASK_BASE + (i * 4),
-               readl(IOMEM(EINT_MASK_BASE + (i * 4))));
-    }
-}
-
-/*
- * mt_eint_get_soft: To get the eint mask
- * @eint_num: the EINT number to get
- */
-unsigned int mt_eint_get_soft(unsigned int eint_num)
-{
-    unsigned int base;
-    unsigned int st;
-
-    if (eint_num < EINT_AP_MAXNUMBER) {
-        base = (eint_num / 32) * 4 + EINT_SOFT_BASE;
-    } else {
-            dbgmsg("Error in %s [EINT] num:%d is larger than EINT_AP_MAXNUMBER\n", __func__, eint_num);
-        return 0;
-    }
-    st = readl(IOMEM(base));
-
-    return st;
-}
-#endif
-
-#if 0
-/*
- * mt_eint_emu_set: Trigger the specified EINT number.
- * @eint_num: EINT number to set
- */
-void mt_eint_emu_set(unsigned int eint_num)
-{
-        unsigned int base = 0;
-        unsigned int bit = 1 << (eint_num % 32);
-    unsigned int value = 0;
-
-        if (eint_num < EINT_AP_MAXNUMBER) {
-                base = (eint_num / 32) * 4 + EINT_EMUL_BASE;
-        } else {
-            dbgmsg("Error in %s [EINT] num:%d is larger than EINT_AP_MAXNUMBER\n", __func__, eint_num);
-        return;
-        }
-    value = readl(IOMEM(base));
-    value = bit | value;
-        writel(value, IOMEM(base));
-    value = readl(IOMEM(base));
-
-        dbgmsg("[EINT] emul set addr:%x = %x, bit=%x\n", base, value, bit);
-
-
-}
-
-/*
- * mt_eint_emu_clr: Trigger the specified EINT number.
- * @eint_num: EINT number to clr
- */
-void mt_eint_emu_clr(unsigned int eint_num)
-{
-        unsigned int base = 0;
-        unsigned int bit = 1 << (eint_num % 32);
-    unsigned int value = 0;
-
-        if (eint_num < EINT_AP_MAXNUMBER) {
-                base = (eint_num / 32) * 4 + EINT_EMUL_BASE;
-        } else {
-            dbgmsg("Error in %s [EINT] num:%d is larger than EINT_AP_MAXNUMBER\n", __func__, eint_num);
-        return;
-        }
-    value = readl(IOMEM(base));
-    value = (~bit) & value;
-        writel(value, IOMEM(base));
-    value = readl(IOMEM(base));
-
-        dbgmsg("[EINT] emul clr addr:%x = %x, bit=%x\n", base, value, bit);
-
-}
-
-/*
- * eint_send_pulse: Trigger the specified EINT number.
- * @eint_num: EINT number to send
- */
-inline void mt_eint_send_pulse(unsigned int eint_num)
-{
-    unsigned int base_set = (eint_num / 32) * 4 + EINT_SOFT_SET_BASE;
-    unsigned int base_clr = (eint_num / 32) * 4 + EINT_SOFT_CLR_BASE;
-    unsigned int bit = 1 << (eint_num % 32);
-    if (eint_num < EINT_AP_MAXNUMBER) {
-        base_set = (eint_num / 32) * 4 + EINT_SOFT_SET_BASE;
-        base_clr = (eint_num / 32) * 4 + EINT_SOFT_CLR_BASE;
-    } else {
-            dbgmsg("Error in %s [EINT] num:%d is larger than EINT_AP_MAXNUMBER\n", __func__, eint_num);
-        return;
-    }
-
-    writel(bit, IOMEM(base_set));
-    writel(bit, IOMEM(base_clr));
-}
-#endif
 
 #if defined(EINT_TEST)
 /*
@@ -420,7 +288,7 @@ unsigned int mt_eint_get_polarity(unsigned int eint_num)
     } else {
         pol = MT_EINT_POL_NEG;
     }
-    return pol;  
+    return pol;
 }
 
 /*
@@ -482,7 +350,7 @@ static unsigned int mt_eint_get_sens(unsigned int eint_num)
 }
 
 /*
- * mt_eint_ack: To ack the interrupt 
+ * mt_eint_ack: To ack the interrupt
  * @eint_num: the EINT number to set
  */
 unsigned int mt_eint_ack(unsigned int eint_num)
@@ -524,7 +392,7 @@ static unsigned int mt_eint_read_status(unsigned int eint_num)
 }
 
 /*
- * mt_eint_get_status: To get the interrupt status 
+ * mt_eint_get_status: To get the interrupt status
  * @eint_num: the EINT number to get
  */
 static unsigned int mt_eint_get_status(unsigned int eint_num)
@@ -552,7 +420,7 @@ static void mt_eint_en_hw_debounce(unsigned int eint_num)
     unsigned int base, bit;
     base = (eint_num / 4) * 4 + EINT_DBNC_SET_BASE;
     bit = (EINT_DBNC_SET_EN << EINT_DBNC_SET_EN_BITS) << ((eint_num % 4) * 8);
-    writel(bit, IOMEM(base)); 
+    writel(bit, IOMEM(base));
     EINT_FUNC.is_deb_en[eint_num] = 1;
 }
 
@@ -585,7 +453,7 @@ static void mt_eint_dis_sw_debounce(unsigned int eint_num)
  */
 static void mt_eint_en_sw_debounce(unsigned int eint_num)
 {
-    if(eint_num < EINT_MAX_CHANNEL)    
+    if(eint_num < EINT_MAX_CHANNEL)
         EINT_FUNC.is_deb_en[eint_num] = 1;
 }
 
@@ -620,8 +488,8 @@ void mt_eint_set_hw_debounce(unsigned int eint_num, unsigned int ms)
     clr_base = (eint_num / 4) * 4 + EINT_DBNC_CLR_BASE;
     EINT_FUNC.deb_time[eint_num] = ms;
 
-    /* 
-     * Don't enable debounce once debounce time is 0 or 
+    /*
+     * Don't enable debounce once debounce time is 0 or
      * its type is edge sensitive.
      */
     if (!mt_can_en_debounce(eint_num)) {
@@ -661,28 +529,28 @@ void mt_eint_set_hw_debounce(unsigned int eint_num, unsigned int ms)
     else {
         /* step 2.1: set hw debounce flag*/
         EINT_FUNC.is_deb_en[eint_num] = 1;
-        
+
         /* step 2.2: disable hw debounce */
         clr_bit = 0xFF << ((eint_num % 4) * 8);
         mt65xx_reg_sync_writel(clr_bit, clr_base);
-        
+
         /* step 2.3: set new debounce value */
         bit =
             ((dbnc << EINT_DBNC_SET_DBNC_BITS) |
-             (EINT_DBNC_SET_EN << EINT_DBNC_SET_EN_BITS)) << 
+             (EINT_DBNC_SET_EN << EINT_DBNC_SET_EN_BITS)) <<
                     ((eint_num % 4) * 8);
         mt65xx_reg_sync_writel(bit, base);
 
         /* step 2.4: Delay a while (more than 2T) to wait for hw debounce enable work correctly */
         udelay(500);
-        
+
         /* step 2.5: Reset hw debounce counter to avoid unexpected interrupt */
         rst = (EINT_DBNC_RST_BIT << EINT_DBNC_SET_RST_BITS) <<
           ((eint_num % 4) * 8);
         mt65xx_reg_sync_writel(rst, base);
 
         /* step 2.6: Delay a while (more than 2T) to wait for hw debounce counter reset work correctly */
-        udelay(500);   
+        udelay(500);
     }
     /* step 3: unmask the EINT */
     if(unmask == 1)
@@ -702,7 +570,7 @@ DECLARE_TASKLET(eint_tasklet, eint_do_tasklet, 0);
 
 /*
  * mt_eint_timer_event_handler: EINT sw debounce handler
- * @eint_num: the EINT number and use unsigned long to prevent 
+ * @eint_num: the EINT number and use unsigned long to prevent
  *            compile warning of timer usage.
  */
 static void mt_eint_timer_event_handler(unsigned long eint_num)
@@ -723,7 +591,7 @@ static void mt_eint_timer_event_handler(unsigned long eint_num)
         dbgmsg("EINT Module_IRQ - EINT_STA = 0x%x, in %s\n", status, __func__);
         generic_handle_irq(EINT_IRQ(eint_num));
         local_irq_restore(flags);
-    }   
+    }
     else
     {
         if (status) {
@@ -777,8 +645,8 @@ static irqreturn_t mt_eint_demux(unsigned irq, struct irq_desc *desc)
     int mask_status=0;
     struct irq_chip *chip = irq_get_chip(irq);
     chained_irq_enter(chip, desc);
-        
-     /* 
+
+     /*
      * NoteXXX: Need to get the wake up for 0.5 seconds when an EINT intr tirggers.
      *          This is used to prevent system from suspend such that other drivers
      *          or applications can have enough time to obtain their own wake lock.
@@ -916,26 +784,26 @@ static void mt_eint_dis_debounce(unsigned int eint_num)
  * @EINT_FUNC_PTR: the ISR callback function
  * @is_auto_unmask: the indication flag of auto unmasking after ISR callback is processed
  */
-void mt_eint_registration(unsigned int eint_num, unsigned int flag, 
+void mt_eint_registration(unsigned int eint_num, unsigned int flag,
               void (EINT_FUNC_PTR) (void), unsigned int is_auto_umask)
 {
     if (eint_num < EINT_MAX_CHANNEL) {
         printk("eint register for %d\n", eint_num);
         spin_lock(&eint_lock);
         mt_eint_mask(eint_num);
-        
+
         if (flag & (EINTF_TRIGGER_RISING | EINTF_TRIGGER_FALLING)) {
             mt_eint_set_polarity(eint_num, (flag & EINTF_TRIGGER_FALLING) ? MT_EINT_POL_NEG : MT_EINT_POL_POS);
             mt_eint_set_sens(eint_num, MT_EDGE_SENSITIVE);
         } else if (flag & (EINTF_TRIGGER_HIGH | EINTF_TRIGGER_LOW)) {
             mt_eint_set_polarity(eint_num, (flag & EINTF_TRIGGER_LOW) ? MT_EINT_POL_NEG : MT_EINT_POL_POS);
-            mt_eint_set_sens(eint_num, MT_LEVEL_SENSITIVE);    
+            mt_eint_set_sens(eint_num, MT_LEVEL_SENSITIVE);
         } else {
             printk("[EINT]: Wrong EINT Pol/Sens Setting 0x%x\n", flag);
             spin_unlock(&eint_lock);
             return ;
         }
-        
+
         EINT_FUNC.eint_func[eint_num] = EINT_FUNC_PTR;
         spin_unlock(&eint_lock);
         EINT_FUNC.eint_auto_umask[eint_num] = is_auto_umask;
@@ -956,13 +824,13 @@ static irqreturn_t  mt_deint_isr(int irq, void *dev_id)
     if (deint_num < 0) {
         printk(KERN_ERR "DEINT IRQ Number %d IS NOT VALID!! \n", deint_num);
     }
-    
-    if (DEINT_FUNC.deint_func[deint_num]) { 
+
+    if (DEINT_FUNC.deint_func[deint_num]) {
         DEINT_FUNC.deint_func[deint_num]();
     }else
        printk("NULL EINT POINTER\n");
-    
-    
+
+
     printk("EXIT DEINT ISR\n");
     return IRQ_HANDLED;
 }
@@ -974,7 +842,7 @@ static irqreturn_t  mt_deint_isr(int irq, void *dev_id)
  * @flag: the interrupt line behaviour to select
  * @DEINT_FUNC_PTR: the ISR callback function
  * THIS FUNCTION IS INTERNAL USE ONLY, DON'T EXPORT
- * 
+ *
  * NOTE: this function is not exported to our customer for now
  *       but if we want to export it in the future, we must let them know that
  *       DEINT should register its ISR with prototype same as ordinal ISR
@@ -1026,7 +894,7 @@ static void mt_deint_registration(unsigned int deint_num, unsigned int flag,
         if (request_irq(MT_EINT_DIRECT0_IRQ_ID + deint_num, DEINT_FUNC_PTR, IRQF_TRIGGER_HIGH, "DEINT", NULL )) {
             printk(KERN_ERR "DEINT IRQ LINE NOT AVAILABLE!!\n");
         }
-          
+
     } else {
         printk("[DEINT]: Wrong DEINT Number %d\n", deint_num);
     }
@@ -1282,7 +1150,7 @@ int get_eint_attribute(char *name, unsigned int name_len, unsigned int type, cha
     printk("[EINT]CUST_EINT_MD1_CNT:%d",CUST_EINT_MD1_CNT);
     printk("query info: name:%s, type:%d, len:%d\n", name,type,name_len);
     if (len == NULL || name == NULL || result == NULL)
-    	return ERR_SIM_HOT_PLUG_NULL_POINTER;
+        return ERR_SIM_HOT_PLUG_NULL_POINTER;
 
     for (i = 0; i < md_sim_counter; i++){
         printk("compare string:%s\n", md_sim_info[i].name);
@@ -1319,7 +1187,7 @@ int get_eint_attribute(char *name, unsigned int name_len, unsigned int type, cha
                     memcpy(sim_info, &md_sim_info[i].socket_type, *len);
                     printk("[EINT]socket_type:%d\n", md_sim_info[i].socket_type);
                     break;
-  
+
                 default:
                     ret = ERR_SIM_HOT_PLUG_QUERY_TYPE;
                     *len = sizeof(int);
@@ -1332,7 +1200,7 @@ int get_eint_attribute(char *name, unsigned int name_len, unsigned int type, cha
 
     *len = sizeof(int);
     memset(sim_info, 0xff, *len);
- 
+
     return ERR_SIM_HOT_PLUG_QUERY_STRING;
 }
 int get_type(char *name)
@@ -1360,10 +1228,10 @@ int get_type(char *name)
         return type2;
     else if (!strncmp(name, "MD2_SIM2_HOT_PLUG_EINT", strlen("MD2_SIM2_HOT_PLUG_EINT")))
         return type2;
-    else 
+    else
         return 0;
 }
-#endif 
+#endif
 
 static void setup_MD_eint(void)
 {
@@ -1643,7 +1511,7 @@ static void mt_eint_normal_test_basedon_hw_debounce(void)
      //mt_set_gpio_out(0, 1);
      mt_set_gpio_mode(3, GPIO_MODE_00);
      mt_set_gpio_dir(3, GPIO_DIR_IN);
-  
+
      //printk("1 eint num %d raw satatus:%d\n",eint_num,mt_eint_get_raw_status(eint_num));
      //printk("*********** \nEINT hw_debounce TEST\n*********** \n");
      //printk("[EINT LEVEL]eint num %d HW Debounce 16 \n",eint_num);
@@ -1660,11 +1528,11 @@ static void mt_eint_normal_test_basedon_hw_debounce(void)
      //    printk("eint num %d raw satatus:%d\n",eint_num,mt_eint_get_raw_status(eint_num));
      delay_start=sched_clock();
      mt_set_gpio_out(1, 1);
-     printk("trigger EINT %d done\n",eint_num);     
-     delay_end=delay_start+0x2000000;    
+     printk("trigger EINT %d done\n",eint_num);
+     delay_end=delay_start+0x2000000;
      hw_debounce_start=delay_start;
      mt_eint_unmask(eint_num);
-    
+
      while(delay_start < delay_end)
      {
          if(!EINT_waiting)
@@ -1737,27 +1605,10 @@ DRIVER_ATTR(eint_test_suit, 0664, test_show, test_store);
 //    .mode       = S_IRUGO | S_IWUGO,
 //};
 #endif
-#if 0
-void mt_eint_test()
-{
-    int cur_eint_num = 200;
-    int sens = 1;
-    int pol = 1;
-    int is_en_db = 0;
-    int is_auto_umask = 0;
-    
-    mt_eint_mask(cur_eint_num);
-    mt_eint_set_polarity(cur_eint_num, pol);
-    mt_eint_set_sens(cur_eint_num, sens);
-    mt_eint_registration(cur_eint_num, EINTF_TRIGGER_HIGH, mt_eint_soft_isr, is_auto_umask);
-    mt_eint_unmask(cur_eint_num);
-    mt_eint_emu_set(cur_eint_num);
-}
-#endif
 
 static void gpio_set_debounce(unsigned gpio, unsigned debounce)
 {
-    mt_eint_set_hw_debounce(gpio, debounce); 
+    mt_eint_set_hw_debounce(gpio, debounce);
 }
 
 
@@ -1784,7 +1635,7 @@ void mt_eint_print_status(void)
                 if (index >= EINT_MAX_CHANNEL) break;
 
                 status_check = status & (1 << offset);
-                if (status_check) 
+                if (status_check)
                         printk(KERN_DEBUG" %d",index);
             }
 
@@ -1828,7 +1679,7 @@ static int __init mt_eint_init(void)
     //if (request_irq(EINT_IRQ, (irq_handler_t)mt_eint_demux, IRQF_TRIGGER_HIGH, "EINT", NULL)) {
     //    printk(KERN_ERR "EINT IRQ LINE NOT AVAILABLE!!\n");
     //}
-    
+
     setup_MD_eint();
     for (i = 0; i < EINT_MAX_CHANNEL; i++) {
         EINT_FUNC.eint_func[i] = NULL;
@@ -1876,7 +1727,7 @@ static int __init mt_eint_init(void)
         printk(KERN_ERR "EINT domain add error\n");
 
     irq_set_chained_handler(EINT_IRQ, (irq_flow_handler_t)mt_eint_demux);
-    /* Test */ 
+    /* Test */
     //mt_eint_registration(11, EINTF_TRIGGER_LOW, mt_eint_test, true);
     //mt_deint_registration(11, EINTF_TRIGGER_HIGH, mt_deint_test_isr);
 #if defined(EINT_TEST_V2)
@@ -1902,14 +1753,6 @@ static int __init mt_eint_init(void)
 
     return 0;
 }
-#if 0
-void mt_eint_dump_status(unsigned int eint)
-{
-   if (eint >= EINT_MAX_CHANNEL)
-       return;
-   printk("[EINT] eint:%d,mask:%x,pol:%x,deb:%x,sens:%x\n",eint,mt_eint_get_mask(eint),mt_eint_get_polarity(eint),mt_eint_get_debounce_cnt(eint),mt_eint_get_sens(eint));
-}
-#endif
 
 arch_initcall(mt_eint_init);
 
@@ -1927,55 +1770,55 @@ EXPORT_SYMBOL(mt_eint_soft_set);
 #endif
 
 /* first MP list */
+struct cust_eint cust_eint_chr_stat;
 struct cust_eint cust_eint_als;
 struct cust_eint cust_eint_touch_panel;
 struct cust_eint cust_eint_gse_2;
 struct cust_eint cust_eint_accdet;
 struct cust_eint cust_eint_gse_1;
-struct cust_eint cust_eint_otg_iddig;
 struct cust_eint cust_eint_mt6323_pmic;
 
 static int cust_eint_sanity_check(int num, int debounce_cn, int type, int debounce_en)
 {
-    if ((num < 0) || (num > EINT_MAX_CHANNEL)) {
-        pr_err("In %s: num(%d) out of range\n", __func__, num);
-        return -1;
-    }
+	if ((num < 0) || (num > EINT_MAX_CHANNEL)) {
+		pr_err("In %s: num(%d) out of range\n", __func__, num);
+		return -1;
+	}
 
-    if ((type != CUST_EINTF_TRIGGER_RISING) && (type != CUST_EINTF_TRIGGER_FALLING) &&
-        (type != CUST_EINTF_TRIGGER_HIGH) && (type != CUST_EINTF_TRIGGER_LOW)) {
-        pr_err("In %s: type(%d) out of range\n", __func__, type);
-        return -1;
-    }
+	if ((type != CUST_EINTF_TRIGGER_RISING) && (type != CUST_EINTF_TRIGGER_FALLING) &&
+		(type != CUST_EINTF_TRIGGER_HIGH) && (type != CUST_EINTF_TRIGGER_LOW)) {
+		pr_err("In %s: type(%d) out of range\n", __func__, type);
+		return -1;
+	}
 
-    if ((debounce_en != CUST_EINT_DEBOUNCE_ENABLE) && (debounce_en != CUST_EINT_DEBOUNCE_DISABLE)) {
-        pr_err("In %s: debounce_en(%d) out of range\n", __func__, debounce_en);
-        return -1;
-    }
+	if ((debounce_en != CUST_EINT_DEBOUNCE_ENABLE) && (debounce_en != CUST_EINT_DEBOUNCE_DISABLE)) {
+		pr_err("In %s: debounce_en(%d) out of range\n", __func__, debounce_en);
+		return -1;
+	}
 
-    return 0;
+	return 0;
 }
 
 static inline int cust_eint_dev_init(struct cust_eint *dev,
-    int num, int debounce_cn, int type, int debounce_en)
+	int num, int debounce_cn, int type, int debounce_en)
 {
-    if (unlikely(!dev)) {
-        pr_err("In %s:%d: eint dev does not exist\n", __func__, __LINE__);
-        return -1;
-    }
+	if (unlikely(!dev)) {
+		pr_err("In %s:%d: eint dev does not exist\n", __func__, __LINE__);
+		return -1;
+	}
 
-    if (unlikely(cust_eint_sanity_check(num, debounce_cn, type, debounce_en) != 0)) {
-        pr_err("In %s:%d: %s has no proper attribute num = %d, debounce_cn = %d, type = %d, debounce_en = %d\n",
-        __func__, __LINE__, dev->name, num, debounce_cn, type, debounce_en);
-        return -1;
-    }
+	if (unlikely(cust_eint_sanity_check(num, debounce_cn, type, debounce_en) != 0)) {
+		pr_err("In %s:%d: %s has no proper attribute num = %d, debounce_cn = %d, type = %d, debounce_en = %d\n",
+			__func__, __LINE__, dev->name, num, debounce_cn, type, debounce_en);
+		return -1;
+	}
 
-    dev->num = num;
-    dev->debounce_cn = debounce_cn;
-    dev->type = type;
-    dev->debounce_en = debounce_en;
+	dev->num = num;
+	dev->debounce_cn = debounce_cn;
+	dev->type = type;
+	dev->debounce_en = debounce_en;
 
-    return 0;
+	return 0;
 }
 
 /*
@@ -1984,85 +1827,85 @@ static inline int cust_eint_dev_init(struct cust_eint *dev,
 */
 void __init eint_fixup_default(void)
 {
-    pr_notice("EINT set default settings!!\n");
+	pr_notice("EINT set default settings!!\n");
 
-    strncpy(cust_eint_als.name, "ALS", sizeof(cust_eint_als.name));
-    cust_eint_dev_init(&cust_eint_als, 1, 0, CUST_EINTF_TRIGGER_FALLING, CUST_EINT_DEBOUNCE_DISABLE);
+	strncpy(cust_eint_chr_stat.name, "CHR_STAT", sizeof(cust_eint_chr_stat.name));
+	cust_eint_dev_init(&cust_eint_chr_stat, 0, 0, CUST_EINTF_TRIGGER_LOW, CUST_EINT_DEBOUNCE_DISABLE);
 
-    strncpy(cust_eint_touch_panel.name, "TOUCH_PANEL", sizeof(cust_eint_touch_panel.name));
-    cust_eint_dev_init(&cust_eint_touch_panel, 2, 0, CUST_EINTF_TRIGGER_FALLING, CUST_EINT_DEBOUNCE_DISABLE);
+	strncpy(cust_eint_als.name, "ALS", sizeof(cust_eint_als.name));
+	cust_eint_dev_init(&cust_eint_als, 1, 0, CUST_EINTF_TRIGGER_FALLING, CUST_EINT_DEBOUNCE_DISABLE);
 
-    strncpy(cust_eint_gse_2.name, "GSE_2", sizeof(cust_eint_gse_2.name));
-    cust_eint_dev_init(&cust_eint_gse_2, 3, 0, CUST_EINTF_TRIGGER_RISING, CUST_EINT_DEBOUNCE_DISABLE);
+	strncpy(cust_eint_touch_panel.name, "TOUCH_PANEL", sizeof(cust_eint_touch_panel.name));
+	cust_eint_dev_init(&cust_eint_touch_panel, 2, 0, CUST_EINTF_TRIGGER_FALLING, CUST_EINT_DEBOUNCE_DISABLE);
 
-    strncpy(cust_eint_accdet.name, "ACCDET", sizeof(cust_eint_accdet.name));
-    cust_eint_dev_init(&cust_eint_accdet, 4, 256, CUST_EINTF_TRIGGER_LOW, CUST_EINT_DEBOUNCE_ENABLE);
+	strncpy(cust_eint_gse_2.name, "GSE_2", sizeof(cust_eint_gse_2.name));
+	cust_eint_dev_init(&cust_eint_gse_2, 3, 0, CUST_EINTF_TRIGGER_RISING, CUST_EINT_DEBOUNCE_DISABLE);
 
-    strncpy(cust_eint_gse_1.name, "GSE_1", sizeof(cust_eint_gse_1.name));
-    cust_eint_dev_init(&cust_eint_gse_1, 5, 0, CUST_EINTF_TRIGGER_FALLING, CUST_EINT_DEBOUNCE_DISABLE);
+	strncpy(cust_eint_accdet.name, "ACCDET", sizeof(cust_eint_accdet.name));
+	cust_eint_dev_init(&cust_eint_accdet, 4, 256, CUST_EINTF_TRIGGER_LOW, CUST_EINT_DEBOUNCE_ENABLE);
 
-    strncpy(cust_eint_otg_iddig.name, "OTG_IDDIG", sizeof(cust_eint_otg_iddig.name));
-    cust_eint_dev_init(&cust_eint_otg_iddig, 17, 0, CUST_EINTF_TRIGGER_FALLING, CUST_EINT_DEBOUNCE_DISABLE);
+	strncpy(cust_eint_gse_1.name, "GSE_1", sizeof(cust_eint_gse_1.name));
+	cust_eint_dev_init(&cust_eint_gse_1, 5, 0, CUST_EINTF_TRIGGER_FALLING, CUST_EINT_DEBOUNCE_DISABLE);
 
-    strncpy(cust_eint_mt6323_pmic.name, "MT6323_PMIC", sizeof(cust_eint_mt6323_pmic.name));
-    cust_eint_dev_init(&cust_eint_mt6323_pmic, 25, 1, CUST_EINTF_TRIGGER_HIGH, CUST_EINT_DEBOUNCE_ENABLE);
+	strncpy(cust_eint_mt6323_pmic.name, "MT6323_PMIC", sizeof(cust_eint_mt6323_pmic.name));
+	cust_eint_dev_init(&cust_eint_mt6323_pmic, 25, 1, CUST_EINTF_TRIGGER_HIGH, CUST_EINT_DEBOUNCE_ENABLE);
 }
 
 struct cust_eint_item {
-    char name[64];
-    struct cust_eint *dev;
+	char name[64];
+	struct cust_eint *dev;
 };
 
 struct cust_eint_item cust_eint_items[] = {
-    { "ALS", &cust_eint_als },
-    { "TOUCH_PANEL", &cust_eint_touch_panel },
-    { "GSE_2", &cust_eint_gse_2 },
-    { "ACCDET", &cust_eint_accdet },
-    { "GSE_1", &cust_eint_gse_1 },
-    { "OTG_IDDIG", &cust_eint_otg_iddig },
-    { "MT6323_PMIC", &cust_eint_mt6323_pmic },
+	{ "CHR_STAT", &cust_eint_chr_stat },
+	{ "ALS", &cust_eint_als },
+	{ "TOUCH_PANEL", &cust_eint_touch_panel },
+	{ "GSE_2", &cust_eint_gse_2 },
+	{ "ACCDET", &cust_eint_accdet },
+	{ "GSE_1", &cust_eint_gse_1 },
+	{ "MT6323_PMIC", &cust_eint_mt6323_pmic },
 };
 
 struct cust_eint *find_cust_eint(const char *name)
 {
-    int i = 0;
+	int i = 0;
 
-    for (i = 0; i < ARRAY_SIZE(cust_eint_items) ; ++i) {
-        if (strcmp(cust_eint_items[i].name, name) == 0) {
-            return cust_eint_items[i].dev;
-        }
-    }
+	for (i = 0; i < ARRAY_SIZE(cust_eint_items) ; ++i) {
+		if (strcmp(cust_eint_items[i].name, name) == 0) {
+			return cust_eint_items[i].dev;
+		}
+	}
 
-    return NULL;
+	return NULL;
 }
 
 int __init parse_tag_eint_ssb_fixup(const struct tag *tags)
 {
-    const struct tag_eint_data *data = &tags->u.eint_data;
-    int i = 0;
+	const struct tag_eint_data *data = &tags->u.eint_data;
+	int i = 0;
 
-    pr_notice("EINT magic: %c%c%c%c\n", data->magic[0], data->magic[1], data->magic[2], data->magic[3]);
-    pr_notice("COUNT = %d\n", data->count);
+	pr_notice("EINT magic: %c%c%c%c\n", data->magic[0], data->magic[1], data->magic[2], data->magic[3]);
+	pr_notice("COUNT = %d\n", data->count);
 
-    for (i = 0; i < data->count; ++i) {
-        struct cust_eint *setting = (struct cust_eint *)&data->payload[i*sizeof(struct cust_eint)];
-        struct cust_eint *dev = NULL;
+	for (i = 0; i < data->count; ++i) {
+		struct cust_eint *setting = (struct cust_eint *)&data->payload[i*sizeof(struct cust_eint)];
+		struct cust_eint *dev = NULL;
 
-        if ((dev = find_cust_eint(setting->name)) == NULL) {
-            pr_warn("EINT Not found: NAME = %s, num = %d, debounce_cn = %d, type = %d, debounce_en = %d\n",
-            setting->name, setting->num, setting->debounce_cn, setting->type, setting->debounce_en);
+		if ((dev = find_cust_eint(setting->name)) == NULL) {
+			pr_warn("EINT Not found: NAME = %s, num = %d, debounce_cn = %d, type = %d, debounce_en = %d\n",
+				setting->name, setting->num, setting->debounce_cn, setting->type, setting->debounce_en);
 			continue;
-        }
+		}
 
-        strncpy(dev->name, setting->name, sizeof(dev->name));
-        cust_eint_dev_init(dev, setting->num,
-        setting->debounce_cn,
-        setting->type,
-        setting->debounce_en);
+		strncpy(dev->name, setting->name, sizeof(dev->name));
+		cust_eint_dev_init(dev, setting->num,
+					setting->debounce_cn,
+					setting->type,
+					setting->debounce_en);
 
-        pr_notice("EINT GOT NAME = %s, num = %d, debounce_cn = %d, type = %d, debounce_en = %d\n",
-        dev->name, dev->num, dev->debounce_cn, dev->type, dev->debounce_en);
-    }
+		pr_notice("EINT GOT NAME = %s, num = %d, debounce_cn = %d, type = %d, debounce_en = %d\n",
+				dev->name, dev->num, dev->debounce_cn, dev->type, dev->debounce_en);
+	}
 
-    return 0;
+	return 0;
 }
