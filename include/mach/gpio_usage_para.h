@@ -3,6 +3,10 @@
 
 struct _gpio_usage {
     int version;
+    int eint_chg_stat_pin;
+    int eint_chg_stat_pin_m_gpio;
+    int eint_chg_stat_pin_m_pwm;
+    int eint_chg_stat_pin_m_eint;
     int als_eint_pin;
     int als_eint_pin_m_gpio;
     int als_eint_pin_m_mdeint;
@@ -34,6 +38,8 @@ struct _gpio_usage {
     int gyro_eint_pin_m_gpio;
     int gyro_eint_pin_m_kcol;
     int gyro_eint_pin_m_eint;
+    int swcharger_en_pin;
+    int swcharger_en_pin_m_gpio;
     int camera_cmrst_pin;
     int camera_cmrst_pin_m_gpio;
     int camera_cmrst_pin_m_clk;
@@ -78,32 +84,28 @@ struct _gpio_usage {
     int ctp_rst_pin_m_dbg_mon_b;
     int camera_cmrst1_pin;
     int camera_cmrst1_pin_m_gpio;
-    int otg_iddig_eint_pin;
-    int otg_iddig_eint_pin_m_gpio;
-    int otg_iddig_eint_pin_m_clk;
-    int otg_iddig_eint_pin_m_ucts;
-    int otg_iddig_eint_pin_m_clkm;
-    int otg_iddig_eint_pin_m_iddig;
-    int otg_iddig_eint_pin_m_dbg_mon_b;
-    int otg_iddig_eint_pin_clk;
-    int otg_iddig_eint_pin_freq;
+    int main_cam_id_pin;
+    int main_cam_id_pin_m_gpio;
+    int main_cam_id_pin_m_clk;
+    int main_cam_id_pin_clk;
+    int main_cam_id_pin_freq;
     int uart_ucts1_pin;
     int uart_ucts1_pin_m_gpio;
     int uart_ucts1_pin_m_clk;
-    int uart_ucts1_pin_m_ucts;
-    int uart_ucts1_pin_m_clkm;
-    int uart_ucts1_pin_m_iddig;
-    int uart_ucts1_pin_m_dbg_mon_b;
     int uart_ucts1_pin_clk;
     int uart_ucts1_pin_freq;
     int camera_cmpdn1_pin;
     int camera_cmpdn1_pin_m_gpio;
     int uart_urts1_pin;
     int uart_urts1_pin_m_gpio;
+    int sub_cam_id_pin;
+    int sub_cam_id_pin_m_gpio;
+    int sub_cam_id_pin_m_clk;
+    int sub_cam_id_pin_clk;
+    int sub_cam_id_pin_freq;
     int uart_ucts2_pin;
     int uart_ucts2_pin_m_gpio;
     int uart_ucts2_pin_m_clk;
-    int uart_ucts2_pin_m_ucts;
     int uart_ucts2_pin_clk;
     int uart_ucts2_pin_freq;
     int uart_urts2_pin;
@@ -194,6 +196,8 @@ struct _gpio_usage {
     int kpd_kcol0_pin;
     int kpd_kcol0_pin_m_gpio;
     int kpd_kcol0_pin_m_kcol;
+    int speaker_en_pin;
+    int speaker_en_pin_m_gpio;
     int i2c0_sda_pin;
     int i2c0_sda_pin_m_gpio;
     int i2c0_sda_pin_m_sda;
@@ -214,11 +218,6 @@ struct _gpio_usage {
     int i2c2_sca_pin_m_gpio;
     int i2c2_sca_pin_m_pwm;
     int i2c2_sca_pin_m_scl;
-    int otg_drvvbus_pin;
-    int otg_drvvbus_pin_m_gpio;
-    int otg_drvvbus_pin_m_krow;
-    int otg_drvvbus_pin_m_drv_vbus;
-    int otg_drvvbus_pin_m_dbg_mon_a;
     int uart_urxd1_pin;
     int uart_urxd1_pin_m_gpio;
     int uart_urxd1_pin_m_urxd;
@@ -264,6 +263,7 @@ struct _gpio_usage {
     int msdc1_dat3_m_gpio;
     int msdc1_dat3_m_msdc1_dat;
 };
+
 
 
 #endif /* __CUST_GPIO_USAGE_PARA_H__ */
