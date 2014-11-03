@@ -138,7 +138,7 @@ struct tag_para_keypad_ssb_data keypad_cust_ssb_data = {
     0x9876,
 };
 
-struct tag_para_auxadc_ssb_data auxadc_cust_ssb_data = {-1, 13, -1};
+struct tag_para_auxadc_ssb_data auxadc_cust_ssb_data = {0x6789, -1, 13, -1, 0, 0x9876};
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 static struct tag_msdc_hw_para    msdc_para_hw_data[2];
@@ -1243,6 +1243,7 @@ static int __init parse_tag_auxadc_data_fixup(const struct tag *tags)
     auxadc_cust_ssb_data.TEMPERATURE_CHANNEL = tags->u.auxadc_ssb_cust.TEMPERATURE_CHANNEL;
     auxadc_cust_ssb_data.ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL = tags->u.auxadc_ssb_cust.ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL;
     auxadc_cust_ssb_data.HF_MIC_CHANNEL = tags->u.auxadc_ssb_cust.HF_MIC_CHANNEL;
+    auxadc_cust_ssb_data.LCM_VOLTAGE = tags->u.auxadc_ssb_cust.LCM_VOLTAGE;
     /*printk("%s: TEMPERATURE_CHANNEL(%d), ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL(%d), HF_MIC_CHANNEL(%d)\n"
         ,__func__
         ,auxadc_cust_ssb_data.TEMPERATURE_CHANNEL

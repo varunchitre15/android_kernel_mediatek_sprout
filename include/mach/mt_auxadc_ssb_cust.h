@@ -17,9 +17,12 @@
 
 struct tag_para_auxadc_ssb_data
 {
+	int version;
     int TEMPERATURE_CHANNEL;
     int ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL;
     int HF_MIC_CHANNEL;
+    int LCM_VOLTAGE;
+    int endflag;
 };
 
 #endif
