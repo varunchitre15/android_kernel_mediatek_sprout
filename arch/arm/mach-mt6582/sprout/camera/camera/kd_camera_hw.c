@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -53,6 +53,14 @@
 kal_bool searchMainSensor = KAL_TRUE;
 #define GPIO1_SUB_CAM_ID GPIO19
 #define GPIO1_SUB_CAM_ID_M_GPIO GPIO_MODE_00
+/* GPIO Identify */
+/* GPIO_MAIN_CAM_ID_PIN	AC11(GPIO17) 0x80000011*/
+/* Sunny(1), Truly(0)*/
+/* GPIO_SUB_CAM_ID_PIN	AE9(GPIO19)  0x80000013*/
+/* SANYINGXING(1), KAIMUJIN(0)*/
+
+/* OEM Partition information */
+extern unsigned int g_para_version;
 
 int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSensorName, BOOL On, char* mode_name)
 {
@@ -69,7 +77,7 @@ u32 pinSetIdxTmp = 0;
 
 u32 pinSet[2][8] = {
                     //for main sensor
-                    {   
+                    {
                         GPIO_CAMERA_CMRST_PIN,
                         GPIO_CAMERA_CMRST_PIN_M_GPIO,   /* mode */
                         GPIO_OUT_ONE,                   /* ON state */
@@ -80,7 +88,7 @@ u32 pinSet[2][8] = {
                         GPIO_OUT_ZERO,
                     },
                     //for sub sensor
-                    {   
+                    {
                         GPIO_CAMERA_CMRST1_PIN,
                         GPIO_CAMERA_CMRST1_PIN_M_GPIO,
                         GPIO_OUT_ONE,
@@ -112,13 +120,19 @@ u32 pinSet[2][8] = {
         if(mt_set_gpio_dir(GPIO_CAMERA_LDO_EN_PIN,GPIO_DIR_OUT)){PK_DBG("[[CAMERA SENSOR] set CAMERA_POWER_PULL_PIN dir failed!! \n");}
         if(mt_set_gpio_out(GPIO_CAMERA_LDO_EN_PIN,GPIO_OUT_ONE)){PK_DBG("[[CAMERA SENSOR] set CAMERA_POWER_PULL_PIN failed!! \n");}
 #endif
-   
+
         PK_DBG("kdCISModulePowerOn -on:currSensorName=%s\n",currSensorName);
         PK_DBG("kdCISModulePowerOn -on:pinSetIdx=%d\n",pinSetIdx);
         if ((currSensorName && (0 == strcmp(SENSOR_DRVNAME_OV5648_MIPI_RAW, currSensorName)))||
             (currSensorName && (0 == strcmp(SENSOR_DRVNAME_OV5648_MIPI_RAW_TRULY, currSensorName))))
         {
-            PK_DBG("SENSOR_DRVNAME_OV5648_MIPI_RAW\n");
+            if(g_para_version != 0)
+            {
+                mt_set_gpio_mode(GPIO_MAIN_CAM_ID_PIN,GPIO_MODE_00);
+                mt_set_gpio_dir(GPIO_MAIN_CAM_ID_PIN,GPIO_DIR_IN);
+                mt_set_gpio_pull_enable(GPIO_MAIN_CAM_ID_PIN, GPIO_PULL_ENABLE);
+            }
+            PK_DBG("SENSOR_DRVNAME_OV5648_MIPI_RAW , g_para_version(%d)\n",g_para_version);
             //enable active sensor
             //RST pin
             if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST]) {
@@ -298,13 +312,12 @@ u32 pinSet[2][8] = {
         else  if ((currSensorName && (0 == strcmp(SENSOR_DRVNAME_OV2680_MIPI_RAW, currSensorName)))||
             (currSensorName && (0 == strcmp(SENSOR_DRVNAME_OV2680_MIPI_RAW_KAIMUJIN, currSensorName))))
         {
-            //GPIO_UART_UCTS2_PIN (GPIO19 | 0x80000000)
-            mt_set_gpio_mode(GPIO_UART_UCTS2_PIN,GPIO1_SUB_CAM_ID_M_GPIO);
-            mt_set_gpio_dir(GPIO_UART_UCTS2_PIN,GPIO_DIR_IN);
-            mt_set_gpio_pull_enable(GPIO_UART_UCTS2_PIN, GPIO_PULL_ENABLE);
+
+            mt_set_gpio_mode(GPIO_SUB_CAM_ID_PIN,GPIO_MODE_00);
+            mt_set_gpio_dir(GPIO_SUB_CAM_ID_PIN,GPIO_DIR_IN);
+            mt_set_gpio_pull_enable(GPIO_SUB_CAM_ID_PIN, GPIO_PULL_ENABLE);
             PK_DBG("SENSOR_DRVNAME_OV2680_MIPI_RAW\n");
             //First Power Pin low and Reset Pin Low
-
             if(TRUE != hwPowerOn(CAMERA_POWER_VCAM_D2, VOL_1800, mode_name))
             {
                 PK_DBG("[CAMERA SENSOR] Fail to enable IO power\n");
@@ -340,11 +353,11 @@ u32 pinSet[2][8] = {
             // {
             //      PK_DBG("[CAMERA SENSOR] Fail to enable digital power\n");
             //      goto _kdCISModulePowerOn_exit_;
-            // } 
+            // }
 
-            // wait power to be stable 
+            // wait power to be stable
             mdelay(25);
-        
+
             //disable inactive sensor
             if(pinSetIdx == 0 || pinSetIdx == 2)
             {//disable sub
@@ -369,9 +382,9 @@ u32 pinSet[2][8] = {
                 if(mt_set_gpio_out(pinSet[0][IDX_PS_CMPDN],pinSet[0][IDX_PS_CMPDN+IDX_PS_OFF])){PK_DBG("[CAMERA LENS] set gpio failed!! \n");} //high == power down lens module
                 }
             }
-            PK_DBG("[CAMERA SENSOR] GPIO_SUB_CAM_ID(%d)\n",mt_get_gpio_in(GPIO_UART_UCTS2_PIN));
+            PK_DBG("[CAMERA SENSOR] GPIO_SUB_CAM_ID(%d)\n",mt_get_gpio_in(GPIO_SUB_CAM_ID_PIN));
 
-  
+
         }
         else
         {
@@ -446,7 +459,7 @@ u32 pinSet[2][8] = {
                 if(mt_set_gpio_dir(pinSet[pinSetIdx][IDX_PS_CMPDN],GPIO_DIR_OUT)){PK_DBG("[CAMERA LENS] set gpio dir failed!! \n");}
                 if(mt_set_gpio_out(pinSet[pinSetIdx][IDX_PS_CMPDN],pinSet[pinSetIdx][IDX_PS_CMPDN+IDX_PS_ON])){PK_DBG("[CAMERA LENS] set gpio failed!! \n");}
 
-                
+
                 if(mt_set_gpio_mode(pinSet[pinSetIdx][IDX_PS_CMRST],pinSet[pinSetIdx][IDX_PS_CMRST+IDX_PS_MODE])){PK_DBG("[CAMERA SENSOR] set gpio mode failed!! \n");}
                 if(mt_set_gpio_dir(pinSet[pinSetIdx][IDX_PS_CMRST],GPIO_DIR_OUT)){PK_DBG("[CAMERA SENSOR] set gpio dir failed!! \n");}
                 if(mt_set_gpio_out(pinSet[pinSetIdx][IDX_PS_CMRST],pinSet[pinSetIdx][IDX_PS_CMRST+IDX_PS_ON])){PK_DBG("[CAMERA SENSOR] set gpio failed!! \n");}
@@ -482,10 +495,10 @@ u32 pinSet[2][8] = {
                     if(mt_set_gpio_dir(pinSet[2][IDX_PS_CMPDN],GPIO_DIR_OUT)){PK_DBG("[CAMERA LENS] set gpio dir failed!! \n");}
                     if(mt_set_gpio_out(pinSet[2][IDX_PS_CMRST],pinSet[2][IDX_PS_CMRST+IDX_PS_OFF])){PK_DBG("[CAMERA SENSOR] set gpio failed!! \n");} //low == reset sensor
                     if(mt_set_gpio_out(pinSet[2][IDX_PS_CMPDN],pinSet[2][IDX_PS_CMPDN+IDX_PS_OFF])){PK_DBG("[CAMERA LENS] set gpio failed!! \n");} //high == power down lens module
-                    
+
                 }
             }
-           
+
         }
 
   }
@@ -497,21 +510,21 @@ u32 pinSet[2][8] = {
         if (currSensorName && (0 == strcmp(SENSOR_DRVNAME_HI258_MIPI_YUV, currSensorName)))
         {
            PK_DBG("kdCISModulePower--off get in---SENSOR_DRVNAME_HI258_MIPI_YUV \n");
-      
+
             //First Power Pin low and Reset Pin Low
             //PDN pin
             if(mt_set_gpio_mode(pinSet[pinSetIdx][IDX_PS_CMPDN], pinSet[pinSetIdx][IDX_PS_CMPDN+IDX_PS_MODE])){PK_DBG("[CAMERA LENS] set gpio mode failed!! \n");}
             if(mt_set_gpio_dir(pinSet[pinSetIdx][IDX_PS_CMPDN], GPIO_DIR_OUT)){PK_DBG("[CAMERA LENS] set gpio dir failed!! \n");}
             if(mt_set_gpio_out(pinSet[pinSetIdx][IDX_PS_CMPDN], pinSet[pinSetIdx][IDX_PS_CMPDN+IDX_PS_ON])){PK_DBG("[CAMERA LENS] set gpio failed!! \n");}
             mdelay(10);
-        
+
             //RST pin
             if(mt_set_gpio_mode(pinSet[pinSetIdx][IDX_PS_CMRST], pinSet[pinSetIdx][IDX_PS_CMRST+IDX_PS_MODE])){PK_DBG("[CAMERA SENSOR] set gpio mode failed!! \n");}
             if(mt_set_gpio_dir(pinSet[pinSetIdx][IDX_PS_CMRST], GPIO_DIR_OUT)){PK_DBG("[CAMERA SENSOR] set gpio dir failed!! \n");}
             if(mt_set_gpio_out(pinSet[pinSetIdx][IDX_PS_CMRST], pinSet[pinSetIdx][IDX_PS_CMRST+IDX_PS_OFF])){PK_DBG("[CAMERA SENSOR] set gpio failed!! \n");}
             mdelay(10);
 
-            
+
             if(TRUE != hwPowerDown(CAMERA_POWER_VCAM_A,mode_name)) {
                 PK_DBG("[CAMERA SENSOR] Fail to OFF analog power\n");
                 //return -EIO;
@@ -642,7 +655,7 @@ u32 pinSet[2][8] = {
                 //return -EIO;
                 goto _kdCISModulePowerOn_exit_;
             }
-        
+
     }
 
   }

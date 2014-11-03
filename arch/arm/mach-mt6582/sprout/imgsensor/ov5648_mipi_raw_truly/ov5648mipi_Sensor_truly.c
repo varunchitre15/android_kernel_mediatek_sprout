@@ -437,8 +437,8 @@ static struct otp_struct {
 	kal_uint16 light_bg;
 };
 
-/* index: index of otp group. (1, 2) 
-** return:	
+/* index: index of otp group. (1, 2)
+** return:
 ** 	0, group index is empty
 ** 	1, group index has invalid data
 **	2, group index has valid data
@@ -492,7 +492,7 @@ static kal_uint16 check_otp(kal_uint16 index)
 	}
 	else
 	{
-		if (0 == rg && 0 == bg) 
+		if (0 == rg && 0 == bg)
 		{
 			return 0;
 		}
@@ -503,14 +503,14 @@ static kal_uint16 check_otp(kal_uint16 index)
 	}
 }
 
-/* index: index of otp group. (1, 2) 
-** return:	0, 
+/* index: index of otp group. (1, 2)
+** return:	0,
 */
 static kal_uint16 read_otp(kal_uint16 index, struct otp_struct *otp_ptr)
 {
 	kal_uint16 i, temp;
 
-	// read otp into buffer 
+	// read otp into buffer
 	if (index == 1)
 	{
 		// read otp --Bank 0
@@ -560,7 +560,7 @@ static kal_uint16 read_otp(kal_uint16 index, struct otp_struct *otp_ptr)
 		OV5648MIPI_write_cmos_sensor(0x3d00 + i, 0x00);
 	}
 
-	return 0; 
+	return 0;
 }
 
 /* R_gain, sensor red gain of AWB, 0x400 =1
@@ -590,7 +590,7 @@ static kal_uint32 update_awb_gain(kal_uint32 R_gain, kal_uint32 G_gain, kal_uint
 
 
 /* call this function after OV5648 initialization
-** return:	
+** return:
 ** 		0, update success
 **	       1, no OTP
 */
@@ -642,14 +642,14 @@ static kal_uint32 update_otp(void)
 	//0x400 = 1x gain
 	if(bg < BG_Ratio_Typical) {
 		if (rg< RG_Ratio_Typical) {
-			// current_otp.bg_ratio < BG_Ratio_typical &&? 
+			// current_otp.bg_ratio < BG_Ratio_typical &&?
 			// current_otp.rg_ratio < RG_Ratio_typical
 			G_gain = 0x400;
 			B_gain = 0x400 * BG_Ratio_Typical / bg;
-			R_gain = 0x400 * RG_Ratio_Typical / rg; 
+			R_gain = 0x400 * RG_Ratio_Typical / rg;
 		}
 		else {
-			// current_otp.bg_ratio < BG_Ratio_typical &&? 
+			// current_otp.bg_ratio < BG_Ratio_typical &&?
 			// current_otp.rg_ratio >= RG_Ratio_typical
 			R_gain = 0x400;
 			G_gain = 0x400 * rg / RG_Ratio_Typical;
@@ -658,14 +658,14 @@ static kal_uint32 update_otp(void)
 	}
 	else {
 		if (rg < RG_Ratio_Typical) {
-			// current_otp.bg_ratio >= BG_Ratio_typical &&? 
+			// current_otp.bg_ratio >= BG_Ratio_typical &&?
 			// current_otp.rg_ratio < RG_Ratio_typical
 			B_gain = 0x400;
 			G_gain = 0x400 * bg / BG_Ratio_Typical;
 			R_gain = G_gain * RG_Ratio_Typical / rg;
 		}
 		else {
-			// current_otp.bg_ratio >= BG_Ratio_typical &&? 
+			// current_otp.bg_ratio >= BG_Ratio_typical &&?
 			// current_otp.rg_ratio >= RG_Ratio_typical
 			G_gain_B = 0x400 * bg / BG_Ratio_Typical;
 			G_gain_R = 0x400 * rg / RG_Ratio_Typical;
@@ -693,8 +693,8 @@ static kal_uint32 update_otp(void)
 	SENSORDB("BG_Ratio_Typical = %x\r\n", BG_Ratio_Typical);
 	SENSORDB("RG = %x\r\n", rg);//rg
 	SENSORDB("BG = %x\r\n", bg);//bg
-	
-	
+
+
 	update_awb_gain(R_gain, G_gain, B_gain);
     //after OTP update
 	SENSORDB("reg[0x5186] = %x\r\n", OV5648MIPI_read_cmos_sensor(0x5186));
@@ -703,7 +703,7 @@ static kal_uint32 update_otp(void)
 	SENSORDB("reg[0x5189] = %x\r\n", OV5648MIPI_read_cmos_sensor(0x5189));
 	SENSORDB("reg[0x518a] = %x\r\n", OV5648MIPI_read_cmos_sensor(0x518a));
 	SENSORDB("reg[0x518b] = %x\r\n", OV5648MIPI_read_cmos_sensor(0x518b));
-	
+
 	return 0;
 }
 
@@ -1069,26 +1069,25 @@ static void OV5648MIPI_Set_Mirror_Flip(kal_uint8 image_mirror, kal_uint8 image_f
        *   ISP and Sensor flip or mirror register bit should be the same!!
        *
        ********************************************************/
-
     HV = image_mirror | (image_flip << 1);
     SENSORDB("image_mirror = %d,flip = %d HV = %d", image_mirror, image_flip, HV);
      switch (HV)
     {
         case IMAGE_NORMAL:
             OV5648MIPI_write_cmos_sensor(0x3820,((OV5648MIPI_read_cmos_sensor(0x3820) & 0xF9) | 0x00));
-            OV5648MIPI_write_cmos_sensor(0x3821,((OV5648MIPI_read_cmos_sensor(0x3821) & 0xF9) | 0x06));
+            OV5648MIPI_write_cmos_sensor(0x3821,((OV5648MIPI_read_cmos_sensor(0x3821) & 0xF9) | 0x00));
             break;
         case IMAGE_H_MIRROR:
             OV5648MIPI_write_cmos_sensor(0x3820,((OV5648MIPI_read_cmos_sensor(0x3820) & 0xF9) | 0x00));
-            OV5648MIPI_write_cmos_sensor(0x3821,((OV5648MIPI_read_cmos_sensor(0x3821) & 0xF9) | 0x00));
+            OV5648MIPI_write_cmos_sensor(0x3821,((OV5648MIPI_read_cmos_sensor(0x3821) & 0xF9) | 0x06));
             break;
         case IMAGE_V_MIRROR:
             OV5648MIPI_write_cmos_sensor(0x3820,((OV5648MIPI_read_cmos_sensor(0x3820) & 0xF9) | 0x06));
-            OV5648MIPI_write_cmos_sensor(0x3821,((OV5648MIPI_read_cmos_sensor(0x3821) & 0xF9) | 0x06));
+            OV5648MIPI_write_cmos_sensor(0x3821,((OV5648MIPI_read_cmos_sensor(0x3821) & 0xF9) | 0x00));
             break;
         case IMAGE_HV_MIRROR:
             OV5648MIPI_write_cmos_sensor(0x3820,((OV5648MIPI_read_cmos_sensor(0x3820) & 0xF9) | 0x06));
-            OV5648MIPI_write_cmos_sensor(0x3821,((OV5648MIPI_read_cmos_sensor(0x3821) & 0xF9) | 0x00));
+            OV5648MIPI_write_cmos_sensor(0x3821,((OV5648MIPI_read_cmos_sensor(0x3821) & 0xF9) | 0x06));
             break;
         default:
             SENSORDB("Error image_mirror setting");
@@ -1628,7 +1627,7 @@ static void OV5648MIPI_Sensor_Init(void)
 #ifdef OV5648MIPI_USE_OTP
     //wb otp update
     update_otp();
- 
+
 #endif
 */
 //OTP Code End
@@ -1705,8 +1704,8 @@ static void OV5648MIPI_Preview_Setting(void)
        *   ISP and Sensor flip or mirror register bit should be the same!!
        *
        ********************************************************/
-    OV5648MIPI_write_cmos_sensor(0x3820, 0x08); // flip off, v bin off
-    OV5648MIPI_write_cmos_sensor(0x3821, 0x07); // mirror on, h bin on
+    OV5648MIPI_write_cmos_sensor(0x3820,((OV5648MIPI_read_cmos_sensor(0x3820) & 0x06) | 0x08));//bin off
+    OV5648MIPI_write_cmos_sensor(0x3821,((OV5648MIPI_read_cmos_sensor(0x3821) & 0x06) | 0x01));//bin on
 
 
     OV5648MIPI_write_cmos_sensor(0x4004, 0x02); // black line number
@@ -1790,9 +1789,8 @@ static void OV5648MIPI_Capture_Setting(void)
        *   ISP and Sensor flip or mirror register bit should be the same!!
        *
        ********************************************************/
-    OV5648MIPI_write_cmos_sensor(0x3820, 0x40); // flip off, v bin off
-    OV5648MIPI_write_cmos_sensor(0x3821, 0x06); // mirror on, v bin off
-
+    OV5648MIPI_write_cmos_sensor(0x3820,((OV5648MIPI_read_cmos_sensor(0x3820) & 0x06) | 0x40));//bin off, bits3 must be 0
+    OV5648MIPI_write_cmos_sensor(0x3821,((OV5648MIPI_read_cmos_sensor(0x3821) & 0x06) | 0x00));//bin off
 
     OV5648MIPI_write_cmos_sensor(0x4004, 0x04); // black line number
     //0x4005[1]: 0 normal freeze 1 blc always update
@@ -1825,6 +1823,7 @@ static void OV5648MIPI_Capture_Setting(void)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
+extern unsigned int g_para_version;
 UINT32 OV5648MIPITrulyOpen(void)
 {
     kal_uint16 sensor_id = 0;
@@ -1834,7 +1833,7 @@ UINT32 OV5648MIPITrulyOpen(void)
     SENSORDB("sensor_id = 0x%x ", sensor_id);
 
     if (sensor_id != OV5648MIPI_SENSOR_ID){
-		
+
         return ERROR_SENSOR_CONNECT_FAIL;
     }
 
@@ -1845,20 +1844,21 @@ UINT32 OV5648MIPITrulyOpen(void)
     update_otp();
 #endif
 	SENSORDB("Module ID: 0x%x ", module_id);  // sunny's module id is 0x01
-	
-#ifdef OV5648TRULY_WB_OTP
-	/* if you want to distiguish module vendor, do it here through  module_id */
-    	
 
-	if(module_id != 0x02){ 
+#ifdef OV5648TRULY_WB_OTP
+    /*Check OEM Partition status,  0: No oerm partition data*/
+    if(g_para_version == 0)
+    {
+    	/* if you want to distiguish module vendor, do it here through  module_id */
+    	if(module_id != 0x02){
         sensor_id = 0xFFFFFFFF;
-		SENSORDB("This is not truly ov5648: module_id = 0x%x ", module_id);
+    	SENSORDB("This is not truly ov5648: module_id = 0x%x ", module_id);
         return ERROR_SENSOR_CONNECT_FAIL;
-	    }
-	sensor_id += module_id;
-	SENSORDB("This is  truly ov5648, sensorID = 0x%x ", sensor_id);
-	
-	/* if you want to distiguish module vendor, do it here through  module_id */
+        }
+    	//sensor_id += module_id;
+    	SENSORDB("This is  truly ov5648, sensorID = 0x%x ", sensor_id);
+    	/* if you want to distiguish module vendor, do it here through  module_id */
+    }
 #endif
 #else
     otp_update_wb(0x15e, 0x13c);//LINE <the values are the  truly module's  typical value> <20130828> <add the otp infomation> panzaoyan
@@ -1910,14 +1910,14 @@ static UINT32 OV5648GetSensorID(UINT32 *sensorID)
         return ERROR_SENSOR_CONNECT_FAIL;
     }
 
-	
+
 	/* if you want to distiguish module vendor, do it here through	module_id */
-	#if 0	
+	#if 0
 	#ifdef OV5648TRULY_WB_OTP
-	
+
     OV5648MIPI_Sensor_Init();
 	update_otp();
-	if(module_id != 0x02){ 
+	if(module_id != 0x02){
         *sensorID = 0xFFFFFFFF;
 		SENSORDB("This is not truly ov5648: module_id = 0x%x ", module_id);
         return ERROR_SENSOR_CONNECT_FAIL;
@@ -1925,21 +1925,37 @@ static UINT32 OV5648GetSensorID(UINT32 *sensorID)
 	*sensorID += module_id;
 	SENSORDB("This is  truly ov5648, sensorID = 0x%x ", *sensorID);
 	#endif
-	
+
 	/* if you want to distiguish module vendor, do it here through	module_id */
 	#else
-
-      if( 0==check_trulyMID(0) ) //it is not truly module
-    	{	
-		     SENSORDB("check_trulyMIDFailed\n");
-	    	 *sensorID = 0xFFFFFFFF;
-	        return ERROR_SENSOR_CONNECT_FAIL;
-    	}
-    	*sensorID +=0x02;
-    	SENSORDB("This is  truly ov5648, sensorID = 0x%x ", *sensorID);
-    	
-
+    /*Check OEM Partition status,  0: No oerm partition data*/
+    if(g_para_version == 0)
+    {
+        if( 0==check_trulyMID(0) ) //it is not truly module
+        {
+             SENSORDB("check_trulyMIDFailed\n");
+             *sensorID = 0xFFFFFFFF;
+            return ERROR_SENSOR_CONNECT_FAIL;
+        }
+    }
+    else
+    {
+        /* GPIO_MAIN_CAM_ID_PIN	AC11(GPIO17) 0x80000011*/
+        /* Sunny(1), Truly(0)*/
+        unsigned int hw_id;
+        hw_id=mt_get_gpio_in(GPIO_MAIN_CAM_ID_PIN); // GPIO 19
+        mdelay(1);
+        SENSORDB("OV5648 hw_id:%x \n",hw_id);
+        if(hw_id != 0x00){
+            *sensorID = 0xFFFFFFFF;
+            SENSORDB("This is not truly ov5648: module_id = 0x%x ", hw_id);
+            return ERROR_SENSOR_CONNECT_FAIL;
+        }
+    }
+    *sensorID +=0x02;
+    SENSORDB("This is  truly ov5648, sensorID = 0x%x ", *sensorID);
 	#endif
+
     return ERROR_NONE;
 }
 
