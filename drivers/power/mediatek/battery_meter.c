@@ -1174,7 +1174,7 @@ void dod_init(void)
 		ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_OCV, &gFG_voltage);
 		gFG_capacity_by_v = fgauge_read_capacity_by_v(gFG_voltage);
 
-	bm_print(BM_LOG_CRTI, "[FGADC] get_hw_ocv=%d, HW_SOC=%d, SW_SOC = %d\n",
+		bm_init_print(BM_LOG_CRTI, "[FGADC] get_hw_ocv=%d, HW_SOC=%d, SW_SOC = %d\n",
 			 gFG_voltage, gFG_capacity_by_v, gFG_capacity_by_v_init);
 
 		/* compare with hw_ocv & sw_ocv, check if less than or equal to 5% tolerance */
@@ -1184,7 +1184,7 @@ void dod_init(void)
 		}
 #if defined(HW_FG_FORCE_USE_SW_OCV)
 		gFG_capacity_by_v = gFG_capacity_by_v_init;
-		bm_print(BM_LOG_CRTI, "[FGADC] HW_FG_FORCE_USE_SW_OCV : HW_SOC=%d, SW_SOC = %d\n",
+		bm_init_print(BM_LOG_CRTI, "[FGADC] HW_FG_FORCE_USE_SW_OCV : HW_SOC=%d, SW_SOC = %d\n",
 			 gFG_capacity_by_v, gFG_capacity_by_v_init);
 #endif
 	/* ------------------------------------------------------------------------------- */
@@ -1225,13 +1225,13 @@ void dod_init(void)
 			gFG_capacity_by_v = g_rtc_fg_soc;
 		}
 	}
-	bm_print(BM_LOG_CRTI, "[FGADC] g_rtc_fg_soc=%d, gFG_capacity_by_v=%d\n",
+	bm_init_print(BM_LOG_CRTI, "[FGADC] g_rtc_fg_soc=%d, gFG_capacity_by_v=%d\n",
 		 g_rtc_fg_soc, gFG_capacity_by_v);
 
 	if (gFG_capacity_by_v == 0 && bat_is_charger_exist() == KAL_TRUE) {
 		gFG_capacity_by_v = 1;
 
-		bm_print(BM_LOG_CRTI, "[FGADC] gFG_capacity_by_v=%d\n", gFG_capacity_by_v);
+		bm_init_print(BM_LOG_CRTI, "[FGADC] gFG_capacity_by_v=%d\n", gFG_capacity_by_v);
 	}
 	gFG_capacity = gFG_capacity_by_v;
 	gFG_capacity_by_c_init = gFG_capacity;
@@ -1244,13 +1244,13 @@ void dod_init(void)
 
 #if defined(CHANGE_TRACKING_POINT)
 	gFG_15_vlot = fgauge_read_v_by_capacity((100 - g_tracking_point));
-	bm_print(BM_LOG_CRTI, "[FGADC] gFG_15_vlot = %dmV\n", gFG_15_vlot);
+	bm_init_print(BM_LOG_CRTI, "[FGADC] gFG_15_vlot = %dmV\n", gFG_15_vlot);
 #else
 	/* gFG_15_vlot = fgauge_read_v_by_capacity(86); //14% */
 	gFG_15_vlot = fgauge_read_v_by_capacity((100 - g_tracking_point));
-	bm_print(BM_LOG_CRTI, "[FGADC] gFG_15_vlot = %dmV\n", gFG_15_vlot);
+	bm_init_print(BM_LOG_CRTI, "[FGADC] gFG_15_vlot = %dmV\n", gFG_15_vlot);
 	if ((gFG_15_vlot > 3800) || (gFG_15_vlot < 3600)) {
-		bm_print(BM_LOG_CRTI, "[FGADC] gFG_15_vlot(%d) over range, reset to 3700\n",
+		bm_init_print(BM_LOG_CRTI, "[FGADC] gFG_15_vlot(%d) over range, reset to 3700\n",
 			 gFG_15_vlot);
 		gFG_15_vlot = 3700;
 	}
@@ -1305,14 +1305,14 @@ void oam_init(void)
 	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_OCV, &gFG_voltage);
 	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_ADC_V_BAT_SENSE, &g_booting_vbat);
 
-	bm_print(BM_LOG_CRTI, "[oam_init_inf] gFG_voltage =%d, g_booting_vbat=%d,\n",
+	bm_init_print(BM_LOG_CRTI, "[oam_init_inf] gFG_voltage =%d, g_booting_vbat=%d,\n",
 			 gFG_voltage, g_booting_vbat);
 	gFG_capacity_by_v = fgauge_read_capacity_by_v(gFG_voltage);
 	vbat_capacity = fgauge_read_capacity_by_v(g_booting_vbat);
-	bm_print(BM_LOG_CRTI, "[oam_init_inf] gFG_capacity_by_v =%d, vbat_capacity=%d,\n",
+	bm_init_print(BM_LOG_CRTI, "[oam_init_inf] gFG_capacity_by_v =%d, vbat_capacity=%d,\n",
 			 gFG_capacity_by_v, vbat_capacity);
 	if (bat_is_charger_exist() == KAL_TRUE) {
-		bm_print(BM_LOG_CRTI, "[oam_init_inf] gFG_capacity_by_v=%d, vbat_capacity=%d,\n",
+		bm_init_print(BM_LOG_CRTI, "[oam_init_inf] gFG_capacity_by_v=%d, vbat_capacity=%d,\n",
 			 gFG_capacity_by_v, vbat_capacity);
 
 		/* to avoid plug in cable without battery, then plug in battery to make hw soc = 100% */
@@ -1355,21 +1355,21 @@ void oam_init(void)
 	g_d_hw_ocv = oam_d0;
 
 	if (oam_init_i == 0) {
-		bm_print(BM_LOG_CRTI,
+		bm_init_print(BM_LOG_CRTI,
 			 "[oam_init] oam_v_ocv_1,oam_v_ocv_2,oam_r_1,oam_r_2,oam_d0,oam_i_ori\n");
 		oam_init_i = 1;
 	}
 
-	bm_print(BM_LOG_CRTI, "[oam_init] %d,%d,%d,%d,%d,%d\n",
+	bm_init_print(BM_LOG_CRTI, "[oam_init] %d,%d,%d,%d,%d,%d\n",
 		 oam_v_ocv_1, oam_v_ocv_2, oam_r_1, oam_r_2, oam_d0, oam_i_ori);
 
-	bm_print(BM_LOG_CRTI, "[oam_init_inf] hw_OCV, hw_D0, RTC, D0, oam_OCV_init, tbat\n");
-	bm_print(BM_LOG_CRTI,
+	bm_init_print(BM_LOG_CRTI, "[oam_init_inf] hw_OCV, hw_D0, RTC, D0, oam_OCV_init, tbat\n");
+	bm_init_print(BM_LOG_CRTI,
 		 "[oam_run_inf] oam_OCV1, oam_OCV2, vbat, I1, I2, R1, R2, Car1, Car2,qmax, tbat\n");
-	bm_print(BM_LOG_CRTI, "[oam_result_inf] D1, D2, D3, D4, D5, UI_SOC\n");
+	bm_init_print(BM_LOG_CRTI, "[oam_result_inf] D1, D2, D3, D4, D5, UI_SOC\n");
 
 
-	bm_print(BM_LOG_CRTI, "[oam_init_inf] %d, %d, %d, %d, %d, %d\n",
+	bm_init_print(BM_LOG_CRTI, "[oam_init_inf] %d, %d, %d, %d, %d, %d\n",
 		 gFG_voltage, (100 - fgauge_read_capacity_by_v(gFG_voltage)), g_rtc_fg_soc,
 		 gFG_DOD0, oam_v_ocv_init, force_get_tbat());
 
@@ -1558,7 +1558,7 @@ void table_init(void)
 	/* Re-constructure r-table profile according to current temperature */
 	profile_p_r_table = fgauge_get_profile_r_table(TEMPERATURE_T);
 	if (profile_p_r_table == NULL) {
-		bm_print(BM_LOG_CRTI,
+		bm_init_print(BM_LOG_CRTI,
 			 "[FGADC] fgauge_get_profile_r_table : create table fail !\r\n");
 	}
 	fgauge_construct_r_table_profile(temperature, profile_p_r_table);
@@ -1566,7 +1566,7 @@ void table_init(void)
 	/* Re-constructure battery profile according to current temperature */
 	profile_p = fgauge_get_profile(TEMPERATURE_T);
 	if (profile_p == NULL) {
-		bm_print(BM_LOG_CRTI, "[FGADC] fgauge_get_profile : create table fail !\r\n");
+		bm_init_print(BM_LOG_CRTI, "[FGADC] fgauge_get_profile : create table fail !\r\n");
 	}
 	fgauge_construct_battery_profile(temperature, profile_p);
 }
@@ -1578,7 +1578,7 @@ kal_int32 auxadc_algo_run(void)
 	gFG_voltage = battery_meter_get_battery_voltage();
 	val = fgauge_read_capacity_by_v(gFG_voltage);
 
-	bm_print(BM_LOG_CRTI, "[auxadc_algo_run] %d,%d\n", gFG_voltage, val);
+	bm_init_print(BM_LOG_CRTI, "[auxadc_algo_run] %d,%d\n", gFG_voltage, val);
 
 	return val;
 }
@@ -2011,7 +2011,7 @@ void fgauge_algo_run_init(void)
 	gFG_voltage = gFG_voltage + fgauge_compensate_battery_voltage_recursion(gFG_voltage, 5);	/* mV */
 	gFG_voltage = gFG_voltage + ocv_board_compesate;
 
-	bm_print(BM_LOG_CRTI, "[FGADC] SWOCV : %d,%d,%d,%d,%d,%d\n",
+	bm_init_print(BM_LOG_CRTI, "[FGADC] SWOCV : %d,%d,%d,%d,%d,%d\n",
 		 gFG_voltage_init, gFG_voltage, gFG_current, gFG_Is_Charging, gFG_resistance_bat,
 		 gFG_compensate_value);
 
@@ -2047,7 +2047,7 @@ void fgauge_algo_run_init(void)
 
 	/* double check */
 	if (gFG_current_auto_detect_R_fg_total <= 0) {
-		bm_print(BM_LOG_CRTI, "gFG_current_auto_detect_R_fg_total=0, need double check\n");
+		bm_init_print(BM_LOG_CRTI, "gFG_current_auto_detect_R_fg_total=0, need double check\n");
 
 		gFG_current_auto_detect_R_fg_count = 0;
 
@@ -2064,7 +2064,7 @@ void fgauge_algo_run_init(void)
 	if (gFG_current_auto_detect_R_fg_result <= current_detect_r_fg) {
 		g_auxadc_solution = 1;
 
-		bm_print(BM_LOG_CRTI,
+		bm_init_print(BM_LOG_CRTI,
 			 "[FGADC] Detect NO Rfg, use AUXADC report. (%d=%d/%d)(%d)\r\n",
 			 gFG_current_auto_detect_R_fg_result, gFG_current_auto_detect_R_fg_total,
 			 gFG_current_auto_detect_R_fg_count, g_auxadc_solution);
@@ -2072,20 +2072,20 @@ void fgauge_algo_run_init(void)
 		if (g_auxadc_solution == 0) {
 			g_auxadc_solution = 0;
 
-			bm_print(BM_LOG_CRTI,
+			bm_init_print(BM_LOG_CRTI,
 				 "[FGADC] Detect Rfg, use FG report. (%d=%d/%d)(%d)\r\n",
 				 gFG_current_auto_detect_R_fg_result,
 				 gFG_current_auto_detect_R_fg_total,
 				 gFG_current_auto_detect_R_fg_count, g_auxadc_solution);
 		} else {
-			bm_print(BM_LOG_CRTI,
+			bm_init_print(BM_LOG_CRTI,
 				 "[FGADC] Detect Rfg, but use AUXADC report. due to g_auxadc_solution=%d \r\n",
 				 g_auxadc_solution);
 		}
 	}
 
 /* 5. Logging */
-	bm_print(BM_LOG_CRTI,
+	bm_init_print(BM_LOG_CRTI,
 		 "[FGADC] %d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\r\n",
 		 gFG_Is_Charging, gFG_current, gFG_columb, gFG_voltage, gFG_capacity_by_v,
 		 gFG_capacity_by_c, gFG_capacity_by_c_init, gFG_BATT_CAPACITY,
@@ -2139,7 +2139,7 @@ void fgauge_initialization(void)
 
 	ret = battery_meter_ctrl(BATTERY_METER_CMD_DUMP_REGISTER, NULL);
 
-	bm_print(BM_LOG_CRTI, "[fgauge_initialization] Done\n");
+	bm_init_print(BM_LOG_CRTI, "[fgauge_initialization] Done\n");
 #endif
 }
 //#endif
@@ -2489,16 +2489,16 @@ kal_int32 battery_meter_initial(void)
 		if (fg_soc_method == SOC_BY_AUXADC) {
 			g_auxadc_solution = 1;
 			table_init();
-			bm_print(BM_LOG_CRTI, "[battery_meter_initial] SOC_BY_AUXADC done\n");
+			bm_init_print(BM_LOG_CRTI, "[battery_meter_initial] SOC_BY_AUXADC done\n");
 		} else if (fg_soc_method == SOC_BY_HW_FG) {
 			fgauge_initialization();
 			fgauge_algo_run_init();
-			bm_print(BM_LOG_CRTI, "[battery_meter_initial] SOC_BY_HW_FG done\n");
+			bm_init_print(BM_LOG_CRTI, "[battery_meter_initial] SOC_BY_HW_FG done\n");
 		} else if (fg_soc_method == SOC_BY_SW_FG) {
 			g_auxadc_solution = 1;
 			table_init();
 			oam_init();
-			bm_print(BM_LOG_CRTI, "[battery_meter_initial] SOC_BY_SW_FG done\n");
+			bm_init_print(BM_LOG_CRTI, "[battery_meter_initial] SOC_BY_SW_FG done\n");
 		}
 		meter_initilized = KAL_TRUE;
 	}
@@ -2707,7 +2707,7 @@ int init_proc_log_fg(void)
 
 #if 1
 	proc_create("fgadc_log", 0644, NULL, &fgadc_proc_fops);
-	bm_print(BM_LOG_CRTI, "proc_create fgadc_proc_fops\n");
+	bm_init_print(BM_LOG_CRTI, "proc_create fgadc_proc_fops\n");
 #else
 	proc_entry_fgadc = create_proc_entry("fgadc_log", 0644, NULL);
 
@@ -3240,7 +3240,7 @@ static int battery_meter_probe(struct platform_device *dev)
 
 	battery_meter_ctrl = bm_ctrl_cmd;
 
-	bm_print(BM_LOG_CRTI, "[battery_meter_probe] probe\n");
+	bm_init_print(BM_LOG_CRTI, "[battery_meter_probe] probe\n");
 	/* select battery meter control method */
 	battery_meter_ctrl = bm_ctrl_cmd;
 	/* LOG System Set */
@@ -3553,19 +3553,19 @@ static int __init battery_meter_init(void)
 
 	ret = platform_device_register(&battery_meter_device);
 	if (ret) {
-		bm_print(BM_LOG_CRTI, "[battery_meter_driver] Unable to device register(%d)\n",
+		bm_init_print(BM_LOG_CRTI, "[battery_meter_driver] Unable to device register(%d)\n",
 			 ret);
 		return ret;
 	}
 
 	ret = platform_driver_register(&battery_meter_driver);
 	if (ret) {
-		bm_print(BM_LOG_CRTI, "[battery_meter_driver] Unable to register driver (%d)\n",
+		bm_init_print(BM_LOG_CRTI, "[battery_meter_driver] Unable to register driver (%d)\n",
 			 ret);
 		return ret;
 	}
 
-	bm_print(BM_LOG_CRTI, "[battery_meter_driver] Initialization : DONE\n");
+	bm_init_print(BM_LOG_CRTI, "[battery_meter_driver] Initialization : DONE\n");
 
 	return 0;
 

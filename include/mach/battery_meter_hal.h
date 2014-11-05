@@ -9,10 +9,17 @@
 #define BM_LOG_CRTI 1
 #define BM_LOG_FULL 2
 
-#define bm_print(num, fmt, args...)   \
+#define bm_init_print(num, fmt, args...)   \
 do {									\
 	if (Enable_FGADC_LOG >= (int)num) {				\
 		pr_notice(fmt, ##args); \
+	}								   \
+} while (0)
+
+#define bm_print(num, fmt, args...)   \
+do {									\
+	if (Enable_FGADC_LOG >= (int)num) {				\
+		pr_debug(fmt, ##args); \
 	}								   \
 } while (0)
 

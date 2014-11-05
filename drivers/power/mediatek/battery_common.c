@@ -2951,7 +2951,7 @@ void charger_hv_detect_sw_workaround_init(void)
 				    __func__);
 	}
 
-	battery_xlog_printk(BAT_LOG_CRTI, "charger_hv_detect_sw_workaround_init : done\n");
+	battery_xlog_init_printk(BAT_LOG_CRTI, "charger_hv_detect_sw_workaround_init : done\n");
 }
 
 
@@ -2971,7 +2971,7 @@ void battery_kthread_hrtimer_init(void)
 	battery_kthread_timer.function = battery_kthread_hrtimer_func;
 	hrtimer_start(&battery_kthread_timer, ktime, HRTIMER_MODE_REL);
 
-	battery_xlog_printk(BAT_LOG_CRTI, "battery_kthread_hrtimer_init : done\n");
+	battery_xlog_init_printk(BAT_LOG_CRTI, "battery_kthread_hrtimer_init : done\n");
 }
 
 
@@ -2986,29 +2986,29 @@ static int battery_probe(struct platform_device *dev)
 	struct class_device *class_dev = NULL;
 	int ret = 0;
 
-	battery_xlog_printk(BAT_LOG_CRTI, "******** battery driver probe!! ********\n");
+	battery_xlog_init_printk(BAT_LOG_CRTI, "******** battery driver probe!! ********\n");
 
 	/* Integrate with NVRAM */
 	ret = alloc_chrdev_region(&adc_cali_devno, 0, 1, ADC_CALI_DEVNAME);
 	if (ret)
-		battery_xlog_printk(BAT_LOG_CRTI, "Error: Can't Get Major number for adc_cali\n");
+		battery_xlog_init_printk(BAT_LOG_CRTI, "Error: Can't Get Major number for adc_cali\n");
 	adc_cali_cdev = cdev_alloc();
 	adc_cali_cdev->owner = THIS_MODULE;
 	adc_cali_cdev->ops = &adc_cali_fops;
 	ret = cdev_add(adc_cali_cdev, adc_cali_devno, 1);
 	if (ret)
-		battery_xlog_printk(BAT_LOG_CRTI, "adc_cali Error: cdev_add\n");
+		battery_xlog_init_printk(BAT_LOG_CRTI, "adc_cali Error: cdev_add\n");
 	adc_cali_major = MAJOR(adc_cali_devno);
 	adc_cali_class = class_create(THIS_MODULE, ADC_CALI_DEVNAME);
 	class_dev = (struct class_device *)device_create(adc_cali_class,
 							 NULL,
 							 adc_cali_devno, NULL, ADC_CALI_DEVNAME);
-	battery_xlog_printk(BAT_LOG_CRTI, "[BAT_probe] adc_cali prepare : done !!\n ");
+	battery_xlog_init_printk(BAT_LOG_CRTI, "[BAT_probe] adc_cali prepare : done !!\n ");
 
 	get_charging_control();
 
 	battery_charging_control(CHARGING_CMD_GET_PLATFORM_BOOT_MODE, &g_platform_boot_mode);
-	battery_xlog_printk(BAT_LOG_CRTI, "[BAT_probe] g_platform_boot_mode = %d\n ",
+	battery_xlog_init_printk(BAT_LOG_CRTI, "[BAT_probe] g_platform_boot_mode = %d\n ",
 			    g_platform_boot_mode);
 
 	wake_lock_init(&battery_suspend_lock, WAKE_LOCK_SUSPEND, "battery suspend wakelock");
@@ -3016,38 +3016,37 @@ static int battery_probe(struct platform_device *dev)
 	/* Integrate with Android Battery Service */
 	ret = power_supply_register(&(dev->dev), &ac_main.psy);
 	if (ret) {
-		battery_xlog_printk(BAT_LOG_CRTI, "[BAT_probe] power_supply_register AC Fail !!\n");
+		battery_xlog_init_printk(BAT_LOG_CRTI, "[BAT_probe] power_supply_register AC Fail !!\n");
 		return ret;
 	}
-	battery_xlog_printk(BAT_LOG_CRTI, "[BAT_probe] power_supply_register AC Success !!\n");
+	battery_xlog_init_printk(BAT_LOG_CRTI, "[BAT_probe] power_supply_register AC Success !!\n");
 
 	ret = power_supply_register(&(dev->dev), &usb_main.psy);
 	if (ret) {
-		battery_xlog_printk(BAT_LOG_CRTI,
+		battery_xlog_init_printk(BAT_LOG_CRTI,
 				    "[BAT_probe] power_supply_register USB Fail !!\n");
 		return ret;
 	}
-	battery_xlog_printk(BAT_LOG_CRTI, "[BAT_probe] power_supply_register USB Success !!\n");
-
+	battery_xlog_init_printk(BAT_LOG_CRTI, "[BAT_probe] power_supply_register USB Success !!\n");
 
 #if defined(CONFIG_MTK_WIRELESS_CHARGER_SUPPORT)
 	ret = power_supply_register(&(dev->dev), &wireless_main.psy);
 	if (ret) {
-		battery_xlog_printk(BAT_LOG_CRTI,
+		battery_xlog_init_printk(BAT_LOG_CRTI,
 				    "[BAT_probe] power_supply_register WIRELESS Fail !!\n");
 		return ret;
 	}
-	battery_xlog_printk(BAT_LOG_CRTI,
+	battery_xlog_init_printk(BAT_LOG_CRTI,
 			    "[BAT_probe] power_supply_register WIRELESS Success !!\n");
 #endif
 
 	ret = power_supply_register(&(dev->dev), &battery_main.psy);
 	if (ret) {
-		battery_xlog_printk(BAT_LOG_CRTI,
+		battery_xlog_init_printk(BAT_LOG_CRTI,
 				    "[BAT_probe] power_supply_register Battery Fail !!\n");
 		return ret;
 	}
-	battery_xlog_printk(BAT_LOG_CRTI, "[BAT_probe] power_supply_register Battery Success !!\n");
+	battery_xlog_init_printk(BAT_LOG_CRTI, "[BAT_probe] power_supply_register Battery Success !!\n");
 
 #if !defined(CONFIG_POWER_EXT)
 
@@ -3143,7 +3142,7 @@ static int battery_probe(struct platform_device *dev)
 	battery_kthread_hrtimer_init();
 
 	kthread_run(bat_thread_kthread, NULL, "bat_thread_kthread");
-	battery_xlog_printk(BAT_LOG_CRTI, "[battery_probe] bat_thread_kthread Done\n");
+	battery_xlog_init_printk(BAT_LOG_CRTI, "[battery_probe] bat_thread_kthread Done\n");
 
 	charger_hv_detect_sw_workaround_init();
 
@@ -3459,7 +3458,7 @@ static int mt_batteryNotify_probe(struct platform_device *dev)
 	/* struct proc_dir_entry *entry = NULL; */
 	struct proc_dir_entry *battery_dir = NULL;
 
-	battery_xlog_printk(BAT_LOG_CRTI, "******** mt_batteryNotify_probe!! ********\n");
+	battery_xlog_init_printk(BAT_LOG_CRTI, "******** mt_batteryNotify_probe!! ********\n");
 
 
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BatteryNotify);
@@ -3471,12 +3470,12 @@ static int mt_batteryNotify_probe(struct platform_device *dev)
 	} else {
 #if 1
 		proc_create("battery_cmd", S_IRUGO | S_IWUSR, battery_dir, &battery_cmd_proc_fops);
-		battery_xlog_printk(BAT_LOG_CRTI, "proc_create battery_cmd_proc_fops\n");
+		battery_xlog_init_printk(BAT_LOG_CRTI, "proc_create battery_cmd_proc_fops\n");
 
 		proc_create("current_cmd", S_IRUGO | S_IWUSR, battery_dir, &current_cmd_proc_fops);
-		battery_xlog_printk(BAT_LOG_CRTI, "proc_create current_cmd_proc_fops\n");
+		battery_xlog_init_printk(BAT_LOG_CRTI, "proc_create current_cmd_proc_fops\n");
 		proc_create("discharging_cmd", S_IRUGO | S_IWUSR, battery_dir, &discharging_cmd_proc_fops);
-		battery_xlog_printk(BAT_LOG_CRTI, "proc_create discharging_cmd_proc_fops\n");
+		battery_xlog_init_printk(BAT_LOG_CRTI, "proc_create discharging_cmd_proc_fops\n");
             
 
 #else
@@ -3488,7 +3487,7 @@ static int mt_batteryNotify_probe(struct platform_device *dev)
 #endif
 	}
 
-	battery_xlog_printk(BAT_LOG_CRTI, "******** mtk_battery_cmd!! ********\n");
+	battery_xlog_init_printk(BAT_LOG_CRTI, "******** mtk_battery_cmd!! ********\n");
 
 	return 0;
 
@@ -3530,25 +3529,25 @@ static int __init battery_init(void)
 
 	ret = platform_driver_register(&battery_driver);
 	if (ret) {
-		battery_xlog_printk(BAT_LOG_CRTI,
+		battery_xlog_init_printk(BAT_LOG_CRTI,
 				    "****[battery_driver] Unable to register driver (%d)\n", ret);
 		return ret;
 	}
 	/* battery notofy UI */
 	ret = platform_device_register(&MT_batteryNotify_device);
 	if (ret) {
-		battery_xlog_printk(BAT_LOG_CRTI,
+		battery_xlog_init_printk(BAT_LOG_CRTI,
 				    "****[mt_batteryNotify] Unable to device register(%d)\n", ret);
 		return ret;
 	}
 	ret = platform_driver_register(&mt_batteryNotify_driver);
 	if (ret) {
-		battery_xlog_printk(BAT_LOG_CRTI,
+		battery_xlog_init_printk(BAT_LOG_CRTI,
 				    "****[mt_batteryNotify] Unable to register driver (%d)\n", ret);
 		return ret;
 	}
 
-	battery_xlog_printk(BAT_LOG_CRTI, "****[battery_driver] Initialization : DONE !!\n");
+	battery_xlog_init_printk(BAT_LOG_CRTI, "****[battery_driver] Initialization : DONE !!\n");
 	return 0;
 }
 
