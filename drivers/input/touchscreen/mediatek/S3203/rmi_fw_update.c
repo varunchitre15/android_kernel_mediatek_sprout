@@ -1324,7 +1324,7 @@ EXPORT_SYMBOL(synaptics_fw_version_updater);
 
 int synaptics_fw_updater_s3203(unsigned char *fw_data)
 {
-    int retval=0;
+    int retval=-EINVAL;
     int ret;
     unsigned char config_id[4];
     int device_configID = 0;

@@ -1340,14 +1340,6 @@ static void tpd_down(int x, int y, int p ,int id)
 #else
 static void tpd_down(int x, int y, int p,int id)
 {
-#if 0
-    input_report_abs(tpd->dev, ABS_PRESSURE, p);
-    input_report_key(tpd->dev, BTN_TOUCH, 1);
-    input_report_abs(tpd->dev, ABS_MT_TOUCH_MAJOR, 1);
-    input_report_abs(tpd->dev, ABS_MT_POSITION_X, x);
-    input_report_abs(tpd->dev, ABS_MT_POSITION_Y, y);
-    input_mt_sync(tpd->dev);
-#else
     input_report_abs(tpd->dev, ABS_MT_PRESSURE, p);
     input_report_abs(tpd->dev, ABS_MT_TOUCH_MAJOR, 1);
     input_report_abs(tpd->dev, ABS_MT_TRACKING_ID, id);
@@ -1355,7 +1347,6 @@ static void tpd_down(int x, int y, int p,int id)
     input_report_abs(tpd->dev, ABS_MT_POSITION_X, x);
     input_report_abs(tpd->dev, ABS_MT_POSITION_Y, y);
     input_mt_sync(tpd->dev);
-#endif
 
     if(touch_ssb_data.use_tpd_button == 1){
     /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
@@ -1397,17 +1388,8 @@ static void tpd_up(int x, int y,int id)
 static void tpd_up(int x, int y ,int id)
 {
 
-#if 0
-    //input_report_abs(tpd->dev, ABS_PRESSURE, 0);
     input_report_key(tpd->dev, BTN_TOUCH, 0);
-    //input_report_abs(tpd->dev, ABS_MT_TOUCH_MAJOR, 0);
-    //input_report_abs(tpd->dev, ABS_MT_POSITION_X, x);
-    //input_report_abs(tpd->dev, ABS_MT_POSITION_Y, y);
     input_mt_sync(tpd->dev);
-#else
-        input_report_key(tpd->dev, BTN_TOUCH, 0);
-        input_mt_sync(tpd->dev);
-#endif
 
     if(touch_ssb_data.use_tpd_button == 1){
     /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
@@ -1828,7 +1810,7 @@ static int tpd_firmware_updater(void *unused)
 {
     int retval = 0;
 
-    synaptics_rmi4_detection_work(NULL);
+    //synaptics_rmi4_detection_work(NULL);
     synaptics_fw_updater_s3203(synaImage);
 
     retval = tpd_rmi4_read_pdt(ts);
@@ -1854,7 +1836,6 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
     struct synaptics_rmi4_data *rmi4_data;
     struct synaptics_rmi4_device_info *rmi;
     TPD_DMESG("%s:enter \n",__func__);
-
     mutex_init(&tp_mutex);
 
     synaptics_chip_reset();
@@ -1930,8 +1911,8 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
     input_set_abs_params(tpd->dev, ABS_MT_TOOL_TYPE,
                 0, MT_TOOL_MAX, 0, 0);
 #endif
-
-#ifdef TPD_UPDATE_FIRMWARE
+	synaptics_rmi4_detection_work(NULL);
+#if 0
     firmware_thread = kthread_run(tpd_firmware_updater, 0, "firmware_updater");
     if (IS_ERR(firmware_thread))
     {
@@ -2063,7 +2044,6 @@ static struct tpd_driver_t tpd_device_driver = {
     .tpd_have_button = 0,
 #endif
 };
-
 
 static int __init tpd_driver_init(void)
 {
