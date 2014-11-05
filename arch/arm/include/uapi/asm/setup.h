@@ -24,6 +24,7 @@
 #include <mach/gpio_usage_para.h>
 #include <mach/mt_msdc_ssb_cust.h>
 #include <mach/sensors_ssb.h>
+#include <mach/mt_audio_ssb_cust.h>
 
 #define COMMAND_LINE_SIZE 1024
 
@@ -223,6 +224,7 @@ struct tag_eint_data {
 #define ATAG_VIBRATOR_TAG    (0x41000822)
 #define ATAG_BATTERY_TAG     (0x41000823)
 #define ATAG_EINT_TAG        (0x41000824)
+#define ATAG_AUDIOPA_TAG     (0x41000825)
 #define ATAG_MODEL_VERSION_TAG (0x41000826)
 
 struct tag_vibrator_data {
@@ -288,6 +290,7 @@ struct tag {
 		struct sensor_tuning_data sensors_tuning;
 		struct tag_eint_data eint_data;
 		struct tag_battery_info_data battery_data;
+		struct tag_audiopa_data audiopa_data;
 		struct tag_model_version_info_data model_version_data;
 	} u;
 };

@@ -79,7 +79,7 @@ struct {
 } bl_fb = {0, 0};
 
 static int use_bl_fb = 0;
-
+extern int mtk_get_sound_pa_id;
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 struct tag_para_touch_ssb_data touch_cust_ssb_data = {
     0x6789,
@@ -1613,6 +1613,11 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
         } else if (tags->hdr.tag == ATAG_BATTERY_TAG) {
             printk(KERN_ALERT "battery tag %d\n", tags->hdr.size);
             parse_tag_battery_fixup(tags);
+        } else if (tags->hdr.tag == ATAG_AUDIOPA_TAG) {
+            printk( "audio pa use stName [%s]\n",tags->u.audiopa_data.stName);
+            printk( "audio pa use version [0x%x]\n",tags->u.audiopa_data.version);
+            printk( "audio pa use pa_type [0x%x]\n",tags->u.audiopa_data.pa_type);
+            mtk_get_sound_pa_id = tags->u.audiopa_data.pa_type;
         } else if (tags->hdr.tag == ATAG_MODEL_VERSION_TAG) {
             parse_tag_model_version_fixup(tags);
         }

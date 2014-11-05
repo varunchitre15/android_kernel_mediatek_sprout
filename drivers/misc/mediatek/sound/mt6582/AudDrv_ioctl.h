@@ -157,6 +157,7 @@
 //auxadc
 #define AUDDRV_GET_AUXADC_CHANNEL_VALUE   _IOW(AUD_DRV_IOC_MAGIC, 0xb0, int)
 
+#define AUDDRV_GET_EXT_AMP_SUPPORT   _IOW(AUD_DRV_IOC_MAGIC, 0xc0, int)
 // used for debug
 #define AUDDRV_AEE_IOCTL              _IOW(AUD_DRV_IOC_MAGIC, 0xFA, int)
 #define AUDDRV_GPIO_IOCTL              _IOW(AUD_DRV_IOC_MAGIC, 0xFB, int)
