@@ -931,8 +931,8 @@ const struct iw_handler_def mtk_p2p_wext_handler_def = {
 
 #ifdef CONFIG_PM
 static const struct wiphy_wowlan_support p2p_wowlan_support = {
-		.flags = WIPHY_WOWLAN_DISCONNECT,
-	};
+	.flags = WIPHY_WOWLAN_DISCONNECT | WIPHY_WOWLAN_ANY,
+};
 #endif
 
 /*******************************************************************************

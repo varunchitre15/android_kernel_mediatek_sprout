@@ -2193,7 +2193,7 @@ static const struct net_device_ops wlan_netdev_ops = {
 
 #ifdef CONFIG_PM
 static const struct wiphy_wowlan_support wlan_wowlan_support = {
-    .flags = WIPHY_WOWLAN_DISCONNECT,
+    .flags = WIPHY_WOWLAN_DISCONNECT | WIPHY_WOWLAN_ANY,
 };
 #endif
 /*----------------------------------------------------------------------------*/
