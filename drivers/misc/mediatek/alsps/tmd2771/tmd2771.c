@@ -1167,10 +1167,8 @@ static void TMD2771_eint_work(struct work_struct *work)
         }
         APS_LOG("TMD2771_eint_work TMD2771_CMM_INT_HIGH_THD_LOW after databuf[0]=%d databuf[1]=%d!\n",databuf[0],databuf[1]);
         #endif
-        if((err = hwmsen_get_interrupt_data(ID_PROXIMITY, &sensor_data)))
-        {
-          APS_ERR("call hwmsen_get_interrupt_data fail = %d\n", err);
-        }
+        APS_LOG("TMD2771 interrupt value = %d\n", sensor_data.values[0]);
+        ps_report_interrupt_data(sensor_data.values[0]);
     }
 
     TMD2771_clear_intr(obj->client);
