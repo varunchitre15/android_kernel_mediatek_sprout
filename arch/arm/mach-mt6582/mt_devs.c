@@ -2709,6 +2709,16 @@ void __weak eemcs_memory_reserve(void)
     printk(KERN_ERR"calling weak function %s\n", __FUNCTION__);
 }
 
+/* Limit memory for Android "svelte" testing */
+static unsigned long limit_mem;
+
+static int __init limit_mem_setup(char *param)
+{
+    limit_mem = memparse(param, NULL);
+    return 0;
+}
+early_param("limit_mem", limit_mem_setup);
+
 void mt_reserve(void)
 {
 //    aee_dram_console_reserve_memory();
@@ -2731,4 +2741,37 @@ void mt_reserve(void)
     eemcs_memory_reserve();
 #endif    
     /* Last line of dynamic reserve functions */
+
+    /* Limit memory for Android "svelte" testing. */
+
+    if (limit_mem) {
+        unsigned long to_remove;
+        unsigned long reserved_mem;
+        unsigned long i;
+        phys_addr_t base;
+
+        reserved_mem = ALIGN(memblock.reserved.total_size, PAGE_SIZE);
+        to_remove = memblock.memory.total_size - reserved_mem - limit_mem;
+        pr_info("Limiting memory from %lu KB to to %lu kB by removing %lu kB\n",
+                (memblock.memory.total_size - reserved_mem) / 1024,
+                limit_mem / 1024,
+                to_remove / 1024);
+
+        /* First find as many highmem pages as possible */
+        for (i = 0; i < to_remove; i += PAGE_SIZE) {
+            base = memblock_find_in_range(memblock.current_limit,
+                       MEMBLOCK_ALLOC_ANYWHERE, PAGE_SIZE, PAGE_SIZE);
+            if (!base)
+                break;
+            memblock_remove(base, PAGE_SIZE);
+        }
+        /* Then find as many lowmem 1M sections as possible */
+        for (; i < to_remove; i += SECTION_SIZE) {
+            base = memblock_find_in_range(0, MEMBLOCK_ALLOC_ACCESSIBLE,
+                       SECTION_SIZE, SECTION_SIZE);
+            if (!base)
+                break;
+            memblock_remove(base, SECTION_SIZE);
+        }
+    }
 }
