@@ -34,7 +34,7 @@ endif
 obj-y += mtk_ts_cpu.o
 
 ifeq ($(CONFIG_THERMAL),y)
-	#obj-y += mtk_ts_pmic.o
+	obj-y += mtk_ts_pmic.o
     obj-y += mtk_ts_pa.o
     obj-y += mtk_ts_abb.o
     #obj-y += mtk_ts_xtal.o
@@ -47,7 +47,7 @@ ifeq ($(CONFIG_THERMAL),y)
     ifeq ($(CONFIG_POWER_EXT), y)
     else
         ifeq ($(CONFIG_MTK_SMART_BATTERY), y)
-            # Always align the Makefile in mediatek/platform/mt6589/kernel/drivers/power/
+            # Always align the Makefile in mediatek/platform/<platform>/kernel/drivers/power/
             ifeq ($(CONFIG_MTK_NCP1851_SUPPORT),y)
                 obj-y += mtk_ts_battery.o
             else
