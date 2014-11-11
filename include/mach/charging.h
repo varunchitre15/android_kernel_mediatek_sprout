@@ -1,3 +1,17 @@
+/*
+* Copyright (C) 2011-2014 MediaTek Inc.
+* 
+* This program is free software: you can redistribute it and/or modify it under the terms of the 
+* GNU General Public License version 2 as published by the Free Software Foundation.
+* 
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 /*****************************************************************************
  *
  * Filename:
@@ -451,6 +465,14 @@ typedef enum {
 	CHARGE_CURRENT_MAX
 } CHR_CURRENT_ENUM;
 
+typedef enum {
+	EXT_NONE	=	0x0,
+	EXT_BQ24158	=	0x1,
+	EXT_BQ24196	=	0x2,
+	EXT_FAN5405	=	0x4,
+	EXT_HW6333	=	0x8,
+} EXT_CHR_IC_ENUM;
+
 /* ============================================================ */
 /* structure */
 /* ============================================================ */
@@ -466,11 +488,13 @@ typedef kal_int32(*CHARGING_CONTROL) (CHARGING_CTRL_CMD cmd, void *data);
 /* External Variables */
 /* ============================================================ */
 extern int Enable_BATDRV_LOG;
-extern kal_bool chargin_hw_init_done;
 
 
 /* ============================================================ */
 /* External function */
 /* ============================================================ */
 extern kal_int32 chr_control_interface(CHARGING_CTRL_CMD cmd, void *data);
+extern kal_uint32 set_bat_charging_current_limit_linear(int current_limit);
+extern kal_uint32 set_bat_charging_current_limit_switch(int current_limit);
+
 #endif				/* #ifndef _CHARGING_H */

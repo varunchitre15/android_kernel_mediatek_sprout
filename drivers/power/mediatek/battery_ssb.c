@@ -7,17 +7,18 @@
 * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
- *
+*
 * You should have received a copy of the GNU General Public License along with this program.
 * If not, see <http://www.gnu.org/licenses/>.
- */
+*/
+
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <mach/mt_typedefs.h>
-#include "cust_battery_para.h"
 #include <mach/battery_common.h>
 #include "mach/battery_ssb.h"
 #include <mach/battery_meter.h>
+#include <mach/charging.h>
 #include <mach/battery_meter_hal.h>
 #include "cust_battery_meter.h"
 #include "cust_battery_meter_table.h"
@@ -26,7 +27,7 @@
 
 battery_header battery_hdr;
 battery_data_type battery_cust_data;
-unsigned int battery_cust_buf[1000];
+unsigned int battery_cust_buf[MAX_BATTERY_PARA_SIZE];
 
 kal_int32 fg_vbat_avg_size = 18;
 /*wake up voltage {VBAT_NORMAL_WAKEUP, VBAT_LOW_POWER_WAKEUP}*/
@@ -98,6 +99,12 @@ kal_int32 t2_zone = TEMPERATURE_T2;
 kal_int32 t3_zone = TEMPERATURE_T3;
 
 /* Battery Temperature Protection */
+kal_int32 t_high_discharge = MAX_CHARGE_TEMPERATURE;
+kal_int32 t_high_recharge = MAX_CHARGE_TEMPERATURE_MINUS_X_DEGREE;
+kal_int32 t_low_discharge = MIN_CHARGE_TEMPERATURE;
+kal_int32 t_low_recharge = MIN_CHARGE_TEMPERATURE_PLUS_X_DEGREE;
+
+/* Battery Temperature Protection(JEITA) */
 kal_int32 t_high_discharge_zone = TEMP_POS_60_THRESHOLD;
 kal_int32 t_high_recharge_zone = TEMP_POS_60_THRES_MINUS_X_DEGREE;
 kal_int32 t_high_zone = TEMP_POS_45_THRESHOLD;
@@ -155,7 +162,7 @@ kal_int32 oam_d5 = OAM_D5;
 kal_int32 car_tune_value = CAR_TUNE_VALUE;
 
 /* HW Fuel Gauge specific setting */
-kal_int32 current_detect_r_fg = CURRENT_DETECT_R_FG; 
+kal_int32 current_detect_r_fg = CURRENT_DETECT_R_FG;
 kal_int32 min_error_offset = MinErrorOffset;
 kal_int32 cust_r_fg_offset = CUST_R_FG_OFFSET;
 kal_int32 ocv_board_compesate = OCV_BOARD_COMPESATE;
@@ -163,11 +170,11 @@ kal_int32 ocv_board_compesate = OCV_BOARD_COMPESATE;
 
 /* Qmax for battery   */
 
-kal_int32 qmax_pos_50 = Q_MAX_POS_50; 
+kal_int32 qmax_pos_50 = Q_MAX_POS_50;
 kal_int32 qmax_pos_25 = Q_MAX_POS_25;
 kal_int32 qmax_0 = Q_MAX_POS_0;
 kal_int32 qmax_neg_10 = Q_MAX_NEG_10;
-kal_int32 qmax_pos_50_hcur = Q_MAX_POS_50_H_CURRENT;  
+kal_int32 qmax_pos_50_hcur = Q_MAX_POS_50_H_CURRENT;
 kal_int32 qmax_pos_25_hcur = Q_MAX_POS_25_H_CURRENT;
 kal_int32 qmax_0_hcur = Q_MAX_POS_0_H_CURRENT;
 kal_int32 qmax_neg_10_hcur = Q_MAX_NEG_10_H_CURRENT;
@@ -187,7 +194,7 @@ R_PROFILE_STRUC *rv_empty_profile;
 /* feature option enable */
 kal_uint32 talking_stop_charging_enable = 1;
 kal_uint32 low_temperature_protect_enable = 0;
-kal_uint32 temperature_recharge_enable = 0;
+kal_uint32 temperature_recharge_enable = 1;
 kal_uint32 low_charge_volt_protect_enable = 0;
 kal_uint32 jeita_enable = 1;
 kal_uint32 high_battery_volt_enable = 1;
@@ -196,6 +203,7 @@ kal_uint32 notify_temperature_high_enable = 1;
 kal_uint32 notify_current_high_enable = 0;
 kal_uint32 notify_bat_volt_enable = 0;
 kal_uint32 notify_chr_time_enable = 0;
+kal_uint32 ext_chr_ic_id = EXT_NONE;
 
 
 /* others */
@@ -203,6 +211,15 @@ kal_uint32 temperature_table_len = 0;
 kal_uint32 pv_len = 0;
 kal_uint32 rv_len = 0;
 
+kal_uint32 get_ext_chr_id_done = KAL_FALSE;
+void ext_chr_para_init(void)
+{
+	if (battery_cust_data.feature_enable_para[0].label == FEATURE_LABEL_CODE) {
+		ext_chr_ic_id =  battery_cust_data.feature_enable_para[0].feature_para[EXT_CHR_SUPPORT_ID];
+	}
+
+	get_ext_chr_id_done = KAL_TRUE;
+}
 kal_int32 batmet_para_init(void)
 {
 	kal_uint32 i, j;
@@ -255,7 +272,7 @@ kal_int32 batmet_para_init(void)
 		cv_neg_10_0 = battery_cust_data.voltage_para[JEITA_MODE_CV_VOLTAGE].battery_para[4];
 		cv_below_neg_10 = battery_cust_data.voltage_para[JEITA_MODE_CV_VOLTAGE].battery_para[5];
 		printk(" JEITA_MODE_CV_VOLTAGE %d %d %d %d %d %d\n", cv_above_pos_60, cv_pos_45_60, cv_pos_10_45, cv_pos_0_10, cv_neg_10_0, cv_below_neg_10);
-	} 
+	}
 	
 	/* For JEITA Linear Charging only */
 	if (battery_cust_data.voltage_para[JEITA_LINEAR_VOLTAGE].label ==  VOLTAGE_LABEL_CODE + JEITA_LINEAR_VOLTAGE  ) {
@@ -322,6 +339,11 @@ kal_int32 batmet_para_init(void)
 		t_low_recharge_zone = battery_cust_data.temperature_para[TEMPER_PROTECTION].battery_para[7];
 		t_freeze_zone = battery_cust_data.temperature_para[TEMPER_PROTECTION].battery_para[8];
 		t_freeze2low_zone = battery_cust_data.temperature_para[TEMPER_PROTECTION].battery_para[9];
+
+		t_high_discharge = battery_cust_data.temperature_para[TEMPER_PROTECTION].battery_para[0];
+		t_high_recharge = battery_cust_data.temperature_para[TEMPER_PROTECTION].battery_para[1];
+		t_low_discharge = battery_cust_data.temperature_para[TEMPER_PROTECTION].battery_para[6];
+		t_low_recharge = battery_cust_data.temperature_para[TEMPER_PROTECTION].battery_para[7];
 		printk(" TEMPER_PROTECTION %d %d %d %d %d %d %d %d %d %d\n", t_high_discharge_zone, t_high_recharge_zone,
 			t_high_zone, t_high2middle_zone,  t_middle2low_zone, t_low_zone, t_low_discharge_zone, t_low_recharge_zone,
 			t_freeze_zone, t_freeze2low_zone);
@@ -501,6 +523,7 @@ kal_int32 batmet_para_init(void)
 		notify_current_high_enable = battery_cust_data.feature_enable_para[0].feature_para[NOTIFY_CURRENT_HIGH];
 		notify_bat_volt_enable = battery_cust_data.feature_enable_para[0].feature_para[NOTIFY_BAT_VOLT_HIGH];
 		notify_chr_time_enable = battery_cust_data.feature_enable_para[0].feature_para[NOTIFY_CHR_TIME_LONG];
+		ext_chr_ic_id =  battery_cust_data.feature_enable_para[0].feature_para[EXT_CHR_SUPPORT_ID];
 	}
 
 	return 0;
@@ -554,7 +577,7 @@ void parse_sub_para_buf(feature_enable_type *feature_data, battery_store_type *s
 	}
 }
 
-int parsing_battery_init_para(void)
+int parsing_battery_init_para(U32 label_code)
 {
 	U32 version;
 	U32 i;
@@ -568,43 +591,46 @@ int parsing_battery_init_para(void)
 			label = battery_cust_buf[i*2+1];
 			index = battery_cust_buf[i*2+2] / 4;
 			printk("[parsing_battery_init_para] label = %d, len = %d\n", label, index);
-			switch (label) {
-			case FEATURE_LABEL_CODE:
-				parse_sub_para_buf( battery_cust_data.feature_enable_para, NULL, NULL, battery_cust_buf + index, 0, FEATURE_LABEL_CODE, 1);
-				break;
-			case VOLTAGE_LABEL_CODE:
-				parse_sub_para_buf( NULL, battery_cust_data.voltage_para, NULL, battery_cust_buf + index, 1, VOLTAGE_LABEL_CODE, VOLTAGE_NUM);
-				break;
-			case CURRENT_LABEL_CODE:
-				parse_sub_para_buf( NULL, battery_cust_data.current_para, NULL, battery_cust_buf + index, 1, CURRENT_LABEL_CODE, CURRENT_NUM);
-				break;
-			case TEMPER_LABEL_CODE:
-				parse_sub_para_buf( NULL, battery_cust_data.temperature_para, NULL, battery_cust_buf + index, 1, TEMPER_LABEL_CODE, TEMPER_NUM);
-				break;
-			case TIMER_LABEL_CODE:
-				parse_sub_para_buf( NULL, battery_cust_data.timer_para, NULL, battery_cust_buf + index, 1, TIMER_LABEL_CODE, TIMER_NUM);
-				break;
-			case PERCENTAGE_LABEL_CODE:
-				parse_sub_para_buf( NULL, battery_cust_data.percent_para, NULL, battery_cust_buf + index, 1, PERCENTAGE_LABEL_CODE, PERCENT_NUM);
-				break;
-			case RESISTOR_LABEL_CODE:
-				parse_sub_para_buf( NULL, battery_cust_data.resistor_para, NULL, battery_cust_buf + index, 1, RESISTOR_LABEL_CODE, RESISTOR_NUM);
-				break;
-			case FG_TUNING_LABEL_CODE:
-				parse_sub_para_buf( NULL, battery_cust_data.fg_tuning_para, NULL, battery_cust_buf + index, 1, FG_TUNING_LABEL_CODE, FG_NUM);
-				break;
-			case TR_TABLE_LABEL_CODE:
-				parse_sub_para_buf( NULL, NULL, battery_cust_data.temperature_resist_table, battery_cust_buf + index, 2, TR_TABLE_LABEL_CODE, 1);
-				break;
-			case PV_TABLE_LABEL_CODE:
-				parse_sub_para_buf( NULL, NULL, battery_cust_data.percent_volt_table, battery_cust_buf + index, 2, PV_TABLE_LABEL_CODE, T_NUM);
-				break;
-			case RV_TABLE_LABEL_CODE:
-				parse_sub_para_buf( NULL, NULL, battery_cust_data.resist_volt_table, battery_cust_buf + index, 2, RV_TABLE_LABEL_CODE, T_NUM);
-				break;
-			default:
-				printk("[parsing_battery_init_para] no label matched\n" );
-				break;
+			if (label_code == NULL || label == label_code) {
+				switch (label) {
+				case FEATURE_LABEL_CODE:
+					parse_sub_para_buf( battery_cust_data.feature_enable_para, NULL, NULL, battery_cust_buf + index, 0, FEATURE_LABEL_CODE, 1);
+					ext_chr_para_init();
+					break;
+				case VOLTAGE_LABEL_CODE:
+					parse_sub_para_buf( NULL, battery_cust_data.voltage_para, NULL, battery_cust_buf + index, 1, VOLTAGE_LABEL_CODE, VOLTAGE_NUM);
+					break;
+				case CURRENT_LABEL_CODE:
+					parse_sub_para_buf( NULL, battery_cust_data.current_para, NULL, battery_cust_buf + index, 1, CURRENT_LABEL_CODE, CURRENT_NUM);
+					break;
+				case TEMPER_LABEL_CODE:
+					parse_sub_para_buf( NULL, battery_cust_data.temperature_para, NULL, battery_cust_buf + index, 1, TEMPER_LABEL_CODE, TEMPER_NUM);
+					break;
+				case TIMER_LABEL_CODE:
+					parse_sub_para_buf( NULL, battery_cust_data.timer_para, NULL, battery_cust_buf + index, 1, TIMER_LABEL_CODE, TIMER_NUM);
+					break;
+				case PERCENTAGE_LABEL_CODE:
+					parse_sub_para_buf( NULL, battery_cust_data.percent_para, NULL, battery_cust_buf + index, 1, PERCENTAGE_LABEL_CODE, PERCENT_NUM);
+					break;
+				case RESISTOR_LABEL_CODE:
+					parse_sub_para_buf( NULL, battery_cust_data.resistor_para, NULL, battery_cust_buf + index, 1, RESISTOR_LABEL_CODE, RESISTOR_NUM);
+					break;
+				case FG_TUNING_LABEL_CODE:
+					parse_sub_para_buf( NULL, battery_cust_data.fg_tuning_para, NULL, battery_cust_buf + index, 1, FG_TUNING_LABEL_CODE, FG_NUM);
+					break;
+				case TR_TABLE_LABEL_CODE:
+					parse_sub_para_buf( NULL, NULL, battery_cust_data.temperature_resist_table, battery_cust_buf + index, 2, TR_TABLE_LABEL_CODE, 1);
+					break;
+				case PV_TABLE_LABEL_CODE:
+					parse_sub_para_buf( NULL, NULL, battery_cust_data.percent_volt_table, battery_cust_buf + index, 2, PV_TABLE_LABEL_CODE, T_NUM);
+					break;
+				case RV_TABLE_LABEL_CODE:
+					parse_sub_para_buf( NULL, NULL, battery_cust_data.resist_volt_table, battery_cust_buf + index, 2, RV_TABLE_LABEL_CODE, T_NUM);
+					break;
+				default:
+					printk("[parsing_battery_init_para] no label matched\n" );
+					break;
+				}
 			}
 		}
 	}

@@ -1,3 +1,17 @@
+/*
+* Copyright (C) 2011-2014 MediaTek Inc.
+* 
+* This program is free software: you can redistribute it and/or modify it under the terms of the 
+* GNU General Public License version 2 as published by the Free Software Foundation.
+* 
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef BATTERY_COMMON_H
 #define BATTERY_COMMON_H
 
@@ -115,31 +129,31 @@ typedef enum {
  *  structure
  ****************************************************************************/
 typedef struct {
-	kal_bool bat_exist;
-	kal_bool bat_full;
-	INT32 bat_charging_state;
-	UINT32 bat_vol;
-	kal_bool bat_in_recharging_state;
-	kal_uint32 Vsense;
-	kal_bool charger_exist;
-	UINT32 charger_vol;
-	INT32 charger_protect_status;
-	INT32 ICharging;
-	INT32 IBattery;
-	INT32 temperature;
-	INT32 temperatureR;
-	INT32 temperatureV;
-	UINT32 total_charging_time;
-	UINT32 PRE_charging_time;
-	UINT32 CC_charging_time;
-	UINT32 TOPOFF_charging_time;
-	UINT32 POSTFULL_charging_time;
-	UINT32 charger_type;
-	INT32 SOC;
-	INT32 UI_SOC;
-	UINT32 nPercent_ZCV;
-	UINT32 nPrecent_UI_SOC_check_point;
-	UINT32 ZCV;
+	kal_bool		bat_exist;
+	kal_bool		bat_full;
+	INT32			bat_charging_state;
+	UINT32			bat_vol;
+	kal_bool			bat_in_recharging_state;
+	kal_uint32		Vsense;
+	kal_bool			charger_exist;
+	UINT32			charger_vol;
+	INT32			charger_protect_status;
+	INT32			ICharging;
+	INT32			IBattery;
+	INT32			temperature;
+	INT32			temperatureR;
+	INT32			temperatureV;
+	UINT32			total_charging_time;
+	UINT32			PRE_charging_time;
+	UINT32			CC_charging_time;
+	UINT32			TOPOFF_charging_time;
+	UINT32			POSTFULL_charging_time;
+	UINT32			charger_type;
+	INT32			SOC;
+	INT32			UI_SOC;
+	UINT32			nPercent_ZCV;
+	UINT32			nPrecent_UI_SOC_check_point;
+	UINT32			ZCV;
 } PMU_ChargerStruct;
 
 /*****************************************************************************
@@ -151,6 +165,14 @@ extern kal_bool g_ftm_battery_flag;
 extern int charging_level_data[1];
 extern kal_bool g_call_state;
 extern kal_bool g_charging_full_reset_bat_meter;
+extern kal_uint32 g_bcct_flag;
+extern kal_uint32 g_bcct_value;
+extern kal_uint32 g_usb_state;
+extern bool usb_unlimited;
+extern int g_jeita_recharging_voltage;
+extern int g_temp_status;
+extern kal_bool temp_error_recovery_chr_flag;
+
 
 /*****************************************************************************
  *  Extern Function
@@ -167,8 +189,10 @@ extern bool get_usb_current_unlimited(void);
 #ifdef CONFIG_MTK_SMART_BATTERY
 extern void wake_up_bat(void);
 extern unsigned long BAT_Get_Battery_Voltage(int polling_mode);
-extern void mt_battery_charging_algorithm(void);
-extern PMU_STATUS do_jeita_state_machine(void);
+extern void mt_battery_charging_algorithm_linear(void);
+extern void mt_battery_charging_algorithm_switch(void);
+extern PMU_STATUS do_jeita_state_machine_linear(void);
+extern PMU_STATUS do_jeita_state_machine_switch(void);
 
 #else
 

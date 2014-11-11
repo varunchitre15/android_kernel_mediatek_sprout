@@ -1,3 +1,17 @@
+/*
+* Copyright (C) 2011-2014 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <linux/init.h>		/* For init/exit macros */
 #include <linux/module.h>	/* For MODULE_ marcros  */
 #include <linux/fs.h>
@@ -948,12 +962,6 @@ void fgauge_construct_battery_profile(kal_int32 temperature, BATTERY_PROFILE_STR
 		}
 
 		(temp_profile_p + i)->percentage = (high_profile_p + i)->percentage;
-#if 0
-		(temp_profile_p + i)->voltage = temp_v_2 +
-		    (((temperature - low_temperature) * (temp_v_1 - temp_v_2)
-		     ) / (high_temperature - low_temperature)
-		    );
-#endif
 	}
 
 
@@ -1028,14 +1036,6 @@ void fgauge_construct_r_table_profile(kal_int32 temperature, R_PROFILE_STRUC_P t
 			    );
 		}
 
-#if 0
-		/* (temp_profile_p + i)->resistance = (high_profile_p + i)->resistance; */
-
-		(temp_profile_p + i)->voltage = temp_v_2 +
-		    (((temperature - low_temperature) * (temp_v_1 - temp_v_2)
-		     ) / (high_temperature - low_temperature)
-		    );
-#endif
 	}
 
 	/* Interpolation for R_BAT */
@@ -1058,14 +1058,6 @@ void fgauge_construct_r_table_profile(kal_int32 temperature, R_PROFILE_STRUC_P t
 			    );
 		}
 
-#if 0
-		/* (temp_profile_p + i)->voltage = (high_profile_p + i)->voltage; */
-
-		(temp_profile_p + i)->resistance = temp_r_2 +
-		    (((temperature - low_temperature) * (temp_r_1 - temp_r_2)
-		     ) / (high_temperature - low_temperature)
-		    );
-#endif
 	}
 
 	/* Dumpt new r-table profile */
@@ -1438,11 +1430,7 @@ void oam_run(void)
 	oam_v_ocv_2 = fgauge_read_v_by_d(oam_d_2);
 	oam_r_2 = fgauge_read_r_bat_by_v(oam_v_ocv_2);
 
-#if 0
-	oam_d_4 = (oam_d_2 + oam_d_3) / 2;
-#else
 	oam_d_4 = oam_d_3;
-#endif
 
 	gFG_columb = oam_car_2 / 10;	/* mAh */
 
@@ -1451,24 +1439,8 @@ void oam_run(void)
 	else
 		gFG_Is_Charging = KAL_FALSE;
 
-#if 0
-	if (gFG_Is_Charging == KAL_FALSE) {
 		d5_count_time = 60;
-	} else {
-		charging_current = get_charging_setting_current();
-		charging_current = charging_current / 100;
-		d5_count_time_rate =
-		    (((gFG_BATT_CAPACITY_aging * 60 * 60 / 100 / (charging_current - 50)) * 10) +
-		     5) / 10;
 
-		if (d5_count_time_rate < 1)
-			d5_count_time_rate = 1;
-
-		d5_count_time = d5_count_time_rate;
-	}
-#else
-	d5_count_time = 60;
-#endif
 	d5_count = d5_count + delta_time;
 	if (d5_count >= d5_count_time) {
 		if (gFG_Is_Charging == KAL_FALSE) {
@@ -1838,17 +1810,6 @@ kal_int32 fgauge_read_capacity(kal_int32 type)
 	/* ---------------------------------------------------------------------------- */
 #endif				/* CUST_DISABLE_CAPACITY_OCV2CV_TRANSFORM */
 
-#if 0
-	/* Battery Aging update ---------------------------------------------------------- */
-	dvalue_new = dvalue;
-	dvalue =
-	    ((dvalue_new * gFG_BATT_CAPACITY_init_high_current * 100) / gFG_BATT_CAPACITY_aging) /
-	    100;
-	bm_print(BM_LOG_FULL,
-		 "[fgauge_read_capacity] dvalue=%d, dvalue_new=%d, gFG_BATT_CAPACITY_init_high_current=%d, gFG_BATT_CAPACITY_aging=%d\r\n",
-		 dvalue, dvalue_new, gFG_BATT_CAPACITY_init_high_current, gFG_BATT_CAPACITY_aging);
-	/* ---------------------------------------------------------------------------- */
-#endif
 
 	temp_val = dvalue;
 	dvalue = 100 - temp_val;
@@ -2368,6 +2329,8 @@ kal_int32 battery_meter_get_charging_current(void)
 
 	if (ADC_I_SENSE > ADC_BAT_SENSE) {
 		ICharging = (ADC_I_SENSE - ADC_BAT_SENSE + g_I_SENSE_offset) * 1000 / g_R_CUST_SENSE;
+		bm_print(BM_LOG_CRTI, "[g_Get_I_Charging] g_R_CUST_SENSE=%d\r\n", g_R_CUST_SENSE);
+
 	} else {
 		ICharging = 0;
 	}
@@ -3246,7 +3209,7 @@ static int battery_meter_probe(struct platform_device *dev)
 	/* LOG System Set */
 	init_proc_log_fg();
 
-	parsing_battery_init_para();
+	parsing_battery_init_para(NULL);
 	/* last_oam_run_time = rtc_read_hw_time(); */
 	getrawmonotonic(&last_oam_run_time);
 	/* Create File For FG UI DEBUG */

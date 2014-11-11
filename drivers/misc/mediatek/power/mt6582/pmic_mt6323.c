@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -71,7 +71,7 @@
 #include <mach/mt_spm_mtcmos.h>
 
 #include <mach/battery_common.h>
-#include <linux/time.h> 
+#include <linux/time.h>
 
 #if defined (CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 #include <mach/mt_boot.h>
@@ -144,9 +144,9 @@ extern void pmu_drv_tool_customization_init(void);
 #if defined (CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 extern void mt_power_off(void);
 static kal_bool long_pwrkey_press = false;
-static unsigned long timer_pre = 0; 
-static unsigned long timer_pos = 0; 
-#define LONG_PWRKEY_PRESS_TIME 		500*1000000    //500ms
+static unsigned long timer_pre = 0;
+static unsigned long timer_pos = 0;
+#define LONG_PWRKEY_PRESS_TIME		500*1000000    //500ms
 #endif
 //==============================================================================
 // PMIC lock/unlock APIs
@@ -168,7 +168,7 @@ kal_uint32 upmu_get_reg_value(kal_uint32 reg)
 
     //printk("[upmu_get_reg_value] \n");
     ret=pmic_read_interface(reg, &reg_val, 0xFFFF, 0x0);
-    
+
     return reg_val;
 }
 EXPORT_SYMBOL(upmu_get_reg_value);
@@ -178,7 +178,7 @@ void upmu_set_reg_value(kal_uint32 reg, kal_uint32 reg_val)
     U32 ret=0;
 
     //printk("[upmu_set_reg_value] \n");
-    ret=pmic_config_interface(reg, reg_val, 0xFFFF, 0x0);    
+    ret=pmic_config_interface(reg, reg_val, 0xFFFF, 0x0);
 }
 
 kal_int32 count_time_out=100;
@@ -197,7 +197,7 @@ kal_uint32  pmic_is_auxadc_busy(void)
 void PMIC_IMM_PollingAuxadcChannel(void)
 {
 	kal_uint32 ret=0;
-    
+
 	 //xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[PMIC_IMM_PollingAuxadcChannel] before:%d ",upmu_get_rg_adc_deci_gdly());
 
 	if (upmu_get_rg_adc_deci_gdly()==1)
@@ -218,21 +218,21 @@ void PMIC_IMM_PollingAuxadcChannel(void)
 }
 
 //==============================================================================
-// PMIC-AUXADC 
+// PMIC-AUXADC
 //==============================================================================
 int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 {
 
-	kal_int32 ret_data;	
+	kal_int32 ret_data;
 	kal_int32 count=0;
 	kal_int32 u4Sample_times = 0;
-	kal_int32 u4channel=0;	
+	kal_int32 u4channel=0;
 	kal_int32 adc_result_temp=0;
-       kal_int32 r_val_temp=0;   
-	kal_int32 adc_result=0;   
-    kal_int32 ret=0;
-    kal_int32 adc_reg_val=0;
-	
+	kal_int32 r_val_temp=0;
+	kal_int32 adc_result=0;
+	kal_int32 ret=0;
+	kal_int32 adc_reg_val=0;
+
     /*
         0 : BATON2 **
         1 : CH6
@@ -242,7 +242,7 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
         5 : BATON1
         6 : ISENSE
         7 : BATSNS
-        8 : ACCDET    
+        8 : ACCDET
         9-16 : audio
     */
 
@@ -251,15 +251,15 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
         return 0;
 
     wake_lock(&pmicAuxadc_irq_lock);
-	
+
 
 	do
 	{
 
     mutex_lock(&pmic_adc_mutex);
-	
+
     PMIC_IMM_PollingAuxadcChannel();
-	
+
 
     if (dwChannel<9)
     {
@@ -284,7 +284,7 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
         //set 1
         ret=pmic_read_interface(AUXADC_CON23,&adc_reg_val,PMIC_RG_AP_RQST_LIST_RSV_MASK,PMIC_RG_AP_RQST_LIST_RSV_SHIFT);
         adc_reg_val = adc_reg_val | (1<<(dwChannel-9));
-        ret=pmic_config_interface(AUXADC_CON23,adc_reg_val,PMIC_RG_AP_RQST_LIST_RSV_MASK,PMIC_RG_AP_RQST_LIST_RSV_SHIFT);		
+        ret=pmic_config_interface(AUXADC_CON23,adc_reg_val,PMIC_RG_AP_RQST_LIST_RSV_MASK,PMIC_RG_AP_RQST_LIST_RSV_SHIFT);
     }
 
 
@@ -297,8 +297,8 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 	    count=0;
 	    ret_data=0;
 
-	    switch(dwChannel){         
-	        case 0:    
+	    switch(dwChannel){
+	        case 0:
 	            while( upmu_get_rg_adc_rdy_baton2() != 1 )
 	            {
 			msleep(1);
@@ -306,12 +306,12 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_baton2();				
+	            ret_data = upmu_get_rg_adc_out_baton2();
 	            break;
-		
-	        case 1:    
+
+	        case 1:
 	            while( upmu_get_rg_adc_rdy_ch6() != 1 )
 	            {
 			msleep(1);
@@ -319,12 +319,12 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_ch6();				
+	            ret_data = upmu_get_rg_adc_out_ch6();
                 xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[upmu_get_rg_adc_out_ch6] 0x%x\n", ret_data);
 	            break;
-	        case 2:    
+	        case 2:
 	            while( upmu_get_rg_adc_rdy_thr_sense2() != 1 )
 	            {
 			msleep(1);
@@ -332,11 +332,11 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_thr_sense2();				
-	            break;				
-	        case 3:    
+	            ret_data = upmu_get_rg_adc_out_thr_sense2();
+	            break;
+	        case 3:
 	            while( upmu_get_rg_adc_rdy_thr_sense1() != 1 )
 	            {
 			msleep(1);
@@ -344,11 +344,11 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_thr_sense1();				
+	            ret_data = upmu_get_rg_adc_out_thr_sense1();
 	            break;
-	        case 4:    
+	        case 4:
 	            while( upmu_get_rg_adc_rdy_vcdt() != 1 )
 	            {
 			msleep(1);
@@ -356,11 +356,11 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_vcdt();				
+	            ret_data = upmu_get_rg_adc_out_vcdt();
 	            break;
-	        case 5:    
+	        case 5:
 	            while( upmu_get_rg_adc_rdy_baton1() != 1 )
 	            {
 			msleep(1);
@@ -368,11 +368,11 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_baton1();				
+	            ret_data = upmu_get_rg_adc_out_baton1();
 	            break;
-	        case 6:    
+	        case 6:
 	            while( upmu_get_rg_adc_rdy_isense() != 1 )
 	            {
 			msleep(1);
@@ -380,11 +380,11 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_isense();				
+	            ret_data = upmu_get_rg_adc_out_isense();
 	            break;
-	        case 7:    
+	        case 7:
 	            while( upmu_get_rg_adc_rdy_batsns() != 1 )
 	            {
 			msleep(1);
@@ -392,23 +392,23 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_batsns();				
-	            break; 
-                
-	        case 8:    
+	            ret_data = upmu_get_rg_adc_out_batsns();
+	            break;
+
+	        case 8:
 	            while( upmu_get_rg_adc_rdy_ch5() != 1 );
-	            ret_data = upmu_get_rg_adc_out_ch5();				
-	            break; 				
-	        case 9:    
-		case 10:  
-		case 11:  
+	            ret_data = upmu_get_rg_adc_out_ch5();
+	            break;
+	        case 9:
+		case 10:
+		case 11:
 		case 12:
-	        case 13:    
-		case 14:  
-		case 15:  
-		case 16:	 	
+		case 13:
+		case 14:
+		case 15:
+		case 16:
 	            while( upmu_get_rg_adc_rdy_int() != 1 )
 	            {
 			msleep(1);
@@ -416,11 +416,11 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_int();				
-	            break; 				
-                
+	            ret_data = upmu_get_rg_adc_out_int();
+	            break;
+
 	        default:
 	            xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[AUXADC] Invalid channel value(%d,%d)\n", dwChannel, trimd);
 	            wake_unlock(&pmicAuxadc_irq_lock);
@@ -435,41 +435,41 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 	    if (Enable_BATDRV_LOG == 2)
 	    {
 	        //debug
-	        xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[AUXADC] u4channel[%d]=%d.\n", 
+	        xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[AUXADC] u4channel[%d]=%d.\n",
 	            dwChannel, ret_data);
 	    }
-	    
+
 	}while (u4Sample_times < deCount);
 
-    /* Value averaging  */ 
+    /* Value averaging  */
     adc_result_temp = u4channel / deCount;
 
-    switch(dwChannel){         
-        case 0:                
-            r_val_temp = 1;           
-            adc_result = (adc_result_temp*r_val_temp*VOLTAGE_FULL_RANGE)/ADC_PRECISE;
-            break;
-        case 1:    
+    switch(dwChannel){
+        case 0:
             r_val_temp = 1;
             adc_result = (adc_result_temp*r_val_temp*VOLTAGE_FULL_RANGE)/ADC_PRECISE;
             break;
-        case 2:    
+        case 1:
             r_val_temp = 1;
             adc_result = (adc_result_temp*r_val_temp*VOLTAGE_FULL_RANGE)/ADC_PRECISE;
             break;
-        case 3:    
+        case 2:
             r_val_temp = 1;
             adc_result = (adc_result_temp*r_val_temp*VOLTAGE_FULL_RANGE)/ADC_PRECISE;
             break;
-        case 4:    
+        case 3:
             r_val_temp = 1;
             adc_result = (adc_result_temp*r_val_temp*VOLTAGE_FULL_RANGE)/ADC_PRECISE;
             break;
-        case 5:    
+        case 4:
             r_val_temp = 1;
             adc_result = (adc_result_temp*r_val_temp*VOLTAGE_FULL_RANGE)/ADC_PRECISE;
             break;
-        case 6:    
+        case 5:
+            r_val_temp = 1;
+            adc_result = (adc_result_temp*r_val_temp*VOLTAGE_FULL_RANGE)/ADC_PRECISE;
+            break;
+        case 6:
             r_val_temp = 4;
             adc_result = (adc_result_temp*r_val_temp*VOLTAGE_FULL_RANGE)/ADC_PRECISE;
             break;
@@ -1089,21 +1089,6 @@ U32 pmic_config_interface (U32 RegNum, U32 val, U32 MASK, U32 SHIFT)
         mutex_unlock(&pmic_access_mutex);
         return return_value;
     }
-    //xlog_printk(ANDROID_LOG_DEBUG, "Power/PMIC", "[pmic_config_interface] write Reg[%x]=0x%x\n", RegNum, pmic6323_reg);
-
-    #if 0
-    //3. Double Check
-    //mt6323_read_byte(RegNum, &pmic6323_reg);
-    return_value= pwrap_wacs2(0, (RegNum), 0, &rdata);
-    pmic6323_reg=rdata;
-    if(return_value!=0)
-    {
-        xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[pmic_config_interface] Reg[%x]= pmic_wrap write data fail\n", RegNum);
-        mutex_unlock(&pmic_access_mutex);
-        return return_value;
-    }
-    xlog_printk(ANDROID_LOG_DEBUG, "Power/PMIC", "[pmic_config_interface] Reg[%x]=0x%x\n", RegNum, pmic6323_reg);
-    #endif
 
     mutex_unlock(&pmic_access_mutex);
 #else

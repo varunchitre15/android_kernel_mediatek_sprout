@@ -44,6 +44,7 @@ enum {
 	NOTIFY_CURRENT_HIGH,
 	NOTIFY_BAT_VOLT_HIGH,
 	NOTIFY_CHR_TIME_LONG,
+	EXT_CHR_SUPPORT_ID,
 	FEATURE_NUM
 };
 
@@ -129,7 +130,7 @@ typedef struct  {
 typedef struct {
 	unsigned int		label;
 	unsigned int		para_len;
-	unsigned int		feature_para[11];
+	unsigned int		feature_para[FEATURE_NUM];
 } feature_enable_type;
 
 typedef struct {

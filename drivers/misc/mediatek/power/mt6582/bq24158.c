@@ -41,6 +41,8 @@
 #include "bq24158.h"
 #include "cust_charging.h"
 #include <mach/charging.h>
+#include <mach/battery_ssb.h>
+#include <mach/charging_hw_common.h>
 
 
 /**********************************************************
@@ -52,8 +54,7 @@
 #define bq24158_SLAVE_ADDR_Read    0xD5
 
 static struct i2c_client *new_client = NULL;
-static const struct i2c_device_id bq24158_i2c_id[] = {{"bq24158",0},{}};   
-kal_bool chargin_hw_init_done = KAL_FALSE; 
+static const struct i2c_device_id bq24158_i2c_id[] = {{"bq24158",0},{}};
 static int bq24158_driver_probe(struct i2c_client *client, const struct i2c_device_id *id);
 
 static struct i2c_driver bq24158_driver = {
@@ -235,7 +236,7 @@ kal_uint32 bq24158_get_otg_status(void)
 
 void bq24158_set_en_stat(kal_uint32 val)
 {
-    kal_uint32 ret=0;    
+    kal_uint32 ret=0;
 
     ret=bq24158_config_interface(   (kal_uint8)(bq24158_CON0), 
                                     (kal_uint8)(val),
@@ -287,7 +288,7 @@ kal_uint32 bq24158_get_fault_status(void)
 
 void bq24158_set_input_charging_current(kal_uint32 val)
 {
-    kal_uint32 ret=0;    
+    kal_uint32 ret=0;
 
     ret=bq24158_config_interface(   (kal_uint8)(bq24158_CON1), 
                                     (kal_uint8)(val),
@@ -298,7 +299,7 @@ void bq24158_set_input_charging_current(kal_uint32 val)
 
 void bq24158_set_v_low(kal_uint32 val)
 {
-    kal_uint32 ret=0;    
+    kal_uint32 ret=0;
 
     ret=bq24158_config_interface(   (kal_uint8)(bq24158_CON1), 
                                     (kal_uint8)(val),
@@ -320,7 +321,7 @@ void bq24158_set_te(kal_uint32 val)
 
 void bq24158_set_ce(kal_uint32 val)
 {
-    kal_uint32 ret=0;    
+    kal_uint32 ret=0;
 
     ret=bq24158_config_interface(   (kal_uint8)(bq24158_CON1), 
                                     (kal_uint8)(val),
@@ -342,7 +343,7 @@ void bq24158_set_hz_mode(kal_uint32 val)
 
 void bq24158_set_opa_mode(kal_uint32 val)
 {
-    kal_uint32 ret=0;    
+    kal_uint32 ret=0;
 
     ret=bq24158_config_interface(   (kal_uint8)(bq24158_CON1), 
                                     (kal_uint8)(val),
@@ -355,7 +356,7 @@ void bq24158_set_opa_mode(kal_uint32 val)
 
 void bq24158_set_oreg(kal_uint32 val)
 {
-    kal_uint32 ret=0;    
+    kal_uint32 ret=0;
 
     ret=bq24158_config_interface(   (kal_uint8)(bq24158_CON2), 
                                     (kal_uint8)(val),
@@ -431,7 +432,7 @@ kal_uint32 bq24158_get_revision(void)
 
 void bq24158_set_reset(kal_uint32 val)
 {
-    kal_uint32 ret=0;    
+    kal_uint32 ret=0;
 
     ret=bq24158_config_interface(   (kal_uint8)(bq24158_CON4), 
                                     (kal_uint8)(val),
@@ -442,7 +443,7 @@ void bq24158_set_reset(kal_uint32 val)
 
 void bq24158_set_iocharge(kal_uint32 val)
 {
-    kal_uint32 ret=0;    
+    kal_uint32 ret=0;
 
     ret=bq24158_config_interface(   (kal_uint8)(bq24158_CON4), 
                                     (kal_uint8)(val),
@@ -466,7 +467,7 @@ void bq24158_set_iterm(kal_uint32 val)
 
 void bq24158_set_dis_vreg(kal_uint32 val)
 {
-    kal_uint32 ret=0;    
+    kal_uint32 ret=0;
 
     ret=bq24158_config_interface(   (kal_uint8)(bq24158_CON5), 
                                     (kal_uint8)(val),
@@ -477,7 +478,7 @@ void bq24158_set_dis_vreg(kal_uint32 val)
 
 void bq24158_set_io_level(kal_uint32 val)
 {
-    kal_uint32 ret=0;    
+    kal_uint32 ret=0;
 
     ret=bq24158_config_interface(   (kal_uint8)(bq24158_CON5), 
                                     (kal_uint8)(val),
@@ -514,7 +515,7 @@ kal_uint32 bq24158_get_en_level(void)
 
 void bq24158_set_vsp(kal_uint32 val)
 {
-    kal_uint32 ret=0;    
+    kal_uint32 ret=0;
 
     ret=bq24158_config_interface(   (kal_uint8)(bq24158_CON5), 
                                     (kal_uint8)(val),
@@ -527,7 +528,7 @@ void bq24158_set_vsp(kal_uint32 val)
 
 void bq24158_set_i_safe(kal_uint32 val)
 {
-    kal_uint32 ret=0;    
+    kal_uint32 ret=0;
 
     ret=bq24158_config_interface(   (kal_uint8)(bq24158_CON6), 
                                     (kal_uint8)(val),
@@ -549,7 +550,7 @@ void bq24158_set_v_safe(kal_uint32 val)
 
 /**********************************************************
   *
-  *   [Internal Function] 
+  *   [Internal Function]
   *
   *********************************************************/
 void bq24158_dump_register(void)
@@ -559,58 +560,31 @@ void bq24158_dump_register(void)
     for (i=0;i<bq24158_REG_NUM;i++)
     {
         bq24158_read_byte(i, &bq24158_reg[i]);
-        printk("[0x%x]=0x%x ", i, bq24158_reg[i]);        
+        printk("[0x%x]=0x%x ", i, bq24158_reg[i]);
     }
     printk("\n");
 }
 
-#if 0
-extern int g_enable_high_vbat_spec;
-extern int g_pmic_cid;
-
-void bq24158_hw_init(void)
-{    
-    if(g_enable_high_vbat_spec == 1)
-    {
-        if(g_pmic_cid == 0x1020)
-        {
-            printk("[bq24158_hw_init] (0x06,0x70) because 0x1020\n");
-            bq24158_config_interface_liao(0x06,0x70); // set ISAFE
-        }
-        else
-        {
-            printk("[bq24158_hw_init] (0x06,0x77)\n");
-            bq24158_config_interface_liao(0x06,0x77); // set ISAFE and HW CV point (4.34)
-        }
-    }
-    else
-    {
-        printk("[bq24158_hw_init] (0x06,0x70) \n");
-        bq24158_config_interface_liao(0x06,0x70); // set ISAFE
-    }
-}
-#endif
-
-static int bq24158_driver_probe(struct i2c_client *client, const struct i2c_device_id *id) 
-{             
-    int err=0; 
+static int bq24158_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
+{
+    int err=0;
 
     battery_xlog_printk(BAT_LOG_CRTI,"[bq24158_driver_probe] \n");
 
     if (!(new_client = kmalloc(sizeof(struct i2c_client), GFP_KERNEL))) {
         err = -ENOMEM;
         goto exit;
-    }    
+    }
     memset(new_client, 0, sizeof(struct i2c_client));
 
-    new_client = client;    
+    new_client = client;
 
     //---------------------
   //  bq24158_hw_init();
     bq24158_dump_register();
     chargin_hw_init_done = KAL_TRUE;
-	
-    return 0;                                                                                       
+
+    return 0;
 
 exit:
     return err;
@@ -619,7 +593,7 @@ exit:
 
 /**********************************************************
   *
-  *   [platform_driver API] 
+  *   [platform_driver API]
   *
   *********************************************************/
 kal_uint8 g_reg_value_bq24158=0;
@@ -634,39 +608,39 @@ static ssize_t store_bq24158_access(struct device *dev,struct device_attribute *
     char *pvalue = NULL;
     unsigned int reg_value = 0;
     unsigned int reg_address = 0;
-    
+
     battery_xlog_printk(BAT_LOG_FULL,"[store_bq24158_access] \n");
-    
+
     if(buf != NULL && size != 0)
     {
         battery_xlog_printk(BAT_LOG_FULL,"[store_bq24158_access] buf is %s and size is %d \n",buf,size);
         reg_address = simple_strtoul(buf,&pvalue,16);
-        
+
         if(size > 3)
-        {        
-            reg_value = simple_strtoul((pvalue+1),NULL,16);        
+        {
+            reg_value = simple_strtoul((pvalue+1),NULL,16);
             battery_xlog_printk(BAT_LOG_FULL,"[store_bq24158_access] write bq24158 reg 0x%x with value 0x%x !\n",reg_address,reg_value);
             ret=bq24158_config_interface(reg_address, reg_value, 0xFF, 0x0);
         }
         else
-        {    
+        {
             ret=bq24158_read_interface(reg_address, &g_reg_value_bq24158, 0xFF, 0x0);
             battery_xlog_printk(BAT_LOG_FULL,"[store_bq24158_access] read bq24158 reg 0x%x with value 0x%x !\n",reg_address,g_reg_value_bq24158);
             battery_xlog_printk(BAT_LOG_FULL,"[store_bq24158_access] Please use \"cat bq24158_access\" to get value\r\n");
-        }        
-    }    
+        }
+    }
     return size;
 }
 static DEVICE_ATTR(bq24158_access, 0664, show_bq24158_access, store_bq24158_access); //664
 
-static int bq24158_user_space_probe(struct platform_device *dev)    
-{    
+static int bq24158_user_space_probe(struct platform_device *dev)
+{
     int ret_device_file = 0;
 
     battery_xlog_printk(BAT_LOG_CRTI,"******** bq24158_user_space_probe!! ********\n" );
-    
+
     ret_device_file = device_create_file(&(dev->dev), &dev_attr_bq24158_access);
-    
+
     return 0;
 }
 
@@ -686,35 +660,38 @@ static struct platform_driver bq24158_user_space_driver = {
 static struct i2c_board_info __initdata i2c_bq24158 = { I2C_BOARD_INFO("bq24158", (bq24158_SLAVE_ADDR_WRITE>>1))};
 
 static int __init bq24158_init(void)
-{    
+{
     int ret=0;
-    
+
     battery_xlog_printk(BAT_LOG_CRTI,"[bq24158_init] init start\n");
-    
-    i2c_register_board_info(BQ24158_BUSNUM, &i2c_bq24158, 1);
 
-    if(i2c_add_driver(&bq24158_driver)!=0)
-    {
-        battery_xlog_printk(BAT_LOG_CRTI,"[bq24158_init] failed to register bq24158 i2c driver.\n");
-    }
-    else
-    {
-        battery_xlog_printk(BAT_LOG_CRTI,"[bq24158_init] Success to register bq24158 i2c driver.\n");
-    }
+	parsing_battery_init_para(FEATURE_LABEL_CODE);
 
-    // bq24158 user space access interface
-    ret = platform_device_register(&bq24158_user_space_device);
-    if (ret) {
-        battery_xlog_printk(BAT_LOG_CRTI,"****[bq24158_init] Unable to device register(%d)\n", ret);
-        return ret;
-    }    
-    ret = platform_driver_register(&bq24158_user_space_driver);
-    if (ret) {
-        battery_xlog_printk(BAT_LOG_CRTI,"****[bq24158_init] Unable to register driver (%d)\n", ret);
-        return ret;
-    }
-    
-    return 0;        
+	if (ext_chr_ic_id == EXT_BQ24158) {
+	    i2c_register_board_info(BQ24158_BUSNUM, &i2c_bq24158, 1);
+
+	    if(i2c_add_driver(&bq24158_driver)!=0)
+	    {
+	        battery_xlog_printk(BAT_LOG_CRTI,"[bq24158_init] failed to register bq24158 i2c driver.\n");
+	    }
+	    else
+	    {
+	        battery_xlog_printk(BAT_LOG_CRTI,"[bq24158_init] Success to register bq24158 i2c driver.\n");
+	    }
+
+	    // bq24158 user space access interface
+	    ret = platform_device_register(&bq24158_user_space_device);
+	    if (ret) {
+	        battery_xlog_printk(BAT_LOG_CRTI,"****[bq24158_init] Unable to device register(%d)\n", ret);
+	        return ret;
+	    }
+	    ret = platform_driver_register(&bq24158_user_space_driver);
+	    if (ret) {
+	        battery_xlog_printk(BAT_LOG_CRTI,"****[bq24158_init] Unable to register driver (%d)\n", ret);
+	        return ret;
+	    }
+	}
+    return 0;
 }
 
 static void __exit bq24158_exit(void)

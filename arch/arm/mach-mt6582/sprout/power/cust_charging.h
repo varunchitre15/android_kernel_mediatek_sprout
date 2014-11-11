@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -15,11 +15,11 @@
 #ifndef _CUST_BAT_H_
 #define _CUST_BAT_H_
 
+/* stop charging while in talking mode setting */
 #define TALKING_RECHARGE_VOLTAGE 3800
 #define TALKING_SYNC_TIME		   60
 
 /* Battery Temperature Protection */
-#define MTK_TEMPERATURE_RECHARGE_SUPPORT
 #define MAX_CHARGE_TEMPERATURE  50
 #define MAX_CHARGE_TEMPERATURE_MINUS_X_DEGREE	47
 #define MIN_CHARGE_TEMPERATURE  0
@@ -93,20 +93,19 @@
 #endif
 
 #define CUST_SOC_JEITA_SYNC_TIME 30
-#define JEITA_RECHARGE_VOLTAGE  4110	// for linear charging
+#define JEITA_RECHARGE_VOLTAGE  4230	// for linear charging
 #define JEITA_TEMP_ABOVE_POS_60_CV_VOLTAGE		BATTERY_VOLT_04_100000_V
-#define JEITA_TEMP_POS_45_TO_POS_60_CV_VOLTAGE	BATTERY_VOLT_04_100000_V
-#define JEITA_TEMP_POS_10_TO_POS_45_CV_VOLTAGE	BATTERY_VOLT_04_350000_V
-#define JEITA_TEMP_POS_0_TO_POS_10_CV_VOLTAGE	BATTERY_VOLT_04_100000_V
-#define JEITA_TEMP_NEG_10_TO_POS_0_CV_VOLTAGE	BATTERY_VOLT_03_900000_V
-#define JEITA_TEMP_BELOW_NEG_10_CV_VOLTAGE		BATTERY_VOLT_03_900000_V
-
-#define JEITA_NEG_10_TO_POS_0_CURRENT 		CHARGE_CURRENT_0_00_MA	//mA
-#define JEITA_POS_0_TO_POS_10_CURRENT		CHARGE_CURRENT_300_00_MA	//mA
-#define JEITA_POS_45_TO_POS_60_CURRENT		CHARGE_CURRENT_450_00_MA	//mA 
+#define JEITA_TEMP_POS_45_TO_POS_60_CV_VOLTAGE		BATTERY_VOLT_04_100000_V
+#define JEITA_TEMP_POS_10_TO_POS_45_CV_VOLTAGE		BATTERY_VOLT_04_350000_V
+#define JEITA_TEMP_POS_0_TO_POS_10_CV_VOLTAGE		BATTERY_VOLT_04_350000_V
+#define JEITA_TEMP_NEG_10_TO_POS_0_CV_VOLTAGE		BATTERY_VOLT_04_350000_V
+#define JEITA_TEMP_BELOW_NEG_10_CV_VOLTAGE		BATTERY_VOLT_04_350000_V
+#define JEITA_NEG_10_TO_POS_0_CURRENT  CHARGE_CURRENT_0_00_MA	//mA
+#define JEITA_POS_0_TO_POS_10_CURRENT  CHARGE_CURRENT_300_00_MA	//mA
+#define JEITA_POS_45_TO_POS_60_CURRENT  CHARGE_CURRENT_450_00_MA	//mA
 
 /* For JEITA Linear Charging only */
-#define JEITA_NEG_10_TO_POS_0_FULL_CURRENT			120	//mA 
+#define JEITA_NEG_10_TO_POS_0_FULL_CURRENT			120	//mA
 #define JEITA_TEMP_POS_45_TO_POS_60_RECHARGE_VOLTAGE	3980
 #define JEITA_TEMP_POS_10_TO_POS_45_RECHARGE_VOLTAGE	4230
 #define JEITA_TEMP_POS_0_TO_POS_10_RECHARGE_VOLTAGE	4230
@@ -121,13 +120,8 @@
 #define CONFIG_DIS_CHECK_BATTERY
 #endif
 
-#ifdef CONFIG_MTK_FAN5405_SUPPORT
 #define FAN5405_BUSNUM 1
-#endif
-
-#ifdef CONFIG_MTK_BQ24158_SUPPORT
 #define BQ24158_BUSNUM 1
-#endif
 
 //#define MTK_WIRELESS_CHARGER_SUPPORT 1
-#endif /* _CUST_BAT_H_ */ 
+#endif /* _CUST_BAT_H_ */
