@@ -1,1 +1,0 @@
-#define MET_BACKEND_VERSION "2.8.7"

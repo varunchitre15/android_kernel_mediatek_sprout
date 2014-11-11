@@ -58,9 +58,6 @@
 
 #include <linux/mmc/sd_misc.h>
 
-#define MET_USER_EVENT_SUPPORT
-#include <linux/met_drv.h>
-
 
 MODULE_ALIAS("mmc:block");
 #ifdef MODULE_PARAM_PREFIX
@@ -150,8 +147,6 @@ static inline int mmc_blk_part_switch(struct mmc_card *card,
 				      struct mmc_blk_data *md);
 static int get_card_status(struct mmc_card *card, u32 *status, int retries);
 
-//#include <linux/met_ftrace_bio.h>
-#define MET_FTRACE_PRINTK(a, b, c, d)
 
 char mmc_get_rw_type(u32 opcode)
 {
@@ -169,281 +164,6 @@ char mmc_get_rw_type(u32 opcode)
 	}
 }
 
-inline int check_met_mmc_async_req_legal(struct mmc_host *host, struct mmc_async_req *areq)
-{
-	int is_legal = 0;
-
-	if (!((host == NULL) || (areq == NULL) || (areq->mrq == NULL)
-		|| (areq->mrq->cmd == NULL) || (areq->mrq->data == NULL)
-		|| (host->card == NULL))) {
-		is_legal = 1;
-	}
-
-	return is_legal;
-}
-
-inline int check_met_mmc_req_legal(struct mmc_host *host, struct mmc_request *req)
-{
-	int is_legal = 0;
-
-	if (!((host == NULL) || (req == NULL) || (req->cmd == NULL)
-		|| (req->data == NULL) || (host->card == NULL))) {
-		is_legal = 1;
-	}
-
-	return is_legal;
-}
-
-void met_mmc_insert(struct mmc_host *host, struct mmc_async_req *areq)
-{
-	struct mmc_blk_data *md;
-	char type;
-
-	if (!check_met_mmc_async_req_legal(host, areq))
-		return;
-
-	md = mmc_get_drvdata(host->card);
-
-	type = mmc_get_rw_type(areq->mrq->cmd->opcode);
-	if (type == 'X')
-		return;
-
-	MET_FTRACE_PRINTK(met_mmc_insert, md, areq, type);
-}
-
-void met_mmc_dma_map(struct mmc_host *host, struct mmc_async_req *areq)
-{
-	struct mmc_blk_data *md;
-	char type;
-
-	if (!check_met_mmc_async_req_legal(host, areq))
-		return;
-
-	md = mmc_get_drvdata(host->card);
-
-	type = mmc_get_rw_type(areq->mrq->cmd->opcode);
-	if (type == 'X')
-		return;
-
-	MET_FTRACE_PRINTK(met_mmc_dma_map, md, areq, type);
-}
-
-//void met_mmc_issue(struct mmc_host *host, struct mmc_async_req *areq)
-//{
-//	struct mmc_blk_data *md;
-//	char type;
-//
-//	if (!check_met_mmc_async_req_legal(host, areq))
-//		return;
-//
-//	md = mmc_get_drvdata(host->card);
-//
-//	type = mmc_get_rw_type(areq->mrq->cmd->opcode);
-//	if (type == 'X')
-//		return;
-//
-//	MET_FTRACE_PRINTK(met_mmc_issue, md, areq, type);
-//}
-
-void met_mmc_issue(struct mmc_host *host, struct mmc_request *req)
-{
-	struct mmc_blk_data *md;
-	char type;
-
-	if (!check_met_mmc_req_legal(host, req))
-		return;
-
-	md = mmc_get_drvdata(host->card);
-
-	type = mmc_get_rw_type(req->cmd->opcode);
-	if (type == 'X')
-		return;
-
-	MET_FTRACE_PRINTK(met_mmc_issue, md, req, type);
-}
-
-void met_mmc_send_cmd(struct mmc_host *host, struct mmc_command *cmd)
-{
-	struct mmc_blk_data *md = mmc_get_drvdata(host->card);
-	char type;
-
-	type = mmc_get_rw_type(cmd->opcode);
-	if (type == 'X')
-		return;
-
-	trace_printk("%d,%d %c %d + %d [%s]\n",
-			md->disk->major, md->disk->first_minor, type,
-			cmd->arg, cmd->data->blocks,
-			current->comm);
-}
-
-void met_mmc_xfr_done(struct mmc_host *host, struct mmc_command *cmd)
-{
-    struct mmc_blk_data *md=mmc_get_drvdata(host->card);
-	char type;
-
-	type = mmc_get_rw_type(cmd->opcode);
-	if (type == 'X')
-		return;
-
-	trace_printk("%d,%d %c %d + %d [%s]\n",
-			md->disk->major, md->disk->first_minor, type,
-			cmd->arg, cmd->data->blocks,
-			current->comm);
-}
-
-void met_mmc_wait_xfr(struct mmc_host *host, struct mmc_async_req *areq)
-{
-	struct mmc_blk_data *md = mmc_get_drvdata(host->card);
-	char type;
-
-	type = mmc_get_rw_type(areq->mrq->cmd->opcode);
-	if (type == 'X')
-		return;
-
-	trace_printk("%d,%d %c %d + %d [%s]\n",
-			md->disk->major, md->disk->first_minor, type,
-			areq->mrq->cmd->arg, areq->mrq->data->blocks,
-			current->comm);
-
-}
-
-void met_mmc_tuning_start(struct mmc_host *host, struct mmc_command *cmd)
-{
-	struct mmc_blk_data *md = mmc_get_drvdata(host->card);
-	char type;
-
-	type = mmc_get_rw_type(cmd->opcode);
-	if (type == 'X')
-		return;
-
-	trace_printk("%d,%d %c %d + %d [%s]\n",
-			md->disk->major, md->disk->first_minor, type,
-			cmd->arg, cmd->data->blocks,
-			current->comm);
-}
-
-void met_mmc_tuning_end(struct mmc_host *host, struct mmc_command *cmd)
-{
-	struct mmc_blk_data *md = mmc_get_drvdata(host->card);
-	char type;
-
-	type = mmc_get_rw_type(cmd->opcode);
-	if (type == 'X')
-		return;
-
-	trace_printk("%d,%d %c %d + %d [%s]\n",
-			md->disk->major, md->disk->first_minor, type,
-			cmd->arg, cmd->data->blocks,
-			current->comm);
-}
-
-void met_mmc_complete(struct mmc_host *host, struct mmc_async_req *areq)
-{
-	struct mmc_blk_data *md;
-	char type;
-
-	if (!check_met_mmc_async_req_legal(host, areq))
-		return;
-
-	md = mmc_get_drvdata(host->card);
-
-	type = mmc_get_rw_type(areq->mrq->cmd->opcode);
-	if (type == 'X')
-		return;
-
-	MET_FTRACE_PRINTK(met_mmc_complete, md, areq, type);
-}
-
-void met_mmc_dma_unmap_start(struct mmc_host *host, struct mmc_async_req *areq)
-{
-	struct mmc_blk_data *md;
-	char type;
-
-	if (!check_met_mmc_async_req_legal(host, areq))
-		return;
-
-	md = mmc_get_drvdata(host->card);
-
-	type = mmc_get_rw_type(areq->mrq->cmd->opcode);
-	if (type == 'X')
-		return;
-
-	MET_FTRACE_PRINTK(met_mmc_dma_unmap_start, md, areq, type);
-}
-
-void met_mmc_dma_unmap_stop(struct mmc_host *host, struct mmc_async_req *areq)
-{
-	struct mmc_blk_data *md;
-	char type;
-
-	if (!check_met_mmc_async_req_legal(host, areq))
-		return;
-
-	md = mmc_get_drvdata(host->card);
-
-	type = mmc_get_rw_type(areq->mrq->cmd->opcode);
-	if (type == 'X')
-		return;
-
-	MET_FTRACE_PRINTK(met_mmc_dma_unmap_stop, md, areq, type);
-}
-
-void met_mmc_continue_req_end(struct mmc_host *host, struct mmc_async_req *areq)
-{
-	struct mmc_blk_data *md;
-	char type;
-
-	if (!check_met_mmc_async_req_legal(host, areq))
-		return;
-
-	md = mmc_get_drvdata(host->card);
-
-	type = mmc_get_rw_type(areq->mrq->cmd->opcode);
-	if (type == 'X')
-		return;
-
-	MET_FTRACE_PRINTK(met_mmc_continue_req_end, md, areq, type);
-}
-
-void met_mmc_dma_stop(struct mmc_host *host, struct mmc_async_req *areq, unsigned int bd_num)
-{
-	struct mmc_blk_data *md;
-	char type;
-
-	if (!check_met_mmc_async_req_legal(host, areq))
-		return;
-
-	md = mmc_get_drvdata(host->card);
-
-	type = mmc_get_rw_type(areq->mrq->cmd->opcode);
-	if (type == 'X')
-		return;
-
-	//MET_FTRACE_PRINTK(met_mmc_dma_stop, md, areq, type, bd_num);
-}
-
-//void met_mmc_end(struct mmc_host *host, struct mmc_async_req *areq)
-//{
-//	struct mmc_blk_data *md;
-//	char type;
-//
-//	if (areq && areq->mrq && host && host->card) {
-//    	type = mmc_get_rw_type(areq->mrq->cmd->opcode);
-//    	if (type == 'X')
-//    		return;
-//
-//    	md = mmc_get_drvdata(host->card);
-//
-//    	if (areq && areq->mrq)
-//    	{
-//    		trace_printk("%d,%d %c %d + %d [%s]\n",
-//    				md->disk->major, md->disk->first_minor, type,
-//    				areq->mrq->cmd->arg, areq->mrq->data->blocks,
-//    				current->comm);
-//    	}
-//    }
-//}
 
 static inline void mmc_blk_clear_packed(struct mmc_queue_req *mqrq)
 {
@@ -2137,9 +1857,6 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 						brq->data.bytes_xfered);
 			}
 
-//			if (card && card->host && card->host->areq)
-//				met_mmc_end(card->host, card->host->areq);
-
 			/*
 			 * If the blk_end_request function returns non-zero even
 			 * though all data has been transferred and no errors
@@ -2716,9 +2433,6 @@ static const struct mmc_fixup blk_fixups[] =
 	END_FIXUP
 };
 
-#if defined(CONFIG_MTK_EMMC_SUPPORT) && !defined(CONFIG_MTK_GPT_SCHEME_SUPPORT)
-	extern void emmc_create_sys_symlink (struct mmc_card *card);
-#endif
 static int mmc_blk_probe(struct mmc_card *card)
 {
 	struct mmc_blk_data *md, *part_md;
@@ -2758,9 +2472,6 @@ static int mmc_blk_probe(struct mmc_card *card)
 		if (mmc_add_disk(part_md))
 			goto out;
 	}
-#if defined(CONFIG_MTK_EMMC_SUPPORT) && !defined(CONFIG_MTK_GPT_SCHEME_SUPPORT)
-	emmc_create_sys_symlink(card);
-#endif
 	return 0;
 
  out:
