@@ -54,6 +54,7 @@
 #include <mach/system.h>
 #include <cust_charging.h>
 #include <mach/charging_hw_common.h>
+#include <mach/battery_ssb.h>
 
  // ============================================================ //
  //define
@@ -137,11 +138,11 @@ static kal_uint32 charging_hw_init_fan5405(void *data)
 	upmu_set_rg_usbdl_set(0);       //force leave USBDL mode
 	upmu_set_rg_usbdl_rst(1);		//force leave USBDL mode
 
-	#if defined(HIGH_BATTERY_VOLTAGE_SUPPORT)
-	fan5405_reg_config_interface(0x06,0x77); // ISAFE = 1250mA, VSAFE = 4.34V
-	#else
-	fan5405_reg_config_interface(0x06,0x70);
-	#endif
+	if (high_battery_volt_enable) {
+		fan5405_reg_config_interface(0x06,0x77); // ISAFE = 1250mA, VSAFE = 4.34V
+	} else {
+		fan5405_reg_config_interface(0x06,0x70);
+	}
 
 	fan5405_reg_config_interface(0x00,0xC0);	//kick chip watch dog
 	fan5405_reg_config_interface(0x01,0xb8);	//TE=1, CE=0, HZ_MODE=0, OPA_MODE=0

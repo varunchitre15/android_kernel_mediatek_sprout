@@ -54,6 +54,7 @@
 #include <mach/system.h>
 #include <cust_charging.h>
 #include <mach/charging_hw_common.h>
+#include <mach/battery_ssb.h>
 
  // ============================================================ //
  //global variable
@@ -107,10 +108,10 @@ const kal_uint32 CS_VTH_BQ24158[]=
  // ============================================================ //
  //extern function
  // ============================================================ //
- extern bool mt_usb_is_device(void);
+extern bool mt_usb_is_device(void);
 
- static kal_uint32 charging_hw_init_bq24158(void *data)
- {
+static kal_uint32 charging_hw_init_bq24158(void *data)
+{
 	kal_uint32 status = STATUS_OK;
 	static bool charging_init_flag = KAL_FALSE;
 	int gpio_number;
@@ -122,33 +123,36 @@ const kal_uint32 CS_VTH_BQ24158[]=
 	gpio_on_mode = GPIO_SWCHARGER_EN_PIN_M_GPIO;
 
 	mt_set_gpio_mode(gpio_number,gpio_on_mode);
-    mt_set_gpio_dir(gpio_number,gpio_on_dir);
-    mt_set_gpio_out(gpio_number,gpio_on_out);
+	mt_set_gpio_dir(gpio_number,gpio_on_dir);
+	mt_set_gpio_out(gpio_number,gpio_on_out);
 #if defined(MTK_WIRELESS_CHARGER_SUPPORT)
 	mt_set_gpio_mode(wireless_charger_gpio_number,0); // 0:GPIO mode
 	mt_set_gpio_dir(wireless_charger_gpio_number,0); // 0: input, 1: output
 #endif
-    battery_xlog_printk(BAT_LOG_FULL, "gpio_number=0x%x,gpio_on_mode=%d,gpio_off_mode=%d\n", gpio_number, gpio_on_mode, gpio_off_mode);
+	battery_xlog_printk(BAT_LOG_FULL, "gpio_number=0x%x,gpio_on_mode=%d,gpio_off_mode=%d\n", gpio_number, gpio_on_mode, gpio_off_mode);
 
 	upmu_set_rg_usbdl_rst(1);		//force leave USBDL mode
 
-	#if defined(HIGH_BATTERY_VOLTAGE_SUPPORT)
-        bq24158_config_interface_liao(0x06,0x77); // ISAFE = 1250mA, VSAFE = 4.34V
-    #else
-        bq24158_config_interface_liao(0x06,0x70);
-	#endif
+	if (high_battery_volt_enable) {
+		battery_xlog_printk(BAT_LOG_CRTI, "1 high_battery_volt_enable=%d\n", high_battery_volt_enable);
+		bq24158_config_interface_liao(0x06,0x77); // ISAFE = 1250mA, VSAFE = 4.34V
+		bq24158_config_interface_liao(0x02,0xaa); // 4.34
+	} else {
+		battery_xlog_printk(BAT_LOG_CRTI, "2 high_battery_volt_enable=%d\n", high_battery_volt_enable);
+		bq24158_config_interface_liao(0x06,0x70);
+		bq24158_config_interface_liao(0x02,0x8e); // 4.2
+	}
+	bq24158_config_interface_liao(0x00,0xC0);	//kick chip watch dog
+	bq24158_config_interface_liao(0x01,0xb8);	//TE=1, CE=0, HZ_MODE=0, OPA_MODE=0
+	bq24158_config_interface_liao(0x05,0x02);
 
-    bq24158_config_interface_liao(0x00,0xC0);	//kick chip watch dog
-    bq24158_config_interface_liao(0x01,0xb8);	//TE=1, CE=0, HZ_MODE=0, OPA_MODE=0
-    bq24158_config_interface_liao(0x05,0x03);
-
-    bq24158_config_interface_liao(0x04,0x1A); //146mA
+	bq24158_config_interface_liao(0x04,0x1A); //146mA
 	if ( !charging_init_flag ) {
 		bq24158_config_interface_liao(0x04,0x1A); //146mA
 		charging_init_flag = KAL_TRUE;
 	}
 	return status;
- }
+}
 
 
 static kal_uint32 charging_dump_register_bq24158(void *data)
@@ -351,6 +355,7 @@ kal_uint32 (* const charging_func_bq24158[CHARGING_CMD_NUMBER])(void *data)=
 	,charging_get_is_pcm_timer_trigger
 	,charging_set_platform_reset
 	,charging_get_platfrom_boot_mode
+	,charging_set_power_off
 };
 
 

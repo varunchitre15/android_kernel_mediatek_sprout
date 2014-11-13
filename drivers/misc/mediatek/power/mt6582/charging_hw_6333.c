@@ -25,6 +25,7 @@
 #include <mach/system.h>
 #include <cust_charging.h>
 #include <mach/charging_hw_common.h>
+#include <mach/battery_ssb.h>
 
 // ============================================================ //
 //define
@@ -103,10 +104,10 @@ static kal_uint32 charging_hw_init_hw6333(void *data)
     }
     battery_xlog_printk(BAT_LOG_CRTI, "polling_time=%d of rgs_power_on_ready\n", polling_time);
 
-#if defined(HIGH_BATTERY_VOLTAGE_SUPPORT)
-    mt6333_set_rg_cv_sel(0);
-    battery_xlog_printk(BAT_LOG_CRTI, "HIGH_BATTERY_VOLTAGE_SUPPORT\n");
-#endif
+    if (high_battery_volt_enable) {
+        mt6333_set_rg_cv_sel(0);
+        battery_xlog_printk(BAT_LOG_CRTI, "HIGH_BATTERY_VOLTAGE_SUPPORT\n");
+    }
 
     return status;
 }
@@ -324,5 +325,6 @@ kal_uint32 (* const charging_func_hw6333[CHARGING_CMD_NUMBER])(void *data)=
     ,charging_get_is_pcm_timer_trigger
     ,charging_set_platform_reset
     ,charging_get_platfrom_boot_mode
+    ,charging_set_power_off
 };
 
