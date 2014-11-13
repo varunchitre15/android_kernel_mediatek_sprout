@@ -346,5 +346,6 @@ kal_uint32 (* const charging_func_bq24196[CHARGING_CMD_NUMBER])(void *data)=
 	,charging_get_is_pcm_timer_trigger
 	,charging_set_platform_reset
 	,charging_get_platfrom_boot_mode
+	,charging_set_power_off
 };
 

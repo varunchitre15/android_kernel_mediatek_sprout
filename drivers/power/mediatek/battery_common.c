@@ -2394,8 +2394,7 @@ static void mt_battery_thermal_check(void)
 					    BMT_status.temperature);
 		}
 
-		/* for Sporout MMX special request (shutdown temperature > 60 degree)*/
-		if(BMT_status.temperature >= thermal_shut_down) {
+		if(BMT_status.temperature >= 60) {
 #if defined(CONFIG_POWER_EXT)
 			battery_xlog_printk(BAT_LOG_CRTI,
 					    "[BATTERY] CONFIG_POWER_EXT, no update battery update power down.\n");
