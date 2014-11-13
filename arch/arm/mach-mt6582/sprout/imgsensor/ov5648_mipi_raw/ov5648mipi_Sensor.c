@@ -50,11 +50,13 @@
 #include "ov5648mipi_Sensor.h"
 #include "ov5648mipi_Camera_Sensor_para.h"
 #include "ov5648mipi_CameraCustomized.h"
+#include <linux/xlog.h>
 
-#define OV5648MIPI_DRIVER_TRACE
+//#define OV5648MIPI_DRIVER_TRACE
 #define OV5648MIPI_DEBUG
 #ifdef OV5648MIPI_DEBUG
-#define SENSORDB(fmt, arg...) printk("%s: " fmt "\n", __FUNCTION__ ,##arg)
+#define PFX "OV5648MIPI"
+#define SENSORDB(fmt, arg...)    xlog_printk(ANDROID_LOG_DEBUG   , PFX, "[%s] " fmt, __FUNCTION__, ##arg)
 #else
 #define SENSORDB(x,...)
 #endif

@@ -45,7 +45,10 @@ HI258_MIPIStatus HI258_MIPICurrentStatus;
 
 #define HI258_DEBUG
 #ifdef HI258_DEBUG
-#define SENSORDB printk
+
+#include <linux/xlog.h>
+#define PFX "HI258"
+#define SENSORDB(fmt, arg...)    xlog_printk(ANDROID_LOG_DEBUG   , PFX, "[%s] " fmt, __FUNCTION__, ##arg)
 #else
 #define SENSORDB(x,...)
 #endif
@@ -150,7 +153,7 @@ static kal_uint32 HI258_GetSensorID(kal_uint32 *sensorID)
         hw_id=0;//mt_get_gpio_in(GPIO_SUB_CAM_ID);
 
     //mdelay(3000);
-        printk("[HI258] sensor id = 0x%x,====hw_id=%d\n", sensor_id,hw_id);
+        SENSORDB("[HI258] sensor id = 0x%x,====hw_id=%d\n", sensor_id,hw_id);
 
         if (HI258_SENSOR_ID == sensor_id)
             break;
@@ -161,7 +164,7 @@ static kal_uint32 HI258_GetSensorID(kal_uint32 *sensorID)
     if (HI258MIPI_YUV_SENSOR_ID == sensor_id)// && 0x01 == hw_id)
     {
         *sensorID = HI258MIPI_YUV_SENSOR_ID;
-        printk("[HI255] this is sw HI258 camera module.");
+        SENSORDB("[HI255] this is sw HI258 camera module.");
     }
     else
     {
@@ -1448,11 +1451,11 @@ UINT32 HI258Open(void)
         for (i=0; i < 3; i++)
         {
             sensor_id = HI258_read_cmos_sensor(0x04);
-printk("[HI258YUV]:Read Sensor ID succ:0x%x\n", sensor_id);
+SENSORDB("[HI258YUV]:Read Sensor ID succ:0x%x\n", sensor_id);
             if (sensor_id == HI258_SENSOR_ID)
             {
 #ifdef HI258_DEBUG
-                printk("[HI258YUV]:Read Sensor ID succ:0x%x\n", sensor_id);
+                SENSORDB("[HI258YUV]:Read Sensor ID succ:0x%x\n", sensor_id);
 #endif
                 break;
             }
@@ -1465,12 +1468,12 @@ printk("[HI258YUV]:Read Sensor ID succ:0x%x\n", sensor_id);
     {
 
 #ifdef HI258_DEBUG
-        printk("[HI258YUV]:Read Sensor ID fail:0x%x\n", sensor_id);
+        SENSORDB("[HI258YUV]:Read Sensor ID fail:0x%x\n", sensor_id);
 #endif
         return ERROR_SENSOR_CONNECT_FAIL;
     }
 #ifdef HI258_DEBUG
-    printk("[HI258YUV]:Read Sensor ID pass:0x%x\n", sensor_id);
+    SENSORDB("[HI258YUV]:Read Sensor ID pass:0x%x\n", sensor_id);
 #endif
 
     HI258_Initial_Cmds();

@@ -58,7 +58,9 @@
 #define OV2680_DRIVER_TRACE
 #define LOG_TAG "[OV2680MIPIRaw]"
 #ifdef OV2680_DEBUG
-#define SENSORDB(fmt,arg...) printk(LOG_TAG "%s: " fmt "\n", __FUNCTION__ ,##arg)
+#include <linux/xlog.h>
+#define PFX "OV2680"
+#define SENSORDB(fmt, arg...)    xlog_printk(ANDROID_LOG_DEBUG   , PFX, "[%s] " fmt, __FUNCTION__, ##arg)
 #else
 #define SENSORDB(fmt,arg...)
 #endif
@@ -887,8 +889,8 @@ static void OV2680MIPI_Sensor_Init(void)
     OV2680_write_cmos_sensor(0x3814, 0x31);
     OV2680_write_cmos_sensor(0x3815, 0x31);
     OV2680_write_cmos_sensor(0x3819, 0x04);
-    OV2680_write_cmos_sensor(0x3820, 0xc2);
-    OV2680_write_cmos_sensor(0x3821, 0x01);
+    OV2680_write_cmos_sensor(0x3820, 0xc4);
+    OV2680_write_cmos_sensor(0x3821, 0x04);
     OV2680_write_cmos_sensor(0x4000, 0x81);
     OV2680_write_cmos_sensor(0x4001, 0x40);
     OV2680_write_cmos_sensor(0x4008, 0x00);
@@ -944,8 +946,8 @@ static void OV2680MIPI_Sensor_preview(void)
     OV2680_write_cmos_sensor(0x3813, 0x08);
     OV2680_write_cmos_sensor(0x3814, 0x11);
     OV2680_write_cmos_sensor(0x3815, 0x11);
-    OV2680_write_cmos_sensor(0x3820, 0xc4);
-    OV2680_write_cmos_sensor(0x3821, 0x04);
+    OV2680_write_cmos_sensor(0x3820,((OV2680_read_cmos_sensor(0x3820) & 0x04) | 0xc0));//keep the mirror and flip
+    OV2680_write_cmos_sensor(0x3821,((OV2680_read_cmos_sensor(0x3821) & 0x04) | 0x00));
     OV2680_write_cmos_sensor(0x4008, 0x02);
     OV2680_write_cmos_sensor(0x4009, 0x09);
     OV2680_write_cmos_sensor(0x4837, 0x18);
@@ -988,8 +990,8 @@ static void OV2680MIPI_Sensor_2M_15fps(void)
     OV2680_write_cmos_sensor(0x3813, 0x08);
     OV2680_write_cmos_sensor(0x3814, 0x11);
     OV2680_write_cmos_sensor(0x3815, 0x11);
-    OV2680_write_cmos_sensor(0x3820, 0xc4);
-    OV2680_write_cmos_sensor(0x3821, 0x04);
+    OV2680_write_cmos_sensor(0x3820,((OV2680_read_cmos_sensor(0x3820) & 0x04) | 0xc0));//keep the mirror and flip
+    OV2680_write_cmos_sensor(0x3821,((OV2680_read_cmos_sensor(0x3821) & 0x04) | 0x00));
     OV2680_write_cmos_sensor(0x4008, 0x02);
     OV2680_write_cmos_sensor(0x4009, 0x09);
     OV2680_write_cmos_sensor(0x4837, 0x30);
@@ -1431,7 +1433,7 @@ UINT32 OV2680GetInfo(MSDK_SCENARIO_ID_ENUM ScenarioId,
         MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData)
 {
 #ifdef OV2680_DRIVER_TRACE
-    SENSORDB("OV2680GetInfo£¬FeatureId:%d\n",ScenarioId);
+    SENSORDB("OV2680GetInfoFeatureId:%d\n",ScenarioId);
 #endif
 
     switch(ScenarioId)
@@ -1604,7 +1606,7 @@ UINT32 OV2680Control(MSDK_SCENARIO_ID_ENUM ScenarioId, MSDK_SENSOR_EXPOSURE_WIND
         MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData)
 {
 #ifdef OV2680_DRIVER_TRACE
-    SENSORDB("OV2680Control£¬ScenarioId:%d\n",ScenarioId);
+    SENSORDB("OV2680ControlScenarioId:%d\n",ScenarioId);
 #endif
 
     spin_lock(&OV2680_drv_lock);
@@ -1778,7 +1780,7 @@ UINT32 OV2680SetVideoMode(UINT16 u2FrameRate)
     kal_int16 dummy_line;
     /* to fix VSYNC, to fix frame rate */
 #ifdef OV2680_DRIVER_TRACE
-    SENSORDB("OV2680SetVideoMode£¬u2FrameRate:%d\n",u2FrameRate);
+    SENSORDB("OV2680SetVideoModeu2FrameRate:%d\n",u2FrameRate);
 #endif
 
 
@@ -1830,20 +1832,20 @@ static void OV2680MIPI_Set_Mirror_Flip(kal_uint8 image_mirror, kal_uint8 image_f
      switch (HV)
     {
         case IMAGE_NORMAL:
-            OV2680_write_cmos_sensor(0x3820,((OV2680_read_cmos_sensor(0x3820) & 0xF9) | 0x00));
-            OV2680_write_cmos_sensor(0x3821,((OV2680_read_cmos_sensor(0x3821) & 0xF9) | 0x06));
+            OV2680_write_cmos_sensor(0x3820,((OV2680_read_cmos_sensor(0x3820) & 0xFB) | 0x00));
+            OV2680_write_cmos_sensor(0x3821,((OV2680_read_cmos_sensor(0x3821) & 0xFB) | 0x00));
             break;
         case IMAGE_H_MIRROR:
-            OV2680_write_cmos_sensor(0x3820,((OV2680_read_cmos_sensor(0x3820) & 0xF9) | 0x00));
-            OV2680_write_cmos_sensor(0x3821,((OV2680_read_cmos_sensor(0x3821) & 0xF9) | 0x00));
+            OV2680_write_cmos_sensor(0x3820,((OV2680_read_cmos_sensor(0x3820) & 0xFB) | 0x04));
+            OV2680_write_cmos_sensor(0x3821,((OV2680_read_cmos_sensor(0x3821) & 0xFB) | 0x00));
             break;
         case IMAGE_V_MIRROR:
-            OV2680_write_cmos_sensor(0x3820,((OV2680_read_cmos_sensor(0x3820) & 0xF9) | 0x06));
-            OV2680_write_cmos_sensor(0x3821,((OV2680_read_cmos_sensor(0x3821) & 0xF9) | 0x06));
+            OV2680_write_cmos_sensor(0x3820,((OV2680_read_cmos_sensor(0x3820) & 0xFB) | 0x00));
+            OV2680_write_cmos_sensor(0x3821,((OV2680_read_cmos_sensor(0x3821) & 0xFB) | 0x04));
             break;
         case IMAGE_HV_MIRROR:
-            OV2680_write_cmos_sensor(0x3820,((OV2680_read_cmos_sensor(0x3820) & 0xF9) | 0x06));
-            OV2680_write_cmos_sensor(0x3821,((OV2680_read_cmos_sensor(0x3821) & 0xF9) | 0x00));
+            OV2680_write_cmos_sensor(0x3820,((OV2680_read_cmos_sensor(0x3820) & 0xFB) | 0x04));
+            OV2680_write_cmos_sensor(0x3821,((OV2680_read_cmos_sensor(0x3821) & 0xFB) | 0x04));
             break;
         default:
             SENSORDB("Error image_mirror setting");
@@ -1869,7 +1871,7 @@ UINT32 OV2680FeatureControl(MSDK_SENSOR_FEATURE_ENUM FeatureId,
     PSET_SENSOR_CALIBRATION_DATA_STRUCT pSetSensorCalData=(PSET_SENSOR_CALIBRATION_DATA_STRUCT)pFeaturePara;
 
 #ifdef OV2680_DRIVER_TRACE
-    //SENSORDB("OV2680FeatureControl£¬FeatureId:%d\n",FeatureId);
+    //SENSORDB("OV2680FeatureControlFeatureId:%d\n",FeatureId);
 #endif
     switch (FeatureId)
     {

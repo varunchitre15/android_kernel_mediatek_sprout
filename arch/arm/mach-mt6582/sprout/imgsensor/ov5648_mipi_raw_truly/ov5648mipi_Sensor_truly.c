@@ -50,11 +50,14 @@
 #include "ov5648mipi_Sensor_truly.h"
 #include "ov5648mipi_Camera_Sensor_para_truly.h"
 #include "ov5648mipi_CameraCustomized_truly.h"
+#include <linux/xlog.h>
 
-#define OV5648MIPITRULY_DRIVER_TRACE
+//#define OV5648MIPI_DRIVER_TRACE
 #define OV5648MIPITRULY_DEBUG
+
 #ifdef OV5648MIPITRULY_DEBUG
-#define SENSORDB(fmt, arg...) printk("%s: " fmt "\n", __FUNCTION__ ,##arg)
+#define PFX "OV5648MIPITRULY"
+#define SENSORDB(fmt, arg...)    xlog_printk(ANDROID_LOG_DEBUG   , PFX, "[%s] " fmt, __FUNCTION__, ##arg)
 #else
 #define SENSORDB(x,...)
 #endif
