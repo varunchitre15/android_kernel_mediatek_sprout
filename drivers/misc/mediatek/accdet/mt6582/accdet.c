@@ -1549,7 +1549,7 @@ int mt_accdet_probe(void)
 		accdet_2v8_mode = accdet_tuning_data->accdet_mode;
 	}else{
 		ACCDET_DEBUG("ACCDET mode use default vaule\n");
-		accdet_2v8_mode = 0;
+		accdet_2v8_mode = 1;
 	}
     //------------------------------------------------------------------
     //                             below register accdet as switch class
