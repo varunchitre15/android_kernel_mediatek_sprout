@@ -42,12 +42,6 @@
 
 #include <smi_common.h>
 
-#define CMDQ_82_PORTING (1)
-#if CMDQ_82_PORTING
-//    #include <cmdq_core.h>
-#else
-    #include <ddp_cmdq.h>
-#endif
 
 #include <mach/camera_isp_FrmB.h>
 #include "camera_isp_FrmB.c"
@@ -3814,13 +3808,16 @@ static __tcmfunc irqreturn_t ISP_Irq(MINT32  Irq, MVOID *DeviceId)
     //////
     //cam3
     MUINT32 j=0,idx=0,k=0;
-    struct timeval time_frmb;
     eISPIrq eIrq = _IRQ;
     //////
 
     ////////
     //CHRISTOPHER, cam3
-   do_gettimeofday(&time_frmb);
+   unsigned long long  time_frmb_sec;
+   unsigned long       time_frmb_usec;
+   time_frmb_sec = cpu_clock(0);     //ns
+   do_div( time_frmb_sec, 1000 );    //usec
+   time_frmb_usec = do_div( time_frmb_sec, 1000000);    //sec and usec
 
     // Read irq status
     IrqStatus[ISP_IRQ_TYPE_INT]  = (ISP_RD32((void *)ISP_REG_ADDR_INT_STATUS)  & (g_IspInfo.IrqInfo.Mask[ISP_IRQ_TYPE_INT]  | g_IspInfo.IrqInfo.ErrMask[ISP_IRQ_TYPE_INT]));
@@ -4068,8 +4065,8 @@ static __tcmfunc irqreturn_t ISP_Irq(MINT32  Irq, MVOID *DeviceId)
                         if((IrqStatus[j] & IspInfo_FrmB.IrqInfo.Mask[j]) & (1<<k))
                         {
                             idx=my_get_pow_idx(1<<k);
-                            IspInfo_FrmB.IrqInfo.LastestSigTime_usec[j][idx]=(unsigned int)time_frmb.tv_usec;
-                            IspInfo_FrmB.IrqInfo.LastestSigTime_sec[j][idx]=(unsigned int) time_frmb.tv_sec;
+                            IspInfo_FrmB.IrqInfo.LastestSigTime_usec[j][idx]=(unsigned int)(time_frmb_usec);
+                            IspInfo_FrmB.IrqInfo.LastestSigTime_sec[j][idx]=(unsigned int) (time_frmb_sec);
                             IspInfo_FrmB.IrqInfo.PassedBySigCnt[i][j][k]++;
                         }
                     }
@@ -4125,6 +4122,7 @@ static long ISP_ioctl(struct file *pFile,MUINT32 Cmd,unsigned long Param)
     ISP_ED_BUFQUE_STRUCT_FRMB    edQueBuf_FrmB;
     int userKey=-1;
     MINT32                  burstQNum;
+    ISP_REGISTER_USERKEY_STRUCT_FRMB RegUserKey_FrmB;
     ////////////////////////////////
 
     if(pFile->private_data == NULL)
@@ -4519,14 +4517,18 @@ static long ISP_ioctl(struct file *pFile,MUINT32 Cmd,unsigned long Param)
         }
         //
         case ISP_REGISTER_IRQ_USER_KEY:
-            userKey=ISP_REGISTER_IRQ_USERKEY();
-             if(copy_to_user((void*)Param, &userKey, sizeof(int)) != 0){
-                 LOG_ERR("query irq user key\n");
-             }
-             if(userKey<0)
-             {
-                Ret = -1 ;
-             }
+            if(copy_from_user(&RegUserKey_FrmB, (void*)Param, sizeof(ISP_REGISTER_USERKEY_STRUCT_FRMB)) == 0)
+            {
+                userKey=ISP_REGISTER_IRQ_USERKEY(RegUserKey_FrmB.userName);
+                RegUserKey_FrmB.userKey=userKey;
+                 if(copy_to_user((void*)Param, &RegUserKey_FrmB, sizeof(ISP_REGISTER_USERKEY_STRUCT_FRMB)) != 0){
+                     LOG_ERR("query irq user key fail\n");
+                 }
+                 if(RegUserKey_FrmB.userKey<0)
+                 {
+                    Ret = -1 ;
+                 }
+            }
             break;
         //
         case ISP_MARK_IRQ_REQUEST:
@@ -5210,19 +5212,9 @@ static MINT32 ISP_probe(struct platform_device *pDev)
     }
     //mt_irq_unmask(CAMERA_ISP_IRQ0_ID);
     #endif
+    //
 
-#if CMDQ_82_PORTING
-     //   cmdqCoreRegisterCB(CMDQ_GROUP_ISP, NULL, ISPRegDump ,MDPReset_Process, NULL);
-#else
-    if(CAM_HAL_VER_IS3 == false) {
-        LOG_INF("register isp(V1) callback for MDP");
-        cmdqRegisterCallback(cbISP, ISPRegDump ,MDPReset_Process);
-    }else{
-        LOG_INF("register isp(V3) callback for MDP");
-        ISP_ControlMdpClock(MTRUE);
-    }
-
-#endif
+//#endif
 
 EXIT:
 
@@ -5657,6 +5649,9 @@ static MINT32 __init ISP_Init(MVOID)
     }
 
     memset(g_pBuf_kmalloc,0x00,RT_BUF_TBL_NPAGES * PAGE_SIZE);
+    //
+    LOG_INF("register isp callback for MDP,is_v3(%d)",CAM_HAL_VER_IS3);
+    ISP_ControlMdpClock(MTRUE);
 
     // round it up to the page bondary
     g_pTbl_RTBuf = (MINT32 *)((((unsigned long)g_pBuf_kmalloc) + PAGE_SIZE - 1) & PAGE_MASK);
@@ -5685,14 +5680,8 @@ static MVOID __exit ISP_Exit(MVOID)
 
     platform_driver_unregister(&IspDriver);
     //
-    // unregister ISP callback
-    if(CAM_HAL_VER_IS3 == false) {
-        LOG_INF("unregister isp(V1) callback for MDP");
-        //cmdqRegisterCallback(cbISP, NULL ,NULL);
-    }else{
-        LOG_INF("unregister isp(V3) callback for MDP");
-        ISP_ControlMdpClock(FALSE);
-    }
+    LOG_INF("unregister isp callback for MDP,is_v3(%d)",CAM_HAL_VER_IS3);
+    ISP_ControlMdpClock(FALSE);
 
     // unreserve the pages
     for (i = 0; i < RT_BUF_TBL_NPAGES * PAGE_SIZE; i += PAGE_SIZE)

@@ -78,6 +78,13 @@ typedef struct
 
 typedef struct
 {
+    int  userKey;
+    char* userName;
+}ISP_REGISTER_USERKEY_STRUCT_FRMB;
+
+
+typedef struct
+{
     ISP_IRQ_TYPE_ENUM   Type;
     unsigned int       Status;
 }ISP_READ_IRQ_STRUCT_FRMB;
@@ -426,8 +433,27 @@ typedef struct _cq_rtbc_ring_st_frmb_
     unsigned long   img2o_ring_size_frmb;//rrzo
 }CQ_RTBC_RING_ST_FRMB;
 
-
 #endif
+
+//CQ0B for AE smoothing, set obc_gain0~3
+typedef struct _cq0b_info_rtbc_st_frmb_
+{
+    CQ_CMD_ST ob_frmb;
+    CQ_CMD_ST end_frmb;
+}CQ0B_INFO_RTBC_ST_FRMB;
+
+typedef struct _cq0b_ring_cmd_st_frmb_
+{
+    CQ0B_INFO_RTBC_ST_FRMB cq0b_rtbc_frmb;
+    unsigned long next_pa_frmb;
+    struct _cq0b_ring_cmd_st_frmb_ *pNext_frmb;
+}CQ0B_RING_CMD_ST_FRMB;
+
+typedef struct _cq0b_rtbc_ring_st_frmb_
+{
+    CQ0B_RING_CMD_ST_FRMB rtbc_ring_frmb;
+}CQ0B_RTBC_RING_ST_FRMB;
+
 //
 /********************************************************************************************
 
@@ -511,7 +537,7 @@ typedef enum
     #define ISP_SET_FPS_FRMB     _IOW (ISP_MAGIC, ISP_CMD_SET_FPS_FRMB,    unsigned int)
 #endif
 #define ISP_GET_DROP_FRAME_FRMB  _IOWR    (ISP_MAGIC, ISP_CMD_GET_DROP_FRAME_FRMB,      unsigned int)
-#define ISP_REGISTER_IRQ_USER_KEY  _IOR(ISP_MAGIC,ISP_CMD_REGISTER_IRQ_USER_KEY, int)
+#define ISP_REGISTER_IRQ_USER_KEY  _IOR(ISP_MAGIC,ISP_CMD_REGISTER_IRQ_USER_KEY, ISP_REGISTER_USERKEY_STRUCT_FRMB)
 #define ISP_MARK_IRQ_REQUEST         _IOWR(ISP_MAGIC,ISP_CMD_MARK_IRQ_REQUEST,ISP_WAIT_IRQ_STRUCT_FRMB)
 #define ISP_GET_MARK2QUERY_TIME  _IOWR(ISP_MAGIC,ISP_CMD_GET_MARK2QUERY_TIME,ISP_WAIT_IRQ_STRUCT_FRMB)
 #define ISP_FLUSH_IRQ_REQUEST         _IOW(ISP_MAGIC,ISP_CMD_FLUSH_IRQ_REQUEST,ISP_WAIT_IRQ_STRUCT_FRMB)
