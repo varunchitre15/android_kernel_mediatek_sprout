@@ -47,11 +47,11 @@
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
+#include <linux/pm_wakeup.h>
 
 
 /* #include <mach/mt6577_boot.h> */
 /* #include <mach/mt6577_reg_base.h> */
-#include <mach/irqs.h>
 #include <mach/mtk_rtc.h>
 #include <mach/mtk_rtc_hal.h>
 /* #include <mach/pmic_mt6320_sw.h> */
@@ -449,13 +449,19 @@ static void rtc_handler(void)
 			pwron_alm = true;
 #endif
 		} else if (now_time < time) {	/* set power-on alarm */
-			tm.tm_sec -= 1;
+			if (tm.tm_sec == 0) {
+				tm.tm_sec = 59;
+				tm.tm_min -= 1;
+			} else {
+				tm.tm_sec -= 1;
+			}
 			hal_rtc_set_alarm_time(&tm);
 		}
 	}
 	spin_unlock(&rtc_lock);
 
-	rtc_update_irq(rtc, 1, RTC_IRQF | RTC_AF);
+	if (rtc != NULL)
+		rtc_update_irq(rtc, 1, RTC_IRQF | RTC_AF);
 
 	if (rtc_show_alarm)
 		rtc_xinfo("%s time is up\n", pwron_alm ? "power-on" : "alarm");
@@ -665,6 +671,7 @@ static int rtc_pdrv_probe(struct platform_device *pdev)
 		return PTR_ERR(rtc);
 	}
 
+	device_init_wakeup(&pdev->dev, 1);
 	return 0;
 }
 
@@ -688,7 +695,7 @@ static struct platform_device rtc_pdev = {
 	.id = -1,
 };
 
-static int __init rtc_subsys_init(void)
+static int __init rtc_device_init(void)
 {
 	int r;
 	rtc_xinfo("rtc_init");
@@ -765,7 +772,7 @@ static int __init rtc_late_init(void)
 /* module_exit(rtc_mod_exit); */
 
 late_initcall(rtc_late_init);
-subsys_initcall(rtc_subsys_init);
+device_initcall(rtc_device_init);
 
 module_param(rtc_show_time, int, 0644);
 module_param(rtc_show_alarm, int, 0644);
