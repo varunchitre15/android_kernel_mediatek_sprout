@@ -2235,6 +2235,14 @@ nicRxProcessEventPacket (
 
         break;
 
+#if (CFG_SUPPORT_TDLS == 1)
+	case EVENT_ID_TDLS:
+		TdlsexEventHandle(\
+			prAdapter->prGlueInfo,
+			(UINT8 *)prEvent->aucBuffer,
+			(UINT32)(prEvent->u2PacketLen-8));
+		break;
+#endif /* CFG_SUPPORT_TDLS */
     case EVENT_ID_ACCESS_REG:
     case EVENT_ID_NIC_CAPABILITY:
     case EVENT_ID_BASIC_CONFIG:
@@ -3588,6 +3596,16 @@ case CATEGORY_SPEC_MGT:
     }
     break;
 #endif
+
+#if (CFG_SUPPORT_TDLS == 1)
+		case 12: /* shall not be here */
+			/*
+			 	A received TDLS Action frame with the Type field set to Management shall
+				be discarded. Note that the TDLS Discovery Response frame is not a TDLS
+				frame but a Public Action frame.
+			*/
+			break;
+#endif /* CFG_SUPPORT_TDLS */
 
     default:
         break;

@@ -769,6 +769,8 @@ typedef enum _ENUM_CMD_ID_T {
     CMD_ID_SET_HOTSPOT_OPTIMIZATION = 0xFA,    /* 0xFA (Set) */
 #endif
 
+	CMD_ID_TDLS_CORE = 0xFC, /* ++ TDLS */
+
 } ENUM_CMD_ID_T, *P_ENUM_CMD_ID_T;
 
 typedef enum _ENUM_EVENT_ID_T {
@@ -822,6 +824,7 @@ typedef enum _ENUM_EVENT_ID_T {
     EVENT_ID_DUMP_MEM,
     EVENT_ID_STA_STATISTICS= 0x29,            /* 0x29 (Query ) */
     EVENT_ID_STA_STATISTICS_UPDATE,           /* 0x2A (Unsolicited) */
+	EVENT_ID_TDLS = 0x80, /* ++ TDLS */
 
 #if CFG_SUPPORT_BUILD_DATE_CODE
     EVENT_ID_BUILD_DATE_CODE = 0xF8,
@@ -1040,7 +1043,15 @@ typedef struct _EVENT_NIC_CAPABILITY {
     UINT_8      ucRfCalFail;
     UINT_8      ucBbCalFail;
 #endif
-    UINT_8      aucReserved[2];
+
+/* ++ TDLS */
+#define FEATURE_SET_OFFSET_TDLS					0
+#define FEATURE_SET_OFFSET_5G_SUPPORT			1
+		UINT_8		ucFeatureSet; /* bit0: TDLS */
+
+		UINT_8		aucReserved[1];
+/* -- TDLS */
+
 #if CFG_EMBED_FIRMWARE_BUILD_DATE_CODE
     UINT_8      aucDateCode[16];
 #endif

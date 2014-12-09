@@ -620,6 +620,8 @@ qmInit(
     }
     prQM->u4TimeToAdjustTcResource = QM_INIT_TIME_TO_ADJUST_TC_RSC;
     prQM->u4TimeToUpdateQueLen = QM_INIT_TIME_TO_UPDATE_QUE_LEN;
+	prQM->u4TxNumOfVi = 0; /* ++ TDLS */
+	prQM->u4TxNumOfVo = 0; /* ++ TDLS */
 
 //    ASSERT(prQM->u4TimeToAdjust && prQM->u4TimeToUpdateQueLen);
 
@@ -1366,12 +1368,22 @@ qmEnqueueTxPackets(
                             prTxQue = &prStaRec->arTxQueue[TX_QUEUE_INDEX_AC2];
                             ucTC = TC2_INDEX;
                                     eAci = WMM_AC_VI_INDEX;
+/* ++ TDLS */
+#if QM_ADAPTIVE_TC_RESOURCE_CTRL
+							prQM->u4TxNumOfVi ++;
+#endif
+/* -- TDLS */
                             break;
                         case 6:
                         case 7:
                             prTxQue = &prStaRec->arTxQueue[TX_QUEUE_INDEX_AC3];
                             ucTC = TC3_INDEX;
                                     eAci = WMM_AC_VO_INDEX;
+/* ++ TDLS */
+#if QM_ADAPTIVE_TC_RESOURCE_CTRL
+							prQM->u4TxNumOfVo ++;
+#endif
+/* -- TDLS */
                             break;
                         default:
                             prTxQue = &prStaRec->arTxQueue[TX_QUEUE_INDEX_AC1];
@@ -1393,6 +1405,29 @@ qmEnqueueTxPackets(
                     while(fgCheckACMAgain);
 
                      //LOG_FUNC ("QoS %u UP %u TC %u",prStaRec->fgIsQoS,prCurrentMsduInfo->ucUserPriority, ucTC);
+
+/* ++ TDLS */
+#if QM_ADAPTIVE_TC_RESOURCE_CTRL
+					/*
+						In TDLS or AP mode, peer maybe enter "sleep mode".
+
+						If QM_INIT_TIME_TO_UPDATE_QUE_LEN = 60 when peer is in sleep mode,
+						we need to wait 60 * u4TimeToAdjustTcResource = 180 packets
+						u4TimeToAdjustTcResource = 3,
+						then we will adjust TC resouce for VI or VO.
+
+						But in TDLS test case, the throughput is very low, only 0.8Mbps in 5.7,
+						we will to wait about 12 seconds to collect 180 packets.
+						but the test time is only 20 seconds.
+					*/
+					if ((prQM->u4TxNumOfVi == 10) || (prQM->u4TxNumOfVo == 10))
+					{
+						/* force to do TC resouce update */
+						prQM->u4TimeToUpdateQueLen = QM_INIT_TIME_TO_UPDATE_QUE_LEN_MIN;
+						prQM->u4TimeToAdjustTcResource = 1;
+					}
+#endif
+/* -- TDLS */
 
                     break; /*default */
              } /* switch (prCurrentMsduInfo->ucStaRecIndex) */
@@ -1507,6 +1542,13 @@ qmDetermineStaRecIndex(
         DBGLOG(QM, LOUD, ("TX with DA = BMCAST\n"));
         return;
     }
+
+
+#if (CFG_SUPPORT_TDLS == 1)
+	/* Check if the peer is TDLS one */
+	if (TdlsexStaRecIdxGet(prAdapter, prMsduInfo) == TDLS_STATUS_SUCCESS)
+		return; /* find a TDLS record */
+#endif /* CFG_SUPPORT_TDLS */
 
 
     //4 <2> Check if an AP STA is present
@@ -1726,6 +1768,11 @@ qmDequeueTxPacketsFromPerStaQueues(
     prDequeuedPkt = NULL;
     fgChangeHeadSta = FALSE;
 
+#if (CFG_SUPPORT_TDLS == 1)
+	if (pucFreeQuota != NULL)
+		TdlsexTxQuotaCheck(prAdapter->prGlueInfo, prStaRec, *pucFreeQuota);
+#endif /* CFG_SUPPORT_TDLS */
+
     while(prCurrQueue){
 
 
@@ -1759,6 +1806,21 @@ qmDequeueTxPacketsFromPerStaQueues(
         else{
 
             QUEUE_REMOVE_HEAD(prCurrQueue, prDequeuedPkt, P_MSDU_INFO_T);
+
+#if (CFG_SUPPORT_TDLS_DBG == 1)
+if (prDequeuedPkt != NULL)
+{
+	struct sk_buff *prSkb = (struct sk_buff *)prDequeuedPkt->prPacket;
+	UINT8 *pkt = prSkb->data;
+	UINT16 u2Identifier;
+	if ((*(pkt+12) == 0x08) && (*(pkt+13) == 0x00))
+	{
+		/* ip */
+		u2Identifier = ((*(pkt+18)) << 8) | (*(pkt+19));
+		printk("<d> %d\n", u2Identifier);
+	}
+}
+#endif
 #if DBG && 0
             LOG_FUNC("Deq0 TC %d queued %u net %u mac len %u len %u Type %u 1x %u 11 %u\n",
                     prDequeuedPkt->ucTC,
@@ -2207,6 +2269,30 @@ qmDequeueTxPackets(
     for(i = TC4_INDEX; i >= TC0_INDEX; i--){
         DBGLOG(QM, LOUD, ("Dequeue packets from Per-STA queue[%d]\n", i));
 
+		/* ++ TDLS */
+		/*
+			in the function, we will re-calculate the ucFreeQuota.
+			If any packet with any priority for the station will be sent, ucFreeQuota --
+
+			Note1: ucFreeQuota will be decrease only when station is in power save mode.
+			In active mode, we will sent the packet to the air directly.
+
+	            if(prStaRec->fgIsInPS && (ucTC!=TC4_INDEX)) {
+	                ASSERT(pucFreeQuota);
+	                ASSERT(*pucFreeQuota>0);
+	                if ((pucFreeQuota) && (*pucFreeQuota>0)) {
+	                    *pucFreeQuota = *pucFreeQuota - 1;
+	                }
+	            }
+
+			Note2: maximum queued number for a station is 10, TXM_MAX_BUFFER_PER_STA_DEF in fw
+			i.e. default prStaRec->ucFreeQuota = 10
+
+			Note3: In qmUpdateFreeQuota(), we will adjust
+				ucFreeQuotaForNonDelivery = ucFreeQuota>>1;
+				ucFreeQuotaForDelivery =  ucFreeQuota - ucFreeQuotaForNonDelivery;
+		*/
+		/* -- TDLS */
         qmDequeueTxPacketsFromPerStaQueues(
             prAdapter,
             &rReturnedQue,
@@ -4185,6 +4271,10 @@ mqmFillAcQueParam(
 * \return none
 */
 /*----------------------------------------------------------------------------*/
+#if (CFG_SUPPORT_TDLS == 1) /* for test purpose */
+BOOLEAN flgTdlsTestExtCapElm = FALSE;
+UINT8 aucTdlsTestExtCapElm[7];
+#endif /* CFG_SUPPORT_TDLS */
 VOID
 mqmProcessScanResult(
     IN P_ADAPTER_T prAdapter,
@@ -4212,9 +4302,21 @@ mqmProcessScanResult(
     u2IELength = prScanResult->u2IELength;
     pucIE = prScanResult->aucIEBuf;
 
+#if (CFG_SUPPORT_TDLS == 1)
+	/* TDLS test purpose */
+	if (flgTdlsTestExtCapElm == TRUE)
+		TdlsexBssExtCapParse(prStaRec, aucTdlsTestExtCapElm);
+#endif /* CFG_SUPPORT_TDLS */
+
     /* Goal: Determine whether the peer supports WMM/QoS and UAPSDU */
     IE_FOR_EACH(pucIE, u2IELength, u2Offset) {
         switch (IE_ID(pucIE)) {
+		case ELEM_ID_EXTENDED_CAP:
+#if (CFG_SUPPORT_TDLS == 1)
+			TdlsexBssExtCapParse(prStaRec, pucIE);
+#endif /* CFG_SUPPORT_TDLS */
+			break;
+
         case ELEM_ID_WMM:
             if((WMM_IE_OUI_TYPE(pucIE) == VENDOR_OUI_TYPE_WMM) &&
                 (!kalMemCmp(WMM_IE_OUI(pucIE),aucWfaOui,3))){
@@ -4305,6 +4407,91 @@ qmGetStaRecIdx(
 }
 
 
+/* ++ TDLS */
+UINT_32
+mqmGenerateWmmInfoIEByParam (
+	BOOLEAN					fgSupportUAPSD,
+	UINT_8					ucBmpDeliveryAC,
+	UINT_8					ucBmpTriggerAC,
+	UINT_8					ucUapsdSp,
+    UINT_8					*pOutBuf
+    )
+{
+    P_IE_WMM_INFO_T prIeWmmInfo;
+    UINT_32 ucUapsd[] = {
+        WMM_QOS_INFO_BE_UAPSD,
+        WMM_QOS_INFO_BK_UAPSD,
+        WMM_QOS_INFO_VI_UAPSD,
+        WMM_QOS_INFO_VO_UAPSD
+    };
+    UINT_8 aucWfaOui[] = VENDOR_OUI_WFA;
+
+    ASSERT(pOutBuf);
+
+    prIeWmmInfo = (P_IE_WMM_INFO_T)pOutBuf;
+
+    prIeWmmInfo->ucId = ELEM_ID_WMM;
+    prIeWmmInfo->ucLength = ELEM_MAX_LEN_WMM_INFO;
+
+    /* WMM-2.2.1 WMM Information Element Field Values */
+    prIeWmmInfo->aucOui[0] = aucWfaOui[0];
+    prIeWmmInfo->aucOui[1] = aucWfaOui[1];
+    prIeWmmInfo->aucOui[2] = aucWfaOui[2];
+    prIeWmmInfo->ucOuiType = VENDOR_OUI_TYPE_WMM;
+    prIeWmmInfo->ucOuiSubtype = VENDOR_OUI_SUBTYPE_WMM_INFO;
+
+    prIeWmmInfo->ucVersion = VERSION_WMM;
+    prIeWmmInfo->ucQosInfo = 0;
+
+    /* UAPSD intial queue configurations (delivery and trigger enabled)*/
+    if(fgSupportUAPSD){
+
+        UINT_8 ucQosInfo = 0;
+        UINT_8 i;
+
+
+        /* Static U-APSD setting */
+        for(i = ACI_BE; i <= ACI_VO; i++){
+            if (ucBmpDeliveryAC &  ucBmpTriggerAC & BIT(i)){
+                ucQosInfo |= (UINT_8)ucUapsd[i];
+            }
+        }
+
+
+        if (ucBmpDeliveryAC &  ucBmpTriggerAC) {
+            switch (ucUapsdSp) {
+           case WMM_MAX_SP_LENGTH_ALL:
+               ucQosInfo |= WMM_QOS_INFO_MAX_SP_ALL;
+               break;
+
+           case WMM_MAX_SP_LENGTH_2:
+               ucQosInfo |= WMM_QOS_INFO_MAX_SP_2;
+               break;
+
+           case WMM_MAX_SP_LENGTH_4:
+               ucQosInfo |= WMM_QOS_INFO_MAX_SP_4;
+               break;
+
+           case WMM_MAX_SP_LENGTH_6:
+               ucQosInfo |= WMM_QOS_INFO_MAX_SP_6;
+               break;
+
+           default:
+				DBGLOG(QM, INFO, ("MQM: Incorrect SP length \n"));
+               ucQosInfo |= WMM_QOS_INFO_MAX_SP_2;
+               break;
+           }
+        }
+        prIeWmmInfo->ucQosInfo = ucQosInfo;
+
+    }
+
+    /* Increment the total IE length for the Element ID and Length fields. */
+    return IE_SIZE(prIeWmmInfo);
+}
+/* -- TDLS */
+
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief Generate the WMM Info IE
@@ -4322,13 +4509,7 @@ mqmGenerateWmmInfoIE (
     )
 {
     P_IE_WMM_INFO_T prIeWmmInfo;
-    UINT_32 ucUapsd[] = {
-        WMM_QOS_INFO_BE_UAPSD,
-        WMM_QOS_INFO_BK_UAPSD,
-        WMM_QOS_INFO_VI_UAPSD,
-        WMM_QOS_INFO_VO_UAPSD
-    };
-    UINT_8 aucWfaOui[] = VENDOR_OUI_WFA;
+	/* ++ TDLS */
 
     P_PM_PROFILE_SETUP_INFO_T prPmProfSetupInfo;
     P_BSS_INFO_T prBssInfo;
@@ -4361,6 +4542,7 @@ mqmGenerateWmmInfoIE (
     prIeWmmInfo = (P_IE_WMM_INFO_T)
             ((PUINT_8) prMsduInfo->prPacket + prMsduInfo->u2FrameLength);
 
+#if 0 /* ++ TDLS */
     prIeWmmInfo->ucId = ELEM_ID_WMM;
     prIeWmmInfo->ucLength = ELEM_MAX_LEN_WMM_INFO;
 
@@ -4420,7 +4602,17 @@ mqmGenerateWmmInfoIE (
 
     /* Increment the total IE length for the Element ID and Length fields. */
     prMsduInfo->u2FrameLength += IE_SIZE(prIeWmmInfo);
+#else
 
+	/* ++ TDLS */
+	prMsduInfo->u2FrameLength += mqmGenerateWmmInfoIEByParam(\
+		(prAdapter->rWifiVar.fgSupportUAPSD && prStaRec->fgIsUapsdSupported),
+		prPmProfSetupInfo->ucBmpDeliveryAC,
+		prPmProfSetupInfo->ucBmpTriggerAC,
+		prPmProfSetupInfo->ucUapsdSp,
+		(UINT_8 *)prIeWmmInfo);
+	/* -- TDLS */
+#endif
 }
 
 
@@ -4448,6 +4640,123 @@ UINT_32 cwlog2(UINT_32 val) {
 #endif
 
 
+/* ++ TDLS */
+UINT_32
+mqmGenerateWmmParamIEByParam (
+	P_ADAPTER_T				prAdapter,
+	P_BSS_INFO_T			prBssInfo,
+    UINT_8					*pOutBuf
+    )
+{
+	P_IE_WMM_PARAM_T prIeWmmParam;
+    UINT_8 aucWfaOui[] = VENDOR_OUI_WFA;
+    UINT_8 aucACI[] = {
+        WMM_ACI_AC_BE,
+        WMM_ACI_AC_BK,
+        WMM_ACI_AC_VI,
+        WMM_ACI_AC_VO
+    };
+	ENUM_WMM_ACI_T eAci;
+	UCHAR *pucAciAifsn, *pucEcw, *pucTxopLimit;
+
+
+    ASSERT(pOutBuf);
+
+    prIeWmmParam = (P_IE_WMM_PARAM_T)pOutBuf;
+
+	prIeWmmParam->ucId = ELEM_ID_WMM;
+	prIeWmmParam->ucLength = ELEM_MAX_LEN_WMM_PARAM;
+
+	/* WMM-2.2.1 WMM Information Element Field Values */
+	prIeWmmParam->aucOui[0] = aucWfaOui[0];
+	prIeWmmParam->aucOui[1] = aucWfaOui[1];
+	prIeWmmParam->aucOui[2] = aucWfaOui[2];
+	prIeWmmParam->ucOuiType = VENDOR_OUI_TYPE_WMM;
+	prIeWmmParam->ucOuiSubtype = VENDOR_OUI_SUBTYPE_WMM_PARAM;
+
+	prIeWmmParam->ucVersion = VERSION_WMM;
+	prIeWmmParam->ucQosInfo = (prBssInfo->ucWmmParamSetCount & WMM_QOS_INFO_PARAM_SET_CNT);
+
+	/* UAPSD intial queue configurations (delivery and trigger enabled)*/
+	if (prAdapter->rWifiVar.fgSupportUAPSD) {
+		prIeWmmParam->ucQosInfo |= WMM_QOS_INFO_UAPSD;
+	}
+
+	/* EDCA parameter */
+
+	for(eAci = 0; eAci < WMM_AC_INDEX_NUM; eAci++){
+
+		//DBGLOG(QM, LOUD, ("MQM: eAci = %d, ACM = %d, Aifsn = %d, CWmin = %d, CWmax = %d, TxopLimit = %d\n",
+		//			 eAci,prBssInfo->arACQueParmsForBcast[eAci].fgIsACMSet ,
+		//			 prBssInfo->arACQueParmsForBcast[eAci].u2Aifsn,
+		//			 prBssInfo->arACQueParmsForBcast[eAci].u2CWmin,
+		//			 prBssInfo->arACQueParmsForBcast[eAci].u2CWmax,
+		//			 prBssInfo->arACQueParmsForBcast[eAci].u2TxopLimit));
+
+#if 0
+	   *( ((PUINT_8)(&prIeWmmParam->ucAciAifsn_BE)) + (eAci <<2) ) = (UINT_8) (aucACI[eAci]
+								   | (prBssInfo->arACQueParmsForBcast[eAci].fgIsACMSet ? WMM_ACIAIFSN_ACM:0 )
+								   | (prBssInfo->arACQueParmsForBcast[eAci].u2Aifsn & (WMM_ACIAIFSN_AIFSN)));
+#else
+		/* avoid compile warnings in Klockwork tool */
+		if (eAci == WMM_AC_BE_INDEX)
+		{
+			pucAciAifsn = &prIeWmmParam->ucAciAifsn_BE;
+			pucEcw = &prIeWmmParam->ucEcw_BE;
+			pucTxopLimit = prIeWmmParam->aucTxopLimit_BE;
+		}
+		else if (eAci == WMM_AC_BK_INDEX)
+		{
+			pucAciAifsn = &prIeWmmParam->ucAciAifsn_BG;
+			pucEcw = &prIeWmmParam->ucEcw_BG;
+			pucTxopLimit = prIeWmmParam->aucTxopLimit_BG;
+		}
+		else if (eAci == WMM_AC_VI_INDEX)
+		{
+			pucAciAifsn = &prIeWmmParam->ucAciAifsn_VI;
+			pucEcw = &prIeWmmParam->ucEcw_VI;
+			pucTxopLimit = prIeWmmParam->aucTxopLimit_VI;
+		}
+		else if (eAci == WMM_AC_VO_INDEX)
+		{
+			pucAciAifsn = &prIeWmmParam->ucAciAifsn_VO;
+			pucEcw = &prIeWmmParam->ucEcw_VO;
+			pucTxopLimit = prIeWmmParam->aucTxopLimit_VO;
+		}
+
+		*pucAciAifsn = (UINT_8) (aucACI[eAci]
+						| (prBssInfo->arACQueParmsForBcast[eAci].fgIsACMSet ? WMM_ACIAIFSN_ACM:0 )
+						| (prBssInfo->arACQueParmsForBcast[eAci].u2Aifsn & (WMM_ACIAIFSN_AIFSN)));
+#endif
+
+#if 1
+//		*( ((PUINT_8)(&prIeWmmParam->ucEcw_BE)) + (eAci <<2) ) = (UINT_8) (0
+		*pucEcw = (UINT_8) (0
+						| (((prBssInfo->aucCWminLog2ForBcast[eAci] )) & WMM_ECW_WMIN_MASK)
+						| ((((prBssInfo->aucCWmaxLog2ForBcast[eAci] )) << WMM_ECW_WMAX_OFFSET ) & WMM_ECW_WMAX_MASK)
+						);
+#else
+	   *( ((PUINT_8)(&prIeWmmParam->ucEcw_BE)) + (eAci <<2) ) = (UINT_8) (0
+						| (cwlog2((prBssInfo->arACQueParmsForBcast[eAci].u2CWmin + 1)) & WMM_ECW_WMIN_MASK)
+						| ((cwlog2((prBssInfo->arACQueParmsForBcast[eAci].u2CWmax + 1)) << WMM_ECW_WMAX_OFFSET ) & WMM_ECW_WMAX_MASK)
+						);
+#endif
+
+#if 0
+	   WLAN_SET_FIELD_16( ((PUINT_8)(prIeWmmParam->aucTxopLimit_BE)) + (eAci<<2)
+						, prBssInfo->arACQueParmsForBcast[eAci].u2TxopLimit);
+#else
+		WLAN_SET_FIELD_16( pucTxopLimit
+					 , prBssInfo->arACQueParmsForBcast[eAci].u2TxopLimit);
+#endif
+	}
+
+	/* Increment the total IE length for the Element ID and Length fields. */
+	return IE_SIZE(prIeWmmParam);
+}
+/* -- TDLS */
+
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief Generate the WMM Param IE
@@ -4466,6 +4775,7 @@ mqmGenerateWmmParamIE (
 {
     P_IE_WMM_PARAM_T prIeWmmParam;
 
+#if 0 /* ++ TDLS */
     UINT_8 aucWfaOui[] = VENDOR_OUI_WFA;
 
     UINT_8 aucACI[] = {
@@ -4474,10 +4784,11 @@ mqmGenerateWmmParamIE (
         WMM_ACI_AC_VI,
         WMM_ACI_AC_VO
     };
+    ENUM_WMM_ACI_T eAci;
+#endif
 
     P_BSS_INFO_T prBssInfo;
     P_STA_RECORD_T prStaRec;
-    ENUM_WMM_ACI_T eAci;
 
     DEBUGFUNC("mqmGenerateWmmParamIE");
     DBGLOG(QM, LOUD,("\n"));
@@ -4512,6 +4823,7 @@ mqmGenerateWmmParamIE (
     prIeWmmParam = (P_IE_WMM_PARAM_T)
             ((PUINT_8) prMsduInfo->prPacket + prMsduInfo->u2FrameLength);
 
+#if 0 /* ++ TDLS */
     prIeWmmParam->ucId = ELEM_ID_WMM;
     prIeWmmParam->ucLength = ELEM_MAX_LEN_WMM_PARAM;
 
@@ -4565,7 +4877,13 @@ mqmGenerateWmmParamIE (
 
     /* Increment the total IE length for the Element ID and Length fields. */
     prMsduInfo->u2FrameLength += IE_SIZE(prIeWmmParam);
+#else
 
+	/* ++ TDLS */
+	prMsduInfo->u2FrameLength += mqmGenerateWmmParamIEByParam(\
+		prAdapter, prBssInfo, (UINT_8 *)prIeWmmParam);
+	/* -- TDLS */
+#endif
 }
 
 
@@ -4807,7 +5125,8 @@ qmHandleEventStaChangePsMode(
                     prAdapter,
                     prStaRec,
                      prEventStaChangePsMode->ucUpdateMode,
-                     prEventStaChangePsMode->ucFreeQuota);
+                     prEventStaChangePsMode->ucFreeQuota, /* ++ TDLS */
+					0); /* ++ TDLS */
 
         //DBGLOG(QM, TRACE, ("qmHandleEventStaChangePsMode (ucStaRecIdx=%d, fgIsInPs=%d)\n",
         //    prEventStaChangePsMode->ucStaRecIdx, prStaRec->fgIsInPS));
@@ -4853,7 +5172,8 @@ qmHandleEventStaUpdateFreeQuota(
                     prAdapter,
                     prStaRec,
                      prEventStaUpdateFreeQuota->ucUpdateMode,
-                     prEventStaUpdateFreeQuota->ucFreeQuota);
+                     prEventStaUpdateFreeQuota->ucFreeQuota, /* ++ TDLS */
+					prEventStaUpdateFreeQuota->aucReserved[0]); /* ++ TDLS */
 
             kalSetEvent(prAdapter->prGlueInfo);
         }
@@ -4891,18 +5211,63 @@ qmUpdateFreeQuota(
     IN P_ADAPTER_T prAdapter,
     IN P_STA_RECORD_T prStaRec,
     IN UINT_8 ucUpdateMode,
-    IN UINT_8 ucFreeQuota
+    IN UINT_8 ucFreeQuota, /* ++ TDLS */
+	IN UINT_8 ucNumOfTxDone /* ++ TDLS */
     )
 {
 
     UINT_8 ucFreeQuotaForNonDelivery;
     UINT_8 ucFreeQuotaForDelivery;
+	BOOLEAN flgIsUpdateForcedToDelivery; /* ++ TDLS */
 
     ASSERT(prStaRec);
     DBGLOG(QM, LOUD, ("qmUpdateFreeQuota orig ucFreeQuota=%d Mode %u New %u\n",
         prStaRec->ucFreeQuota, ucUpdateMode, ucFreeQuota ));
 
     if(!prStaRec->fgIsInPS)return;
+
+	/* ++ TDLS */
+	flgIsUpdateForcedToDelivery = FALSE;
+
+	if (ucNumOfTxDone > 0)
+	{
+		/*
+			update free quota by
+			num of tx done + resident free quota (delivery + non-delivery)
+		*/
+		UINT_8 ucAvailQuota;
+		ucAvailQuota = ucNumOfTxDone + prStaRec->ucFreeQuotaForDelivery +\
+		   prStaRec->ucFreeQuotaForNonDelivery;
+		if (ucAvailQuota > ucFreeQuota) /* sanity check */
+			ucAvailQuota = ucFreeQuota;
+
+		/* update current free quota */
+		ucFreeQuota = ucAvailQuota;
+
+		/* check if the update is from last packet */
+		if (ucFreeQuota == (prStaRec->ucFreeQuota+1))
+		{
+			/* just add the extra quota to delivery queue */
+
+			/*
+				EX:
+				1. TDLS peer enters power save
+				2. When the last 2 VI packets are tx done, we will receive 2 update events
+				3. 1st update event: ucFreeQuota = 9
+				4. We will correct new quota for delivey and non-delivery to 7:2
+				5. 2rd update event: ucFreeQuota = 10
+				6. We will re-correct new quota for delivery and non-delivery to 5:5
+
+				But non-delivery queue is not busy.
+				So in the case, we will have wrong decision, i.e. higher queue always quota 5
+
+				Solution: skip the 2rd update event and just add the extra quota to delivery.
+			*/
+
+			flgIsUpdateForcedToDelivery = TRUE;
+		}
+	}
+	/* -- TDLS */
 
     switch (ucUpdateMode) {
         case FREE_QUOTA_UPDATE_MODE_INIT:
@@ -4933,6 +5298,8 @@ qmUpdateFreeQuota(
                 && prAdapter->rWifiVar.fgSupportUAPSD*/) {
         /* XXX We should assign quota to aucFreeQuotaPerQueue[NUM_OF_PER_STA_TX_QUEUES]  */
 
+			if (flgIsUpdateForcedToDelivery == FALSE) /* ++ TDLS */
+			{
             if(prStaRec->ucFreeQuotaForNonDelivery > 0  && prStaRec->ucFreeQuotaForDelivery > 0) {
                 ucFreeQuotaForNonDelivery = ucFreeQuota>>1;
                 ucFreeQuotaForDelivery =  ucFreeQuota - ucFreeQuotaForNonDelivery;
@@ -4963,9 +5330,17 @@ qmUpdateFreeQuota(
                     ucFreeQuotaForDelivery = 0;
                 }
             }
-
+			}
+			else
+			{
+				/* ++ TDLS */
+				ucFreeQuotaForNonDelivery = 2;
+				ucFreeQuotaForDelivery = ucFreeQuota - ucFreeQuotaForNonDelivery;
+				/* -- TDLS */
+			}
         }
         else {
+			/* no use ? */
             /* !prStaRec->fgIsUapsdSupported */
             ucFreeQuotaForNonDelivery = ucFreeQuota;
             ucFreeQuotaForDelivery = 0;
@@ -4974,6 +5349,12 @@ qmUpdateFreeQuota(
 
     prStaRec->ucFreeQuotaForDelivery =  ucFreeQuotaForDelivery;
     prStaRec->ucFreeQuotaForNonDelivery =  ucFreeQuotaForNonDelivery;
+
+#if (CFG_SUPPORT_TDLS_DBG == 1)
+if (IS_TDLS_STA(prStaRec))
+	printk("<tx> quota %d %d %d\n",
+		ucFreeQuota, ucFreeQuotaForDelivery, ucFreeQuotaForNonDelivery);
+#endif
 
     DBGLOG(QM, LOUD, ("new QuotaForDelivery = %d  QuotaForNonDelivery = %d\n",
         prStaRec->ucFreeQuotaForDelivery, prStaRec->ucFreeQuotaForNonDelivery ));
