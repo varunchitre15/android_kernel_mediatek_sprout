@@ -49,6 +49,12 @@ typedef enum
 }ISP_IRQ_TYPE_ENUM_FRMB;
 
 
+typedef enum    //special user for specific operation
+{
+    ISP_IRQ_WAITIRQ_SPEUSER_NONE = 0,
+    ISP_IRQ_WAITIRQ_SPEUSER_EIS = 1,
+    ISP_IRQ_WAITIRQ_SPEUSER_NUM
+}ISP_IRQ_WAITIRQ_SPEUSER_ENUM;
 typedef struct
 {
     ISP_IRQ_TYPE_ENUM_FRMB   Type;
@@ -69,9 +75,17 @@ typedef struct
 
 typedef struct
 {
+    unsigned int       tLastSOF2P1done_sec;                       /* time stamp of the last closest occuring sof signal for pass1 done*/
+    unsigned int       tLastSOF2P1done_usec;                  /* time stamp of the last closest occuring sof signal for pass1 done*/
+}ISP_EIS_META_STRUCT;
+
+typedef struct
+{
     ISP_IRQ_CLEAR_ENUM_FRMB  Clear;
     ISP_IRQ_USER_STRUCT_FRMB  UserInfo;
     ISP_IRQ_TIME_STRUCT_FRMB  TimeInfo;
+    ISP_EIS_META_STRUCT EisMeta;
+    ISP_IRQ_WAITIRQ_SPEUSER_ENUM SpecUser;
     unsigned int       Timeout;                     /* time out for waiting for a specific interrupt */
     unsigned int       bDumpReg;
 }ISP_WAIT_IRQ_STRUCT_FRMB;

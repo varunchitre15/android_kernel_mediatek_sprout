@@ -49,7 +49,10 @@
     }
 #endif
 ///
+#define TIMESTAMP_SOF          0   // default:0, SOP interval
+#define _USE_TASKLET           0   //use tasklet to print log in IRQ
 
+//
 #define CAMSV_DBG
 #ifdef CAMSV_DBG
     #define CAM_TAG "CAM:"
@@ -240,7 +243,11 @@ typedef void                    MVOID;
 
 /////////////////////////////////////////////////////////////////////////////////
 
+static volatile MINT32 gEismetaRIdx = 0;
+static volatile MINT32 gEismetaWIdx = 0;
+static volatile MINT32 gEismetaInSOF = 0;
 
+#define EISMETA_RINGSIZE 4
 
 static volatile MINT32 EDBufQueRemainNodeCnt = 0;               //record remain node count(success/fail) excludes head when enque/deque control
 
@@ -582,13 +589,14 @@ typedef struct
     volatile MINT32     PassedBySigCnt[IRQ_USER_NUM_MAX][ISP_IRQ_TYPE_AMOUNT][32];   /* number of a specific signal that passed by */
     volatile MUINT32   LastestSigTime_sec[ISP_IRQ_TYPE_AMOUNT][32];                                    /* latest occuring time for each interrupt */
     volatile MUINT32   LastestSigTime_usec[ISP_IRQ_TYPE_AMOUNT][32];                                    /* latest occuring time for each interrupt */
+    volatile ISP_EIS_META_STRUCT Eismeta[ISP_IRQ_TYPE_INTB][EISMETA_RINGSIZE]; //eis meta only for p1 and p1_d
 }ISP_IRQ_INFO_STRUCT_FRMB;
 
 typedef struct
 {
     spinlock_t                      SpinLockIrq[_IRQ_MAX];//currently, IRQ and IRQ_D share the same ISR , so share the same key,IRQ.
     spinlock_t                      SpinLockRTBC;
-    wait_queue_head_t       WaitQueueHead;
+    volatile wait_queue_head_t      WaitQueueHead;
     MUINT32                        DebugMask;
     ISP_IRQ_INFO_STRUCT_FRMB             IrqInfo;
     ISP_BUF_INFO_STRUCT_FRMB             BufInfo;
@@ -608,6 +616,10 @@ typedef struct
     ISP_CALLBACK_STRUCT_FRMB             Callback[ISP_CALLBACK_AMOUNT];
     */
 }ISP_INFO_STRUCT_FRMB;
+
+#if _USE_TASKLET
+static struct tasklet_struct isp_tasklet;
+#endif
 
 static ISP_INFO_STRUCT_FRMB IspInfo_FrmB;
 volatile MUINT32 t_SOF = 0;//(ns)
@@ -1709,6 +1721,7 @@ static long ISP_Buf_CTRL_FUNC_FRMB(MUINT32 Param)
     eISPIrq irqT=_IRQ_MAX;
     eISPIrq irqT_Lock=_IRQ_MAX;
     MBOOL CurVF_En = MFALSE;
+    MBOOL bBufFilled = MFALSE;
     //
     if (NULL == pstRTBuf_FrmB)  {
         LOG_ERR("[rtbc]NULL pstRTBuf_FrmB");
@@ -2213,11 +2226,19 @@ static long ISP_Buf_CTRL_FUNC_FRMB(MUINT32 Param)
 #endif
 
                             DMA_TRANS(rt_dma,out);
+                            bBufFilled = MTRUE;
+                            if(pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].bFilled != ISP_RTBC_BUF_FILLED){
+                                bBufFilled = MFALSE;
+                            }
                             pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].bFilled = ISP_RTBC_BUF_LOCKED;
                             deque_buf.sof_cnt = sof_count[out];
                             deque_buf.img_cnt = pstRTBuf_FrmB->ring_buf[rt_dma].img_cnt;
                             spin_unlock_irqrestore(&(IspInfo_FrmB.SpinLockIrq[irqT_Lock]), flags);
                             IRQ_LOG_PRINTER(irqT,0,_LOG_DBG);
+                            //
+                            if(MFALSE == bBufFilled){
+                                LOG_ERR("deque buf:d(%d) is not filled.", rt_dma);
+                            }
                             //LOG_INF("RTBC_DBG7 d_dma_%d:%d %d %d\n",rt_dma,pstRTBuf_FrmB->ring_buf[rt_dma].data[0].bFilled,pstRTBuf_FrmB->ring_buf[rt_dma].data[1].bFilled,pstRTBuf_FrmB->ring_buf[rt_dma].data[2].bFilled);
                             if(IspInfo_FrmB.DebugMask & ISP_DBG_BUF_CTRL) {
                                 LOG_DBG("[rtbc][DEQUE](%d):d(%d)/id(0x%x)/bs(0x%x)/va(0x%x)/pa(0x%x)/t(%d.%d)/img(%d,%d,%d,%d,%d,%d,%d,%d)/m(0x%x)/fc(%d)/hrz(%d,%d,%d,%d,%d,%d),dmao(%d,%d,%d,%d),lm#(0x%x)", \
@@ -2401,6 +2422,12 @@ LOG_DBG("+LARB in DEQUE,BWL(0x%08X)/(0x%08X)/(0x%08X)/(0x%08X),220(0x%08X)/(0x%0
                     case _imgo_:
                     case _img2o_:
                         memset(&g_DmaErr_p1[0],0,sizeof(MUINT32)*nDMA_ERR_P1);
+                        memset(IspInfo_FrmB.IrqInfo.LastestSigTime_usec[ISP_IRQ_TYPE_INT],0,sizeof(MUINT32)*32);
+                        memset(IspInfo_FrmB.IrqInfo.LastestSigTime_sec[ISP_IRQ_TYPE_INT],0,sizeof(MUINT32)*32);
+                        memset(IspInfo_FrmB.IrqInfo.Eismeta[ISP_IRQ_TYPE_INT],0,sizeof(ISP_EIS_META_STRUCT)*EISMETA_RINGSIZE);
+                        gEismetaRIdx = 0;
+                        gEismetaWIdx = 0;
+                        gEismetaInSOF = 0;
                         break;
 
                     default:
@@ -3859,7 +3886,9 @@ static MINT32 ISP_WaitIrq_FrmB(ISP_WAIT_IRQ_STRUCT_FRMB* WaitIrq)
 
     struct timeval time_wake;
     struct timeval time_x;
+#if TIMESTAMP_SOF
     MUINT32 t_Wake;//ns
+#endif
     //
     if(IspInfo_FrmB.DebugMask & ISP_DBG_INT)
     {
@@ -3958,7 +3987,8 @@ static MINT32 ISP_WaitIrq_FrmB(ISP_WAIT_IRQ_STRUCT_FRMB* WaitIrq)
         _kernel_trace_begin(strName);
 #endif
 
-        LOG_DBG("WaitIrq wakeup (%d)\n", WaitIrq->UserInfo.UserKey);
+#if TIMESTAMP_SOF
+        LOG_DBG("SOF wakeup (%d)\n", WaitIrq->UserInfo.UserKey);
 
         unsigned long long  time_wake_sec;
         unsigned long       time_wake_usec;
@@ -3970,6 +4000,7 @@ static MINT32 ISP_WaitIrq_FrmB(ISP_WAIT_IRQ_STRUCT_FRMB* WaitIrq)
         {
             LOG_DBG("_T: SOF-Wake (%d)\n",(t_Wake-t_SOF) );
         }
+#endif
     }
 
     if((Timeout !=0) && (!ISP_GetIRQState_FrmB(eIrq,WaitIrq->UserInfo.Type,WaitIrq->UserInfo.UserKey, WaitIrq->UserInfo.Status)))
@@ -4010,6 +4041,42 @@ static MINT32 ISP_WaitIrq_FrmB(ISP_WAIT_IRQ_STRUCT_FRMB* WaitIrq)
     //signal time stamp for eis
     WaitIrq->TimeInfo.tLastSig_sec=IspInfo_FrmB.IrqInfo.LastestSigTime_sec[WaitIrq->UserInfo.Type][idx];
     WaitIrq->TimeInfo.tLastSig_usec=IspInfo_FrmB.IrqInfo.LastestSigTime_usec[WaitIrq->UserInfo.Type][idx];
+    if(WaitIrq->UserInfo.Type<ISP_IRQ_TYPE_INTB && WaitIrq->SpecUser==ISP_IRQ_WAITIRQ_SPEUSER_EIS)
+    {
+
+        if (gEismetaWIdx == 0)
+        {
+            if (gEismetaInSOF== 0)
+            {
+                gEismetaRIdx = (EISMETA_RINGSIZE -1);
+            }else
+            {
+                gEismetaRIdx = (EISMETA_RINGSIZE -2);
+            }
+        }else if (gEismetaWIdx == 1)
+        {
+            if (gEismetaInSOF== 0)
+            {
+                gEismetaRIdx = 0;
+            }else
+            {
+                gEismetaRIdx = (EISMETA_RINGSIZE -1);
+            }
+        }else
+        {
+            gEismetaRIdx = (gEismetaWIdx - gEismetaInSOF - 1);
+        }
+
+        if ( (gEismetaRIdx < 0) || (gEismetaRIdx >= EISMETA_RINGSIZE))
+        {
+            //BUG_ON(1);
+            gEismetaRIdx = 0;
+            //TBD WARNING
+        }
+        //eis meta
+        WaitIrq->EisMeta.tLastSOF2P1done_sec=IspInfo_FrmB.IrqInfo.Eismeta[WaitIrq->UserInfo.Type][gEismetaRIdx].tLastSOF2P1done_sec;
+        WaitIrq->EisMeta.tLastSOF2P1done_usec=IspInfo_FrmB.IrqInfo.Eismeta[WaitIrq->UserInfo.Type][gEismetaRIdx].tLastSOF2P1done_usec;
+    }
     //time period for 3A
     if(WaitIrq->UserInfo.Status & IspInfo_FrmB.IrqInfo.MarkedFlag[WaitIrq->UserInfo.UserKey][WaitIrq->UserInfo.Type])
     {
@@ -4081,6 +4148,7 @@ static MINT32 ISP_WaitIrq_FrmB(ISP_WAIT_IRQ_STRUCT_FRMB* WaitIrq)
 #if CONFIG_K_FOR_SYSTRACE
         _kernel_trace_end();
 #endif
+#if TIMESTAMP_SOF
         LOG_DBG("WaitIrq X (%d)\n", WaitIrq->UserInfo.UserKey);
 
         unsigned long long  time_x_sec;
@@ -4093,6 +4161,7 @@ static MINT32 ISP_WaitIrq_FrmB(ISP_WAIT_IRQ_STRUCT_FRMB* WaitIrq)
         {
             LOG_DBG("_T: Wake-X (%d)\n",(_tmp-t_Wake) );
         }
+#endif
     }
 
     return Ret;
@@ -4209,6 +4278,7 @@ static void ISP_Irq_FrmB(MUINT32 *IrqStatus)
         }
 #endif
 
+#if TIMESTAMP_SOF
     if(IrqStatus[ISP_IRQ_TYPE_INT] & ISP_IRQ_INT_STATUS_VS1_ST)
     {
         if(IspInfo_FrmB.DebugMask & ISP_DBG_INT)
@@ -4216,6 +4286,7 @@ static void ISP_Irq_FrmB(MUINT32 *IrqStatus)
             t_SOF = 0;
         }
     }
+#endif
 
     //service pass1_done first once if SOF/PASS1_DONE are coming together.
     //get time stamp
@@ -4231,6 +4302,16 @@ static void ISP_Irq_FrmB(MUINT32 *IrqStatus)
     if(IrqStatus[ISP_IRQ_TYPE_INT] & ISP_IRQ_INT_STATUS_PASS1_TG1_DON_ST)
     {
 #ifdef _rtbc_buf_que_2_0_
+        unsigned long long  sec;
+        unsigned long       usec;
+
+        sec = cpu_clock(0);     //ns
+        do_div( sec, 1000 );    //usec
+        usec = do_div( sec, 1000000);    //sec and usec
+        //update pass1 done time stamp for eis user(need match with the time stamp in image header)
+        IspInfo_FrmB.IrqInfo.LastestSigTime_usec[ISP_IRQ_TYPE_INT][10]=(unsigned int)(usec);
+        IspInfo_FrmB.IrqInfo.LastestSigTime_sec[ISP_IRQ_TYPE_INT][10]=(unsigned int) (sec);
+        gEismetaInSOF = 0;
 
         ISP_DONE_Buf_Time_FrmB(_IRQ,0,0,p1_fbc);//time stamp move to sof
 
@@ -4252,9 +4333,6 @@ static void ISP_Irq_FrmB(MUINT32 *IrqStatus)
         do_div( sec, 1000 );    //usec
         usec = do_div( sec, 1000000);    //sec and usec
 
-        //update pass1 done time stamp for eis user(need match with the time stamp in image header)
-        IspInfo_FrmB.IrqInfo.LastestSigTime_usec[ISP_IRQ_TYPE_INT][10]=(unsigned int)(usec);
-        IspInfo_FrmB.IrqInfo.LastestSigTime_sec[ISP_IRQ_TYPE_INT][10]=(unsigned int) (sec);
 
         ISP_DONE_Buf_Time_FrmB(_IRQ,sec,usec,p1_fbc);
         /*Check Timesamp reverse*/
@@ -4275,6 +4353,7 @@ static void ISP_Irq_FrmB(MUINT32 *IrqStatus)
         _kernel_trace_begin(strName);
 #endif
 
+#if TIMESTAMP_SOF
         if(IspInfo_FrmB.DebugMask & ISP_DBG_INT)
         {
             struct timeval time_sof;
@@ -4285,6 +4364,7 @@ static void ISP_Irq_FrmB(MUINT32 *IrqStatus)
             time_sof_usec = do_div( time_sof_sec, 1000000);    //sec and usec
             t_SOF = time_sof_sec*1000000 + time_sof_usec;
         }
+#endif
 
         MUINT32 _dmaport = 0;
         if(pstRTBuf_FrmB->ring_buf[_imgo_].active)
@@ -4389,7 +4469,11 @@ static void ISP_Irq_FrmB(MUINT32 *IrqStatus)
             //update SOF time stamp for eis user(need match with the time stamp in image header)
             IspInfo_FrmB.IrqInfo.LastestSigTime_usec[ISP_IRQ_TYPE_INT][12]=(unsigned int)(usec);
             IspInfo_FrmB.IrqInfo.LastestSigTime_sec[ISP_IRQ_TYPE_INT][12]=(unsigned int) (sec);
-            
+            IspInfo_FrmB.IrqInfo.Eismeta[ISP_IRQ_TYPE_INT][gEismetaWIdx].tLastSOF2P1done_sec=(unsigned int)(sec);
+            IspInfo_FrmB.IrqInfo.Eismeta[ISP_IRQ_TYPE_INT][gEismetaWIdx].tLastSOF2P1done_usec=(unsigned int)(usec);
+            gEismetaInSOF = 1;
+            gEismetaWIdx=((gEismetaWIdx+1)%EISMETA_RINGSIZE);
+
             if(sof_pass1done[0] == 1)
                 ISP_SOF_Buf_Get_FrmB(_IRQ,sec,usec,MTRUE,p1_fbc,curr_pa);
             else
@@ -4403,12 +4487,31 @@ static void ISP_Irq_FrmB(MUINT32 *IrqStatus)
 
     //dump log during spin lock
 #ifdef ISR_LOG_ON
+#if !(_USE_TASKLET)
     IRQ_LOG_PRINTER(_IRQ,m_CurrentPPB,_LOG_INF);
     //IRQ_LOG_PRINTER(_IRQ,m_CurrentPPB,_LOG_ERR);
 
     IRQ_LOG_PRINTER(_IRQ_D,m_CurrentPPB,_LOG_INF);
     //IRQ_LOG_PRINTER(_IRQ_D,m_CurrentPPB,_LOG_ERR);
 #endif
+#endif
+#if _USE_TASKLET
+    //tasklet
+    if( (IrqStatus[ISP_IRQ_TYPE_INT] & ISP_IRQ_INT_STATUS_PASS1_TG1_DON_ST) ||
+        (IrqStatus[ISP_IRQ_TYPE_INT] & ISP_IRQ_INT_STATUS_SOF1_INT_ST))
+    {
+        tasklet_schedule(&isp_tasklet);
+    }
+#endif
+}
+
+static void ISP_TaskletFunc(unsigned long data)
+{
+    LOG_INF("tks_%d",(sof_count[_PASS1])?(sof_count[_PASS1]-1):(sof_count[_PASS1]));
+    IRQ_LOG_PRINTER(_IRQ,m_CurrentPPB,_LOG_INF);
+    LOG_INF("tke_%d",(sof_count[_PASS1])?(sof_count[_PASS1]-1):(sof_count[_PASS1]));
+
+    //IRQ_LOG_PRINTER(_IRQ_D,m_CurrentPPB,_LOG_INF);
 }
 
 /*******************************************************************************
@@ -4531,8 +4634,19 @@ static MINT32 ISP_open_FrmB()
                 IspInfo_FrmB.IrqInfo.PassedBySigCnt[q][i][p]=0;
                 IspInfo_FrmB.IrqInfo.LastestSigTime_usec[i][p]=0;
             }
+            if(i<ISP_IRQ_TYPE_INTB)
+            {
+                for(p=0;p<EISMETA_RINGSIZE;p++)
+                {
+                    IspInfo_FrmB.IrqInfo.Eismeta[i][p].tLastSOF2P1done_sec=0;
+                    IspInfo_FrmB.IrqInfo.Eismeta[i][p].tLastSOF2P1done_usec=0;
+                }
+            }
         }
     }
+    gEismetaRIdx = 0;
+    gEismetaWIdx = 0;
+    gEismetaInSOF = 0;
 
 #ifdef KERNEL_LOG
     IspInfo_FrmB.DebugMask = (ISP_DBG_INT|ISP_DBG_BUF_CTRL|ISP_DBG_INT_2);

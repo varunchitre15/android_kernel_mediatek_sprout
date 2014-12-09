@@ -5046,6 +5046,9 @@ static MINT32 ISP_probe_FrmB()
     MUINT8 n;
     //
     init_waitqueue_head(&IspInfo_FrmB.WaitQueueHead);
+#if _USE_TASKLET
+    tasklet_init(&isp_tasklet,ISP_TaskletFunc,0);
+#endif
     //
     //INIT_WORK(&IspInfo_FrmB.ScheduleWorkVD,       ISP_ScheduleWork_VD);
     //INIT_WORK(&IspInfo_FrmB.ScheduleWorkEXPDONE,  ISP_ScheduleWork_EXPDONE);
@@ -5100,6 +5103,11 @@ static MINT32 ISP_remove_FrmB()
     MINT32 i;
     MINT32 IrqNum;
     //
+#if _USE_TASKLET
+    //kill tasklet
+    tasklet_kill(&isp_tasklet);
+#endif
+
     return 0;
 }
 //////////////////////////////////////////////////////////////////////////////////////////
