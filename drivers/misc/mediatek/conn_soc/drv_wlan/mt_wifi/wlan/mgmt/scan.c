@@ -2237,27 +2237,6 @@ scanAddScanResult (
 
 	DBGLOG(SCN, TRACE, ("ind %s %d\n", prBssDesc->aucSSID, prBssDesc->ucChannelNum));
 
-#if (CFG_SUPPORT_TDLS == 1)
-{
-	/* TDLS test purpose */
-	extern BOOLEAN flgTdlsTestExtCapElm;
-	extern UINT8 aucTdlsTestExtCapElm[];
-
-	if (flgTdlsTestExtCapElm == TRUE)
-	{
-		/* only for RALINK AP */
-		UINT8 *pucElm = (UINT8 *)(prSwRfb->pvHeader + prSwRfb->u2PacketLen);
-		kalMemCopy(pucElm-9, aucTdlsTestExtCapElm, 7);
-		prSwRfb->u2PacketLen -= 2;
-//		prSwRfb->u2PacketLen += 7;
-
-		DBGLOG(TDLS, INFO,
-			("<tdls> %s: append ext cap element to "MACSTR"\n",
-			__FUNCTION__, MAC2STR(prBssDesc->aucBSSID)));
-	}
-}
-#endif /* CFG_SUPPORT_TDLS */
-
     kalIndicateBssInfo(prAdapter->prGlueInfo,
             (PUINT_8)prSwRfb->pvHeader,
             prSwRfb->u2PacketLen,

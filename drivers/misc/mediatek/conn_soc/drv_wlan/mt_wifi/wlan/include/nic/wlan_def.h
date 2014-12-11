@@ -541,8 +541,7 @@ typedef enum _ENUM_STA_ROLE_INDEX_T {
     STA_ROLE_ADHOC_INDEX = STA_ROLE_BASE_INDEX, //4
     STA_ROLE_CLIENT_INDEX,
     STA_ROLE_AP_INDEX,
-	STA_ROLE_TDLS_INDEX, /* ++ TDLS */
-	STA_ROLE_DLS_INDEX /* Note: need to extend P_CMD_UPDATE_STA_RECORD_T */
+    STA_ROLE_DLS_INDEX
 } ENUM_STA_ROLE_INDEX_T;
 
 /* The Power State of a specific Network */
@@ -752,7 +751,6 @@ typedef enum _ENUM_PARAM_AP_MODE_T {
 #define STA_TYPE_CLIENT_MASK                BIT(STA_ROLE_CLIENT_INDEX)
 #define STA_TYPE_AP_MASK                    BIT(STA_ROLE_AP_INDEX)
 #define STA_TYPE_DLS_MASK                   BIT(STA_ROLE_DLS_INDEX)
-#define STA_TYPE_TDLS_MASK                  BIT(STA_ROLE_TDLS_INDEX) /* ++ TDLS */
 
 /* Macros for obtaining the Network Type or the Station Role, given the ENUM_STA_TYPE_T */
 #define IS_STA_IN_AIS(_prStaRec)        ((_prStaRec)->ucNetTypeIndex == NETWORK_TYPE_AIS_INDEX)
@@ -765,7 +763,6 @@ typedef enum _ENUM_PARAM_AP_MODE_T {
 #define IS_CLIENT_STA(_prStaRec)        ((_prStaRec->eStaType) & STA_TYPE_CLIENT_MASK)
 #define IS_AP_STA(_prStaRec)            ((_prStaRec->eStaType) & STA_TYPE_AP_MASK)
 #define IS_DLS_STA(_prStaRec)           ((_prStaRec->eStaType) & STA_TYPE_DLS_MASK)
-#define IS_TDLS_STA(_prStaRec)          ((_prStaRec->eStaType) & STA_TYPE_TDLS_MASK) /* ++ TDLS */
 
 /* The ENUM_STA_TYPE_T accounts for ENUM_NETWORK_TYPE_T and ENUM_STA_ROLE_INDEX_T.
  * *   It is a merged version of Network Type and STA Role.
@@ -782,8 +779,7 @@ typedef enum _ENUM_STA_TYPE_T {
     STA_TYPE_BOW_AP         = (STA_TYPE_BOW_MASK | STA_TYPE_AP_MASK),
     STA_TYPE_BOW_CLIENT     = (STA_TYPE_BOW_MASK | STA_TYPE_CLIENT_MASK),
 #endif
-    STA_TYPE_DLS_PEER       = (STA_TYPE_LEGACY_MASK | STA_TYPE_DLS_MASK), /* ++ TDLS */
-    STA_TYPE_TDLS_PEER		= (STA_TYPE_LEGACY_MASK | STA_TYPE_TDLS_MASK) /* ++ TDLS */
+    STA_TYPE_DLS_PEER       = (STA_TYPE_LEGACY_MASK | STA_TYPE_DLS_MASK)
 } ENUM_STA_TYPE_T, *P_ENUM_STA_TYPE_T;
 
 /* The type of BSS we discovered */

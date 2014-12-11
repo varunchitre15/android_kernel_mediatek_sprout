@@ -562,9 +562,6 @@
 #include <linux/random.h>
 
 #include <linux/lockdep.h>
-/* ++ TDLS */
-#include <linux/time.h>
-/* -- TDLS */
 
 #include <asm/io.h>             /* readw and writew */
 
@@ -596,9 +593,6 @@
 #endif
 
 
-#if (CFG_SUPPORT_TDLS == 1)
-	#include "tdls_extr.h"
-#endif
 #include "debug.h"
 
 #include "wlan_lib.h"
@@ -725,50 +719,6 @@ typedef struct _GL_BOW_INFO {
 
 } GL_BOW_INFO, *P_GL_BOW_INFO;
 #endif
-
-
-#if (CFG_SUPPORT_TDLS == 1)
-typedef struct _TDLS_INFO_LINK_T {
-	/* start time when link is built, end time when link is broken */
-	unsigned long jiffies_start, jiffies_end;
-
-	/* the peer MAC */
-	UINT8 aucPeerMac[6];
-
-	/* broken reason */
-	UINT8 ucReasonCode;
-
-	/* TRUE: torn down is triggerred by us */
-	UINT8 fgIsFromUs;
-
-	/* duplicate count; same reason */
-	UINT8 ucDupCount;
-
-	/* HT capability */
-#define TDLS_INFO_LINK_HT_CAP_SUP			0x01
-	UINT8 ucHtCap;
-#define TDLS_INFO_LINK_HT_BA_SETUP			0x01
-#define TDLS_INFO_LINK_HT_BA_SETUP_OK		0x02
-#define TDLS_INFO_LINK_HT_BA_SETUP_DECLINE	0x04
-#define TDLS_INFO_LINK_HT_BA_PEER			0x10
-#define TDLS_INFO_LINK_HT_BA_RSP_OK			0x20
-#define TDLS_INFO_LINK_HT_BA_RSP_DECLINE	0x40
-	UINT8 ucHtBa[8]; /* TID0 ~ TID7 */
-} TDLS_INFO_LINK_T;
-
-typedef struct _TDLS_INFO_T {
-	/* link history */
-#define TDLS_LINK_HISTORY_MAX				30
-	TDLS_INFO_LINK_T rLinkHistory[TDLS_LINK_HISTORY_MAX];
-	UINT32 u4LinkIdx;
-
-	/* TRUE: support 20/40 bandwidth in TDLS link */
-	BOOLEAN fgIs2040Sup;
-
-	/* total TDLS link count */
-	INT8 cLinkCnt;
-} TDLS_INFO_T;
-#endif /* CFG_SUPPORT_TDLS */
 
 /*
 * type definition of pointer to p2p structure
@@ -941,24 +891,6 @@ struct _GLUE_INFO_T {
     UINT_64		    u8TotalFailCnt;
     UINT_32 		    u4LinkspeedThreshold;
     INT_32 		    i4RssiThreshold;
-
-#if (CFG_SUPPORT_TDLS == 1)
-	TDLS_INFO_T				rTdlsLink;
-
-	UINT8					aucTdlsHtPeerMac[6];
-	IE_HT_CAP_T				rTdlsHtCap; /* temp to queue HT capability element */
-
-	/*
-		[0~7]: jiffies
-		[8~13]: Peer MAC
-		[14]: Reason Code
-		[15]: From us or peer
-		[16]: Duplicate Count
-	*/
-//	UINT8					aucTdlsDisconHistory[TDLS_DISCON_HISTORY_MAX][20];
-//	UINT32					u4TdlsDisconIdx;
-#endif /* CFG_SUPPORT_TDLS */
-
 };
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)

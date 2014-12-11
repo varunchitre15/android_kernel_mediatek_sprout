@@ -3179,10 +3179,6 @@ nicInitMGMT (
     swCrDebugInit(prAdapter);
 #endif /* CFG_SUPPORT_SWCR */
 
-#if (CFG_SUPPORT_TDLS == 1)
-	TdlsexInit(prAdapter);
-#endif /* CFG_SUPPORT_TDLS */
-
     return;
 }
 
@@ -3224,9 +3220,6 @@ nicUninitMGMT (
     /* CNM Module - uninitialization */
     cnmUninit(prAdapter);
 
-#if (CFG_SUPPORT_TDLS == 1)
-	TdlsexUninit(prAdapter);
-#endif /* CFG_SUPPORT_TDLS */
     return;
 }
 

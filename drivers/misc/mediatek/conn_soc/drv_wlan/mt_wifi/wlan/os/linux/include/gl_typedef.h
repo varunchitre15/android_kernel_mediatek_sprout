@@ -127,7 +127,6 @@ typedef signed long long        INT_64, *PINT_64, **PPINT_64;
 typedef unsigned char           UCHAR, *PUCHAR, **PPUCHAR;
 typedef unsigned char           UINT_8, *PUINT_8, **PPUINT_8, *P_UINT_8;
 typedef unsigned short          UINT_16, *PUINT_16, **PPUINT_16;
-typedef unsigned int            UINT32, *PUINT32; /* ++ TDLS */
 typedef unsigned long           ULONG, UINT_32, *PUINT_32, **PPUINT_32;
 typedef unsigned long long      UINT_64, *PUINT_64, **PPUINT_64;
 

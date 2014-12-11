@@ -607,51 +607,6 @@ typedef struct _FRAG_INFO_T {
 } FRAG_INFO_T, *P_FRAG_INFO_T;
 
 
-/* ++ TDLS */
-typedef struct _STAT_CNT_INFO_FW_T {
-	UINT32		u4NumOfTx; /* number of packets sent from host */
-	UINT32		u4NumOfTxOK; /* number of packets sent to air OK */
-	UINT32		u4NumOfTxRetry; /* number of packets sent to air RETRY */
-	UINT32		u4TxDoneAirTimeMax; /* maximum tx done air time */
-
-	UINT32		u4NumOfPtiRspTxOk; /* number of PTI RSP sent to air OK */
-	UINT32		u4NumOfPtiRspTxErr; /* number of PTI RSP sent to air ERROR */
-
-	UINT32		u4NumOfTxErr; /* number of packets sent to air ERROR */
-
-	UINT32		u4NumOfRx; /* number of received packets */
-	UINT32		u4NumOfPtiRspRx; /* number of PTI RSP rcv */
-
-#define STAT_CNT_INFO_TX_ERR_FLUSHED				0x00000001
-#define STAT_CNT_INFO_TX_ERR_AGE_TIMEOUT			0x00000002
-#define STAT_CNT_INFO_TX_ERR_MPDU					0x00000004
-#define STAT_CNT_INFO_TX_ERR_RTS					0x00000010
-#define STAT_CNT_INFO_TX_ERR_LIFETIME				0x00000020
-#define STAT_CNT_INFO_TX_ERR_UNKNOWN				0x80000000
-	UINT32		u4TxErrBitmap; /* TX error type */
-
-#define STAT_CNT_INFO_MAX_TX_RATE_OK_HIS_NUM		10 /* TX OK history */
-	UINT8		aucTxRateOkHis[STAT_CNT_INFO_MAX_TX_RATE_OK_HIS_NUM][2];
-	UINT32		u4TxRateOkHisId;
-
-#define STAT_CNT_INFO_MAX_RATE_ID					(32) /* MCS0 ~ MCS31 */
-	UINT32		aucTxRateMap[STAT_CNT_INFO_MAX_RATE_ID];
-	UINT32		aucRxRateMap[STAT_CNT_INFO_MAX_RATE_ID];
-
-	UINT8		aucStateHis[100][3]; /* State history */
-	UINT32		u4StateHisId; /* history ID */
-} STAT_CNT_INFO_FW_T;
-
-typedef struct _STAT_CNT_INFO_DRV_T {
-
-	UINT32		u4NumOfTxFromOs; /* number of packets sent from OS */
-	UINT32		u4NumOfTxQueFull; /* number of packets dropped due to queue full */
-	UINT32		u4NumOfTxToFw; /* number of packets sent to firmware */
-
-	STAT_CNT_INFO_FW_T rFw;
-} STAT_CNT_INFO_DRV_T;
-/* -- TDLS */
-
 /* Define STA record structure */
 struct _STA_RECORD_T {
     LINK_ENTRY_T            rLinkEntry;
@@ -870,23 +825,6 @@ struct _STA_RECORD_T {
 #if CFG_SUPPORT_802_11V_TIMING_MEASUREMENT
     TIMINGMSMT_PARAM_T rWNMTimingMsmt;
 #endif
-
-#if (CFG_SUPPORT_TDLS == 1)
-	BOOLEAN fgTdlsIsProhibited; /* TRUE: AP prohibits TDLS links */
-	BOOLEAN fgTdlsIsChSwProhibited; /* TRUE: AP prohibits TDLS chan switch */
-
-	BOOLEAN flgTdlsIsInitiator; /* TRUE: the peer is the initiator */
-	IE_HT_CAP_T rTdlsHtCap; /* temp to queue HT capability element */
-	BOOLEAN fgTdlsInSecurityMode; /* TRUE: security mode */
-	PARAM_KEY_T rTdlsKeyTemp; /* temp to queue the key information */
-
-#define TDLS_SETUP_TIMEOUT_SEC			5 /* unit: second */
-	OS_SYSTIME rTdlsSetupStartTime; /* time when link setup is started */
-
-	OS_SYSTIME rTdlsTxQuotaEmptyTime; /* time when TX quota is 0 */
-
-	STAT_CNT_INFO_DRV_T rTdlsStatistics;
-#endif /* CFG_SUPPORT_TDLS */
 };
 
 #if 0
@@ -1124,16 +1062,6 @@ cnmStaRecChangeState (
     IN OUT P_STA_RECORD_T   prStaRec,
     IN UINT_8               ucNewState
     );
-
-/* ++ TDLS */
-P_STA_RECORD_T
-cnmStaTheTypeGet (
-    P_ADAPTER_T                 prAdapter,
-    ENUM_NETWORK_TYPE_INDEX_T   eNetTypeIndex,
-    ENUM_STA_TYPE_T				eStaType,
-	UINT32						*pu4StartIdx
-    );
-/* -- TDLS */
 
 /*******************************************************************************
 *                              F U N C T I O N S

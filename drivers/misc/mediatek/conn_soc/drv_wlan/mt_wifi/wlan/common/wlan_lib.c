@@ -4610,14 +4610,6 @@ wlanQueryNicCapability(
     prAdapter->fgIsEfuseValid             = (BOOLEAN)prEventNicCapability->ucEfuseValid;
     prAdapter->fgIsEmbbededMacAddrValid   = (BOOLEAN)prEventNicCapability->ucMacAddrValid;
 
-#if (CFG_SUPPORT_TDLS == 1)
-	if (prEventNicCapability->ucFeatureSet & (1 << FEATURE_SET_OFFSET_TDLS))
-		prAdapter->fgTdlsIsSup = TRUE;
-	DBGLOG(TDLS, TRACE, ("<wifi> support flag: 0x%x\n",
-		prEventNicCapability->ucFeatureSet));
-#else
-	prAdapter->fgTdlsIsSup = 0;
-#endif /* CFG_SUPPORT_TDLS */
 
 #if CFG_ENABLE_CAL_LOG
     DBGLOG(INIT, INFO, (" RF CAL FAIL  = (%d),BB CAL FAIL  = (%d)\n",

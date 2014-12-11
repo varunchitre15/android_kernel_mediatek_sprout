@@ -199,9 +199,6 @@ typedef enum _ENUM_DBG_MODULE_T {
     DBG_BOW_IDX,            /* BOW */
     DBG_WAPI_IDX,           /* WAPI */
     DBG_ROAMING_IDX,        /* ROAMING */
-	/* ++ TDLS */
-	DBG_TDLS_IDX,			/* TDLS */ /* CFG_SUPPORT_TDLS */
-	/* -- TDLS */
 
     DBG_MODULE_NUM          /* Notice the XLOG check */
 } ENUM_DBG_MODULE_T;

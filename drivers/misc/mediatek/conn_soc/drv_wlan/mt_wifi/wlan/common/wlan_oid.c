@@ -3032,7 +3032,6 @@ wlanoidSetRemoveWep (
 } /* wlanoidSetRemoveWep */
 
 
-/* ++ TDLS */
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This routine is called to set a key to the driver.
@@ -3054,12 +3053,10 @@ wlanoidSetRemoveWep (
 */
 /*----------------------------------------------------------------------------*/
 WLAN_STATUS
-_wlanoidSetAddKey (
+wlanoidSetAddKey (
     IN  P_ADAPTER_T       prAdapter,
     IN  PVOID    pvSetBuffer,
     IN  UINT_32  u4SetBufferLen,
-	IN	BOOLEAN  fgIsOid,
-	IN	UINT_8   ucAlgorithmId,
     OUT PUINT_32 pu4SetInfoLen
     )
 {
@@ -3070,7 +3067,6 @@ _wlanoidSetAddKey (
     P_CMD_802_11_KEY      prCmdKey;
     UINT_8 ucCmdSeqNum;
 
-#if 0
     DEBUGFUNC("wlanoidSetAddKey");
     DBGLOG(REQ, LOUD, ("\n"));
 
@@ -3083,11 +3079,9 @@ _wlanoidSetAddKey (
                     prAdapter->rAcpiState, prAdapter->fgIsRadioOff));
         return WLAN_STATUS_ADAPTER_NOT_READY;
     }
-#endif
 
     prNewKey = (P_PARAM_KEY_T) pvSetBuffer;
 
-#if 0
     /* Verify the key structure length. */
     if (prNewKey->u4Length > u4SetBufferLen) {
         DBGLOG(REQ, WARN, ("Invalid key structure length (%d) greater than total buffer length (%d)\n",
@@ -3131,7 +3125,6 @@ _wlanoidSetAddKey (
     }
 
     *pu4SetInfoLen = u4SetBufferLen;
-#endif
 
     /* Dump PARAM_KEY content. */
     DBGLOG(REQ, TRACE, ("Set: Dump PARAM_KEY content\n"));
@@ -3170,7 +3163,7 @@ _wlanoidSetAddKey (
     prCmdInfo->u2InfoBufLen = CMD_HDR_SIZE + sizeof(CMD_802_11_KEY);
     prCmdInfo->pfCmdDoneHandler = nicCmdEventSetCommon;
     prCmdInfo->pfCmdTimeoutHandler = nicOidCmdTimeoutCommon;
-    prCmdInfo->fgIsOid = fgIsOid;
+    prCmdInfo->fgIsOid = TRUE;
     prCmdInfo->ucCID = CMD_ID_ADD_REMOVE_KEY;
     prCmdInfo->fgSetQuery = TRUE;
     prCmdInfo->fgNeedResp = FALSE;
@@ -3215,8 +3208,7 @@ _wlanoidSetAddKey (
         prCmdKey->ucAlgorithmId = CIPHER_SUITE_WEP104;
     }
     else if (prNewKey->u4KeyLength == 16) {
-        if ((ucAlgorithmId != CIPHER_SUITE_CCMP) &&
-			(prAdapter->rWifiVar.rConnSettings.eAuthMode < AUTH_MODE_WPA))
+        if (prAdapter->rWifiVar.rConnSettings.eAuthMode < AUTH_MODE_WPA)
             prCmdKey->ucAlgorithmId = CIPHER_SUITE_WEP128;
         else {
 #if CFG_SUPPORT_802_11W
@@ -3256,9 +3248,6 @@ _wlanoidSetAddKey (
         }
     }
 
-    DBGLOG(RSN, TRACE, ("prCmdKey->ucAlgorithmId=%d, key len=%d\n",
-		prCmdKey->ucAlgorithmId, (UINT32)prNewKey->u4KeyLength));
-
     // insert into prCmdQueue
     kalEnqueueCommand(prGlueInfo, (P_QUE_ENTRY_T)prCmdInfo);
 
@@ -3266,91 +3255,7 @@ _wlanoidSetAddKey (
     GLUE_SET_EVENT(prGlueInfo);
 
     return WLAN_STATUS_PENDING;
-}
-
-
-WLAN_STATUS
-wlanoidSetAddKey (
-    IN  P_ADAPTER_T       prAdapter,
-    IN  PVOID    pvSetBuffer,
-    IN  UINT_32  u4SetBufferLen,
-    OUT PUINT_32 pu4SetInfoLen
-    )
-{
-    P_PARAM_KEY_T prNewKey;
-
-
-    DEBUGFUNC("wlanoidSetAddKey");
-    DBGLOG(REQ, LOUD, ("\n"));
-
-    ASSERT(prAdapter);
-    ASSERT(pvSetBuffer);
-    ASSERT(pu4SetInfoLen);
-
-    if (prAdapter->rAcpiState == ACPI_STATE_D3) {
-        DBGLOG(REQ, WARN, ("Fail in set add key! (Adapter not ready). ACPI=D%d, Radio=%d\n",
-                    prAdapter->rAcpiState, prAdapter->fgIsRadioOff));
-        return WLAN_STATUS_ADAPTER_NOT_READY;
-    }
-
-    prNewKey = (P_PARAM_KEY_T) pvSetBuffer;
-
-    /* Verify the key structure length. */
-    if (prNewKey->u4Length > u4SetBufferLen) {
-        DBGLOG(REQ, WARN, ("Invalid key structure length (%d) greater than total buffer length (%d)\n",
-                          (UINT_8)prNewKey->u4Length,
-                          (UINT_8)u4SetBufferLen));
-
-        *pu4SetInfoLen = u4SetBufferLen;
-        return WLAN_STATUS_INVALID_LENGTH;
-    }
-
-    /* Verify the key material length for key material buffer */
-    if (prNewKey->u4KeyLength > prNewKey->u4Length - OFFSET_OF(PARAM_KEY_T, aucKeyMaterial)) {
-        DBGLOG(REQ, WARN, ("Invalid key material length (%d)\n", (UINT_8)prNewKey->u4KeyLength));
-        *pu4SetInfoLen = u4SetBufferLen;
-        return WLAN_STATUS_INVALID_DATA;
-    }
-
-    /* Exception check */
-    if (prNewKey->u4KeyIndex & 0x0fffff00) {
-        return WLAN_STATUS_INVALID_DATA;
-    }
-
-   /* Exception check, pairwise key must with transmit bit enabled */
-    if ((prNewKey->u4KeyIndex & BITS(30,31)) == IS_UNICAST_KEY) {
-        return WLAN_STATUS_INVALID_DATA;
-    }
-
-    if (!(prNewKey->u4KeyLength == WEP_40_LEN || prNewKey->u4KeyLength == WEP_104_LEN ||
-          prNewKey->u4KeyLength == CCMP_KEY_LEN || prNewKey->u4KeyLength == TKIP_KEY_LEN))
-    {
-        return WLAN_STATUS_INVALID_DATA;
-    }
-
-    /* Exception check, pairwise key must with transmit bit enabled */
-    if ((prNewKey->u4KeyIndex & BITS(30,31)) == BITS(30,31)) {
-        if (((prNewKey->u4KeyIndex & 0xff) != 0) ||
-            ((prNewKey->arBSSID[0] == 0xff) && (prNewKey->arBSSID[1] == 0xff) && (prNewKey->arBSSID[2] == 0xff) &&
-             (prNewKey->arBSSID[3] == 0xff) && (prNewKey->arBSSID[4] == 0xff) && (prNewKey->arBSSID[5] == 0xff))) {
-            return WLAN_STATUS_INVALID_DATA;
-        }
-    }
-
-    *pu4SetInfoLen = u4SetBufferLen;
-
-#if (CFG_SUPPORT_TDLS == 1)
-	/*
-		supplicant will set key before updating station & enabling the link so we need to
-		backup the key information and set key when link is enabled
-	*/
-	if (TdlsexKeyHandle(prAdapter, prNewKey) == TDLS_STATUS_SUCCESS)
-		return WLAN_STATUS_SUCCESS;
-#endif /* CFG_SUPPORT_TDLS */
-
-	return _wlanoidSetAddKey(prAdapter, pvSetBuffer, u4SetBufferLen, TRUE, CIPHER_SUITE_NONE, pu4SetInfoLen);
 } /* wlanoidSetAddKey */
-/* -- TDLS */
 
 
 /*----------------------------------------------------------------------------*/

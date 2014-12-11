@@ -75,9 +75,9 @@ DMA_DIR     := ../../../../../../platform/$(call lc,$(MTK_PLATFORM))/kernel/driv
 # ---------------------------------------------------
 
 COMMON_OBJS :=	$(COMMON_DIR)dump.o \
-			$(COMMON_DIR)wlan_lib.o \
-			$(COMMON_DIR)wlan_oid.o \
-			$(COMMON_DIR)wlan_bow.o
+	       		$(COMMON_DIR)wlan_lib.o \
+	       		$(COMMON_DIR)wlan_oid.o \
+	       		$(COMMON_DIR)wlan_bow.o
 
 NIC_OBJS := $(NIC_DIR)nic.o \
 			$(NIC_DIR)nic_tx.o \
@@ -116,21 +116,15 @@ MGMT_OBJS := $(MGMT_DIR)ais_fsm.o \
 			 $(MGMT_DIR)saa_fsm.o \
 			 $(MGMT_DIR)scan.o \
 			 $(MGMT_DIR)scan_fsm.o \
-			 $(MGMT_DIR)sec_fsm.o \
+		 	 $(MGMT_DIR)sec_fsm.o \
              $(MGMT_DIR)swcr.o \
-			 $(MGMT_DIR)swcr.o \
+ 			 $(MGMT_DIR)swcr.o \
 			 $(MGMT_DIR)roaming_fsm.o \
 			 $(MGMT_DIR)hs20.o
 
 # ---------------------------------------------------
-# TDLS Objects List /* ++ TDLS */
-# ---------------------------------------------------
-MGMT_OBJS += $(MGMT_DIR)tdls.o \
-			 $(MGMT_DIR)tdls_com.o
-
-# ---------------------------------------------------
 # P2P Objects List
-# ---------------------------------------------------
+# ---------------------------------------------------      
 
 COMMON_OBJS += $(COMMON_DIR)wlan_p2p.o
 
@@ -149,7 +143,8 @@ MGMT_OBJS += $(MGMT_DIR)p2p_assoc.o \
              $(MGMT_DIR)p2p_rlm_obss.o \
              $(MGMT_DIR)p2p_scan.o \
              $(MGMT_DIR)p2p_ie.o \
-             $(MGMT_DIR)p2p_state.o
+             $(MGMT_DIR)p2p_state.o        
+                 
 
 ifeq ($(CONFIG_MTK_WAPI_SUPPORT), y)
 MGMT_OBJS += $(MGMT_DIR)wapi.o

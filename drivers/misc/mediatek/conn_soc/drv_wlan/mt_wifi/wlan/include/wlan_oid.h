@@ -1207,16 +1207,6 @@ wlanoidSetRemoveWep(
     );
 
 WLAN_STATUS
-_wlanoidSetAddKey (
-    IN  P_ADAPTER_T       prAdapter,
-    IN  PVOID    pvSetBuffer,
-    IN  UINT_32  u4SetBufferLen,
-	IN	BOOLEAN  fgIsOid,
-	IN	UINT_8   ucAlgorithmId,
-    OUT PUINT_32 pu4SetInfoLen
-    ); /* ++ TDLS */
-
-WLAN_STATUS
 wlanoidSetAddKey(
     IN  P_ADAPTER_T       prAdapter,
     IN  PVOID             pvSetBuffer,

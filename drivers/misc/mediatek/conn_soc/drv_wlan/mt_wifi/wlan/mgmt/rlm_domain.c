@@ -564,50 +564,6 @@ COUNTRY_CH_SET_T arCountryChSets[] = {
 ********************************************************************************
 */
 
-/* ++ TDLS */
-UINT32
-rlmDomainSupOperatingClassIeFill(
-	UINT_8				*pBuf
-	)
-{
-	/*
-	 	The Country element should only be included for Status Code 0 (Successful).
-	*/
-	UINT32 u4IeLen;
-	UINT8 aucClass[12] = { 0x01, 0x02, 0x03, 0x05, 0x16, 0x17, 0x19, 0x1b,
-		0x1c, 0x1e, 0x20, 0x21 };
-
-
-	/*
-		The Supported Operating Classes element is used by a STA to advertise the
-		operating classes that it is capable of operating with in this country.
-
-		The Country element (see 8.4.2.10) allows a STA to configure its PHY and MAC
-		for operation when the operating triplet of Operating Extension Identifier,
-		Operating Class, and Coverage Class fields is present.
-	*/
-	SUP_OPERATING_CLASS_IE(pBuf)->ucId = ELEM_ID_SUP_OPERATING_CLASS;
-	SUP_OPERATING_CLASS_IE(pBuf)->ucLength = 1+sizeof(aucClass);
-	SUP_OPERATING_CLASS_IE(pBuf)->ucCur = 0x0c; /* 0x51 */
-	kalMemCopy(SUP_OPERATING_CLASS_IE(pBuf)->ucSup, aucClass, sizeof(aucClass));
-	u4IeLen = (SUP_OPERATING_CLASS_IE(pBuf)->ucLength + 2);
-	pBuf += u4IeLen;
-
-	COUNTRY_IE(pBuf)->ucId = ELEM_ID_COUNTRY_INFO;
-	COUNTRY_IE(pBuf)->ucLength = 6;
-	COUNTRY_IE(pBuf)->aucCountryStr[0] = 0x55;
-	COUNTRY_IE(pBuf)->aucCountryStr[1] = 0x53;
-	COUNTRY_IE(pBuf)->aucCountryStr[2] = 0x20;
-	COUNTRY_IE(pBuf)->arCountryStr[0].ucFirstChnlNum = 1;
-	COUNTRY_IE(pBuf)->arCountryStr[0].ucNumOfChnl = 11;
-	COUNTRY_IE(pBuf)->arCountryStr[0].cMaxTxPwrLv = 0x1e;
-	u4IeLen += (COUNTRY_IE(pBuf)->ucLength + 2);
-
-	return u4IeLen;
-}
-/* -- TDLS */
-
-
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief

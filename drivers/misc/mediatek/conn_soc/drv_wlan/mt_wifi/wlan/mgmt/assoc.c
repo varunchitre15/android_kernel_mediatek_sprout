@@ -470,9 +470,7 @@ APPEND_VAR_IE_ENTRY_T txAssocRespIETable[] = {
 * @retval Capability Info Field
 */
 /*----------------------------------------------------------------------------*/
-/* ++ TDLS */
-/* __KAL_INLINE__ */ UINT_16
-/* -- TDLS */
+__KAL_INLINE__ UINT_16
 assocBuildCapabilityInfo (
     IN P_ADAPTER_T prAdapter,
     IN P_STA_RECORD_T prStaRec
@@ -482,37 +480,19 @@ assocBuildCapabilityInfo (
     UINT_16 u2CapInfo;
 
 
+    ASSERT(prStaRec);
+
+
     /* Set up our requested capabilities. */
     u2CapInfo = CAP_INFO_ESS;
     u2CapInfo |= CAP_CF_STA_NOT_POLLABLE;
 
-	/* ++ TDLS */
-    if (prStaRec == NULL)
-		u2CapInfo |= CAP_INFO_PRIVACY;
-	else
-	{
     if (prStaRec->u2CapInfo & CAP_INFO_PRIVACY) {
         u2CapInfo |= CAP_INFO_PRIVACY;
     }
-	}
-	/* -- TDLS */
 
 
     /* 7.3.1.4 */
-	/* ++ TDLS */
-	if (prStaRec == NULL)
-	{
-		if ((prAdapter->rWifiVar.ePreambleType == PREAMBLE_TYPE_SHORT) || /* Short Preamble Option Enable is TRUE */
-			(prAdapter->rWifiVar.ePreambleType == PREAMBLE_TYPE_AUTO))
-		{
-			u2CapInfo |= CAP_INFO_SHORT_PREAMBLE;
-		}
-		if (prAdapter->rWifiVar.fgIsShortSlotTimeOptionEnable) {
-			u2CapInfo |= CAP_INFO_SHORT_SLOT_TIME;
-		}
-	}
-	else
-	/* -- TDLS */
     if (prStaRec->fgHasBasicPhyType) {
         u4NonHTPhyType = prStaRec->ucNonHTBasicPhyType;
 
@@ -553,13 +533,9 @@ assocBuildCapabilityInfo (
         }
     }
 
-	/* ++ TDLS */
-	if (prStaRec)
-	{
     DBGLOG(SAA, LOUD, ("ASSOC REQ: Compose Capability = 0x%04x for Target BSS ["MACSTR"].\n",
         u2CapInfo, MAC2STR(prStaRec->aucMacAddr)));
-	}
-	/* -- TDLS */
+
 
     return u2CapInfo;
 

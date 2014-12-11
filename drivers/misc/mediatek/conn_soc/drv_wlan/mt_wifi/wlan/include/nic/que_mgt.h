@@ -219,24 +219,7 @@ Add per station flow control when STA is in PS
 #define QM_RX_INIT_FALL_BEHIND_PASS     1  /* 1: Indicate the packets falling behind to OS before the frame with SSN is received */
 #define QM_TC_RESOURCE_EMPTY_COUNTER    1  /* 1: Count times of TC resource empty happened */
 /* Parameters */
-
-/* ++ TDLS */
-/*
-	In TDLS or AP mode, peer maybe enter "sleep mode".
-
-	If QM_INIT_TIME_TO_UPDATE_QUE_LEN = 60 when peer is in sleep mode,
-	we need to wait 60 * u4TimeToAdjustTcResource = 180 packets
-	u4TimeToAdjustTcResource = 3,
-	then we will adjust TC resouce for VI or VO.
-
-	But in TDLS test case, the throughput is very low, only 0.8Mbps in 5.7,
-	we will to wait about 12 seconds to collect 180 packets.
-	but the test time is only 20 seconds.
-*/
-/* -- TDLS */
 #define QM_INIT_TIME_TO_UPDATE_QUE_LEN  60  /* p: Update queue lengths when p TX packets are enqueued */
-#define QM_INIT_TIME_TO_UPDATE_QUE_LEN_MIN 5 /* ++ TDLS */
-
 #define QM_INIT_TIME_TO_ADJUST_TC_RSC   3   /* s: Adjust the TC resource every s updates of queue lengths  */
 #define QM_QUE_LEN_MOVING_AVE_FACTOR    3   /* Factor for Que Len averaging */
 
@@ -529,7 +512,6 @@ typedef struct _QUE_MGT_T{      /* Queue Management Control Info */
 
     UINT_32 u4TimeToAdjustTcResource;
     UINT_32 u4TimeToUpdateQueLen;
-	UINT_32 u4TxNumOfVi, u4TxNumOfVo; /* number of VI/VO packets */ /* ++ TDLS */
 
     /* Set to TRUE if the last TC adjustment has not been completely applied (i.e., waiting more TX-Done events
        to align the TC quotas to the TC resource assignment) */
@@ -1092,31 +1074,11 @@ qmGetStaRecIdx(
     IN ENUM_NETWORK_TYPE_INDEX_T    eNetworkType
     );
 
-/* ++ TDLS */
-UINT_32
-mqmGenerateWmmInfoIEByParam (
-	BOOLEAN					fgSupportUAPSD,
-	UINT_8					ucBmpDeliveryAC,
-	UINT_8					ucBmpTriggerAC,
-	UINT_8					ucUapsdSp,
-    UINT_8					*pOutBuf
-    );
-/* -- TDLS */
-
 VOID
 mqmGenerateWmmInfoIE (
     IN P_ADAPTER_T          prAdapter,
     IN P_MSDU_INFO_T        prMsduInfo
     );
-
-/* ++ TDLS */
-UINT_32
-mqmGenerateWmmParamIEByParam (
-	P_ADAPTER_T				prAdapter,
-	P_BSS_INFO_T			prBssInfo,
-    UINT_8					*pOutBuf
-    );
-/* -- TDLS */
 
 VOID
 mqmGenerateWmmParamIE (
@@ -1166,8 +1128,7 @@ qmUpdateFreeQuota(
     IN P_ADAPTER_T prAdapter,
     IN P_STA_RECORD_T prStaRec,
     IN UINT_8 ucUpdateMode, 
-    IN UINT_8 ucFreeQuota, /* ++ TDLS */
-	IN UINT_8 ucNumOfTxDone /* ++ TDLS */
+    IN UINT_8 ucFreeQuota
     );
 
 VOID

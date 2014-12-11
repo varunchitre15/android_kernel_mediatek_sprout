@@ -221,16 +221,6 @@ mtk_cfg80211_set_default_key (
     );
 
 
-/* ++ TDLS */
-int
-mtk_cfg80211_set_default_mgmt_key(
-	struct wiphy *wiphy,
-	struct net_device *netdev,
-	u8 key_index
-);
-/* -- TDLS */
-
-
 int
 mtk_cfg80211_get_station (
     struct wiphy *wiphy,
@@ -238,32 +228,6 @@ mtk_cfg80211_get_station (
     u8 *mac,
     struct station_info *sinfo
     );
-
-
-/* ++ TDLS */
-int
-mtk_cfg80211_add_station (
-    struct wiphy *wiphy,
-    struct net_device *ndev,
-    u8 *mac,
-    struct station_parameters *params
-    );
-
-int
-mtk_cfg80211_change_station (
-    struct wiphy *wiphy,
-    struct net_device *ndev,
-    u8 *mac,
-    struct station_parameters *params
-    );
-
-int
-mtk_cfg80211_del_station (
-    struct wiphy *wiphy,
-    struct net_device *ndev,
-    u8 *mac
-    );
-/* -- TDLS */
 
 
 int 

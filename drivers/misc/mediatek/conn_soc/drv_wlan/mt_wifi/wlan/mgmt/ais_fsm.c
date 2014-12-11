@@ -3537,12 +3537,6 @@ aisUpdateBssInfoForJOIN (
         prAisBssInfo->fgIsShortPreambleAllowed = FALSE;
     }
 
-#if (CFG_SUPPORT_TDLS == 1)
-	/* init the TDLS flags */
-	prAisBssInfo->fgTdlsIsProhibited = prStaRec->fgTdlsIsProhibited;
-	prAisBssInfo->fgTdlsIsChSwProhibited = prStaRec->fgTdlsIsChSwProhibited;
-#endif /* CFG_SUPPORT_TDLS */
-
     //4 <2.3> Setup PHY Attributes and Basic Rate Set/Operational Rate Set
     prAisBssInfo->ucPhyTypeSet = prStaRec->ucDesiredPhyTypeSet;
 
@@ -4859,10 +4853,6 @@ aisFsmRoamingDisconnectPrevAP (
     nicUpdateBss(prAdapter, NETWORK_TYPE_AIS_INDEX);
     prTargetStaRec->ucNetTypeIndex = NETWORK_TYPE_AIS_INDEX; /* Virtial NetType */
 
-#if (CFG_SUPPORT_TDLS == 1)
-	TdlsexLinkHistoryRecord(prAdapter->prGlueInfo, TRUE, prAisBssInfo->aucBSSID,\
-		TRUE, TDLS_REASON_CODE_MTK_DIS_BY_US_DUE_TO_ROAMING);
-#endif /* CFG_SUPPORT_TDLS */
     return;
 } /* end of aisFsmRoamingDisconnectPrevAP() */
 

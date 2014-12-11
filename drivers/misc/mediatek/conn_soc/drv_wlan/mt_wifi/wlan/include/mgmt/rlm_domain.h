@@ -476,10 +476,6 @@ typedef struct _COUNTRY_CH_SET_T {
 *                   F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
-UINT32
-rlmDomainSupOperatingClassIeFill(
-	UINT_8				*pBuf
-	); /* ++ TDLS */
 P_DOMAIN_INFO_ENTRY
 rlmDomainGetDomainInfo (
     P_ADAPTER_T     prAdapter

@@ -914,15 +914,6 @@ struct _BSS_INFO_T {
 #if CFG_ENABLE_GTK_FRAME_FILTER
     P_IPV4_NETWORK_ADDRESS_LIST prIpV4NetAddrList;
 #endif
-
-	/* ++ TDLS */
-	UINT_16					u2DeauthReason;
-	/* -- TDLS */
-
-#if (CFG_SUPPORT_TDLS == 1)
-	BOOLEAN fgTdlsIsProhibited; /* TRUE: AP prohibits TDLS links */
-	BOOLEAN	fgTdlsIsChSwProhibited; /* TRUE: AP prohibits TDLS chan switch */
-#endif /* CFG_SUPPORT_TDLS */
 };
 
 
@@ -1066,8 +1057,6 @@ typedef struct _WIFI_VAR_T {
     UINT_8                  u8SupportRxSgi20; /* 0: default 1: enable 2:disble */
     UINT_8                  u8SupportRxSgi40;
     UINT_8                  u8SupportRxGf;
-	UINT_8					u8SupportRxSTBC;
-
 
 #if CFG_SLT_SUPPORT
     SLT_INFO_T      rSltInfo;
@@ -1345,10 +1334,6 @@ struct _ADAPTER_T {
 #if CFG_SUPPORT_ROAMING_ENC
 	BOOLEAN 				fgIsRoamingEncEnabled;
 #endif /* CFG_SUPPORT_ROAMING_ENC */
-
-#if (CFG_SUPPORT_TDLS == 1)
-	BOOLEAN					fgTdlsIsSup;
-#endif /* CFG_SUPPORT_TDLS */
 
 };/* end of _ADAPTER_T */
 

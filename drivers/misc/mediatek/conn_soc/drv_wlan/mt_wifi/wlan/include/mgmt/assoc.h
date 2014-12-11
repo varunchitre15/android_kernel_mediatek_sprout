@@ -85,14 +85,6 @@
 /*----------------------------------------------------------------------------*/
 /* Routines in assoc.c                                                        */
 /*----------------------------------------------------------------------------*/
-/* ++ TDLS */
-UINT_16
-assocBuildCapabilityInfo (
-    IN P_ADAPTER_T prAdapter,
-    IN P_STA_RECORD_T prStaRec
-    );
-/* -- TDLS */
-
 WLAN_STATUS
 assocSendReAssocReqFrame (
     IN P_ADAPTER_T prAdapter,
