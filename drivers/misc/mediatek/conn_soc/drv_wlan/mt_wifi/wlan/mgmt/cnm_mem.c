@@ -1167,6 +1167,37 @@ cnmStaRecChangeState (
     return;
 }
 
+
+/* ++ TDLS */
+P_STA_RECORD_T
+cnmStaTheTypeGet (
+    P_ADAPTER_T                 prAdapter,
+    ENUM_NETWORK_TYPE_INDEX_T   eNetTypeIndex,
+    ENUM_STA_TYPE_T				eStaType,
+	UINT32						*pu4StartIdx
+    )
+{
+    P_STA_RECORD_T  prStaRec = NULL;
+    UINT_16         i;
+
+    for (i = *pu4StartIdx; i < CFG_STA_REC_NUM; i++) {
+        prStaRec = (P_STA_RECORD_T) &prAdapter->arStaRec[i];
+
+        if (prStaRec->fgIsInUse &&
+            prStaRec->ucNetTypeIndex == (UINT_8) eNetTypeIndex &&
+			prStaRec->eStaType == eStaType) {
+			i++;
+            break;
+        }
+
+		prStaRec = NULL; /* reset */
+    } /* end of for loop */
+
+	*pu4StartIdx = i;
+	return prStaRec;
+}
+/* -- TDLS */
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief

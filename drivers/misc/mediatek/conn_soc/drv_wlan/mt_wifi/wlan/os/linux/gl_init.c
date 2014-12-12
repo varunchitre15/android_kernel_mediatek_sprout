@@ -861,7 +861,15 @@ static struct cfg80211_ops mtk_wlan_ops = {
     .get_key                = mtk_cfg80211_get_key,
     .del_key                = mtk_cfg80211_del_key,
     .set_default_key        = mtk_cfg80211_set_default_key,
+	/* ++ TDLS */
+    .set_default_mgmt_key   = mtk_cfg80211_set_default_mgmt_key,
+	/* -- TDLS */
     .get_station            = mtk_cfg80211_get_station,
+	/* ++ TDLS */
+    .change_station			= mtk_cfg80211_change_station,
+	.add_station			= mtk_cfg80211_add_station,
+	.del_station			= mtk_cfg80211_del_station,
+	/* -- TDLS */
     .scan                   = mtk_cfg80211_scan,
     .connect                = mtk_cfg80211_connect,
     .disconnect             = mtk_cfg80211_disconnect,
@@ -882,6 +890,10 @@ static struct cfg80211_ops mtk_wlan_ops = {
     #ifdef CONFIG_NL80211_TESTMODE
     .testmode_cmd               = mtk_cfg80211_testmode_cmd,
     #endif
+#if (CFG_SUPPORT_TDLS == 1)
+	.tdls_mgmt					= TdlsexCfg80211TdlsMgmt,
+	.tdls_oper					= TdlsexCfg80211TdlsOper
+#endif /* CFG_SUPPORT_TDLS */
 };
 
 
@@ -1677,6 +1689,9 @@ wlanHardStartXmit(
     P_QUE_ENTRY_T prQueueEntry = NULL;
     P_QUE_T prTxQueue = NULL;
     UINT_16 u2QueueIdx = 0;
+#if (CFG_SUPPORT_TDLS_DBG == 1)
+	UINT16 u2Identifier = 0;
+#endif
 
 #if CFG_BOW_TEST
     UINT_32 i;
@@ -1688,6 +1703,18 @@ wlanHardStartXmit(
     ASSERT(prDev);
     ASSERT(prGlueInfo);
 
+#if (CFG_SUPPORT_TDLS_DBG == 1)
+{
+	UINT8 *pkt = prSkb->data;
+	if ((*(pkt+12) == 0x08) && (*(pkt+13) == 0x00))
+	{
+		/* ip */
+		u2Identifier = ((*(pkt+18)) << 8) | (*(pkt+19));
+//		u2TdlsTxSeq[u4TdlsTxSeqId ++] = u2Identifier;
+		printk("<s> %d\n", u2Identifier);
+	}
+}
+#endif
     /* check if WiFi is halt */
     if (prGlueInfo->u4Flag & GLUE_FLAG_HALT) {
         DBGLOG(INIT, INFO, ("GLUE_FLAG_HALT skip tx\n"));
@@ -2262,6 +2289,9 @@ wlanNetCreate(
     prWdev->wiphy->cipher_suites    = (const u32 *)mtk_cipher_suites;
     prWdev->wiphy->n_cipher_suites  = ARRAY_SIZE(mtk_cipher_suites);
     prWdev->wiphy->flags            = WIPHY_FLAG_CUSTOM_REGULATORY | WIPHY_FLAG_SUPPORTS_FW_ROAM | WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL;
+#if (CFG_SUPPORT_TDLS == 1)
+	TDLSEX_WIPHY_FLAGS_INIT(prWdev->wiphy->flags);
+#endif /* CFG_SUPPORT_TDLS */
     prWdev->wiphy->max_remain_on_channel_duration = 5000;
     prWdev->wiphy->mgmt_stypes = mtk_cfg80211_ais_default_mgmt_stypes;
 #ifdef CONFIG_PM

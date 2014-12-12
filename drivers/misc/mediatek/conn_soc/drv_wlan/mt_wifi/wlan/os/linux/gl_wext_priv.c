@@ -2043,6 +2043,252 @@ priv_get_ndis (
     return 0;
 } /* priv_get_ndis */
 
+/* ++ TDLS */
+/*----------------------------------------------------------------------------*/
+/*!
+* @brief Parse command value in a string.
+*
+* @param InStr  Pointer to the string buffer.
+* @param OutStr  Pointer to the next command value.
+* @param OutLen  Record the resident buffer length.
+*
+* @retval Command value.
+*/
+/*----------------------------------------------------------------------------*/
+UINT_32
+CmdStringDecParse(
+    IN UINT_8 *InStr,
+    OUT UINT_8 **OutStr,
+    OUT UINT_32 *OutLen
+    )
+{
+    unsigned char Charc, *Buf;
+    unsigned int Num;
+    int Maxloop;
+    int ReadId;
+    int TotalLen;
+
+
+    /* init */
+    Num = 0;
+    Maxloop = 0;
+    ReadId = 0;
+    Buf = (unsigned char *)InStr;
+    TotalLen = *OutLen;
+    *OutStr = Buf;
+
+    /* sanity check */
+    if (Buf[0] == 0x00)
+        return 0;
+
+    /* check the value is decimal or hex */
+    if ((Buf[ReadId] == 'x') ||
+        ((Buf[ReadId] == '0') && (Buf[ReadId+1] == 'x')))
+    {
+		/* skip x or 0x */
+		if (Buf[ReadId] == 'x')
+			ReadId ++;
+		else
+			ReadId += 2;
+
+        /* translate the hex number */
+        while(Maxloop++ < 10)
+        {
+            Charc = Buf[ReadId];
+            if ((Charc >= 0x30) && (Charc <= 0x39))
+                Charc -= 0x30;
+            else if ((Charc >= 'a') && (Charc <= 'f'))
+                Charc -= 'a';
+            else if ((Charc >= 'A') && (Charc <= 'F'))
+                Charc -= 'A';
+            else
+                break; /* exit the parsing */
+            Num = Num * 16 + Charc + 10;
+            ReadId ++;
+            TotalLen --;
+        }
+    }
+    else
+    {
+        /* translate the decimal number */
+        while(Maxloop++ < 10)
+        {
+            Charc = Buf[ReadId];
+            if ((Charc < 0x30) || (Charc > 0x39))
+                break; /* exit the parsing */
+            Charc -= 0x30;
+            Num = Num * 10 + Charc;
+            ReadId ++;
+            TotalLen --;
+        }
+    }
+
+	if (Buf[ReadId] == 0x00)
+		*OutStr = &Buf[ReadId];
+	else
+	    *OutStr = &Buf[ReadId+1]; /* skip the character: _ */
+
+    *OutLen = TotalLen-1; /* skip the character: _ */
+    return Num;
+}
+
+
+/*----------------------------------------------------------------------------*/
+/*!
+* @brief Parse command MAC address in a string.
+*
+* @param InStr  Pointer to the string buffer.
+* @param OutStr  Pointer to the next command value.
+* @param OutLen  Record the resident buffer length.
+*
+* @retval Command value.
+*/
+/*----------------------------------------------------------------------------*/
+UINT_32
+CmdStringMacParse(
+    IN UINT_8 *InStr,
+    OUT UINT_8 **OutStr,
+    OUT UINT_32 *OutLen,
+	OUT UINT_8 *OutMac
+    )
+{
+    unsigned char Charc, *Buf;
+    unsigned int Num;
+    int Maxloop;
+    int ReadId;
+    int TotalLen;
+
+
+    /* init */
+    Num = 0;
+    Maxloop = 0;
+    ReadId = 0;
+    Buf = (unsigned char *)InStr;
+    TotalLen = *OutLen;
+    *OutStr = Buf;
+
+    /* sanity check */
+    if (Buf[0] == 0x00)
+        return 0;
+
+    /* parse MAC */
+    while(Maxloop < 6)
+    {
+        Charc = Buf[ReadId];
+        if ((Charc >= 0x30) && (Charc <= 0x39))
+            Charc -= 0x30;
+        else if ((Charc >= 'a') && (Charc <= 'f'))
+            Charc = Charc - 'a' + 10;
+        else if ((Charc >= 'A') && (Charc <= 'F'))
+            Charc = Charc - 'A' + 10;
+        else
+            return -1; /* error, exit the parsing */
+
+        Num = Charc;
+        ReadId ++;
+        TotalLen --;
+
+		Charc = Buf[ReadId];
+		if ((Charc >= 0x30) && (Charc <= 0x39))
+			Charc -= 0x30;
+		else if ((Charc >= 'a') && (Charc <= 'f'))
+            Charc = Charc - 'a' + 10;
+		else if ((Charc >= 'A') && (Charc <= 'F'))
+            Charc = Charc - 'A' + 10;
+		else
+			return -1; /* error, exit the parsing */
+
+        Num = Num * 16 + Charc;
+        ReadId += 2; /* skip the character and ':' */
+        TotalLen -= 2;
+
+		OutMac[Maxloop] = Num;
+		Maxloop ++;
+    }
+
+    *OutStr = &Buf[ReadId]; /* skip the character: _ */
+    *OutLen = TotalLen; /* skip the character: _ */
+    return Num;
+}
+
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief The routine handles a set operation for a single OID.
+*
+* \param[in] pDev Net device requested.
+* \param[in] ndisReq Ndis request OID information copy from user.
+* \param[out] outputLen_p If the call is successful, returns the number of
+*                         bytes written into the query buffer. If the
+*                         call failed due to invalid length of the query
+*                         buffer, returns the amount of storage needed..
+*
+* \retval 0 On success.
+* \retval -EOPNOTSUPP If cmd is not supported.
+*
+*/
+/*----------------------------------------------------------------------------*/
+int
+priv_set_string(
+    IN struct net_device *prNetDev,
+    IN struct iw_request_info *prIwReqInfo,
+    IN union iwreq_data *prIwReqData,
+    IN char *pcExtra
+    )
+{
+    P_GLUE_INFO_T GlueInfo;
+    INT_32 Status;
+    UINT_32 Subcmd;
+    UINT_8 *InBuf;
+    UINT_32 InBufLen;
+
+
+    /* sanity check */
+    ASSERT(prNetDev);
+    ASSERT(prIwReqInfo);
+    ASSERT(prIwReqData);
+    ASSERT(pcExtra);
+
+    /* init */
+    DBGLOG(REQ, INFO, ("priv_set_string (%s)(%d)\n",
+            (UINT8 *)prIwReqData->data.pointer, (INT32)prIwReqData->data.length));
+
+    if (FALSE == GLUE_CHK_PR3(prNetDev, prIwReqData, pcExtra)) {
+        return -EINVAL;
+    }
+    GlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+
+    InBuf = aucOidBuf;
+    InBufLen = prIwReqData->data.length;
+    Status = 0;
+
+    if (copy_from_user(InBuf,
+                       prIwReqData->data.pointer,
+                       prIwReqData->data.length)) {
+        return -EFAULT;
+    }
+
+    Subcmd = CmdStringDecParse(prIwReqData->data.pointer, &InBuf, &InBufLen);
+    DBGLOG(REQ, INFO, ("priv_set_string> command = %u\n", (UINT32)Subcmd));
+
+    /* handle the command */
+    switch(Subcmd)
+    {
+#if (CFG_SUPPORT_TDLS == 1)
+        case PRIV_CMD_OTHER_TDLS:
+			TdlsexCmd(GlueInfo, InBuf, InBufLen);
+	        break;
+#endif /* CFG_SUPPORT_TDLS */
+
+        default:
+        	break;
+    }
+
+    return Status;
+}
+/* -- TDLS */
+
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This routine is called to search desired OID.

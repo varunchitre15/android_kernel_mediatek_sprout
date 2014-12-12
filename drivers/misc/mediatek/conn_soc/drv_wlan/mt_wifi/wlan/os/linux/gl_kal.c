@@ -1767,6 +1767,25 @@ kalRxIndicatePkts (
 			continue;
 		}
 
+#if (CFG_SUPPORT_TDLS == 1)
+		if (TdlsexRxFrameDrop(prGlueInfo, prSkb->data) == TRUE)
+		{
+			/* drop the received TDLS action frame */
+			DBGLOG(TDLS, WARN,
+				("<tdls_fme> %s: drop a received packet from "MACSTR" %u\n",
+				__FUNCTION__, MAC2STR(prSkb->data),
+				(UINT32)((P_ADAPTER_T)(prGlueInfo->prAdapter))->rRxCtrl.rFreeSwRfbList.u4NumElem));
+			wlanReturnPacket(prGlueInfo->prAdapter, prSkb);
+			continue;
+		}
+
+		/*
+			get a TDLS request/response/confirm, we need to parse the HT IE
+			because older supplicant does not pass HT IE to us
+		*/
+		TdlsexRxFrameHandle(prGlueInfo, prSkb->data, prSkb->len);
+#endif /* CFG_SUPPORT_TDLS */
+
         prNetDev->last_rx = jiffies;
         prSkb->protocol = eth_type_trans(prSkb, prNetDev);
         prSkb->dev = prNetDev;
@@ -2447,6 +2466,11 @@ kalQoSFrameClassifierAndPacketInfo (
         *pfgIs1X = TRUE;
     }
 #endif
+#if (CFG_SUPPORT_TDLS == 1)
+	else if (u2EtherTypeLen == TDLS_FRM_PROT_TYPE) {
+		TDLSEX_UP_ASSIGN(ucUserPriority);
+	}
+#endif /* CFG_SUPPORT_TDLS */
     else if (u2EtherTypeLen <= 1500) { /* 802.3 Frame */
         UINT_8 ucDSAP, ucSSAP, ucControl;
         UINT_8 aucOUI[3];
@@ -3125,6 +3149,19 @@ int tx_thread(void *data)
                         continue;
                     }
 
+#if (CFG_SUPPORT_TDLS_DBG == 1)
+					if (prSkb != NULL)
+					{
+						UINT8 *pkt = prSkb->data;
+						UINT16 u2Identifier;
+						if ((*(pkt+12) == 0x08) && (*(pkt+13) == 0x00))
+						{
+							/* ip */
+							u2Identifier = ((*(pkt+18)) << 8) | (*(pkt+19));
+							printk("<de> %d\n", u2Identifier);
+						}
+					}
+#endif
                     if(wlanEnqueueTxPacket(prGlueInfo->prAdapter,
                                 (P_NATIVE_PACKET)prSkb) == WLAN_STATUS_RESOURCES) {
                         /* no available entry in rFreeMsduInfoList */

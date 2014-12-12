@@ -1397,6 +1397,19 @@ nicTxMsduQueue (
 
         while(prMsduInfo) {
 
+#if (CFG_SUPPORT_TDLS_DBG == 1)
+{
+	struct sk_buff *prSkb = (struct sk_buff *)prMsduInfo->prPacket;
+	UINT8 *pkt = prSkb->data;
+	UINT16 u2Identifier;
+	if ((*(pkt+12) == 0x08) && (*(pkt+13) == 0x00))
+	{
+		/* ip */
+		u2Identifier = ((*(pkt+18)) << 8) | (*(pkt+19));
+		printk("<hif> %d\n", u2Identifier);
+	}
+}
+#endif
             kalMemZero(&rHwTxHeader, sizeof(rHwTxHeader));
 
             prNativePacket = prMsduInfo->prPacket;

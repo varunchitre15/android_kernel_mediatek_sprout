@@ -756,9 +756,10 @@
 #define ELEM_ID_QOS_CAP                             46  /* QoS capability */
 #define ELEM_ID_RSN                                 48  /* RSN IE */
 #define ELEM_ID_EXTENDED_SUP_RATES                  50  /* Extended supported rates */
-#if CFG_SUPPORT_802_11W
+/* ++ TDLS */
 #define ELEM_ID_TIMEOUT_INTERVAL                    56  /* 802.11w SA Timeout interval */
-#endif
+#define ELEM_ID_SUP_OPERATING_CLASS					59	/* Supported Operating Classes */
+/* -- TDLS */
 #define ELEM_ID_HT_OP                               61  /* HT Operation */
 #define ELEM_ID_SCO                                 62  /* Secondary Channel Offset */
 #define ELEM_ID_RRM_ENABLED_CAP                     70  /* Radio Resource Management Enabled Capabilities */
@@ -1744,7 +1745,7 @@ typedef struct _IE_QUIET_T {
 typedef struct _IE_EXT_CAP_T {
     UINT_8      ucId;
     UINT_8      ucLength;
-    UINT_8      aucCapabilities[1];
+    UINT_8      aucCapabilities[5]; /* ++ TDLS */
 } __KAL_ATTRIB_PACKED__ IE_EXT_CAP_T, *P_EXT_CAP_T;
 
 /* 7.3.2.27 Extended Capabilities element */
@@ -1753,6 +1754,20 @@ typedef struct _IE_RRM_ENABLED_CAP_T {
     UINT_8      ucLength;
     UINT_8      aucCap[5];
 } __KAL_ATTRIB_PACKED__ IE_RRM_ENABLED_CAP_T, *P_IE_RRM_ENABLED_CAP_T;
+
+/* ++ TDLS */
+/* 7.3.2.51 Timeout Interval element (TIE) */
+typedef struct _IE_TIMEOUT_INTERVAL_T {
+    UINT_8      ucId;
+    UINT_8      ucLength;
+#define IE_TIMEOUT_INTERVAL_TYPE_RESERVED			0
+#define IE_TIMEOUT_INTERVAL_TYPE_REASSOC			1
+#define IE_TIMEOUT_INTERVAL_TYPE_KEY_LIFETIME		2
+#define IE_TIMEOUT_INTERVAL_TYPE_ASSOC_COMEBACK		3
+	UINT_8		ucType;
+    UINT_32		u4Value;
+} __KAL_ATTRIB_PACKED__ IE_TIMEOUT_INTERVAL_T;
+/* -- TDLS */
 
 /* 7.3.2.56 HT Capabilities element */
 typedef struct _SUP_MCS_SET_FIELD {
@@ -1833,6 +1848,15 @@ typedef struct _IE_20_40_COEXIST_T {
     UINT_8              ucData;
 } __KAL_ATTRIB_PACKED__ IE_20_40_COEXIST_T, *P_IE_20_40_COEXIST_T;
 
+/* ++ TDLS */
+/* 7.3.2.60 20/40 BSS Coexistence element */
+typedef struct _IE_SUP_OPERATING_CLASS_T {
+    UINT_8              ucId;
+    UINT_8              ucLength;
+    UINT_8              ucCur;
+	UINT_8				ucSup[255];
+} __KAL_ATTRIB_PACKED__ IE_SUP_OPERATING_CLASS_T, *P_IE_SUP_OPERATING_CLASS_T;
+/* -- TDLS */
 
 //3 7.4 Action Frame.
 /* 7.4 Action frame format */
@@ -2219,11 +2243,14 @@ typedef struct _WAPI_INFO_ELEM_T {
 
 #define BSS_20_40_COEXIST_IE(fp) ((P_IE_20_40_COEXIST_T) fp)
 
+#define SUP_OPERATING_CLASS_IE(fp) ((P_IE_SUP_OPERATING_CLASS_T) fp) /* ++ TDLS */
+
 #define QUIET_IE(fp)            ((P_IE_QUIET_T) fp)
 
 #if CFG_SUPPORT_DFS // Add by Enlai
 #define SUPPORTED_CHANNELS_IE(fp) ((P_IE_SUPPORTED_CHANNELS_T)fp)
 #endif
+#define TIMEOUT_INTERVAL_IE(fp)	((IE_TIMEOUT_INTERVAL_T *)fp) /* ++ TDLS */
 
 
 

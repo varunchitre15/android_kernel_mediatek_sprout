@@ -944,6 +944,10 @@
 
 #define CFG_SUPPORT_ROAMING_ENC		0	/* enahnced roaming */
 
+/* ++ TDLS */
+#define CFG_SUPPORT_TDLS			1   /* IEEE802.11z TDLS */
+#define CFG_SUPPORT_TDLS_DBG		0	/* TDLS debug */
+/* -- TDLS */
 
 /*------------------------------------------------------------------------------
  * SLT Option

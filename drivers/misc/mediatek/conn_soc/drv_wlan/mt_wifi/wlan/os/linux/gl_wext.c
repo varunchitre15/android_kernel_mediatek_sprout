@@ -488,6 +488,8 @@ static const struct iw_priv_args rIwPrivTable[] = {
     {IOCTL_GET_INT,             0, IW_PRIV_TYPE_INT | 50,                       ""},
     {IOCTL_GET_INT,             0, IW_PRIV_TYPE_CHAR | 16,                      ""},
 
+    {IOCTL_SET_STRING,          IW_PRIV_TYPE_CHAR | 256, 0,                     ""}, /* ++ TDLS */
+
     /* added for set_oid and get_oid */
     {IOCTL_SET_STRUCT,          256,                                    0, ""},
     {IOCTL_GET_STRUCT,          0,                                      256, ""},
@@ -540,6 +542,8 @@ static const struct iw_priv_args rIwPrivTable[] = {
 #endif
     {PRIV_CMD_GET_BUILD_DATE_CODE,      0, IW_PRIV_TYPE_CHAR | 16,              "get_date_code" },
     {PRIV_CMD_GET_DEBUG_CODE,      0, IW_PRIV_TYPE_CHAR | 16,              		"get_dbg_code" },
+	/* handle any command with many input parameters */
+	{PRIV_CMD_OTHER,			IW_PRIV_TYPE_CHAR | 256, 0,   "set_str_cmd"}, /* ++ TDLS */
 };
 
 static const iw_handler rIwPrivHandler[] = {
@@ -556,6 +560,7 @@ static const iw_handler rIwPrivHandler[] = {
     [IOCTL_SET_STRUCT_FOR_EM - SIOCIWFIRSTPRIV] = priv_set_struct,
     [IOCTL_SET_INTS - SIOCIWFIRSTPRIV] = priv_set_ints,
     [IOCTL_GET_INTS - SIOCIWFIRSTPRIV] = priv_get_ints,
+	[IOCTL_SET_STRING - SIOCIWFIRSTPRIV] = priv_set_string, /* ++ TDLS */
 };
 
 const struct iw_handler_def wext_handler_def = {

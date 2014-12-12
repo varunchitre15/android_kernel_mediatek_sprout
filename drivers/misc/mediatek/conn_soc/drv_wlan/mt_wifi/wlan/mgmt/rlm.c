@@ -690,6 +690,92 @@ rlmRspGenerateErpIE (
     }
 }
 
+/* ++ TDLS */
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief
+*
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+UINT32
+rlmFillHtCapIEByParams (
+	BOOLEAN				fg40mAllowed,
+	BOOLEAN				fgShortGIDisabled,
+	UINT_8				u8SupportRxSgi20,
+	UINT_8				u8SupportRxSgi40,
+	UINT_8				u8SupportRxGf,
+	UINT_8				u8SupportRxSTBC,
+	ENUM_OP_MODE_T		eCurrentOPMode,
+    UINT_8				*pOutBuf
+    )
+{
+    P_IE_HT_CAP_T           prHtCap;
+    P_SUP_MCS_SET_FIELD     prSupMcsSet;
+
+    ASSERT(pOutBuf);
+
+    prHtCap = (P_IE_HT_CAP_T)pOutBuf;
+
+    /* Add HT capabilities IE */
+    prHtCap->ucId = ELEM_ID_HT_CAP;
+    prHtCap->ucLength = sizeof(IE_HT_CAP_T) - ELEM_HDR_LEN;
+
+    prHtCap->u2HtCapInfo = HT_CAP_INFO_DEFAULT_VAL;
+    if (!fg40mAllowed) {
+        prHtCap->u2HtCapInfo &= ~(HT_CAP_INFO_SUP_CHNL_WIDTH |
+            HT_CAP_INFO_SHORT_GI_40M | HT_CAP_INFO_DSSS_CCK_IN_40M);
+    }
+    if (fgShortGIDisabled) {
+        prHtCap->u2HtCapInfo &=
+            ~(HT_CAP_INFO_SHORT_GI_20M | HT_CAP_INFO_SHORT_GI_40M);
+    }
+
+    if(u8SupportRxSgi20 == 2) {
+        prHtCap->u2HtCapInfo &= ~(HT_CAP_INFO_SHORT_GI_20M);
+    }
+    if(u8SupportRxSgi40 == 2) {
+        prHtCap->u2HtCapInfo &= ~(HT_CAP_INFO_SHORT_GI_40M);
+    }
+    if(u8SupportRxGf == 2) {
+        prHtCap->u2HtCapInfo &= ~(HT_CAP_INFO_HT_GF);
+    }
+	if (u8SupportRxSTBC	==	2)	{
+		prHtCap->u2HtCapInfo &= ~(HT_CAP_INFO_RX_STBC_1_SS);
+	}
+    prHtCap->ucAmpduParam = AMPDU_PARAM_DEFAULT_VAL;
+
+    prSupMcsSet = &prHtCap->rSupMcsSet;
+    kalMemZero((PVOID)&prSupMcsSet->aucRxMcsBitmask[0],
+                SUP_MCS_RX_BITMASK_OCTET_NUM);
+
+    prSupMcsSet->aucRxMcsBitmask[0] = BITS(0, 7);
+
+    if (fg40mAllowed) {
+        prSupMcsSet->aucRxMcsBitmask[32/8] = BIT(0); /* MCS32 */
+    }
+    prSupMcsSet->u2RxHighestSupportedRate = SUP_MCS_RX_DEFAULT_HIGHEST_RATE;
+    prSupMcsSet->u4TxRateInfo = SUP_MCS_TX_DEFAULT_VAL;
+
+    prHtCap->u2HtExtendedCap = HT_EXT_CAP_DEFAULT_VAL;
+    if (!fg40mAllowed || eCurrentOPMode != OP_MODE_INFRASTRUCTURE) {
+        prHtCap->u2HtExtendedCap &=
+            ~(HT_EXT_CAP_PCO | HT_EXT_CAP_PCO_TRANS_TIME_NONE);
+    }
+
+    prHtCap->u4TxBeamformingCap = TX_BEAMFORMING_CAP_DEFAULT_VAL;
+
+    prHtCap->ucAselCap = ASEL_CAP_DEFAULT_VAL;
+
+
+    ASSERT(IE_SIZE(prHtCap) <= (ELEM_HDR_LEN + ELEM_MAX_LEN_HT_CAP));
+
+    return IE_SIZE(prHtCap);
+}
+/* -- TDLS */
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief
@@ -707,7 +793,7 @@ rlmFillHtCapIE (
     )
 {
     P_IE_HT_CAP_T           prHtCap;
-    P_SUP_MCS_SET_FIELD     prSupMcsSet;
+//    P_SUP_MCS_SET_FIELD     prSupMcsSet; /* ++ TDLS */
     BOOLEAN                 fg40mAllowed;
 
     ASSERT(prAdapter);
@@ -728,6 +814,7 @@ rlmFillHtCapIE (
     prHtCap = (P_IE_HT_CAP_T)
               (((PUINT_8) prMsduInfo->prPacket) + prMsduInfo->u2FrameLength);
 
+#if 0 /* ++ TDLS */
     /* Add HT capabilities IE */
     prHtCap->ucId = ELEM_ID_HT_CAP;
     prHtCap->ucLength = sizeof(IE_HT_CAP_T) - ELEM_HDR_LEN;
@@ -780,6 +867,20 @@ rlmFillHtCapIE (
     ASSERT(IE_SIZE(prHtCap) <= (ELEM_HDR_LEN + ELEM_MAX_LEN_HT_CAP));
 
     prMsduInfo->u2FrameLength += IE_SIZE(prHtCap);
+#else
+
+	/* ++ TDLS */
+	prMsduInfo->u2FrameLength += rlmFillHtCapIEByParams(\
+						fg40mAllowed,
+						prAdapter->rWifiVar.rConnSettings.fgRxShortGIDisabled,
+						prAdapter->rWifiVar.u8SupportRxSgi20,
+						prAdapter->rWifiVar.u8SupportRxSgi40,
+						prAdapter->rWifiVar.u8SupportRxGf,
+						prAdapter->rWifiVar.u8SupportRxSTBC,
+						prBssInfo->eCurrentOPMode,
+						(UINT_8 *)prHtCap);
+	/* -- TDLS */
+#endif
 }
 
 /*----------------------------------------------------------------------------*/
@@ -817,7 +918,7 @@ rlmFillExtCapIE (
 	else
 #endif
 		prExtCap->ucLength = 3 - ELEM_HDR_LEN;
-	kalMemZero(prExtCap->aucCapabilities, prExtCap->ucLength);
+	kalMemZero(prExtCap->aucCapabilities, sizeof(prExtCap->aucCapabilities)); /* ++ TDLS */
 
     prExtCap->aucCapabilities[0] = ELEM_EXT_CAP_DEFAULT_VAL;
 
@@ -843,6 +944,7 @@ rlmFillExtCapIE (
     prMsduInfo->u2FrameLength += IE_SIZE(prExtCap);
 }
 
+/* ++ TDLS */
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief
@@ -852,6 +954,63 @@ rlmFillExtCapIE (
 * \return none
 */
 /*----------------------------------------------------------------------------*/
+UINT32
+rlmFillHtOpIeBody(
+	P_BSS_INFO_T    prBssInfo,
+	UINT_8			*pFme
+	)
+{
+    P_IE_HT_OP_T        prHtOp;
+    UINT_16             i;
+
+    prHtOp = (P_IE_HT_OP_T)pFme;
+
+    /* Add HT operation IE */
+    prHtOp->ucId = ELEM_ID_HT_OP;
+    prHtOp->ucLength = sizeof(IE_HT_OP_T) - ELEM_HDR_LEN;
+
+    /* RIFS and 20/40 bandwidth operations are included */
+    prHtOp->ucPrimaryChannel = prBssInfo->ucPrimaryChannel;
+    prHtOp->ucInfo1 = prBssInfo->ucHtOpInfo1;
+
+    /* Decide HT protection mode field */
+    if (prBssInfo->eHtProtectMode == HT_PROTECT_MODE_NON_HT) {
+        prHtOp->u2Info2 = (UINT_8) HT_PROTECT_MODE_NON_HT;
+    }
+    else if (prBssInfo->eObssHtProtectMode == HT_PROTECT_MODE_NON_MEMBER) {
+        prHtOp->u2Info2 = (UINT_8) HT_PROTECT_MODE_NON_MEMBER;
+    }
+    else {
+        /* It may be SYS_PROTECT_MODE_NONE or SYS_PROTECT_MODE_20M */
+        prHtOp->u2Info2 = (UINT_8) prBssInfo->eHtProtectMode;
+    }
+
+    if (prBssInfo->eGfOperationMode != GF_MODE_NORMAL) {
+        /* It may be GF_MODE_PROTECT or GF_MODE_DISALLOWED
+         * Note: it will also be set in ad-hoc network
+         */
+        prHtOp->u2Info2 |= HT_OP_INFO2_NON_GF_HT_STA_PRESENT;
+    }
+
+    if (0 /* Regulatory class 16 */ &&
+        prBssInfo->eObssHtProtectMode == HT_PROTECT_MODE_NON_MEMBER) {
+        /* (TBD) It is HT_PROTECT_MODE_NON_MEMBER, so require protection
+         * although it is possible to have no protection by spec.
+         */
+        prHtOp->u2Info2 |= HT_OP_INFO2_OBSS_NON_HT_STA_PRESENT;
+    }
+
+    prHtOp->u2Info3 = prBssInfo->u2HtOpInfo3;   /* To do: handle L-SIG TXOP */
+
+    /* No basic MCSx are needed temporarily */
+    for (i = 0; i < 16; i++) {
+        prHtOp->aucBasicMcsSet[i] = 0;
+    }
+
+	return sizeof(IE_HT_OP_T);
+}
+/* -- TDLS */
+
 static VOID
 rlmFillHtOpIE (
     P_ADAPTER_T     prAdapter,
@@ -859,13 +1018,17 @@ rlmFillHtOpIE (
     P_MSDU_INFO_T   prMsduInfo
     )
 {
-    P_IE_HT_OP_T        prHtOp;
-    UINT_16             i;
+//    P_IE_HT_OP_T        prHtOp; /* ++ TDLS */
+//    UINT_16             i; /* ++ TDLS */
 
     ASSERT(prAdapter);
     ASSERT(prBssInfo);
     ASSERT(prMsduInfo);
 
+	prMsduInfo->u2FrameLength += rlmFillHtOpIeBody(prBssInfo,\
+		(((PUINT_8) prMsduInfo->prPacket) + prMsduInfo->u2FrameLength)); /* ++ TDLS */
+
+#if 0 /* ++ TDLS */
     prHtOp = (P_IE_HT_OP_T)
              (((PUINT_8) prMsduInfo->prPacket) + prMsduInfo->u2FrameLength);
 
@@ -914,6 +1077,7 @@ rlmFillHtOpIE (
     ASSERT(IE_SIZE(prHtOp) <= (ELEM_HDR_LEN + ELEM_MAX_LEN_HT_OP));
 
     prMsduInfo->u2FrameLength += IE_SIZE(prHtOp);
+#endif /* ++ TDLS */
 }
 
 /*----------------------------------------------------------------------------*/

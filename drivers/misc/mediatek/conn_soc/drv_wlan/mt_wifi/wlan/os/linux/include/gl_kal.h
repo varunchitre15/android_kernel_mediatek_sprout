@@ -1334,6 +1334,26 @@ BOOLEAN kalIndicateAgpsNotify(P_ADAPTER_T prAdapter, UINT_8 cmd, PUINT_8 data
 #define WAPI_LOUD_LOGDUMP8(x, y)
 #define WAPI_TEMP_LOGDUMP8(x, y)
 
+/* ++ TDLS */
+#define TDLS_ERROR_LOGFUNC(_Fmt...) xlog_printk(ANDROID_LOG_ERROR, XLOG_TAG, _Fmt)
+#define TDLS_WARN_LOGFUNC(_Fmt...)  xlog_printk(ANDROID_LOG_WARN, XLOG_TAG, _Fmt)
+#define TDLS_INFO_LOGFUNC(_Fmt...)  xlog_printk(ANDROID_LOG_INFO, XLOG_TAG, _Fmt)
+#define TDLS_STATE_LOGFUNC(_Fmt...)
+#define TDLS_EVENT_LOGFUNC(_Fmt...)
+#define TDLS_TRACE_LOGFUNC(_Fmt...)
+#define TDLS_LOUD_LOGFUNC(_Fmt...)
+#define TDLS_TEMP_LOGFUNC(_Fmt...)
+
+#define TDLS_ERROR_LOGDUMP8(x, y)
+#define TDLS_WARN_LOGDUMP8(x, y)
+#define TDLS_INFO_LOGDUMP8(x, y)
+#define TDLS_STATE_LOGDUMP8(x, y)
+#define TDLS_EVENT_LOGDUMP8(x, y)
+#define TDLS_TRACE_LOGDUMP8(x, y)
+#define TDLS_LOUD_LOGDUMP8(x, y)
+#define TDLS_TEMP_LOGDUMP8(x, y)
+/* -- TDLS */
+
 #define SW1_ERROR_LOGFUNC(_Fmt...)
 #define SW1_WARN_LOGFUNC(_Fmt...)
 #define SW1_INFO_LOGFUNC(_Fmt...)
@@ -1621,6 +1641,17 @@ BOOLEAN kalIndicateAgpsNotify(P_ADAPTER_T prAdapter, UINT_8 cmd, PUINT_8 data
 #define WAPI_TRACE_LOGFUNC(_Fmt...)
 #define WAPI_LOUD_LOGFUNC(_Fmt...)
 #define WAPI_TEMP_LOGFUNC(_Fmt...)
+
+/* ++ TDLS */
+#define TDLS_ERROR_LOGFUNC(_Fmt...) kalPrint(_Fmt)
+#define TDLS_WARN_LOGFUNC(_Fmt...)  kalPrint(_Fmt)
+#define TDLS_INFO_LOGFUNC(_Fmt...)  kalPrint(_Fmt)
+#define TDLS_STATE_LOGFUNC(_Fmt...)
+#define TDLS_EVENT_LOGFUNC(_Fmt...)
+#define TDLS_TRACE_LOGFUNC(_Fmt...)
+#define TDLS_LOUD_LOGFUNC(_Fmt...)
+#define TDLS_TEMP_LOGFUNC(_Fmt...)
+/* -- TDLS */
 
 #define SW1_ERROR_LOGFUNC(_Fmt...)
 #define SW1_WARN_LOGFUNC(_Fmt...)

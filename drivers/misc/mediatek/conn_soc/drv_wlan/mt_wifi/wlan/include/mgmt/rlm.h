@@ -420,6 +420,26 @@ rlmBssAborted (
     P_BSS_INFO_T    prBssInfo
     );
 
+/* ++ TDLS */
+UINT32
+rlmFillHtCapIEByParams (
+	BOOLEAN				fg40mAllowed,
+	BOOLEAN				fgShortGIDisabled,
+	UINT_8				u8SupportRxSgi20,
+	UINT_8				u8SupportRxSgi40,
+	UINT_8				u8SupportRxGf,
+	UINT_8				u8SupportRxSTBC,
+	ENUM_OP_MODE_T		eCurrentOPMode,
+    UINT_8				*pOutBuf
+    );
+
+UINT32
+rlmFillHtOpIeBody(
+	P_BSS_INFO_T    prBssInfo,
+	UINT_8			*pFme
+	);
+/* -- TDLS */
+
 #if CFG_SUPPORT_DFS // Add by Enlai
 VOID
 rlmProcessSpecMgtAction(
