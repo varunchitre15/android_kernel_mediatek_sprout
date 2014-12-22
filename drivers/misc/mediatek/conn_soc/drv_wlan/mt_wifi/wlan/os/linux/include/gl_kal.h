@@ -2348,6 +2348,6 @@ int tx_thread(void *data);
 VOID kalHifAhbKalWakeLockTimeout(
     IN P_GLUE_INFO_T                prGlueInfo
     );
-
+UINT_64 kalGetBootTime(void);
 #endif /* _GL_KAL_H */
 

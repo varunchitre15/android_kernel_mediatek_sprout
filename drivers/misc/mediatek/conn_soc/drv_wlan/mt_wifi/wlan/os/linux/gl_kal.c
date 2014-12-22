@@ -13,7 +13,7 @@
 
 /*
 ** $Log: gl_kal.c $
-** 
+**
 ** 08 20 2012 yuche.tsai
 ** NULL
 ** Fix possible KE issue.
@@ -1732,7 +1732,7 @@ kalRxIndicatePkts (
             //prNetDev->stats.rx_packets++;
             prGlueInfo->prP2PInfo->rNetDevStats.rx_bytes += prSkb->len;
 	        prGlueInfo->prP2PInfo->rNetDevStats.rx_packets++;
-            
+
 #else
             prNetDev = prGlueInfo->prDevHandler;
 #endif
@@ -1914,7 +1914,7 @@ kalIndicateStatusAndComplete (
 
             /* ensure BSS exists */
             bss = cfg80211_get_bss(priv_to_wiphy(prGlueInfo), prChannel, arBssid,
-                    ssid.aucSsid, ssid.u4SsidLen, 
+                    ssid.aucSsid, ssid.u4SsidLen,
                     WLAN_CAPABILITY_ESS, WLAN_CAPABILITY_ESS);
 
             if(bss == NULL) {
@@ -1936,7 +1936,7 @@ kalIndicateStatusAndComplete (
             }
 
             /* CFG80211 Indication */
-            if(eStatus == WLAN_STATUS_MEDIA_CONNECT 
+            if(eStatus == WLAN_STATUS_MEDIA_CONNECT
                     && prGlueInfo->prDevHandler->ieee80211_ptr->sme_state == CFG80211_SME_CONNECTING) {
                 cfg80211_connect_result(prGlueInfo->prDevHandler,
                         arBssid,
@@ -1949,7 +1949,7 @@ kalIndicateStatusAndComplete (
             }
             else if(eStatus == WLAN_STATUS_ROAM_OUT_FIND_BEST
                     && prGlueInfo->prDevHandler->ieee80211_ptr->sme_state == CFG80211_SME_CONNECTED) {
-                cfg80211_roamed_bss(prGlueInfo->prDevHandler, 
+                cfg80211_roamed_bss(prGlueInfo->prDevHandler,
                         bss,
                         prGlueInfo->aucReqIe,
                         prGlueInfo->u4ReqIeLength,
@@ -2047,7 +2047,7 @@ kalIndicateStatusAndComplete (
                         PARAM_AUTH_REQUEST_PAIRWISE_ERROR) ||
                         (pAuth->arRequest[0].u4Flags ==
                         PARAM_AUTH_REQUEST_GROUP_ERROR)) {
-                    cfg80211_michael_mic_failure(prGlueInfo->prDevHandler, NULL, 
+                    cfg80211_michael_mic_failure(prGlueInfo->prDevHandler, NULL,
                                        (pAuth->arRequest[0].u4Flags == PARAM_AUTH_REQUEST_PAIRWISE_ERROR) ? NL80211_KEYTYPE_PAIRWISE : NL80211_KEYTYPE_GROUP,
                                        0, NULL, GFP_KERNEL);
                     wext_indicate_wext_event(prGlueInfo,
@@ -2197,8 +2197,8 @@ kalUpdateReAssocReqInfo (
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This routine is called to update the (re)association
-*        response information to the structure used to reply with 
-*        cfg80211_connect_result 
+*        response information to the structure used to reply with
+*        cfg80211_connect_result
 *
 * @param prGlueInfo      Pointer to adapter descriptor
 * @param pucFrameBody    Pointer to the frame body of the last (Re)Association
@@ -2608,7 +2608,7 @@ kalIoctl (IN P_GLUE_INFO_T    prGlueInfo,
     P_GL_IO_REQ_T prIoReq = NULL;
     WLAN_STATUS ret = WLAN_STATUS_SUCCESS;
 
-    
+
     if (fgIsResetting == TRUE)
         return WLAN_STATUS_SUCCESS;
 
@@ -2616,7 +2616,7 @@ kalIoctl (IN P_GLUE_INFO_T    prGlueInfo,
     ASSERT(prGlueInfo);
 
 
-    
+
     /* <1> Check if driver is halt */
 
     //if (prGlueInfo->u4Flag & GLUE_FLAG_HALT) {
@@ -2701,7 +2701,7 @@ kalIoctl (IN P_GLUE_INFO_T    prGlueInfo,
     up(&g_halt_sem);
 
 
-    
+
     return ret;
 }
 
@@ -3008,7 +3008,7 @@ int tx_thread(void *data)
             p2pFuncUpdateMgmtFrameRegister(prGlueInfo->prAdapter, prGlueInfo->prP2PInfo->u4OsMgmtFrameFilter);
         }
 
-        
+
 #endif
         if (test_and_clear_bit(GLUE_FLAG_FRAME_FILTER_AIS_BIT, &prGlueInfo->u4Flag)) {
             P_AIS_FSM_INFO_T prAisFsmInfo = (P_AIS_FSM_INFO_T)NULL;
@@ -3717,7 +3717,7 @@ kalScanDone(
 
     prAisFsmInfo = &(prGlueInfo->prAdapter->rWifiVar.rAisFsmInfo);
 	/* report all queued beacon/probe response frames  to upper layer */
-	scanReportBss2Cfg80211(prGlueInfo->prAdapter,BSS_TYPE_INFRASTRUCTURE,NULL);	
+	scanReportBss2Cfg80211(prGlueInfo->prAdapter,BSS_TYPE_INFRASTRUCTURE,NULL);
     cnmTimerStopTimer(prGlueInfo->prAdapter, &prAisFsmInfo->rScanDoneTimer);
 
     /* check for system configuration for generating error message on scan list */
@@ -4353,9 +4353,11 @@ kalIndicateBssInfo (
 
     if(prChannel != NULL && prGlueInfo->prScanRequest != NULL) {
         struct cfg80211_bss *bss;
+		struct ieee80211_mgmt *prMgmtFrame = (struct ieee80211_mgmt *)pucBeaconProbeResp;
+		prMgmtFrame->u.beacon.timestamp = kalGetBootTime();
 
 		ScanCnt ++;
-		
+
         /* indicate to NL80211 subsystem */
         bss = cfg80211_inform_bss_frame(wiphy,
                 prChannel,
@@ -4384,7 +4386,7 @@ kalIndicateBssInfo (
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief    To indicate channel ready 
+* \brief    To indicate channel ready
 *
 * \param[in]
 *           prGlueInfo
@@ -4405,7 +4407,7 @@ kalReadyOnChannel (
 {
     struct ieee80211_channel *prChannel = NULL;
     enum nl80211_channel_type rChannelType;
-    
+
     //ucChannelNum = wlanGetChannelNumberByNetwork(prGlueInfo->prAdapter, NETWORK_TYPE_AIS_INDEX);
 
     if(prGlueInfo->fgIsRegistered == TRUE) {
@@ -4468,7 +4470,7 @@ kalRemainOnChannelExpired (
 {
     struct ieee80211_channel *prChannel = NULL;
     enum nl80211_channel_type rChannelType;
-    
+
     ucChannelNum = wlanGetChannelNumberByNetwork(prGlueInfo->prAdapter, NETWORK_TYPE_AIS_INDEX);
 
     if(prGlueInfo->fgIsRegistered == TRUE) {
@@ -4632,21 +4634,34 @@ kalIndicateRxMgmtFrame (
 #if CFG_SUPPORT_AGPS_ASSIST
 BOOLEAN kalIndicateAgpsNotify(P_ADAPTER_T prAdapter, UINT_8 cmd, PUINT_8 data, UINT_16 dataLen){
 	P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
-	
+
 	struct sk_buff *skb = cfg80211_testmode_alloc_event_skb(priv_to_wiphy(prGlueInfo),
 																dataLen, GFP_KERNEL);
 	//DBGLOG(CCX, INFO, ("WLAN_STATUS_AGPS_NOTIFY, cmd=%d\n", cmd));
 	if (unlikely(nla_put(skb, MTK_ATTR_AGPS_CMD, sizeof(cmd), &cmd) < 0))
 		goto nla_put_failure;
 	if (dataLen > 0 && data && unlikely(nla_put(skb, MTK_ATTR_AGPS_DATA, dataLen, data) < 0))
-    	goto nla_put_failure;
+		goto nla_put_failure;
 	if (unlikely(nla_put(skb, MTK_ATTR_AGPS_IFINDEX, sizeof(UINT_32), &prGlueInfo->prDevHandler->ifindex) < 0))
-    	goto nla_put_failure;
+		goto nla_put_failure;
 	cfg80211_testmode_event(skb, GFP_KERNEL);
 	return TRUE;
-	
+
 nla_put_failure:
 	kfree_skb(skb);
 	return FALSE;
 }
 #endif
+
+UINT_64 kalGetBootTime(void)
+{
+	struct timespec ts;
+	UINT_64 bootTime = 0;
+	get_monotonic_boottime(&ts);
+	/* we assign ts.tv_sec to bootTime first, then multiply USEC_PER_SEC
+		this will prevent multiply result turn to a negative value on 32bit system */
+	bootTime = ts.tv_sec;
+	bootTime *= USEC_PER_SEC;
+	bootTime += ts.tv_nsec/NSEC_PER_USEC;
+	return bootTime;
+}
