@@ -67,7 +67,7 @@ static int show_icon_delay = 0;
 static int eint_accdet_sync_flag = 0;
 
 static s64 long_press_time_ns = 0 ;
-
+static int cur_key = 0;
 static int g_accdet_first = 1;
 static bool IRQ_CLR_FLAG = FALSE;
 static volatile int call_status =0;
@@ -613,95 +613,40 @@ static int key_check(int b)
 
 static void send_key_event(int keycode,int flag)
 {
-    input_report_key(kpd_accdet_dev, KEY_PLAYPAUSE, flag);
-    input_sync(kpd_accdet_dev);
-    ACCDET_DEBUG("HEADSETHOOK %d\n",flag);
-
-#if 0
-    if(call_status == 0)
-    {
-                switch (keycode)
-                {
-                case DW_KEY:
-                    input_report_key(kpd_accdet_dev, KEY_NEXTSONG, flag);
-                    input_sync(kpd_accdet_dev);
-                    ACCDET_DEBUG("KEY_NEXTSONG %d\n",flag);
-                    break;
-                case UP_KEY:
-                       input_report_key(kpd_accdet_dev, KEY_PREVIOUSSONG, flag);
-                    input_sync(kpd_accdet_dev);
-                    ACCDET_DEBUG("KEY_PREVIOUSSONG %d\n",flag);
-                       break;
-                }
-     }
-    else
-    {
-              switch (keycode)
-              {
-                case DW_KEY:
-                    input_report_key(kpd_accdet_dev, KEY_VOLUMEDOWN, flag);
-                    input_sync(kpd_accdet_dev);
-                    ACCDET_DEBUG("KEY_VOLUMEDOWN %d\n",flag);
-                    break;
-                case UP_KEY:
-                       input_report_key(kpd_accdet_dev, KEY_VOLUMEUP, flag);
-                    input_sync(kpd_accdet_dev);
-                    ACCDET_DEBUG("KEY_VOLUMEUP %d\n",flag);
-                       break;
-              }
-    }
-#endif
+	switch (keycode)
+	{
+		case DW_KEY:
+			input_report_key(kpd_accdet_dev, KEY_VOLUMEDOWN, flag);
+			input_sync(kpd_accdet_dev);
+			ACCDET_DEBUG("[accdet]KEY_VOLUMEDOWN %d\n",flag);
+			break;
+		case UP_KEY:
+			input_report_key(kpd_accdet_dev, KEY_VOLUMEUP, flag);
+			input_sync(kpd_accdet_dev);
+			ACCDET_DEBUG("[accdet]KEY_VOLUMEUP %d\n",flag);
+			break;
+		case MD_KEY:
+			input_report_key(kpd_accdet_dev, KEY_PLAYPAUSE, flag);
+			input_sync(kpd_accdet_dev);
+			ACCDET_DEBUG("[accdet]KEY_PLAYPAUSE %d\n",flag);
+			break;
+		default:
+			break;
+	}
 }
 static int multi_key_detection(int current_status)
 {
-    //int current_status = 0;
-    int index = 0;
-    int count = long_press_time / (KEY_SAMPLE_PERIOD + 40 ); //ADC delay
-    int m_key = 0;
-    int cur_key = 0;
-    int cali_voltage=0;
+	int index = 0;
+	int count = long_press_time / (KEY_SAMPLE_PERIOD + 40 ); //ADC delay
+	int cali_voltage=0;
 
-    cali_voltage = PMIC_IMM_GetOneChannelValue(MULTIKEY_ADC_CHANNEL,1,1);
-    ACCDET_DEBUG("[Accdet]adc cali_voltage1 = %d mv\n", cali_voltage);
-    m_key = cur_key = key_check(cali_voltage);
-
-    //send_key_event(m_key, KEYDOWN_FLAG);
-    send_key_event(m_key, !current_status);
-
-#if 0
-    while(index++ < count)
-    {
-
-        /* Check if the current state has been changed */
-        current_status = ((pmic_pwrap_read(ACCDET_STATE_RG) & 0xc0)>>6);
-        ACCDET_DEBUG("[Accdet]accdet current_status = %d\n", current_status);
-        if(current_status != 0)
-        {
-              send_key_event(m_key, KEYUP_FLAG);
-            return (m_key | SHORT_PRESS);
-        }
-
-        /* Check if the voltage has been changed (press one key and another) */
-        //IMM_GetOneChannelValue(g_adcMic_channel_num, adc_data, &adc_raw);
-        cali_voltage = PMIC_IMM_GetOneChannelValue(MULTIKEY_ADC_CHANNEL,1,1);
-        ACCDET_DEBUG("[Accdet]adc in while loop [%d]= %d mv\n", index, cali_voltage);
-        cur_key = key_check(cali_voltage);
-        if(m_key != cur_key)
-        {
-               send_key_event(m_key, KEYUP_FLAG);
-            ACCDET_DEBUG("[Accdet]accdet press one key and another happen!!\n");
-            return (m_key | SHORT_PRESS);
-        }
-        else
-        {
-            m_key = cur_key;
-        }
-
-        msleep(KEY_SAMPLE_PERIOD);
-    }
-
-    return (m_key | LONG_PRESS);
-#endif
+	if(0 == current_status){
+		cali_voltage =
+			PMIC_IMM_GetOneChannelValue(MULTIKEY_ADC_CHANNEL,1,1);
+		ACCDET_DEBUG("[Accdet]adc cali_voltage1 = %d mv\n", cali_voltage);
+		cur_key = key_check(cali_voltage);
+	}
+	send_key_event(cur_key, !current_status);
 }
 
 #endif
@@ -1017,68 +962,6 @@ static inline void check_cable_type(void)
             //recover  pwm frequency and duty
                 pmic_pwrap_write(ACCDET_PWM_WIDTH, REGISTER_VALUE(cust_headset_settings->pwm_width));
                 pmic_pwrap_write(ACCDET_PWM_THRESH, REGISTER_VALUE(cust_headset_settings->pwm_thresh));
-#if 0
-            switch (multi_key)
-            {
-            case SHORT_UP:
-                ACCDET_DEBUG("[Accdet] Short press up (0x%x)\n", multi_key);
-                           if(call_status == 0)
-                           {
-                                 notify_sendKeyEvent(ACC_MEDIA_PREVIOUS);
-                           }
-                           else
-                           {
-                                 notify_sendKeyEvent(ACC_VOLUMEUP);
-                            }
-                break;
-            case SHORT_MD:
-                ACCDET_DEBUG("[Accdet] Short press middle (0x%x)\n", multi_key);
-                                 notify_sendKeyEvent(ACC_MEDIA_PLAYPAUSE);
-                break;
-            case SHORT_DW:
-                ACCDET_DEBUG("[Accdet] Short press down (0x%x)\n", multi_key);
-                           if(call_status == 0)
-                            {
-                                 notify_sendKeyEvent(ACC_MEDIA_NEXT);
-                            }
-                            else
-                            {
-                                 notify_sendKeyEvent(ACC_VOLUMEDOWN);
-                            }
-                break;
-            case LONG_UP:
-                ACCDET_DEBUG("[Accdet] Long press up (0x%x)\n", multi_key);
-                                 send_key_event(UP_KEY, KEYUP_FLAG);
-
-                break;
-            case LONG_MD:
-                ACCDET_DEBUG("[Accdet] Long press middle (0x%x)\n", multi_key);
-                                 notify_sendKeyEvent(ACC_END_CALL);
-                break;
-            case LONG_DW:
-                ACCDET_DEBUG("[Accdet] Long press down (0x%x)\n", multi_key);
-                                 send_key_event(DW_KEY, KEYUP_FLAG);
-
-                break;
-            default:
-                ACCDET_DEBUG("[Accdet] unkown key (0x%x)\n", multi_key);
-                break;
-            }
-#endif
-        /*#else
-                if(call_status != 0)
-                {
-                       if(is_long_press())
-                       {
-                             ACCDET_DEBUG("[Accdet]send long press remote button event %d \n",ACC_END_CALL);
-                             notify_sendKeyEvent(ACC_END_CALL);
-                       } else {
-                             ACCDET_DEBUG("[Accdet]send short press remote button event %d\n",ACC_ANSWER_CALL);
-                             notify_sendKeyEvent(ACC_MEDIA_PLAYPAUSE);
-                       }
-                 }
-            #endif////end  ifdef ACCDET_MULTI_KEY_FEATURE else
-         */
          }
 
 }
