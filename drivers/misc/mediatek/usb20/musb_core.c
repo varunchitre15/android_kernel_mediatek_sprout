@@ -2040,7 +2040,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
 #ifdef CONFIG_OF
 	musb->xceiv->io_priv = ctrlp;
 #endif
-	usb_phy_recover();
+	musb_platform_enable(musb);
 	if (status < 0)
 		goto fail1;
 
