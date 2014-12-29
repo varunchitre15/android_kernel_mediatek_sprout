@@ -83,4 +83,5 @@ void mtk_uart_init_debug_spinlock(void);
 void reset_tx_raw_data(struct mtk_uart *uart);
 void mtk_uart_enable_dpidle(struct mtk_uart *uart);
 void mtk_uart_disable_dpidle(struct mtk_uart *uart);
+int  mtk_uart_plat_info_query(const char str[]);
 #endif				/* MTK_UART_INTF_H */

@@ -2138,3 +2138,10 @@ void mtk_uart_disable_dpidle(struct mtk_uart *uart)
     return;
 }
 /*---------------------------------------------------------------------------*/
+int  mtk_uart_plat_info_query(const char str[])
+{
+    if(strcmp(str, "ADD_DMA_BIT_MASK_32")==0)
+        return 1;
+
+    return 0;
+}
