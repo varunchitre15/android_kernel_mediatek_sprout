@@ -357,8 +357,11 @@ static s32 goodix_tool_write(struct file *filp, const char __user *buff, unsigne
 	GTP_DEBUG_FUNC();
 	GTP_DEBUG_ARRAY((u8 *) buff, len);
 
+	if(len < CMD_HEAD_LENGTH){
+		GTP_ERROR("copy_from_user out of range, failed.");
+		return -1;
+	}
 	ret = copy_from_user(&cmd_head, buff, CMD_HEAD_LENGTH);
-
 	if (ret) {
 		GTP_ERROR("copy_from_user failed.");
 	}
@@ -379,7 +382,14 @@ static s32 goodix_tool_write(struct file *filp, const char __user *buff, unsigne
 	GTP_DEBUG("buf[20]:0x%02x.", buff[CMD_HEAD_LENGTH]);
 
 	if (1 == cmd_head.wr) {
-		/* copy_from_user(&cmd_head.data[cmd_head.addr_len], &buff[CMD_HEAD_LENGTH], cmd_head.data_len); */
+
+		if((cmd_head.data == NULL)
+			|| (cmd_head.data_len > (DATA_LENGTH - GTP_ADDR_LENGTH))
+			|| (cmd_head.data_len > (len - CMD_HEAD_LENGTH)) )
+		{
+			GTP_ERROR("copy_from_user data out of range.");
+			return -1;
+		}
 		ret =
 		    copy_from_user(&cmd_head.data[GTP_ADDR_LENGTH], &buff[CMD_HEAD_LENGTH],
 				   cmd_head.data_len);
@@ -388,6 +398,11 @@ static s32 goodix_tool_write(struct file *filp, const char __user *buff, unsigne
 			GTP_ERROR("copy_from_user failed.");
 		}
 
+		if((cmd_head.addr_len > sizeof(cmd_head.addr)))
+		{
+			GTP_ERROR("copy_from_user data out of range.");
+			return -1;
+		}
 		memcpy(&cmd_head.data[GTP_ADDR_LENGTH - cmd_head.addr_len], cmd_head.addr,
 		       cmd_head.addr_len);
 
@@ -419,6 +434,13 @@ static s32 goodix_tool_write(struct file *filp, const char __user *buff, unsigne
 		return cmd_head.data_len + CMD_HEAD_LENGTH;
 	} else if (3 == cmd_head.wr)	/* Write ic type */
 	{
+		if((cmd_head.data == NULL)
+			|| (cmd_head.data_len > sizeof(IC_TYPE[16]))
+			|| (cmd_head.data_len > (len - CMD_HEAD_LENGTH)) )
+		{
+			GTP_ERROR("copy_from_user data out of range.");
+			return -1;
+		}
 		memcpy(IC_TYPE, cmd_head.data, cmd_head.data_len);
 		register_i2c_func();
 
@@ -442,7 +464,15 @@ static s32 goodix_tool_write(struct file *filp, const char __user *buff, unsigne
 #endif
 		return CMD_HEAD_LENGTH;
 	} else if (17 == cmd_head.wr) {
-		/* struct goodix_ts_data *ts = i2c_get_clientdata(gt_client); */
+
+		if((cmd_head.data == NULL)
+			|| (cmd_head.data_len > (DATA_LENGTH - GTP_ADDR_LENGTH))
+			|| (cmd_head.data_len > (len - CMD_HEAD_LENGTH)) )
+		{
+			GTP_ERROR("copy_from_user data out of range.");
+			return -1;
+		}
+
 		ret =
 		    copy_from_user(&cmd_head.data[GTP_ADDR_LENGTH], &buff[CMD_HEAD_LENGTH],
 				   cmd_head.data_len);
@@ -475,7 +505,16 @@ static s32 goodix_tool_write(struct file *filp, const char __user *buff, unsigne
 		show_len = 0;
 		total_len = 0;
 		memset(cmd_head.data, 0, cmd_head.data_len + 1);
-		memcpy(cmd_head.data, &buff[CMD_HEAD_LENGTH], cmd_head.data_len);
+
+		if((cmd_head.data == NULL)
+			|| (cmd_head.data_len > DATA_LENGTH)
+			|| (cmd_head.data_len > (len - CMD_HEAD_LENGTH)) )
+		{
+			GTP_ERROR("copy_from_user data out of range.");
+			return -1;
+		}
+		copy_from_user(cmd_head.data, &buff[CMD_HEAD_LENGTH], cmd_head.data_len);
+
 		GTP_DEBUG("update firmware, filename: %s", cmd_head.data);
 		if (FAIL == gup_update_proc((void *)cmd_head.data)) {
 			return FAIL;
@@ -514,6 +553,11 @@ static s32 goodix_tool_read(char *page, char **start, off_t off, int count, int 
 			/* Need interrupt! */
 		}
 
+		if((cmd_head.addr_len > sizeof(cmd_head.addr)))
+		{
+			GTP_ERROR("goodix_tool_read data out of range.");
+			return -1;
+		}
 		memcpy(cmd_head.data, cmd_head.addr, cmd_head.addr_len);
 
 		GTP_DEBUG("[CMD HEAD DATA] ADDR:0x%02x%02x.", cmd_head.data[0], cmd_head.data[1]);
