@@ -70,7 +70,7 @@ static atomic_t open_flag = ATOMIC_INIT(0);
 /*
 * Enable the driver to block e-compass daemon on suspend
 */
-#define BMC050_BLOCK_DAEMON_ON_SUSPEND
+//#define BMC050_BLOCK_DAEMON_ON_SUSPEND
 //#undef    BMC050_BLOCK_DAEMON_ON_SUSPEND
 /*
 * Enable gyroscope feature with BMC050
