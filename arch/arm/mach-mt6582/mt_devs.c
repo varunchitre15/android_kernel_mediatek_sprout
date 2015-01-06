@@ -73,6 +73,8 @@ static struct sensor_tuning_data sensors_data;
 struct sensor_tuning_data *sensors_tuning_data;
 char g_para_model[32];
 unsigned int g_para_version=0;
+char *loc_androidboot_variant=NULL;
+
 struct {
 	u32 base;
 	u32 size;
@@ -1611,7 +1613,7 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
             printk(KERN_ALERT "md_inf[3]=%d\n",tags->u.mdinfo_data.md_type[3]);
             md_inf_from_meta[0]=tags->u.mdinfo_data.md_type[0];
             md_inf_from_meta[1]=tags->u.mdinfo_data.md_type[1];
-            md_inf_from_meta[2]=tags->u.mdinfo_data.md_type[2]; 
+            md_inf_from_meta[2]=tags->u.mdinfo_data.md_type[2];
             md_inf_from_meta[3]=tags->u.mdinfo_data.md_type[3];
         } else if (tags->hdr.tag == ATAG_BATTERY_TAG) {
             printk(KERN_ALERT "battery tag %d\n", tags->hdr.size);
@@ -1636,7 +1638,7 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
             gpio_usage_set_default();
     }
     if ((g_boot_mode == META_BOOT) || (g_boot_mode == ADVMETA_BOOT)) {
-        /* 
+        /*
          * Always use default dfo setting in META mode.
          * We can fix abnormal dfo setting this way.
          */
@@ -1687,20 +1689,20 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
             "[PHY layout]FB       :   0x%llx - 0x%llx  (0x%llx)\n",
             (unsigned long long)bl_mem_sz,
             (unsigned long long)kernel_mem_sz,
-            (unsigned long long)FB_START, 
-            (unsigned long long)(FB_START + FB_SIZE - 1), 
+            (unsigned long long)FB_START,
+            (unsigned long long)(FB_START + FB_SIZE - 1),
             (unsigned long long)FB_SIZE);
     if(g_boot_mode == FACTORY_BOOT)
         MTK_MEMCFG_LOG_AND_PRINTK(KERN_ALERT
                 "[PHY layout]3D       :   0x%llx - 0x%llx  (0x%llx)\n",
-                (unsigned long long)TEST_3D_START, 
-                (unsigned long long)(TEST_3D_START + TEST_3D_SIZE - 1), 
+                (unsigned long long)TEST_3D_START,
+                (unsigned long long)(TEST_3D_START + TEST_3D_SIZE - 1),
                 (unsigned long long)TEST_3D_SIZE);
     if (PMEM_MM_SIZE) {
         MTK_MEMCFG_LOG_AND_PRINTK(KERN_ALERT
                 "[PHY layout]PMEM     :   0x%llx - 0x%llx  (0x%llx)\n",
-                (unsigned long long)PMEM_MM_START, 
-                (unsigned long long)(PMEM_MM_START + PMEM_MM_SIZE - 1), 
+                (unsigned long long)PMEM_MM_START,
+                (unsigned long long)(PMEM_MM_START + PMEM_MM_SIZE - 1),
                 (unsigned long long)PMEM_MM_SIZE);
     }
 
@@ -1725,8 +1727,34 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
 #endif
 
         cmdline_filter(cmdline_tag, *cmdline);
+
+        //*cmdline = kernel cmdline + filtered lk cmdline
+        loc_androidboot_variant=strstr(*cmdline, "androidboot.variant");
+        if(loc_androidboot_variant == NULL) //if no androidboot.variant pass from lk, add it here
+        {
+            if(g_para_model[0] == '\0')
+            {
+                sprintf(*cmdline, "%s%s%s", *cmdline, " androidboot.variant=", "sprout");
+            }
+            else
+            {
+                //We allow g_para_model to contain space.
+                //If there is space in g_para_model, substitute it with "-", because android property can not have space
+                int i =0;
+                for(i=0;i<(sizeof(g_para_model)/sizeof(char));i++)
+                {
+                    if( g_para_model[i] == ' ')
+                        g_para_model[i] = '-';
+                }
+                sprintf(*cmdline, "%s%s%s", *cmdline, " androidboot.variant=", g_para_model);
+            }
+            if (strlen(*cmdline) >= COMMAND_LINE_SIZE)
+            {
+                panic("Command line length is too long.\n\r");
+            }
+        }
         parse_boot_reason(cmdline);
-        
+
         /* Use the default cmdline */
         memcpy((void*)cmdline_tag,
                (void*)tag_next(cmdline_tag),
@@ -2625,20 +2653,20 @@ retval = platform_device_register(&dummychar_device);
 	}
 //#endif
 
-#if defined (CONFIG_CUSTOM_KERNEL_SSW)	
-	retval = platform_device_register(&ssw_device);    
-	if (retval != 0) {        
-		return retval;    
+#if defined (CONFIG_CUSTOM_KERNEL_SSW)
+	retval = platform_device_register(&ssw_device);
+	if (retval != 0) {
+		return retval;
 	}
 #endif
 
-#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM	
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 	retval = platform_device_register(&mt_extmem);
-	
+
 	printk("%s[%d] ret: %d\n", __FILE__, __LINE__, retval);
 	if (retval != 0){
 		return retval;
-	}	
+	}
 #endif
 
     retval = platform_device_register(&masp_device);
@@ -2704,7 +2732,7 @@ void __weak mtk_wcn_consys_memory_reserve(void)
     printk(KERN_ERR"weak reserve function: %s", __FUNCTION__);
 }
 
-void __weak eemcs_memory_reserve(void) 
+void __weak eemcs_memory_reserve(void)
 {
     printk(KERN_ERR"calling weak function %s\n", __FUNCTION__);
 }
@@ -2728,18 +2756,18 @@ void mt_reserve(void)
     memblock_reserve(CONFIG_MTK_RAM_CONSOLE_DRAM_ADDR, CONFIG_MTK_RAM_CONSOLE_DRAM_SIZE);
 #endif
 
-    /* 
-     * Dynamic reserved memory (by arm_memblock_steal) 
+    /*
+     * Dynamic reserved memory (by arm_memblock_steal)
      *
      * *** DO NOT CHANGE THE RESERVE ORDER ***
      *
-     * New memory reserve functions should be APPENDED to old funtions 
+     * New memory reserve functions should be APPENDED to old funtions
      */
     mtk_wcn_consys_memory_reserve();
     ccci_md_mem_reserve();
 #if defined(CONFIG_MTK_EEMCS_DEVICES)
     eemcs_memory_reserve();
-#endif    
+#endif
     /* Last line of dynamic reserve functions */
 
     /* Limit memory for Android "svelte" testing. */
