@@ -1544,8 +1544,7 @@ int MDPReset_Process(int params)
 ********************************************************************************/
 static MVOID ISP_EnableClock(MBOOL En)
 {
-
-    LOG_INF("En(%d),g_EnableClkCnt(%d)", En, g_EnableClkCnt);
+    LOG_DBG("En(%d),g_EnableClkCnt(%d)", En, g_EnableClkCnt);
 
     if(En)  // enable clock.
     {
@@ -4588,7 +4587,15 @@ static long ISP_ioctl(struct file *pFile,MUINT32 Cmd,unsigned long Param)
         case ISP_FLUSH_IRQ_REQUEST:
             if(copy_from_user(&Irq_FrmB, (void*)Param, sizeof(ISP_WAIT_IRQ_STRUCT_FRMB)) == 0)
             {
-                if((Irq_FrmB.UserInfo.UserKey>=IRQ_USER_NUM_MAX) || (Irq_FrmB.UserInfo.UserKey<1))
+                if(!CAM_HAL_VER_IS3)
+                {
+                    LOG_ERR("only support cam3");
+                    Ret = -EFAULT;
+                    break;
+                }
+                //if((Irq_FrmB.UserInfo.UserKey>=IRQ_USER_NUM_MAX) || (Irq_FrmB.UserInfo.UserKey<1))
+                //UserKey(0) is Isp drv, flush ISP EnqueThread SOF signal
+                if(Irq_FrmB.UserInfo.UserKey != 0)//isp driver
                 {
                     LOG_ERR("invalid userKey(%d), max(%d)",Irq_FrmB.UserInfo.UserKey,IRQ_USER_NUM_MAX);
                     Ret = -EFAULT;
@@ -4600,6 +4607,7 @@ static long ISP_ioctl(struct file *pFile,MUINT32 Cmd,unsigned long Param)
                     Ret = -EFAULT;
                     break;
                 }
+                LOG_INF("User_%s(%d), type(%d)",IrqUserKey_UserInfo[Irq_FrmB.UserInfo.UserKey].userName,Irq_FrmB.UserInfo.UserKey,Irq_FrmB.UserInfo.Type);
                 Ret = ISP_FLUSH_IRQ(Irq_FrmB);
             }
             break;
