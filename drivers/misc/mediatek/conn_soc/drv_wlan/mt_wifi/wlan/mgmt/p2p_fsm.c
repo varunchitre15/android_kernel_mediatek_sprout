@@ -2271,14 +2271,14 @@ p2pFsmRunEventConnectionAbort (
 
         ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
 
-        DBGLOG(P2P, TRACE, ("p2pFsmRunEventConnectionAbort: Connection Abort.\n"));
+        DBGLOG(P2P, EVENT, ("p2pFsmRunEventConnectionAbort: Connection Abort.\n"));
 
         prP2pFsmInfo = prAdapter->rWifiVar.prP2pFsmInfo;
 
         if (prP2pFsmInfo == NULL) {
             break;
         }
-        
+
         prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
 
         prDisconnMsg = (P_MSG_P2P_CONNECTION_ABORT_T)prMsgHdr;
@@ -2287,7 +2287,17 @@ p2pFsmRunEventConnectionAbort (
         case OP_MODE_INFRASTRUCTURE:
             {
                 UINT_8 aucBCBSSID[] = BC_BSSID;
-                
+
+                /**
+                 *This will avoid p2p supplicant auto reconnect issue.
+                 *supplicant will trigger auto reconnect to dongle if dongle deauth source phone
+                 *first. Driver will always scan in order to build connection,
+                 *but dongle has changed p2p role could not be scanned as ESS, so driver could not
+                 *enter IDLE state, this will result scan issue like scan abort and other issues
+                 */
+                DBGLOG(P2P, EVENT, ("Clear fgIsConnRequest\n"));
+                prP2pFsmInfo->rConnReqInfo.fgIsConnRequest = FALSE;
+
                 if (!prP2pBssInfo->prStaRecOfAP) {
                     DBGLOG(P2P, TRACE, ("GO's StaRec is NULL\n"));
                     break;
@@ -2300,7 +2310,7 @@ p2pFsmRunEventConnectionAbort (
                     break;
                 }
 
-                
+
                 kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo, NULL, NULL, 0, 0);
 
                 /* Stop rejoin timer if it is started. */
@@ -2759,7 +2769,7 @@ p2pFsmRunEventRxDeauthentication (
             break;
         }
 
-        DBGLOG(P2P, TRACE, ("RX Deauth\n"));
+        DBGLOG(P2P, EVENT, ("RX Deauth\n"));
 
         switch (prP2pBssInfo->eCurrentOPMode) {
         case OP_MODE_INFRASTRUCTURE:
@@ -2835,7 +2845,7 @@ p2pFsmRunEventRxDeauthentication (
             break;
         }
 
-        DBGLOG(P2P, TRACE, ("Deauth Reason:%d\n", u2ReasonCode));
+        DBGLOG(P2P, EVENT, ("Deauth Reason:%d\n", u2ReasonCode));
 
     } while (FALSE);
 
@@ -2884,7 +2894,7 @@ p2pFsmRunEventRxDisassociation (
             break;
         }
 
-        DBGLOG(P2P, TRACE, ("RX Disassoc\n"));
+        DBGLOG(P2P, EVENT, ("RX Disassoc\n"));
 
         switch (prP2pBssInfo->eCurrentOPMode) {
         case OP_MODE_INFRASTRUCTURE:
@@ -3024,8 +3034,7 @@ p2pFsmRunEventBeaconTimeout (
         prP2pFsmInfo = prAdapter->rWifiVar.prP2pFsmInfo;
         prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
 
-        DBGLOG(P2P, TRACE, ("p2pFsmRunEventBeaconTimeout: Beacon Timeout\n"));
-		printk("p2pFsmRunEventBeaconTimeout: Beacon Timeout\n");
+        DBGLOG(P2P, EVENT, ("p2pFsmRunEventBeaconTimeout: Beacon Timeout\n"));
         /* Only client mode would have beacon lost event. */
         ASSERT(prP2pBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE);
 
