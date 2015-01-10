@@ -572,9 +572,11 @@ static MUINT32 g_DmaErr_p1[nDMA_ERR] = {0};
 static volatile spinlock_t      SpinLock_UserKey;
 
 static volatile MINT32 FirstUnusedIrqUserKey=1;
+#define USERKEY_STR_LEN 128
+
 typedef struct
 {
-    char* userName; //name for the user that register a userKey
+    char userName[USERKEY_STR_LEN]; //name for the user that register a userKey
     int userKey;    //the user key for that user
 }UserKeyInfo;
 static volatile UserKeyInfo IrqUserKey_UserInfo[IRQ_USER_NUM_MAX];        /* array for recording the user name for a specific user key */
@@ -3694,36 +3696,72 @@ static MINT32 ISP_REGISTER_IRQ_USERKEY(char* userName)
 {
     int key=-1; //-1 means there is no any un-locked user key
     int i=0;
+    int length = 0;
+    char m_UserName[USERKEY_STR_LEN];//local veriable for saving Username from user space
+    MBOOL bCopyFromUser = MTRUE;
 
     spin_lock(&SpinLock_UserKey);
 
-    //1. check the current users is full or not
-    if(FirstUnusedIrqUserKey==IRQ_USER_NUM_MAX)
-    {
-        key=-1;
-    }
-    else
-    {
-        //2. check the user had registered or not
-        for(i=1;i<FirstUnusedIrqUserKey;i++) //index 0 is for all the users that do not register irq first
-        {
-            if(strcmp(IrqUserKey_UserInfo[i].userName,userName)==0)
-            {
-                key=IrqUserKey_UserInfo[i].userKey;
-                break;
-            }
+    if(NULL == userName){
+        LOG_ERR(" [regUser] userName is NULL\n");
+    }else{
+        //get UserName from user space
+        length = strnlen_user(userName, USERKEY_STR_LEN);
+        if(length == 0){
+            LOG_ERR(" [regUser] userName address is not valid\n");
+            return key;
         }
 
-        //3.return new userkey for user if the user had not registered before
-        if(key>0)
+        if(length > USERKEY_STR_LEN)
+            length = USERKEY_STR_LEN;
+
+        if(copy_from_user(m_UserName, (void*)(userName), length*sizeof(char)) != 0)
+            bCopyFromUser = MFALSE;
+
+        if(MTRUE == bCopyFromUser)
         {
+            //check String length, add end
+            if(length == USERKEY_STR_LEN) //string length too long
+            {
+                m_UserName[length-1] = '\0';
+                if(IspInfo_FrmB.DebugMask & ISP_DBG_INT)
+                    LOG_INF(" [regUser] userName(%s) is too long (>%d)\n", m_UserName, USERKEY_STR_LEN);
+            }
+
+            if(IspInfo_FrmB.DebugMask & ISP_DBG_INT)
+                LOG_INF(" [regUser] UserName (%s)\n", m_UserName);
+
+            //1. check the current users is full or not
+            if(FirstUnusedIrqUserKey >= IRQ_USER_NUM_MAX || FirstUnusedIrqUserKey < 0)
+            {
+                key=-1;
+            }
+            else
+            {
+                //2. check the user had registered or not
+                for(i=1;i<FirstUnusedIrqUserKey;i++) //index 0 is for all the users that do not register irq first
+                {
+                    if(strcmp(IrqUserKey_UserInfo[i].userName,m_UserName)==0)
+                    {
+                        key=IrqUserKey_UserInfo[i].userKey;
+                        break;
+                    }
+                }
+
+                //3.return new userkey for user if the user had not registered before
+                if(key>0){
+                }else{
+                    memset(IrqUserKey_UserInfo[i].userName, 0, USERKEY_STR_LEN);
+                    strcpy(IrqUserKey_UserInfo[i].userName, m_UserName);
+                    IrqUserKey_UserInfo[i].userKey=FirstUnusedIrqUserKey;
+                    key=FirstUnusedIrqUserKey;
+                    FirstUnusedIrqUserKey++;
+                }
+            }
         }
         else
         {
-            IrqUserKey_UserInfo[i].userName=userName;
-            IrqUserKey_UserInfo[i].userKey=FirstUnusedIrqUserKey;
-            key=FirstUnusedIrqUserKey;
-            FirstUnusedIrqUserKey++;
+            LOG_ERR(" [regUser] copy_from_user failed (%d)\n", i);
         }
     }
     spin_unlock(&SpinLock_UserKey);
@@ -4577,7 +4615,7 @@ static MINT32 ISP_open_FrmB()
     for(i=0;i<IRQ_USER_NUM_MAX;i++)
     {
         FirstUnusedIrqUserKey=1;
-        IrqUserKey_UserInfo[i].userName="DefaultUserNametoAllocMem";
+        memset(IrqUserKey_UserInfo[i].userName, '\0', USERKEY_STR_LEN);
         IrqUserKey_UserInfo[i].userKey=-1;
     }
     //
@@ -4687,7 +4725,7 @@ static MINT32 ISP_release_FrmB()
     for(i=0;i<IRQ_USER_NUM_MAX;i++)
     {
         FirstUnusedIrqUserKey=1;
-        IrqUserKey_UserInfo[i].userName="DefaultUserNametoAllocMem";
+        memset(IrqUserKey_UserInfo[i].userName, '\0', USERKEY_STR_LEN);
         IrqUserKey_UserInfo[i].userKey=-1;
     }
 
