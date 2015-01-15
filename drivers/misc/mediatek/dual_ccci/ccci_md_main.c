@@ -1705,7 +1705,7 @@ int ccci_send_run_time_data(int md_id)
 	}
 	
 	if ((get_debug_mode_flag()&(DBG_FLAG_JTAG|DBG_FLAG_DEBUG))==0)
-		mod_timer(&ctl_b->md_boot_up_check_timer, jiffies+10*HZ);
+		mod_timer(&ctl_b->md_boot_up_check_timer, jiffies+30*HZ);
 	
 	CCCI_MSG_INF(md_id, "ctl", "wait for NORMAL_BOOT_ID @ %d\n", get_curr_md_state(md_id));
 
