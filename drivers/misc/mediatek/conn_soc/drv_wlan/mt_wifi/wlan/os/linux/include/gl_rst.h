@@ -94,6 +94,7 @@ typedef enum _ENUM_WIFI_NETLINK_GRP_T{
     WIFI_NETLINK_GRP_MAX
 } ENUM_WIFI_NETLINK_GRP_T, *P_ENUM_WIFI_NETLINK_GRP_T;
 
+int mtk_wcn_wmt_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
