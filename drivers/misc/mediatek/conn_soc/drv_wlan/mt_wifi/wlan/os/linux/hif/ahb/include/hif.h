@@ -99,6 +99,10 @@
 #define CONSYS_CPUPCR_REG		    (CONN_MCU_CONFIG_BASE + 0x00000160)
 #define CONSYS_REG_READ(addr)       (*((volatile UINT32*)(addr)))
 
+#define CONN_MCU_DRV_BASE                0x18070000
+#define CONN_MCU_REG_LENGTH              0x0200
+#define CONN_MCU_CPUPCR                  0x0160
+
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -167,6 +171,7 @@ typedef struct _GL_HIF_INFO_T {
 
     /* HIF related */
     UINT8                   *HifRegBaseAddr; /* HIF register base */
+    UINT8                   *McuRegBaseAddr; /* CONN MCU register base */
 
 #if (CONF_HIF_LOOPBACK_AUTO == 1)
     struct timer_list       HifTmrLoopbkFn; /* HIF loopback test trigger timer */
@@ -244,6 +249,8 @@ typedef struct _MTK_WCN_HIF_DMA_CONF {
 *                                 M A C R O S
 ********************************************************************************
 */
+#define MCU_REG_READL(_hif, _addr)          \
+            readl((volatile UINT_32 *)((_hif)->McuRegBaseAddr + _addr))
 
 /* PIO mode HIF register read/write */
 #define HIF_REG_READL(_hif, _addr)          \
@@ -348,6 +355,9 @@ glSetPowerState (
     IN P_GLUE_INFO_T  prGlueInfo,
     IN UINT_32 ePowerMode
     );
+
+VOID glDumpConnSysCpuInfo(P_GLUE_INFO_T prGlueInfo);
+
 #endif /* MODULE_AHB_DMA */
 
 /*----------------------------------------------------------------------------*/

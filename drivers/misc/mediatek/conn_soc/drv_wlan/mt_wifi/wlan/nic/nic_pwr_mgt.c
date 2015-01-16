@@ -321,11 +321,14 @@ nicpmSetDriverOwn (
     BOOLEAN fgStatus = TRUE;
     UINT32 i, u4CurrTick;
     UINT_32 u4RegValue = 0;
+    GL_HIF_INFO_T *HifInfo;
 
     ASSERT(prAdapter);
 
     if(prAdapter->fgIsFwOwn == FALSE)
         return fgStatus;
+
+    HifInfo = &prAdapter->prGlueInfo->rHifInfo;
 
     u4CurrTick = kalGetTimeTick();
     i = 0;
@@ -340,20 +343,20 @@ nicpmSetDriverOwn (
         else if(kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE
                 || fgIsBusAccessFailed == TRUE
                 || (kalGetTimeTick() - u4CurrTick) > LP_OWN_BACK_TOTAL_DELAY_MS
-		|| fgIsResetting == TRUE) {
+                || fgIsResetting == TRUE) {
             //ERRORLOG(("LP cannot be own back (for %ld ms)", kalGetTimeTick() - u4CurrTick));
             fgStatus = FALSE;
             if (fgIsResetting != TRUE)
             {
-				UINT_32 u4FwCnt;
+                UINT_32 u4FwCnt;
                 static unsigned int u4OwnCnt = 0;
                 HAL_MCR_RD(prAdapter, MCR_D2HRM2R, &u4RegValue);
                 printk("<WiFi> MCR_D2HRM2R = 0x%x\n", (UINT32)u4RegValue);
                 printk("<WiFi> Fatal error! Driver own fail!!!!!!!!!!!! %d\n", u4OwnCnt++);
 
-				printk("CONNSYS FW CPUINFO:\n");
-				for(u4FwCnt=0; u4FwCnt<16; u4FwCnt++)
-					printk("0x%08x ", CONSYS_REG_READ(CONSYS_CPUPCR_REG));
+                printk("CONNSYS FW CPUINFO:\n");
+                for(u4FwCnt=0; u4FwCnt<16; u4FwCnt++)
+                    printk("0x%08x ", MCU_REG_READL(HifInfo, CONN_MCU_CPUPCR)); //CONSYS_REG_READ(CONSYS_CPUPCR_REG)
             }
             break;
         }

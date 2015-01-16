@@ -624,6 +624,10 @@ nicTxPollingResource (
         }
     }
 
+    if (i <= 0 && ucTC == TC4_INDEX) {
+        DBGLOG(TX, ERROR, ("polling Tx resource for Tc4 timeout\n"));
+        glDumpConnSysCpuInfo(prAdapter->prGlueInfo);
+    }
 #if DBG
     {
         INT_32 i4Times = NIC_TX_RESOURCE_POLLING_TIMEOUT - (i+1);
@@ -673,11 +677,11 @@ nicTxReleaseResource (
         KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
         for (i = 0; i < TC_NUM; i++) {
             prTxCtrl->rTc.aucFreeBufferCount[i] += aucTxRlsCnt[i];
-
-            if ((i==1) || (i==5)){
-                DBGLOG(TX, EVENT, ("Release: i = %d aucFreeBufferCount = %d\n",
-                    i, prTxCtrl->rTc.aucFreeBufferCount[i]));
-            }
+        }
+        if (aucTxRlsCnt[TC4_INDEX] != 0 || aucTxRlsCnt[TC5_INDEX] != 0){
+            DBGLOG(TX, STATE, ("Release: TC4 count %d, Free=%d; TC5 count %d, Free=%d\n",
+                aucTxRlsCnt[TC4_INDEX], prTxCtrl->rTc.aucFreeBufferCount[TC4_INDEX],
+                aucTxRlsCnt[TC5_INDEX], prTxCtrl->rTc.aucFreeBufferCount[TC5_INDEX]));
         }
         KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
 #if 0

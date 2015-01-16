@@ -953,7 +953,6 @@
 ********************************************************************************
 */
 #include "precomp.h"
-
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -4079,6 +4078,8 @@ aisFsmRunEventScanDoneTimeOut (
     P_AIS_FSM_INFO_T prAisFsmInfo;
     ENUM_AIS_STATE_T eNextState;
     P_CONNECTION_SETTINGS_T prConnSettings;
+    GL_HIF_INFO_T *HifInfo;
+    UINT_32 u4FwCnt;
 
     DEBUGFUNC("aisFsmRunEventScanDoneTimeOut()");
 
@@ -4086,12 +4087,20 @@ aisFsmRunEventScanDoneTimeOut (
 
     prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
     prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
+    HifInfo = &prAdapter->prGlueInfo->rHifInfo;
 
     DBGLOG(AIS, STATE, ("aisFsmRunEventScanDoneTimeOut Current[%d]\n",prAisFsmInfo->eCurrentState));
-	DBGLOG(AIS, STATE, ("Isr/task %u %u %u\n", IsrCnt, IsrPassCnt, TaskIsrCnt));
+    DBGLOG(AIS, STATE, ("Isr/task %u %u %u (0x%x)\n",
+                IsrCnt, IsrPassCnt, TaskIsrCnt, prAdapter->fgIsIntEnable));
 
-	/* report all scanned frames to upper layer to avoid scanned frame is timeout */
-	/* must be put before kalScanDone */
+    /* dump firmware program counter */
+    DBGLOG(AIS, STATE, ("CONNSYS FW CPUINFO:\n"));
+    for(u4FwCnt=0; u4FwCnt<16; u4FwCnt++)
+        printk("0x%08x ", MCU_REG_READL(HifInfo, CONN_MCU_CPUPCR));
+    mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 40);
+
+    /* report all scanned frames to upper layer to avoid scanned frame is timeout */
+    /* must be put before kalScanDone */
 //	scanReportBss2Cfg80211(prAdapter,BSS_TYPE_INFRASTRUCTURE,NULL);
 
     prConnSettings->fgIsScanReqIssued = FALSE;

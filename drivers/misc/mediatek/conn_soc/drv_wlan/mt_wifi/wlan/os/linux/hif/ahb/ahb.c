@@ -694,6 +694,9 @@ glSetHifInfo (
     SET_NETDEV_DEV(GlueInfo->prDevHandler, HifInfo->Dev);
 
     HifInfo->HifRegBaseAddr = ioremap(HIF_DRV_BASE, HIF_DRV_LENGTH);
+    HifInfo->McuRegBaseAddr = ioremap(CONN_MCU_DRV_BASE, CONN_MCU_REG_LENGTH);
+    printk("HifInfo->HifRegBaseAddr=0x%p, HifInfo->McuRegBaseAddr=0x%p \n",
+        HifInfo->HifRegBaseAddr, HifInfo->McuRegBaseAddr);
 
     /* default disable DMA */
     HifInfo->fgDmaEnable = FALSE;
@@ -767,6 +770,9 @@ glClearHifInfo (
     GLUE_INFO_T *GlueInfo
     )
 {
+	iounmap(GlueInfo->rHifInfo.HifRegBaseAddr);
+	iounmap(GlueInfo->rHifInfo.DmaRegBaseAddr);
+	iounmap(GlueInfo->rHifInfo.McuRegBaseAddr);
     return;
 
 } /* end of glClearHifInfo() */
@@ -1363,10 +1369,9 @@ kalDevPortRead (
 {
 //                UCHAR AeeBuffer[100];
                 UINT_32 RegValChip, RegValLP, FwCnt;
-                extern BOOLEAN mtk_wcn_wmt_assert(void);
                 printk("CONNSYS FW CPUINFO:\n");
                 for(FwCnt=0; FwCnt<512; FwCnt++)
-                    printk("0x%08x ", CONSYS_REG_READ(CONSYS_CPUPCR_REG));
+                    printk("0x%08x ", MCU_REG_READL(HifInfo, CONN_MCU_CPUPCR)); // CONSYS_REG_READ(CONSYS_CPUPCR_REG)
                 printk("\n\n");
                 kalDevRegRead(GlueInfo, 0x00, &RegValChip);
                 kalDevRegRead(GlueInfo, 0x04, &RegValLP);
@@ -1672,10 +1677,9 @@ if (testgdmaclock == 1)
 {
 //                UCHAR AeeBuffer[100];
                 UINT_32 RegValChip, RegValLP, FwCnt;
-                extern BOOLEAN mtk_wcn_wmt_assert(void);
                 printk("CONNSYS FW CPUINFO:\n");
                 for(FwCnt=0; FwCnt<512; FwCnt++)
-                    printk("0x%08x ", CONSYS_REG_READ(CONSYS_CPUPCR_REG));
+                    printk("0x%08x ", MCU_REG_READL(HifInfo, CONN_MCU_CPUPCR));
                 printk("\n\n");
                 kalDevRegRead(GlueInfo, 0x00, &RegValChip);
                 kalDevRegRead(GlueInfo, 0x04, &RegValLP);
@@ -2412,5 +2416,11 @@ HifAhbLoopbkAuto(
 
 #endif /* CONF_HIF_LOOPBACK_AUTO */
 
+VOID glDumpConnSysCpuInfo(P_GLUE_INFO_T prGlueInfo) {
+	GL_HIF_INFO_T *prHifInfo = &prGlueInfo->rHifInfo;
+	unsigned short j = 0;
+	for(; j<512; j++)
+       printk("0x%08x \n", MCU_REG_READL(prHifInfo, CONN_MCU_CPUPCR)); // CONSYS_REG_READ(CONSYS_CPUPCR_REG)
+}
 
 /* End of ahb.c */

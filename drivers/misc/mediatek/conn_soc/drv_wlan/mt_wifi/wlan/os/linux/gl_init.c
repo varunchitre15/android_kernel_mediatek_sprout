@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -3026,6 +3026,14 @@ bailout:
             DBGLOG(INIT, TRACE, ("download firmware status = %d\n", (INT32)i4Status));
 
             if (i4Status < 0) {
+                GL_HIF_INFO_T *HifInfo;
+                UINT_32 u4FwCnt;
+
+                printk("CONNSYS FW CPUINFO:\n");
+                HifInfo = &prAdapter->prGlueInfo->rHifInfo;
+                for(u4FwCnt=0; u4FwCnt<16; u4FwCnt++)
+                    printk("0x%08x ", MCU_REG_READL(HifInfo, CONN_MCU_CPUPCR)); //CONSYS_REG_READ(CONSYS_CPUPCR_REG)
+
                 /* dump HIF/DMA registers */
                 HifRegDump(prGlueInfo->prAdapter);
                 if (prGlueInfo->rHifInfo.DmaOps->DmaRegDump != NULL)
