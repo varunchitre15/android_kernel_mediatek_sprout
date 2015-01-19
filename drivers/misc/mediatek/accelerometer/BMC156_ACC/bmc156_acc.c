@@ -1103,7 +1103,7 @@ static int significant_motion_init(struct i2c_client *client)
     res = bma255_set_slope_duration(client, 0x03);
     if (res < 0)
         printk(KERN_ERR "Gsensor:[bma255_set_slope_duration] res=%d fail\n", res);
-    res = bma255_set_slope_threshold(client, 0x28);
+    res = bma255_set_slope_threshold(client, 0x40);
     if (res < 0)
         printk(KERN_ERR "Gsensor:[bma255_set_slope_threshold] res=%d fail\n", res);
 
