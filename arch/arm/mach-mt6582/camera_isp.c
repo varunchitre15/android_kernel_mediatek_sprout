@@ -4587,12 +4587,15 @@ static long ISP_ioctl(struct file *pFile,MUINT32 Cmd,unsigned long Param)
         case ISP_FLUSH_IRQ_REQUEST:
             if(copy_from_user(&Irq_FrmB, (void*)Param, sizeof(ISP_WAIT_IRQ_STRUCT_FRMB)) == 0)
             {
+                spin_lock_irqsave(&SpinLockCamHaVer, flags);
                 if(!CAM_HAL_VER_IS3)
                 {
+                    spin_unlock_irqrestore(&SpinLockCamHaVer, flags);
                     LOG_ERR("only support cam3");
                     Ret = -EFAULT;
                     break;
                 }
+                spin_unlock_irqrestore(&SpinLockCamHaVer, flags);
                 //if((Irq_FrmB.UserInfo.UserKey>=IRQ_USER_NUM_MAX) || (Irq_FrmB.UserInfo.UserKey<1))
                 //UserKey(0) is Isp drv, flush ISP EnqueThread SOF signal
                 if(Irq_FrmB.UserInfo.UserKey != 0)//isp driver
@@ -4607,7 +4610,7 @@ static long ISP_ioctl(struct file *pFile,MUINT32 Cmd,unsigned long Param)
                     Ret = -EFAULT;
                     break;
                 }
-                LOG_INF("User_%s(%d), type(%d)",IrqUserKey_UserInfo[Irq_FrmB.UserInfo.UserKey].userName,Irq_FrmB.UserInfo.UserKey,Irq_FrmB.UserInfo.Type);
+                LOG_INF("[FlushIrq] user_%s(%d),type(%d),status(0x08%X)",IrqUserKey_UserInfo[Irq_FrmB.UserInfo.UserKey].userName,Irq_FrmB.UserInfo.UserKey,Irq_FrmB.UserInfo.Type,Irq_FrmB.UserInfo.Status);
                 Ret = ISP_FLUSH_IRQ(Irq_FrmB);
             }
             break;
@@ -4681,6 +4684,7 @@ static MINT32 ISP_open(struct inode *pInode, struct file *pFile)
     MINT32 Ret = 0;
     MUINT32 i;
     ISP_USER_INFO_STRUCT* pUserInfo;
+    unsigned long flags;
 
     LOG_DBG("+,UserCount(%d)", g_IspInfo.UserCount);
 
@@ -4710,9 +4714,9 @@ static MINT32 ISP_open(struct inode *pInode, struct file *pFile)
     }
 
     //default cam 1
-    spin_lock(&SpinLockCamHaVer);
+    spin_lock_irqsave(&SpinLockCamHaVer, flags);
     CAM_HAL_VER_IS3=false;
-    spin_unlock(&SpinLockCamHaVer);
+    spin_unlock_irqrestore(&SpinLockCamHaVer, flags);
 
     g_IspInfo.BufInfo.Read.pData = (MUINT8 *) kmalloc(ISP_BUF_SIZE, GFP_ATOMIC);
     g_IspInfo.BufInfo.Read.Size = ISP_BUF_SIZE;
@@ -5622,6 +5626,7 @@ static MINT32 __init ISP_Init(MVOID)
     MINT32 i;
     MINT32 Ret = 0;
     struct proc_dir_entry*  pEntry;
+    unsigned long flags;
 
     LOG_DBG("+");
 
@@ -5666,7 +5671,9 @@ static MINT32 __init ISP_Init(MVOID)
 
     memset(g_pBuf_kmalloc,0x00,RT_BUF_TBL_NPAGES * PAGE_SIZE);
     //
+    spin_lock_irqsave(&SpinLockCamHaVer, flags);
     LOG_INF("register isp callback for MDP,is_v3(%d)",CAM_HAL_VER_IS3);
+    spin_unlock_irqrestore(&SpinLockCamHaVer, flags);
     ISP_ControlMdpClock(MTRUE);
 
     // round it up to the page bondary
@@ -5692,11 +5699,15 @@ static MINT32 __init ISP_Init(MVOID)
 static MVOID __exit ISP_Exit(MVOID)
 {
     MINT32 i;
+    unsigned long flags;
+
     LOG_DBG("+");
 
     platform_driver_unregister(&IspDriver);
     //
+    spin_lock_irqsave(&SpinLockCamHaVer, flags);
     LOG_INF("unregister isp callback for MDP,is_v3(%d)",CAM_HAL_VER_IS3);
+    spin_unlock_irqrestore(&SpinLockCamHaVer, flags);
     ISP_ControlMdpClock(FALSE);
 
     // unreserve the pages
