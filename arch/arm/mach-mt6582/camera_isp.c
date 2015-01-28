@@ -153,6 +153,7 @@ typedef bool                 MBOOL;
 #define ISP_REG_ADDR_DMAC_INT           (ISP_ADDR + 0x40)
 #define ISP_REG_ADDR_INT_STATUSX        (ISP_ADDR + 0x44)
 #define ISP_REG_ADDR_DMA_INTX           (ISP_ADDR + 0x48)
+#define ISP_REG_ADDR_FBC_INT            (ISP_ADDR + 0xFC)
 #define ISP_REG_ADDR_SW_CTL             (ISP_ADDR + 0x5C)
 #define ISP_REG_ADDR_CQ0C_BASE_ARRR     (ISP_ADDR + 0xBC)
 #define ISP_REG_ADDR_IMGO_FBC           (ISP_ADDR + 0xF4)
@@ -3829,6 +3830,9 @@ static __tcmfunc irqreturn_t ISP_Irq(MINT32  Irq, MVOID *DeviceId)
     //below may need to read elsewhere
     IrqStatus[ISP_IRQ_TYPE_INTX] = (ISP_RD32((void *)ISP_REG_ADDR_INT_STATUSX) & (g_IspInfo.IrqInfo.Mask[ISP_IRQ_TYPE_INTX] | g_IspInfo.IrqInfo.ErrMask[ISP_IRQ_TYPE_INTX]));
     IrqStatus[ISP_IRQ_TYPE_DMAX] = (ISP_RD32((void *)ISP_REG_ADDR_DMA_INTX)    & (g_IspInfo.IrqInfo.Mask[ISP_IRQ_TYPE_DMAX] | g_IspInfo.IrqInfo.ErrMask[ISP_IRQ_TYPE_DMAX]));
+
+    //FBC drop frame status
+    MUINT32 IrqStatus_FBC = ISP_RD32((void *)ISP_REG_ADDR_FBC_INT);
 
     spin_lock(&SpinLockCamHaVer);
      if(!CAM_HAL_VER_IS3)
