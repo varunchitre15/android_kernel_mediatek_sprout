@@ -164,6 +164,7 @@ struct PS_CALI_DATA_STRUCT
 static struct i2c_client *cm36283_i2c_client = NULL;
 static struct cm36283_priv *g_cm36283_ptr = NULL;
 static struct cm36283_priv *cm36283_obj = NULL;
+static int intr_flag = 1;
 //static struct platform_driver cm36283_alsps_driver;
 //static struct PS_CALI_DATA_STRUCT ps_cali={0,0,0};
 static int cm36283_local_init(void);
@@ -307,6 +308,7 @@ int cm36283_enable_ps(struct i2c_client *client, int enable)
                 APS_ERR("i2c_master_send function err\n");
                 goto ENABLE_PS_EXIT_ERR;
             }
+            intr_flag = 1;
             atomic_set(&obj->ps_deb_on, 1);
             atomic_set(&obj->ps_deb_end, jiffies+atomic_read(&obj->ps_debounce)/(1000/HZ));
         }
@@ -453,7 +455,7 @@ static int cm36283_get_ps_value(struct cm36283_priv *obj, u8 ps)
 {
     int val, mask = atomic_read(&obj->ps_mask);
     int invalid = 0;
-    val = 0;
+    val = intr_flag;
 
     if(ps > atomic_read(&obj->ps_thd_val_high))
     {
@@ -958,7 +960,6 @@ static int cm36283_create_attr(struct device_driver *driver)
 /*----------------------------------------------------------------------------*/
 
 /*----------------------------------interrupt functions--------------------------------*/
-static int intr_flag = 0;
 /*----------------------------------------------------------------------------*/
 static int cm36283_check_intr(struct i2c_client *client)
 {
@@ -1777,6 +1778,23 @@ static int ps_set_delay(u64 ns)
 
 static int ps_get_data(int* value, int* status)
 {
+    int err = 0;
+
+    if(!cm36283_obj)
+    {
+        APS_ERR("cm36652_obj is null!!\n");
+        return -1;
+    }
+
+    if((err = cm36283_read_ps(cm36283_obj->client, &cm36283_obj->ps)))
+    {
+        err = -1;
+    }
+    else
+    {
+        *value = cm36283_get_ps_value(cm36283_obj, cm36283_obj->ps);
+        *status = SENSOR_STATUS_ACCURACY_MEDIUM;
+    }
     return 0;
 }
 /*-----------------------------------i2c operations----------------------------------*/

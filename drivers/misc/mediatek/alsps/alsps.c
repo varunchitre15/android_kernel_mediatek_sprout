@@ -163,6 +163,11 @@ static void ps_work_func(struct work_struct *work)
 
         }
     }
+   if (cxt->is_get_valid_ps_data_after_enable == false)
+    {
+        if(ALSPS_INVALID_VALUE != cxt->drv_data.als_data.values[0])
+            cxt->is_get_valid_ps_data_after_enable = true;
+    }
     //report data to input device
     //printk("new alsps work run....\n");
     //ALSPS_LOG("alsps data[%d,%d,%d]  \n" ,cxt->drv_data.alsps_data.values[0],
@@ -175,6 +180,7 @@ static void ps_work_func(struct work_struct *work)
     ps_loop:
     if(true == cxt->is_ps_polling_run)
     {
+        if (cxt->ps_ctl.is_polling_mode || (cxt->is_get_valid_ps_data_after_enable == false))
         {
           mod_timer(&cxt->timer_ps, jiffies + atomic_read(&cxt->delay_ps)/(1000/HZ));
         }
@@ -196,7 +202,7 @@ static void ps_poll(unsigned long data)
     struct alsps_context *obj = (struct alsps_context *)data;
     if(obj != NULL)
     {
-        if(obj->ps_ctl.is_polling_mode)
+        //if(obj->ps_ctl.is_polling_mode)
         schedule_work(&obj->report_ps);
     }
 }
@@ -391,6 +397,7 @@ static int ps_enable_data(int enable)
                   {
                       mod_timer(&cxt->timer_ps, jiffies + atomic_read(&cxt->delay_ps)/(1000/HZ));
                       cxt->is_ps_polling_run = true;
+                      cxt->is_get_valid_ps_data_after_enable = false;
                   }
            }
         }
@@ -646,14 +653,15 @@ static ssize_t ps_store_batch(struct device* dev, struct device_attribute *attr,
     mutex_lock(&alsps_context_obj->alsps_op_mutex);
     cxt = alsps_context_obj;
     if(cxt->ps_ctl.is_support_batch){
-            if (!strncmp(buf, "1", 1))
+        if (!strncmp(buf, "1", 1))
         {
                 cxt->is_ps_batch_enable = true;
-            }
+        }
         else if (!strncmp(buf, "0", 1))
         {
             cxt->is_ps_batch_enable = false;
-            }
+            cxt->is_get_valid_ps_data_after_enable = false;
+        }
         else
         {
             ALSPS_ERR(" ps_store_batch error !!\n");
@@ -784,6 +792,17 @@ int ps_report_interrupt_data(int value)
     struct alsps_context *cxt = NULL;
     //int err =0;
     cxt = alsps_context_obj;
+    if (cxt->is_get_valid_ps_data_after_enable == false)
+    {
+        if(ALSPS_INVALID_VALUE != value)
+        {
+            cxt->is_get_valid_ps_data_after_enable = true;
+            smp_mb();
+            del_timer_sync(&cxt->timer_ps);
+            smp_mb();
+            cancel_work_sync(&cxt->report_ps);
+        }
+    }
     ps_data_report(cxt->idev,value,3);
 
     return 0;
