@@ -77,6 +77,8 @@
 
 
 #define LSM303M_BUFSIZE                256
+#define CONVERT_M_DIV        4
+#define CONVERT_O_DIV        71
 
 
 #endif

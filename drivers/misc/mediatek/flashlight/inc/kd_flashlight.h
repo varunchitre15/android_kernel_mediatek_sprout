@@ -20,10 +20,10 @@
 /*************************************************
 *
 **************************************************/
-//In KERNEL mode,SHOULD be sync with mediatype.h
-//CHECK before remove or modify
-//#undef BOOL
-//#define BOOL signed int
+/* In KERNEL mode,SHOULD be sync with mediatype.h */
+/* CHECK before remove or modify */
+/* #undef BOOL */
+/* #define BOOL signed int */
 #ifndef _MEDIA_TYPES_H
 typedef unsigned char   MUINT8;
 typedef unsigned short  MUINT16;
@@ -33,6 +33,11 @@ typedef signed short    MINT16;
 typedef signed int      MINT32;
 #endif
 
+enum {
+	e_Max_Strobe_Num_Per_Dev=2,
+	e_Max_Part_Num_Per_Dev=2,
+	e_Max_Sensor_Dev_Num=3,
+};
 
 /* cotta-- added for high current solution */
 #define KD_STROBE_HIGH_CURRENT_WIDTH 0xFF
@@ -42,7 +47,7 @@ typedef signed int      MINT32;
 
 
 
-//FIXME: temp. solutoin for main/sub sensor mapping
+/* FIXME: temp. solutoin for main/sub sensor mapping */
 #define KD_DEFAULT_FLASHLIGHT_INDEX    0
 #define KD_CUSTOM_FLASHLIGHT_INDEX    1
 
@@ -54,26 +59,32 @@ typedef signed int      MINT32;
 #define KD_CONSTANT_FLASHLIGHT_ID   4
 
 
-typedef enum
-{
+typedef enum {
     e_CAMERA_NONE_SENSOR=0,
     e_CAMERA_MAIN_SENSOR     = 1,
     e_CAMERA_SUB_SENSOR      = 2,
-    e_CAMERA_MAIN_2_SENSOR   = 8,
-    //for backward compatible
-    e_CAMERA_MAIN_SECOND_SENSOR = 8,
-    //DUAL_CAMERA_SUB_2_SENSOR   = 16,
+    e_CAMERA_MAIN_2_SENSOR   = 4,
+	/* for backward compatible */
+    e_CAMERA_MAIN_SECOND_SENSOR = 4,
+	/* DUAL_CAMERA_SUB_2_SENSOR   = 16, */
     e_CAMERA_SENSOR_MAX
 } eFlashSensorId;
-typedef struct
-{
+typedef struct {
     int (* flashlight_open)(void *pArg);
     int (* flashlight_release)(void *pArg);
     int (* flashlight_ioctl)(MUINT32 cmd, MUINT32 arg);
 } FLASHLIGHT_FUNCTION_STRUCT, *PFLASHLIGHT_FUNCTION_STRUCT;
 
-typedef struct
-{	
+
+
+typedef struct {
+    int sensorDev;
+    int strobeId;
+    int arg;
+
+}kdStrobeDrvArg;
+
+typedef struct {
     MUINT32 (* flashlightInit)(PFLASHLIGHT_FUNCTION_STRUCT *pfFunc);
 } KD_FLASHLIGHT_INIT_FUNCTION_STRUCT, *pKD_FLASHLIGHT_INIT_FUNCTION_STRUCT;
 
@@ -82,43 +93,42 @@ typedef enum {
     FLASHLIGHTDRV_STATE_STILL,
 }eFlashlightState;
 
-//flash type enum
-typedef enum
-{
+/* flash type enum */
+typedef enum {
     FLASHLIGHT_NONE = 0,
-    FLASHLIGHT_LED_ONOFF,           // LED always on/off
-    FLASHLIGHT_LED_CONSTANT,        // CONSTANT type LED
-    FLASHLIGHT_LED_PEAK,            // peak strobe type LED
-    FLASHLIGHT_LED_TORCH,           // LED turn on when switch FLASH_ON
-    FLASHLIGHT_XENON_SCR,           // SCR strobe type Xenon
-    FLASHLIGHT_XENON_IGBT           // IGBT strobe type Xenon
+	FLASHLIGHT_LED_ONOFF,	/* LED always on/off */
+	FLASHLIGHT_LED_CONSTANT,	/* CONSTANT type LED */
+	FLASHLIGHT_LED_PEAK,	/* peak strobe type LED */
+	FLASHLIGHT_LED_TORCH,	/* LED turn on when switch FLASH_ON */
+	FLASHLIGHT_XENON_SCR,	/* SCR strobe type Xenon */
+	FLASHLIGHT_XENON_IGBT	/* IGBT strobe type Xenon */
 }   FLASHLIGHT_TYPE_ENUM;
 
 
 #define FLASHLIGHT_MAGIC 'S'
-//S means "set through a ptr"
-//T means "tell by a arg value"
-//G means "get by a ptr"
-//Q means "get by return a value"
-//X means "switch G and S atomically"
-//H means "switch T and Q atomically"
+/* S means "set through a ptr" */
+/* T means "tell by a arg value" */
+/* G means "get by a ptr" */
+/* Q means "get by return a value" */
+/* X means "switch G and S atomically" */
+/* H means "switch T and Q atomically" */
 
-//FLASHLIGHTIOC_T_ENABLE : Tell FLASHLIGHT to turn ON/OFF
+/* FLASHLIGHTIOC_T_ENABLE : Tell FLASHLIGHT to turn ON/OFF */
 #define FLASHLIGHTIOC_T_ENABLE _IOW(FLASHLIGHT_MAGIC,5, unsigned long )
 
-//set flashlight power level 0~31(weak~strong)
+/* set flashlight power level 0~31(weak~strong) */
 #define FLASHLIGHTIOC_T_LEVEL _IOW(FLASHLIGHT_MAGIC,10, unsigned long)
 
-//set flashlight time us
+/* set flashlight time us */
 #define FLASHLIGHTIOC_T_FLASHTIME _IOW(FLASHLIGHT_MAGIC,15, unsigned long)
 
-//set flashlight state
+/* set flashlight state */
 #define FLASHLIGHTIOC_T_STATE _IOW(FLASHLIGHT_MAGIC,20, unsigned long)
 
-//get flash type
+/* get flash type */
 #define FLASHLIGHTIOC_G_FLASHTYPE _IOR(FLASHLIGHT_MAGIC,25, int)
 
-//set flashlight driver
+/* set flashlight driver */
 #define FLASHLIGHTIOC_X_SET_DRIVER _IOWR(FLASHLIGHT_MAGIC,30,unsigned long)
 
 /* cotta-- set capture delay of sensor */
@@ -129,19 +139,43 @@ typedef enum
 #define FLASH_IOC_SET_STEP 		        _IOR(FLASHLIGHT_MAGIC, 105, int)
 #define FLASH_IOC_SET_DUTY				_IOR(FLASHLIGHT_MAGIC, 110, int)
 #define FLASH_IOC_SET_ONOFF           	_IOR(FLASHLIGHT_MAGIC, 115, int)
+#define FLASH_IOC_UNINIT           	_IOR(FLASHLIGHT_MAGIC, 120, int)
 
-#define FLASH_IOC_PRE_ON           	_IOR(FLASHLIGHT_MAGIC, 120, int)
-#define FLASH_IOC_GET_PRE_ON_TIME_MS           	_IOR(FLASHLIGHT_MAGIC, 125, int)
+#define FLASH_IOC_PRE_ON           	_IOR(FLASHLIGHT_MAGIC, 125, int)
+#define FLASH_IOC_GET_PRE_ON_TIME_MS           	_IOR(FLASHLIGHT_MAGIC, 130, int)
 
-#define FLASH_IOC_SET_REG_ADR  _IOR(FLASHLIGHT_MAGIC, 130, int)
-#define FLASH_IOC_SET_REG_VAL  _IOR(FLASHLIGHT_MAGIC, 135, int)
-#define FLASH_IOC_SET_REG  _IOR(FLASHLIGHT_MAGIC, 140, int)
-#define FLASH_IOC_GET_REG  _IOR(FLASHLIGHT_MAGIC, 145, int)
+#define FLASH_IOC_SET_REG_ADR  _IOR(FLASHLIGHT_MAGIC, 135, int)
+#define FLASH_IOC_SET_REG_VAL  _IOR(FLASHLIGHT_MAGIC, 140, int)
+#define FLASH_IOC_SET_REG  _IOR(FLASHLIGHT_MAGIC, 145, int)
+#define FLASH_IOC_GET_REG  _IOR(FLASHLIGHT_MAGIC, 150, int)
 
 
-#define FLASH_IOC_GET_MAIN_PART_ID           	_IOR(FLASHLIGHT_MAGIC, 150, int)
-#define FLASH_IOC_GET_SUB_PART_ID           	_IOR(FLASHLIGHT_MAGIC, 155, int)
-#define FLASH_IOC_GET_MAIN2_PART_ID           	_IOR(FLASHLIGHT_MAGIC, 160, int)
+#define FLASH_IOC_GET_MAIN_PART_ID           	_IOR(FLASHLIGHT_MAGIC, 155, int)
+#define FLASH_IOC_GET_SUB_PART_ID           	_IOR(FLASHLIGHT_MAGIC, 160, int)
+#define FLASH_IOC_GET_MAIN2_PART_ID           	_IOR(FLASHLIGHT_MAGIC, 165, int)
+#define FLASH_IOC_GET_PART_ID           	_IOR(FLASHLIGHT_MAGIC, 166, int)
+
+#define FLASH_IOC_SET_MAIN_PART_ID               _IOR(FLASHLIGHT_MAGIC, 167, int)
+#define FLASH_IOC_SET_SUB_PART_ID               _IOR(FLASHLIGHT_MAGIC, 168, int)
+#define FLASH_IOC_SET_MAIN2_PART_ID               _IOR(FLASHLIGHT_MAGIC, 169, int)
+
+#define FLASH_IOC_HAS_LOW_POWER_DETECT _IOR(FLASHLIGHT_MAGIC, 170, int)
+#define FLASH_IOC_LOW_POWER_DETECT_START _IOR(FLASHLIGHT_MAGIC, 175, int)
+#define FLASH_IOC_LOW_POWER_DETECT_END _IOR(FLASHLIGHT_MAGIC, 180, int)
+#define FLASH_IOC_IS_LOW_POWER _IOR(FLASHLIGHT_MAGIC, 182, int)
+
+
+#define FLASH_IOC_GET_ERR _IOR(FLASHLIGHT_MAGIC, 185, int)
+#define FLASH_IOC_GET_PROTOCOL_VERSION _IOR(FLASHLIGHT_MAGIC, 190, int)	/* 0: old, 1: 95 */
+
+
+
+
+typedef struct {
+    int sensorDev;
+    int arg;
+
+}StrobeDrvArg;
 
 
 #endif

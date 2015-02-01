@@ -29,7 +29,7 @@
 #ifdef BUILD_LK
 #define LCD_DEBUG(fmt)  dprintf(CRITICAL,fmt)
 #else
-#define LCD_DEBUG(fmt)  printk(fmt)
+#define LCD_DEBUG(fmt)  pr_debug(fmt)
 #endif
 
 extern LCM_DRIVER kd079d1_35na_a1_lcm_drv;
@@ -45,7 +45,7 @@ extern LCM_DRIVER nt35582_mcu_lcm_drv;
 extern LCM_DRIVER nt35582_mcu_6575_lcm_drv;
 extern LCM_DRIVER nt35582_rgb_6575_lcm_drv;
 extern LCM_DRIVER hx8357b_lcm_drv;
-extern LCM_DRIVER hx8357c_hvga_dsi_cmd_drv;
+extern LCM_DRIVER hx8357c_hvga_dsi_cmd_lcm_drv;
 extern LCM_DRIVER hx8369_dsi_lcm_drv;
 extern LCM_DRIVER hx8369_dsi_6575_lcm_drv;
 extern LCM_DRIVER hx8369_dsi_6575_hvga_lcm_drv;
@@ -56,6 +56,7 @@ extern LCM_DRIVER hx8369b_wvga_dsi_vdo_drv;
 extern LCM_DRIVER hx8389b_qhd_dsi_vdo_drv;
 extern LCM_DRIVER hx8369_hvga_lcm_drv;
 extern LCM_DRIVER ili9481_lcm_drv;
+extern LCM_DRIVER ili9486_hvga_dsi_cmd_lcm_drv;
 extern LCM_DRIVER nt35582_lcm_drv;
 extern LCM_DRIVER s6d0170_lcm_drv;
 extern LCM_DRIVER spfd5461a_lcm_drv;
@@ -119,6 +120,7 @@ extern LCM_DRIVER nt35590_hd720_dsi_cmd_auo_fwvga_lcm_drv;
 extern LCM_DRIVER nt35590_hd720_dsi_cmd_auo_wvga_lcm_drv;
 extern LCM_DRIVER nt35590_hd720_dsi_cmd_auo_qhd_lcm_drv;
 extern LCM_DRIVER nt35590_hd720_dsi_cmd_cmi_lcm_drv;
+extern LCM_DRIVER nt35590_dsi_cmd_6571_fwvga_lcm_drv;
 extern LCM_DRIVER nt35516_qhd_dsi_cmd_ipsboe_lcm_drv;
 extern LCM_DRIVER nt35516_qhd_dsi_cmd_ipsboe_wvga_lcm_drv;
 extern LCM_DRIVER nt35516_qhd_dsi_cmd_ips9k1431_drv;
@@ -142,6 +144,7 @@ extern LCM_DRIVER auo_b079xat02_dsi_vdo_lcm_drv;
 extern LCM_DRIVER hx8389b_qhd_dsi_vdo_tianma055xdhp_lcm_drv;
 extern LCM_DRIVER cpt_claa101fp01_dsi_vdo_lcm_drv;
 extern LCM_DRIVER h070d_18dm_lcm_drv;
+extern LCM_DRIVER hx8379a_wvga_dsi_vdo_drv;
 extern LCM_DRIVER hx8394a_hd720_dsi_vdo_tianma_lcm_drv;
 extern LCM_DRIVER cpt_clap070wp03xg_sn65dsi83_lcm_drv;
 extern LCM_DRIVER nt35520_hd720_tm_lcm_drv;
@@ -183,6 +186,10 @@ LCM_DRIVER* lcm_driver_list[] =
 { 
 #if defined(OTM8018B_DSI_VDO_BOE_G6)
 	&otm8018b_dsi_vdo_boe_g6_lcm_drv,
+#endif
+
+#if defined(NT35590_DSI_CMD_6571_FWVGA)
+    &nt35590_dsi_cmd_6571_fwvga_lcm_drv,
 #endif
 
 #if defined(ILI9806C_DSI_VDO_TXD_IPS)
@@ -309,7 +316,7 @@ LCM_DRIVER* lcm_driver_list[] =
 #endif
 
 #if defined(HX8357C_HVGA_DSI_CMD)
-	&hx8357c_hvga_dsi_cmd_drv,
+    &hx8357c_hvga_dsi_cmd_lcm_drv,
 #endif
 
 #if defined(R61408)
@@ -394,6 +401,10 @@ LCM_DRIVER* lcm_driver_list[] =
 
 #if defined(ILI9481)
 	&ili9481_lcm_drv,
+#endif
+
+#if defined(ILI9486_HVGA_DSI_CMD)
+    &ili9486_hvga_dsi_cmd_lcm_drv,
 #endif
 
 #if defined(NT35582)
@@ -643,6 +654,10 @@ LCM_DRIVER* lcm_driver_list[] =
 #endif
 #if defined(H070D_18DM)
     &h070d_18dm_lcm_drv,
+#endif
+
+#if defined(HX8379A_WVGA_DSI_VDO)
+    &hx8379a_wvga_dsi_vdo_drv,
 #endif
 
 #if defined(HX8394A_HD720_DSI_VDO_TIANMA)
@@ -911,15 +926,15 @@ unsigned char which_lcd_module_triple(void)
     dprintf(CRITICAL,"which_lcd_module_triple,lcd_id0:%d\n",lcd_id0);
     dprintf(CRITICAL,"which_lcd_module_triple,lcd_id1:%d\n",lcd_id1);
 #else
-    printk("which_lcd_module_triple,lcd_id0:%d\n",lcd_id0);
-    printk("which_lcd_module_triple,lcd_id1:%d\n",lcd_id1);
+    pr_debug("which_lcd_module_triple,lcd_id0:%d\n",lcd_id0);
+    pr_debug("which_lcd_module_triple,lcd_id1:%d\n",lcd_id1);
 #endif
     lcd_id =  lcd_id0 | (lcd_id1 << 2);
 
 #ifdef BUILD_LK
     dprintf(CRITICAL,"which_lcd_module_triple,lcd_id:%d\n",lcd_id);
 #else
-    printk("which_lcd_module_triple,lcd_id:%d\n",lcd_id);
+    pr_debug("which_lcd_module_triple,lcd_id:%d\n",lcd_id);
 #endif
 
     lcd_id_pins_value = lcd_id;

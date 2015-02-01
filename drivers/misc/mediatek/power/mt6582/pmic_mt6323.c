@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -56,6 +56,7 @@
 #include <linux/sched.h>
 #include <linux/writeback.h>
 #include <linux/earlysuspend.h>
+#include <linux/version.h>
 
 #include <asm/uaccess.h>
 
@@ -70,7 +71,7 @@
 #include <mach/mt_spm_mtcmos.h>
 
 #include <mach/battery_common.h>
-#include <linux/time.h> 
+#include <linux/time.h>
 
 #if defined (CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 #include <mach/mt_boot.h>
@@ -143,9 +144,9 @@ extern void pmu_drv_tool_customization_init(void);
 #if defined (CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 extern void mt_power_off(void);
 static kal_bool long_pwrkey_press = false;
-static unsigned long timer_pre = 0; 
-static unsigned long timer_pos = 0; 
-#define LONG_PWRKEY_PRESS_TIME 		500*1000000    //500ms
+static unsigned long timer_pre = 0;
+static unsigned long timer_pos = 0;
+#define LONG_PWRKEY_PRESS_TIME		500*1000000    //500ms
 #endif
 //==============================================================================
 // PMIC lock/unlock APIs
@@ -167,7 +168,7 @@ kal_uint32 upmu_get_reg_value(kal_uint32 reg)
 
     //printk("[upmu_get_reg_value] \n");
     ret=pmic_read_interface(reg, &reg_val, 0xFFFF, 0x0);
-    
+
     return reg_val;
 }
 EXPORT_SYMBOL(upmu_get_reg_value);
@@ -177,7 +178,7 @@ void upmu_set_reg_value(kal_uint32 reg, kal_uint32 reg_val)
     U32 ret=0;
 
     //printk("[upmu_set_reg_value] \n");
-    ret=pmic_config_interface(reg, reg_val, 0xFFFF, 0x0);    
+    ret=pmic_config_interface(reg, reg_val, 0xFFFF, 0x0);
 }
 
 kal_int32 count_time_out=100;
@@ -196,7 +197,7 @@ kal_uint32  pmic_is_auxadc_busy(void)
 void PMIC_IMM_PollingAuxadcChannel(void)
 {
 	kal_uint32 ret=0;
-    
+
 	 //xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[PMIC_IMM_PollingAuxadcChannel] before:%d ",upmu_get_rg_adc_deci_gdly());
 
 	if (upmu_get_rg_adc_deci_gdly()==1)
@@ -217,21 +218,21 @@ void PMIC_IMM_PollingAuxadcChannel(void)
 }
 
 //==============================================================================
-// PMIC-AUXADC 
+// PMIC-AUXADC
 //==============================================================================
 int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 {
 
-	kal_int32 ret_data;	
+	kal_int32 ret_data;
 	kal_int32 count=0;
 	kal_int32 u4Sample_times = 0;
-	kal_int32 u4channel=0;	
+	kal_int32 u4channel=0;
 	kal_int32 adc_result_temp=0;
-       kal_int32 r_val_temp=0;   
-	kal_int32 adc_result=0;   
-    kal_int32 ret=0;
-    kal_int32 adc_reg_val=0;
-	
+	kal_int32 r_val_temp=0;
+	kal_int32 adc_result=0;
+	kal_int32 ret=0;
+	kal_int32 adc_reg_val=0;
+
     /*
         0 : BATON2 **
         1 : CH6
@@ -241,7 +242,7 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
         5 : BATON1
         6 : ISENSE
         7 : BATSNS
-        8 : ACCDET    
+        8 : ACCDET
         9-16 : audio
     */
 
@@ -250,15 +251,15 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
         return 0;
 
     wake_lock(&pmicAuxadc_irq_lock);
-	
+
 
 	do
 	{
 
     mutex_lock(&pmic_adc_mutex);
-	
+
     PMIC_IMM_PollingAuxadcChannel();
-	
+
 
     if (dwChannel<9)
     {
@@ -283,7 +284,7 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
         //set 1
         ret=pmic_read_interface(AUXADC_CON23,&adc_reg_val,PMIC_RG_AP_RQST_LIST_RSV_MASK,PMIC_RG_AP_RQST_LIST_RSV_SHIFT);
         adc_reg_val = adc_reg_val | (1<<(dwChannel-9));
-        ret=pmic_config_interface(AUXADC_CON23,adc_reg_val,PMIC_RG_AP_RQST_LIST_RSV_MASK,PMIC_RG_AP_RQST_LIST_RSV_SHIFT);		
+        ret=pmic_config_interface(AUXADC_CON23,adc_reg_val,PMIC_RG_AP_RQST_LIST_RSV_MASK,PMIC_RG_AP_RQST_LIST_RSV_SHIFT);
     }
 
 
@@ -296,8 +297,8 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 	    count=0;
 	    ret_data=0;
 
-	    switch(dwChannel){         
-	        case 0:    
+	    switch(dwChannel){
+	        case 0:
 	            while( upmu_get_rg_adc_rdy_baton2() != 1 )
 	            {
 			msleep(1);
@@ -305,12 +306,12 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_baton2();				
+	            ret_data = upmu_get_rg_adc_out_baton2();
 	            break;
-		
-	        case 1:    
+
+	        case 1:
 	            while( upmu_get_rg_adc_rdy_ch6() != 1 )
 	            {
 			msleep(1);
@@ -318,12 +319,12 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_ch6();				
+	            ret_data = upmu_get_rg_adc_out_ch6();
                 xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[upmu_get_rg_adc_out_ch6] 0x%x\n", ret_data);
 	            break;
-	        case 2:    
+	        case 2:
 	            while( upmu_get_rg_adc_rdy_thr_sense2() != 1 )
 	            {
 			msleep(1);
@@ -331,11 +332,11 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_thr_sense2();				
-	            break;				
-	        case 3:    
+	            ret_data = upmu_get_rg_adc_out_thr_sense2();
+	            break;
+	        case 3:
 	            while( upmu_get_rg_adc_rdy_thr_sense1() != 1 )
 	            {
 			msleep(1);
@@ -343,11 +344,11 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_thr_sense1();				
+	            ret_data = upmu_get_rg_adc_out_thr_sense1();
 	            break;
-	        case 4:    
+	        case 4:
 	            while( upmu_get_rg_adc_rdy_vcdt() != 1 )
 	            {
 			msleep(1);
@@ -355,11 +356,11 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_vcdt();				
+	            ret_data = upmu_get_rg_adc_out_vcdt();
 	            break;
-	        case 5:    
+	        case 5:
 	            while( upmu_get_rg_adc_rdy_baton1() != 1 )
 	            {
 			msleep(1);
@@ -367,11 +368,11 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_baton1();				
+	            ret_data = upmu_get_rg_adc_out_baton1();
 	            break;
-	        case 6:    
+	        case 6:
 	            while( upmu_get_rg_adc_rdy_isense() != 1 )
 	            {
 			msleep(1);
@@ -379,11 +380,11 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_isense();				
+	            ret_data = upmu_get_rg_adc_out_isense();
 	            break;
-	        case 7:    
+	        case 7:
 	            while( upmu_get_rg_adc_rdy_batsns() != 1 )
 	            {
 			msleep(1);
@@ -391,23 +392,23 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_batsns();				
-	            break; 
-                
-	        case 8:    
+	            ret_data = upmu_get_rg_adc_out_batsns();
+	            break;
+
+	        case 8:
 	            while( upmu_get_rg_adc_rdy_ch5() != 1 );
-	            ret_data = upmu_get_rg_adc_out_ch5();				
-	            break; 				
-	        case 9:    
-		case 10:  
-		case 11:  
+	            ret_data = upmu_get_rg_adc_out_ch5();
+	            break;
+	        case 9:
+		case 10:
+		case 11:
 		case 12:
-	        case 13:    
-		case 14:  
-		case 15:  
-		case 16:	 	
+		case 13:
+		case 14:
+		case 15:
+		case 16:
 	            while( upmu_get_rg_adc_rdy_int() != 1 )
 	            {
 			msleep(1);
@@ -415,11 +416,11 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 			{
                         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[IMM_GetOneChannelValue_PMIC] (%d) Time out!\n", dwChannel);
 			    break;
-			}			
+			}
 	            }
-	            ret_data = upmu_get_rg_adc_out_int();				
-	            break; 				
-                
+	            ret_data = upmu_get_rg_adc_out_int();
+	            break;
+
 	        default:
 	            xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[AUXADC] Invalid channel value(%d,%d)\n", dwChannel, trimd);
 	            wake_unlock(&pmicAuxadc_irq_lock);
@@ -434,41 +435,41 @@ int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 	    if (Enable_BATDRV_LOG == 2)
 	    {
 	        //debug
-	        xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[AUXADC] u4channel[%d]=%d.\n", 
+	        xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[AUXADC] u4channel[%d]=%d.\n",
 	            dwChannel, ret_data);
 	    }
-	    
+
 	}while (u4Sample_times < deCount);
 
-    /* Value averaging  */ 
+    /* Value averaging  */
     adc_result_temp = u4channel / deCount;
 
-    switch(dwChannel){         
-        case 0:                
-            r_val_temp = 1;           
-            adc_result = (adc_result_temp*r_val_temp*VOLTAGE_FULL_RANGE)/ADC_PRECISE;
-            break;
-        case 1:    
+    switch(dwChannel){
+        case 0:
             r_val_temp = 1;
             adc_result = (adc_result_temp*r_val_temp*VOLTAGE_FULL_RANGE)/ADC_PRECISE;
             break;
-        case 2:    
+        case 1:
             r_val_temp = 1;
             adc_result = (adc_result_temp*r_val_temp*VOLTAGE_FULL_RANGE)/ADC_PRECISE;
             break;
-        case 3:    
+        case 2:
             r_val_temp = 1;
             adc_result = (adc_result_temp*r_val_temp*VOLTAGE_FULL_RANGE)/ADC_PRECISE;
             break;
-        case 4:    
+        case 3:
             r_val_temp = 1;
             adc_result = (adc_result_temp*r_val_temp*VOLTAGE_FULL_RANGE)/ADC_PRECISE;
             break;
-        case 5:    
+        case 4:
             r_val_temp = 1;
             adc_result = (adc_result_temp*r_val_temp*VOLTAGE_FULL_RANGE)/ADC_PRECISE;
             break;
-        case 6:    
+        case 5:
+            r_val_temp = 1;
+            adc_result = (adc_result_temp*r_val_temp*VOLTAGE_FULL_RANGE)/ADC_PRECISE;
+            break;
+        case 6:
             r_val_temp = 4;
             adc_result = (adc_result_temp*r_val_temp*VOLTAGE_FULL_RANGE)/ADC_PRECISE;
             break;
@@ -1088,21 +1089,6 @@ U32 pmic_config_interface (U32 RegNum, U32 val, U32 MASK, U32 SHIFT)
         mutex_unlock(&pmic_access_mutex);
         return return_value;
     }
-    //xlog_printk(ANDROID_LOG_DEBUG, "Power/PMIC", "[pmic_config_interface] write Reg[%x]=0x%x\n", RegNum, pmic6323_reg);
-
-    #if 0
-    //3. Double Check
-    //mt6323_read_byte(RegNum, &pmic6323_reg);
-    return_value= pwrap_wacs2(0, (RegNum), 0, &rdata);
-    pmic6323_reg=rdata;
-    if(return_value!=0)
-    {
-        xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[pmic_config_interface] Reg[%x]= pmic_wrap write data fail\n", RegNum);
-        mutex_unlock(&pmic_access_mutex);
-        return return_value;
-    }
-    xlog_printk(ANDROID_LOG_DEBUG, "Power/PMIC", "[pmic_config_interface] Reg[%x]=0x%x\n", RegNum, pmic6323_reg);
-    #endif
 
     mutex_unlock(&pmic_access_mutex);
 #else
@@ -3228,7 +3214,7 @@ void dump_ldo_status_read_debug(void)
     printk("VTCXO   =%d, ",  (((val_1)&(0x0200))>>9) ); 
     printk("VUSB    =%d\n",  (((val_1)&(0x0400))>>10) );
 }
-
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
 static int dump_ldo_status_read(char *page, char **start, off_t off,
                 int count, int *eof, void *data)
 {
@@ -3239,42 +3225,42 @@ static int dump_ldo_status_read(char *page, char **start, off_t off,
 
     val_0 = upmu_get_reg_value(0x138);
     val_1 = upmu_get_reg_value(0x13A);
-    
+
     p += sprintf(p, "********** ldo status dump [1:ON,0:OFF]**********\n");
 
     /*
-    p += sprintf(p, "VPROC=%d\n",    (((val_1)&(0x0001))>>0) ); 
+    p += sprintf(p, "VPROC=%d\n",    (((val_1)&(0x0001))>>0) );
     p += sprintf(p, "VSRAM=%d\n",    (((val_1)&(0x0002))>>1) );
     p += sprintf(p, "VCORE=%d\n",    (((val_0)&(0x0004))>>2) );
     */
-    p += sprintf(p, "VRTC    =%d, ",  (((val_0)&(0x0008))>>3) );     
-    p += sprintf(p, "VA      =%d, ",  (((val_0)&(0x0010))>>4) ); 
-    p += sprintf(p, "VCAMA   =%d, ",  (((val_0)&(0x0020))>>5) ); 
+    p += sprintf(p, "VRTC    =%d, ",  (((val_0)&(0x0008))>>3) );
+    p += sprintf(p, "VA      =%d, ",  (((val_0)&(0x0010))>>4) );
+    p += sprintf(p, "VCAMA   =%d, ",  (((val_0)&(0x0020))>>5) );
     p += sprintf(p, "VCAMD   =%d\n",  (((val_0)&(0x0040))>>6) );
-    
-    p += sprintf(p, "VCAM_AF =%d, ",  (((val_0)&(0x0080))>>7) );        
-    p += sprintf(p, "VCAM_IO =%d, ",  (((val_0)&(0x0100))>>8) ); 
-    p += sprintf(p, "VCN28   =%d, ",  (((val_0)&(0x0200))>>9) ); 
+
+    p += sprintf(p, "VCAM_AF =%d, ",  (((val_0)&(0x0080))>>7) );
+    p += sprintf(p, "VCAM_IO =%d, ",  (((val_0)&(0x0100))>>8) );
+    p += sprintf(p, "VCN28   =%d, ",  (((val_0)&(0x0200))>>9) );
     p += sprintf(p, "VCN33   =%d\n",  (((val_0)&(0x0400))>>10) );
-    
-    p += sprintf(p, "VCN_1V8 =%d, ",  (((val_0)&(0x0800))>>11) );    
+
+    p += sprintf(p, "VCN_1V8 =%d, ",  (((val_0)&(0x0800))>>11) );
     p += sprintf(p, "VEMC_3V3=%d, ",  (((val_0)&(0x1000))>>12) );
     p += sprintf(p, "VGP1    =%d, ",  (((val_0)&(0x2000))>>13) );
     p += sprintf(p, "VGP2    =%d\n",  (((val_0)&(0x4000))>>14) );
-    
-    p += sprintf(p, "VGP3    =%d, ",  (((val_0)&(0x8000))>>15) );                                                        
-    p += sprintf(p, "VIBR    =%d, ",  (((val_1)&(0x0001))>>0) ); 
-    p += sprintf(p, "VIO18   =%d, ",  (((val_1)&(0x0002))>>1) ); 
-    p += sprintf(p, "VIO28   =%d\n",  (((val_1)&(0x0004))>>2) ); 
-    
-    p += sprintf(p, "VM      =%d, ",  (((val_1)&(0x0008))>>3) );     
-    p += sprintf(p, "VMC     =%d, ",  (((val_1)&(0x0010))>>4) ); 
-    p += sprintf(p, "VMCH    =%d, ",  (((val_1)&(0x0020))>>5) ); 
-    p += sprintf(p, "VRF18   =%d\n",  (((val_1)&(0x0040))>>6) ); 
-    
-    p += sprintf(p, "VSIM1   =%d, ",  (((val_1)&(0x0080))>>7) );     
-    p += sprintf(p, "VSIM2   =%d, ",  (((val_1)&(0x0100))>>8) ); 
-    p += sprintf(p, "VTCXO   =%d, ",  (((val_1)&(0x0200))>>9) ); 
+
+    p += sprintf(p, "VGP3    =%d, ",  (((val_0)&(0x8000))>>15) );
+    p += sprintf(p, "VIBR    =%d, ",  (((val_1)&(0x0001))>>0) );
+    p += sprintf(p, "VIO18   =%d, ",  (((val_1)&(0x0002))>>1) );
+    p += sprintf(p, "VIO28   =%d\n",  (((val_1)&(0x0004))>>2) );
+
+    p += sprintf(p, "VM      =%d, ",  (((val_1)&(0x0008))>>3) );
+    p += sprintf(p, "VMC     =%d, ",  (((val_1)&(0x0010))>>4) );
+    p += sprintf(p, "VMCH    =%d, ",  (((val_1)&(0x0020))>>5) );
+    p += sprintf(p, "VRF18   =%d\n",  (((val_1)&(0x0040))>>6) );
+
+    p += sprintf(p, "VSIM1   =%d, ",  (((val_1)&(0x0080))>>7) );
+    p += sprintf(p, "VSIM2   =%d, ",  (((val_1)&(0x0100))>>8) );
+    p += sprintf(p, "VTCXO   =%d, ",  (((val_1)&(0x0200))>>9) );
     p += sprintf(p, "VUSB    =%d\n",  (((val_1)&(0x0400))>>10) );
 
     *start = page + off;
@@ -3289,9 +3275,68 @@ static int dump_ldo_status_read(char *page, char **start, off_t off,
     return len < count ? len  : count;
 }
 
+#else
+static int proc_utilization_show(struct seq_file *m, void *v)
+{
+#if 1
+    kal_uint32 val_0=0, val_1=0;
+
+    //MT6323
+    val_0 = upmu_get_reg_value(0x138);
+    val_1 = upmu_get_reg_value(0x13A);
+
+    seq_printf(m, "********** BUCK/LDO status dump seq_printf [1:ON,0:OFF]**********\n");
+
+    seq_printf(m, "VRTC    =%d, ",  (((val_0)&(0x0008))>>3) );
+    seq_printf(m, "VA      =%d, ",  (((val_0)&(0x0010))>>4) );
+    seq_printf(m, "VCAMA   =%d, ",  (((val_0)&(0x0020))>>5) );
+    seq_printf(m, "VCAMD   =%d\n",  (((val_0)&(0x0040))>>6) );
+
+    seq_printf(m, "VCAM_AF =%d, ",  (((val_0)&(0x0080))>>7) );
+    seq_printf(m, "VCAM_IO =%d, ",  (((val_0)&(0x0100))>>8) );
+    seq_printf(m, "VCN28   =%d, ",  (((val_0)&(0x0200))>>9) );
+    seq_printf(m, "VCN33   =%d\n",  (((val_0)&(0x0400))>>10) );
+
+    seq_printf(m, "VCN_1V8 =%d, ",  (((val_0)&(0x0800))>>11) );
+    seq_printf(m, "VEMC_3V3=%d, ",  (((val_0)&(0x1000))>>12) );
+    seq_printf(m, "VGP1    =%d, ",  (((val_0)&(0x2000))>>13) );
+    seq_printf(m, "VGP2    =%d\n",  (((val_0)&(0x4000))>>14) );
+
+    seq_printf(m, "VGP3    =%d, ",  (((val_0)&(0x8000))>>15) );
+    seq_printf(m, "VIBR    =%d, ",  (((val_1)&(0x0001))>>0) );
+    seq_printf(m, "VIO18   =%d, ",  (((val_1)&(0x0002))>>1) );
+    seq_printf(m, "VIO28   =%d\n",  (((val_1)&(0x0004))>>2) );
+
+    seq_printf(m, "VM      =%d, ",  (((val_1)&(0x0008))>>3) );
+    seq_printf(m, "VMC     =%d, ",  (((val_1)&(0x0010))>>4) );
+    seq_printf(m, "VMCH    =%d, ",  (((val_1)&(0x0020))>>5) );
+    seq_printf(m, "VRF18   =%d\n",  (((val_1)&(0x0040))>>6) );
+
+    seq_printf(m, "VSIM1   =%d, ",  (((val_1)&(0x0080))>>7) );
+    seq_printf(m, "VSIM2   =%d, ",  (((val_1)&(0x0100))>>8) );
+    seq_printf(m, "VTCXO   =%d, ",  (((val_1)&(0x0200))>>9) );
+    seq_printf(m, "VUSB    =%d\n",  (((val_1)&(0x0400))>>10) );
+#endif
+
+    return 0;
+}
+
+static int proc_utilization_open(struct inode *inode, struct file *file)
+{
+    return single_open(file, proc_utilization_show, NULL);
+}
+
+static const struct file_operations pmic_debug_proc_fops = {
+    .open  = proc_utilization_open,
+    .read  = seq_read,
+};
+
+#endif
 void pmic_debug_init(void)
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
     struct proc_dir_entry *entry;
+#endif
     struct proc_dir_entry *mt_pmic_dir;
 
     mt_pmic_dir = proc_mkdir("mt_pmic", NULL);
@@ -3300,10 +3345,16 @@ void pmic_debug_init(void)
         return;
     }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
     entry = create_proc_entry("dump_ldo_status", 00640, mt_pmic_dir);
     if (entry) {
         entry->read_proc = dump_ldo_status_read;
     }
+
+#else
+    proc_create("dump_ldo_status", S_IRUGO | S_IWUSR, mt_pmic_dir, &pmic_debug_proc_fops);
+    xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "proc_create pmic_debug_proc_fops\n" );
+#endif
 }
 
 void PMIC_INIT_SETTING_V1(void)
@@ -3317,9 +3368,9 @@ void PMIC_INIT_SETTING_V1(void)
     {
         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[Kernel_PMIC_INIT_SETTING_V1] PMIC Chip = %x\n",chip_version);
         xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[Kernel_PMIC_INIT_SETTING_V1] 20130604_0.85v\n");
-        
+
         //put init setting from DE/SA
-        
+
 ret = pmic_config_interface(0x2,0xB,0xF,4); // [7:4]: RG_VCDT_HV_VTH; 7V OVP
 ret = pmic_config_interface(0xC,0x1,0x7,1); // [3:1]: RG_VBAT_OV_VTH; VBAT_OV=4.3V
 ret = pmic_config_interface(0x1A,0x3,0xF,0); // [3:0]: RG_CHRWDT_TD; align to 6250's

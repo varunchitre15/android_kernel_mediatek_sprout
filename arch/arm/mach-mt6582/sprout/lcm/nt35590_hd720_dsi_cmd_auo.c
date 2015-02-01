@@ -33,8 +33,6 @@
 #define FRAME_WIDTH  										(720)
 #define FRAME_HEIGHT 										(1280)
 #define LCM_ID       (0x69)
-#define REGFLAG_DELAY             							0xAB
-#define REGFLAG_END_OF_TABLE      							0xAA   // END OF REGISTERS MARKER
 
 #define LCM_ID_NT35590 (0x90)
 
@@ -58,6 +56,12 @@ static unsigned int lcm_esd_test = FALSE;      ///only for ESD test
 // ---------------------------------------------------------------------------
 
 static LCM_UTIL_FUNCS lcm_util;
+static struct LCM_setting_table *para_init_table = NULL;
+static unsigned int para_init_size = 0;
+static LCM_PARAMS *para_params = NULL;
+
+static unsigned int lcm_driver_id = 0x0;
+static unsigned int lcm_module_id = 0x0;
 
 #define SET_RESET_PIN(v)    								(lcm_util.set_reset_pin((v)))
 
@@ -77,11 +81,6 @@ static LCM_UTIL_FUNCS lcm_util;
 #define read_reg_v2(cmd, buffer, buffer_size)   				lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)    
 
 static unsigned int need_set_lcm_addr = 1;
-struct LCM_setting_table {
-    unsigned char cmd;
-    unsigned char count;
-    unsigned char para_list[64];
-};
 
 #if 0
 static struct LCM_setting_table lcm_initialization_setting[] = {
@@ -214,9 +213,43 @@ static void push_table(struct LCM_setting_table *table, unsigned int count, unsi
 }
 #endif
 
+
+static void push_table(struct LCM_setting_table *table, unsigned int count, unsigned char force_update)
+{
+    unsigned int i;
+
+    for(i = 0; i < count; i++) {
+
+        unsigned cmd;
+        cmd = table[i].cmd;
+
+        switch (cmd) {
+
+            case REGFLAG_DELAY :
+                MDELAY(table[i].count);
+                break;
+
+            case REGFLAG_END_OF_TABLE :
+                break;
+
+            default:
+                dsi_set_cmdq_V2(cmd, table[i].count, table[i].para_list, force_update);
+           }
+    }
+
+}
+
+
 // ---------------------------------------------------------------------------
 //  LCM Driver Implementations
 // ---------------------------------------------------------------------------
+
+static void lcm_get_id(unsigned int* driver_id, unsigned int* module_id)
+{
+    *driver_id = lcm_driver_id;
+    *module_id = lcm_module_id;
+}
+
 
 static void lcm_set_util_funcs(const LCM_UTIL_FUNCS *util)
 {
@@ -224,10 +257,24 @@ static void lcm_set_util_funcs(const LCM_UTIL_FUNCS *util)
 }
 
 
+static void lcm_set_params(struct LCM_setting_table *init_table, unsigned int init_size, LCM_PARAMS *params)
+{
+    para_init_table = init_table;
+    para_init_size = init_size;
+    para_params = params;
+}
+
+
 static void lcm_get_params(LCM_PARAMS *params)
 {
 		memset((void*)params, 0, sizeof(LCM_PARAMS));
 	
+    if (para_params != NULL)
+    {
+        memcpy(params, para_params, sizeof(LCM_PARAMS));
+    }
+    else
+    {
 		params->type   = LCM_TYPE_DSI;
 
 		params->width  = FRAME_WIDTH;
@@ -260,10 +307,14 @@ static void lcm_get_params(LCM_PARAMS *params)
     	params->dsi.pll_div1=0;
     	params->dsi.pll_div2=0;
     	params->dsi.fbk_div=11;
+    }
 }
 
 static void lcm_init(void)
 {
+    int i, j;
+    int size;
+
 	//int i;
 	//unsigned char buffer[10];
 	//unsigned int  array[16];
@@ -273,6 +324,12 @@ static void lcm_init(void)
 		SET_RESET_PIN(1);
 		MDELAY(5); 
 	
+    if (para_init_table != NULL)
+    {
+        push_table(para_init_table, para_init_size, 1);
+    }
+    else
+    {
 		data_array[0] = 0x00023902;
 		data_array[1] = 0x0000EEFF; 				
 		dsi_set_cmdq(data_array, 2, 1);
@@ -352,6 +409,7 @@ static void lcm_init(void)
 	
 	//MDELAY(50);
 //	push_table(lcm_initialization_setting, sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
+    }
 	need_set_lcm_addr = 1;
 }
 
@@ -524,7 +582,7 @@ static unsigned int lcm_esd_check(void)
 	dsi_set_cmdq(array, 1, 1);
 
 	read_reg_v2(0x36, buffer, 1);
-	printk("%s, xxh esd check, read 0xBA = 0x%08x\n", __func__, buffer[0]);
+    pr_debug("%s, xxh esd check, read 0xBA = 0x%08x\n", __func__, buffer[0]);
 	
 	if(buffer[0]==0x90)
 	{
@@ -565,17 +623,21 @@ static unsigned int lcm_compare_id(void)
 	
 	read_reg_v2(0xF4, buffer, 2);
 	id = buffer[0]; //we only need ID
+
+    lcm_driver_id = id;
+    // TBD
+    lcm_module_id = 0x0;
+
     #ifdef BUILD_LK
 		printf("%s, LK nt35590 debug: nt35590 id = 0x%08x\n", __func__, id);
     #else
-		printk("%s, kernel nt35590 horse debug: nt35590 id = 0x%08x\n", __func__, id);
+        pr_debug("%s, kernel nt35590 horse debug: nt35590 id = 0x%08x\n", __func__, id);
     #endif
 
     if(id == LCM_ID_NT35590)
     	return 1;
     else
         return 0;
-
 }
 
 #ifndef BUILD_LK
@@ -601,21 +663,21 @@ static unsigned int lcm_esd_check(void)
 	read_reg_v2(0x0F, buffer, 1);
 	if(buffer[0] != 0xc0)
 	{
-		printk("[LCM ERROR] [0x0F]=0x%02x\n", buffer[0]);
+        pr_debug("[LCM ERROR] [0x0F]=0x%02x\n", buffer[0]);
 		ret++;
 	}
 
 	read_reg_v2(0x05, buffer, 1);
 	if(buffer[0] != 0x00)
 	{
-		printk("[LCM ERROR] [0x05]=0x%02x\n", buffer[0]);
+        pr_debug("[LCM ERROR] [0x05]=0x%02x\n", buffer[0]);
 		ret++;
 	}
 	
 	read_reg_v2(0x0A, buffer, 1);
 	if((buffer[0]&0xf)!=0x0C)
 	{
-		printk("[LCM ERROR] [0x0A]=0x%02x\n", buffer[0]);
+        pr_debug("[LCM ERROR] [0x0A]=0x%02x\n", buffer[0]);
 		ret++;
 	}
 
@@ -656,7 +718,7 @@ unsigned int lcm_ata_check(unsigned char *buffer)
 
 	unsigned int data_array[3];
 	unsigned char read_buf[4];
-	printk("ATA check size = 0x%x,0x%x,0x%x,0x%x\n",x0_MSB,x0_LSB,x1_MSB,x1_LSB);
+    pr_debug("ATA check size = 0x%x,0x%x,0x%x,0x%x\n",x0_MSB,x0_LSB,x1_MSB,x1_LSB);
 	data_array[0]= 0x0005390A;//HS packet
 	data_array[1]= (x1_MSB<<24)|(x0_LSB<<16)|(x0_MSB<<8)|0x2a;
 	data_array[2]= (x1_LSB);
@@ -698,6 +760,8 @@ LCM_DRIVER nt35590_hd720_dsi_cmd_auo_lcm_drv =
 {
     .name			= "nt35590_AUO",
 	.set_util_funcs = lcm_set_util_funcs,
+    .set_params     = lcm_set_params,
+    .get_id     = lcm_get_id,
 	.get_params     = lcm_get_params,
 	.init           = lcm_init,
 	.suspend        = lcm_suspend,

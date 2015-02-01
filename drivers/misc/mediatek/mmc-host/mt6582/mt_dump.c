@@ -1912,6 +1912,7 @@ EXPORT_SYMBOL(card_dump_func_read);
 /* porting for kdump interface                                              */
 /*--------------------------------------------------------------------------*/
 
+extern void msdc_update_para(struct msdc_hw *hw,int hostid);
 
 /*--------------------------------------------------------------------------*/
 /* module init/exit                                                         */
@@ -1920,9 +1921,11 @@ EXPORT_SYMBOL(card_dump_func_read);
 static void simp_msdc_hw_init(void)
 {
 #ifdef CFG_DEV_MSDC0
+        msdc_update_para(&msdc0_hw,0);
         p_msdc_hw[0] = &msdc0_hw;
 #endif
 #ifdef CFG_DEV_MSDC1
+        msdc_update_para(&msdc1_hw,1);
         p_msdc_hw[1] = &msdc1_hw;
 #endif
 #ifdef CFG_DEV_MSDC2

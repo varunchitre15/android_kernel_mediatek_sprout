@@ -1324,7 +1324,7 @@ EXPORT_SYMBOL(synaptics_fw_version_updater);
 
 int synaptics_fw_updater_s3203(unsigned char *fw_data)
 {
-    int retval=0;
+    int retval=-EINVAL;
     int ret;
     unsigned char config_id[4];
     int device_configID = 0;
@@ -1405,39 +1405,90 @@ static ssize_t fwu_sysfs_do_reflash_store(struct device *dev,
         struct device_attribute *attr, const char *buf, size_t count)
 {
     int retval=0;
-    unsigned int input;
-    struct synaptics_rmi4_data *rmi4_data = fwu->rmi4_data;
+    char *firmware_buf;
+    struct file    *filp;
+    struct inode *inode = NULL;
+    mm_segment_t oldfs;
+    uint16_t    length;
+    const char filename[]="/sdcard/synaptics.img";
 
-    if(_lock(&Firmware_Update_Flag))
+    /* open file */
+    oldfs = get_fs();
+    set_fs(KERNEL_DS);
+    filp = filp_open(filename, O_RDONLY, S_IRUSR);
+    if (IS_ERR(filp))
     {
-       TPD_DMESG("err _lock Firmware_Update_Flag \n");
-          goto exit;
+            printk("[tpd]S3203: %s: file %s filp_open error\n", __FUNCTION__,filename);
+            set_fs(oldfs);
+            retval = -EINVAL;
+            goto exit;
+
     }
 
-    if (sscanf(buf, "%u", &input) != 1) {
+    if (!filp->f_op)
+    {
+            printk("[tpd]S3203: %s: File Operation Method Error\n", __FUNCTION__);
+            filp_close(filp, NULL);
+            set_fs(oldfs);
+            retval = -EINVAL;
+            goto exit;
+
+    }
+
+    inode = filp->f_path.dentry->d_inode;
+    if (!inode)
+    {
+        printk("[tpd]S3203: %s: Get inode from filp failed\n", __FUNCTION__);
+        filp_close(filp, NULL);
+        set_fs(oldfs);
         retval = -EINVAL;
         goto exit;
+
     }
 
-    if (input != 1) {
+    /* file's size */
+    length = i_size_read(inode->i_mapping->host);
+    if (!( length > 0 && length < 62*1024 ))
+    {
+        printk("[tpd]S3203: file size error\n");
+        filp_close(filp, NULL);
+        set_fs(oldfs);
         retval = -EINVAL;
         goto exit;
+
     }
 
-    retval = synaptics_fw_updater_s3203(fwu->ext_data_source);
-    if (retval < 0) {
-        dev_err(&rmi4_data->i2c_client->dev,
-                "%s: Failed to do reflash\n",
-                __func__);
+    /* allocation buff size */
+    firmware_buf = vmalloc(length+(length%2));        /* buf size if even */
+    if (!firmware_buf)
+    {
+        printk("[tpd]S3203: alloctation memory failed\n");
+        filp_close(filp, NULL);
+        set_fs(oldfs);
+        retval = -EINVAL;
         goto exit;
+
     }
 
-    retval = count;
+    /* read data */
+    if (filp->f_op->read(filp, firmware_buf, length, &filp->f_pos) != length)
+    {
+        printk("[tpd]S3203: %s: file read error\n", __FUNCTION__);
+        filp_close(filp, NULL);
+        set_fs(oldfs);
+        vfree(firmware_buf);
+        retval = -EINVAL;
+        goto exit;
+
+    }
+
+    retval = synaptics_fw_updater_s3203(firmware_buf);
+
+     filp_close(filp, NULL);
+    set_fs(oldfs);
+    vfree(firmware_buf);
 
 exit:
-    _unlock(&Firmware_Update_Flag);
-    kfree(fwu->ext_data_source);
-    fwu->ext_data_source = NULL;
     return retval;
 }
 

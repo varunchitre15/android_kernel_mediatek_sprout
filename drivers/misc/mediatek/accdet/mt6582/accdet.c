@@ -113,7 +113,7 @@ static void disable_micbias(unsigned long a);
 int cur_eint_state = EINT_PIN_PLUG_OUT;
 static struct work_struct accdet_disable_work;
 static struct workqueue_struct * accdet_disable_workqueue = NULL;
-
+static U32 accdet_2v8_mode = 0;
 #endif
 
 #endif//end ACCDET_EINT
@@ -125,6 +125,7 @@ extern struct headset_key_custom* get_headset_key_custom_setting(void);
 extern int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd);
 extern struct file_operations *accdet_get_fops(void);//from accdet_drv.c
 extern struct platform_driver accdet_driver_func(void);//from accdet_drv.c
+extern struct accdet_ssb_data *accdet_tuning_data;
 
 #ifdef DEBUG_THREAD
 extern  void accdet_create_attr_func(void); //from accdet_drv.c
@@ -172,6 +173,25 @@ int accdet_get_cable_type(void)
 }
 void accdet_auxadc_switch(int enable)
 {
+#ifdef ACCDET_SSB
+	if (enable) {
+		if(accdet_2v8_mode == 0){
+			pmic_pwrap_write(ACCDET_RSV, ACCDET_1V9_MODE_ON);
+			ACCDET_DEBUG("ACCDET enable switch in 1.9v mode SSB\n");
+		}else{
+			pmic_pwrap_write(ACCDET_RSV, ACCDET_2V8_MODE_ON);
+			ACCDET_DEBUG("ACCDET enable switch in 2.8v mode SSB\n");
+		}
+	}else{
+		if(accdet_2v8_mode == 0){
+			pmic_pwrap_write(ACCDET_RSV, ACCDET_1V9_MODE_OFF);
+			ACCDET_DEBUG("ACCDET diable switch in 1.9v mode SSB\n");
+		}else{
+			pmic_pwrap_write(ACCDET_RSV, ACCDET_2V8_MODE_OFF);
+			ACCDET_DEBUG("ACCDET diable switch in 2.8v mode SSB\n");
+		}
+	}
+#else
    if (enable) {
     #ifndef ACCDET_28V_MODE
      pmic_pwrap_write(ACCDET_RSV, ACCDET_1V9_MODE_ON);
@@ -189,6 +209,7 @@ void accdet_auxadc_switch(int enable)
      ACCDET_DEBUG("ACCDET diable switch in 2.8v mode \n");
     #endif
    }
+#endif
 
 }
 
@@ -366,6 +387,13 @@ static void accdet_eint_work_callback(struct work_struct *work)
         #ifdef ACCDET_LOW_POWER
         wake_lock_timeout(&accdet_timer_lock, 7*HZ);
         #endif
+		ACCDET_DEBUG("[Accdet]EINT func :check mode begin\n");
+		if(accdet_2v8_mode == 1){
+			pmic_pwrap_write(ACCDET_RSV, ACCDET_2V8_MODE_OFF);
+			ACCDET_DEBUG("ACCDET use in 2.8V mode!! SSB\n");
+		}
+
+		ACCDET_DEBUG("[Accdet]EINT func :check mode end\n");
         #ifdef ACCDET_28V_MODE
         pmic_pwrap_write(ACCDET_RSV, ACCDET_2V8_MODE_OFF);
         ACCDET_DEBUG("ACCDET use in 2.8V mode!! \n");
@@ -416,6 +444,10 @@ static void accdet_eint_work_callback(struct work_struct *work)
             accdet_auxadc_switch(0);
             disable_accdet();
             headset_plug_out();
+			if(accdet_2v8_mode == 1){
+			pmic_pwrap_write(ACCDET_RSV, ACCDET_1V9_MODE_OFF);
+			ACCDET_DEBUG("ACCDET use in 1.9V mode!! SSB\n");
+			}
             #ifdef ACCDET_28V_MODE
             pmic_pwrap_write(ACCDET_RSV, ACCDET_1V9_MODE_OFF);
             ACCDET_DEBUG("ACCDET use in 1.9V mode!! \n");
@@ -1512,7 +1544,13 @@ int mt_accdet_probe(void)
 
     ACCDET_DEBUG("[Accdet]accdet_probe begin!\n");
 
-
+	if(accdet_tuning_data!=NULL){
+		ACCDET_DEBUG("ACCDET SSB Use accdet bin\n");
+		accdet_2v8_mode = accdet_tuning_data->accdet_mode;
+	}else{
+		ACCDET_DEBUG("ACCDET mode use default vaule\n");
+		accdet_2v8_mode = 1;
+	}
     //------------------------------------------------------------------
     //                             below register accdet as switch class
     //------------------------------------------------------------------

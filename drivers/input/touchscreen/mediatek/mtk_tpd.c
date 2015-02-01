@@ -164,18 +164,33 @@ static struct platform_driver tpd_driver = {
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static struct early_suspend MTK_TS_early_suspend_handler = 
 {
-    .level = EARLY_SUSPEND_LEVEL_STOP_DRAWING-1,    
+    .level = EARLY_SUSPEND_LEVEL_STOP_DRAWING-1,
     .suspend = NULL,
     .resume  = NULL,
 };
 #endif
+
+
+int tpd_ssb_data_match(char *name, struct tag_para_touch_ssb_data_single *data )
+{
+    int i = 0;
+    for(i = 0; i < NAME_LENGTH; i++)
+    {
+        if(strcmp(name, &touch_cust_ssb_data.touch_ssb_data[i].identifier[0]) == 0){
+            printk("tpd_ssb_data_match: %s\n", name);
+            memcpy(data, &touch_cust_ssb_data.touch_ssb_data[i], sizeof(touch_cust_ssb_data.touch_ssb_data[i]));
+            return 0;
+        }
+    }
+    return -1;
+}
 
 static struct tpd_driver_t *g_tpd_drv = NULL;
 /* Add driver: if find TPD_TYPE_CAPACITIVE driver sucessfully, loading it */
 int tpd_driver_add(struct tpd_driver_t *tpd_drv)
 {
 	int i;
-	
+
 	if(g_tpd_drv != NULL)
 	{
 		TPD_DMESG("touch driver exist \n");

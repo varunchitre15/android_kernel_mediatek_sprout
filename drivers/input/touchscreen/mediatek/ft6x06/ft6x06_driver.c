@@ -68,9 +68,8 @@ static int tpd_detect(struct i2c_client *client, struct i2c_board_info *info);
 static int __devexit tpd_remove(struct i2c_client *client);
 static int touch_event_handler(void *unused);
 
+static struct tag_para_touch_ssb_data_single touch_ssb_data = {0};
 
-
-#ifdef TPD_HAVE_BUTTON
 
 static int tpd_keys_local[TPD_KEY_COUNT] = TPD_KEYS;
 static int tpd_keys_dim_local_BYD[TPD_KEY_COUNT][4] = TPD_KEYS_DIM_BYD;
@@ -96,12 +95,12 @@ static u8 tpd_proximity_detect             = 1; //0-->close ; 1--> far away
 static void tinno_update_tp_button_dim(int panel_vendor)
 {
     if ( FTS_CTP_VENDOR_NANBO == panel_vendor ){
-        tpd_button_setting(TPD_KEY_COUNT, tpd_keys_local, tpd_keys_dim_local_NB);
+        tpd_button_setting(TPD_KEY_COUNT, touch_ssb_data.tpd_key_local, touch_ssb_data.tpd_key_dim_local);
     }else{
-        tpd_button_setting(TPD_KEY_COUNT, tpd_keys_local, tpd_keys_dim_local_BYD);
+        tpd_button_setting(TPD_KEY_COUNT, touch_ssb_data.tpd_key_local, touch_ssb_data.tpd_key_dim_local);
     }
 }
-#endif
+
 
 static char tpd_desc[50];
 static int tpd_fw_version;
@@ -260,7 +259,7 @@ static  int tpd_up(tinno_ts_data *ts, int x, int y, int pressure, int trackID)
                 iTouchID = pReportData->xy_data[i].touch_id;
                 if ( iTouchID >= TINNO_TOUCH_TRACK_IDS )
                 {
-                    CTP_DBG("i: Invalied Track ID(%d)\n!", i, iTouchID);
+                    //CTP_DBG("i: Invalied Track ID(%d)\n!", i, iTouchID);
                     iInvalidTrackIDs++;
                     continue;
                 }
@@ -547,11 +546,7 @@ void fts_6x06_hw_reset(void)
 
 static void fts_6x06_hw_init(void)
 {
-#ifdef TPD_POWER_SOURCE_CUSTOM
-    hwPowerOn(TPD_POWER_SOURCE_CUSTOM, VOL_2800, "TP");
-#else
-    hwPowerOn(MT6323_POWER_LDO_VGP1, VOL_2800, "TP");
-#endif
+    hwPowerOn(touch_ssb_data.power_id, VOL_2800, "TP");
 
     hwPowerOn(MT6323_POWER_LDO_VGP1, VOL_2800, "TP");
     hwPowerOn(MT6323_POWER_LDO_VGP2, VOL_2800, "TP");
@@ -680,9 +675,10 @@ int focaltech_auto_upgrade(void)
     if ( panel_version < 0 || panel_vendor<0 || ret<0 ){
         goto err_get_version;
     }
-#ifdef TPD_HAVE_BUTTON
-    tinno_update_tp_button_dim(panel_vendor);
-#endif
+
+    if(touch_ssb_data.use_tpd_button == 1)
+        tinno_update_tp_button_dim(panel_vendor);
+
 #ifdef CONFIG_TOUCHSCREEN_FT5X05_DISABLE_KEY_WHEN_SLIDE
     if ( fts_keys_init(ts) ){
         fts_keys_deinit();
@@ -783,9 +779,10 @@ err_check_functionality_failed:
         TPD_DMESG("unable to add i2c driver.\n");
         return -1;
     }
-#ifdef TPD_HAVE_BUTTON
+
+    if(touch_ssb_data.use_tpd_button == 1)
         tinno_update_tp_button_dim(FTS_CTP_VENDOR_NANBO);
-#endif
+
     TPD_DMESG("end %s, %d\n", __FUNCTION__, __LINE__);
     tpd_type_cap = 1;
     return 0;
@@ -939,8 +936,30 @@ void ft6x06_tpd_get_fw_vendor_name(char * fw_vendor_name)
  /* called when loaded into kernel */
  static int __init tpd_driver_init(void)
  {
+    int err = 0;
+    char name[20] = "ft6x06";
     printk("MediaTek FT6x06 touch panel driver init\n");
-    i2c_register_board_info(TPD_I2C_GROUP_ID, &ft6x06_i2c_tpd, sizeof(ft6x06_i2c_tpd)/sizeof(ft6x06_i2c_tpd[0]));
+    err = tpd_ssb_data_match(name, &touch_ssb_data);
+    if(err != 0){
+        printk("touch tpd_ssb_data_match error\n");
+        return -1;
+    }
+    printk("ft6x06 touch_ssb_data:: name:(%s), endflag:0x%x, i2c_number:0x%x, i2c_addr:0x%x,power_id:%d, use_tpd_button:%d\n",
+    touch_ssb_data.identifier,
+    touch_ssb_data.endflag,
+    touch_ssb_data.i2c_number,
+    touch_ssb_data.i2c_addr,
+    touch_ssb_data.power_id,
+    touch_ssb_data.use_tpd_button
+    );
+
+    ft6x06_i2c_tpd[0].addr = touch_ssb_data.i2c_addr;
+
+    i2c_register_board_info(touch_ssb_data.i2c_number, &ft6x06_i2c_tpd, sizeof(ft6x06_i2c_tpd)/sizeof(ft6x06_i2c_tpd[0]));
+
+    //add for ssb support
+    tpd_device_driver.tpd_have_button = touch_ssb_data.use_tpd_button;
+
     if(tpd_driver_add(&tpd_device_driver) < 0)
         TPD_DMESG("add FT6x06 driver failed\n");
     return 0;

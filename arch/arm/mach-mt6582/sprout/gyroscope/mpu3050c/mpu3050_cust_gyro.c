@@ -4,8 +4,9 @@
 
 /*---------------------------------------------------------------------------*/
 static struct gyro_hw cust_gyro_hw = {
-    .i2c_num = 3,
-    .direction = 7,
+    .addr =0x68,
+    .i2c_num = 2,
+    .direction = 2,
     .power_id = MT65XX_POWER_NONE,  /*!< LDO is not used */
     .power_vol= VOL_DEFAULT,        /*!< LDO is not used */
     .firlen = 0,                   /*!< don't enable low pass fileter */

@@ -29,7 +29,7 @@
 #if defined(BUILD_UBOOT)
     #define LCM_PRINT printf
 #else
-    #define LCM_PRINT printk
+    #define LCM_PRINT pr_debug
 #endif
 #endif
 
@@ -43,9 +43,6 @@
 
 #define FRAME_WIDTH                                          (480)
 #define FRAME_HEIGHT                                         (854)
-
-#define REGFLAG_DELAY                                         0xFE
-#define REGFLAG_END_OF_TABLE                                  0xFFF   // END OF REGISTERS MARKER
 
 #define LCM_ID_OTM8018B    0x8009
 
@@ -68,6 +65,12 @@ extern void Tinno_Close_Mipi_HS_Read();
 // ---------------------------------------------------------------------------
 
 static LCM_UTIL_FUNCS lcm_util = {0};
+static struct LCM_setting_table *para_init_table = NULL;
+static unsigned int para_init_size = 0;
+static LCM_PARAMS *para_params = NULL;
+
+static unsigned int lcm_driver_id = 0x0;
+static unsigned int lcm_module_id = 0x0;
 
 #define SET_RESET_PIN(v)                                    (lcm_util.set_reset_pin((v)))
 
@@ -86,11 +89,6 @@ static unsigned char esdSwitch =  1;
 #define read_reg                                            lcm_util.dsi_read_reg()
 #define read_reg_V2(cmd, buffer, buffer_size)                lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)
 
- struct LCM_setting_table {
-    unsigned cmd;
-    unsigned char count;
-    unsigned char para_list[64];
-};
 
 
 static struct LCM_setting_table lcm_initialization_setting[] = {
@@ -444,9 +442,24 @@ static void push_table(struct LCM_setting_table *table, unsigned int count, unsi
 //  LCM Driver Implementations
 // ---------------------------------------------------------------------------
 
+static void lcm_get_id(unsigned int* driver_id, unsigned int* module_id)
+{
+    *driver_id = lcm_driver_id;
+    *module_id = lcm_module_id;
+}
+
+
 static void lcm_set_util_funcs(const LCM_UTIL_FUNCS *util)
 {
     memcpy(&lcm_util, util, sizeof(LCM_UTIL_FUNCS));
+}
+
+
+static void lcm_set_params(struct LCM_setting_table *init_table, unsigned int init_size, LCM_PARAMS *params)
+{
+    para_init_table = init_table;
+    para_init_size = init_size;
+    para_params = params;
 }
 
 
@@ -454,6 +467,12 @@ static void lcm_get_params(LCM_PARAMS *params)
 {
         memset(params, 0, sizeof(LCM_PARAMS));
 
+    if (para_params != NULL)
+    {
+        memcpy(params, para_params, sizeof(LCM_PARAMS));
+    }
+    else
+    {
         params->type   = LCM_TYPE_DSI;
 
         params->width  = FRAME_WIDTH;
@@ -524,11 +543,15 @@ static void lcm_get_params(LCM_PARAMS *params)
         // Non-continuous clock
         params->dsi.noncont_clock = TRUE;
         params->dsi.noncont_clock_period = 2;    // Unit : frames  */
+    }
 }
 
 
 static void lcm_init(void)
 {
+    int i, j;
+    int size;
+
     LCM_DBG(" Magnum lcm_init...\n");
     SET_RESET_PIN(1);
     SET_RESET_PIN(0);
@@ -536,7 +559,14 @@ static void lcm_init(void)
     SET_RESET_PIN(1);
     MDELAY(20);
 
+    if (para_init_table != NULL)
+    {
+        push_table(para_init_table, para_init_size, 1);
+    }
+    else
+    {
     push_table(lcm_initialization_setting, sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
+}
 }
 
 
@@ -687,6 +717,11 @@ static unsigned int lcm_compare_id(void)
 
     id = buffer[0]<<8 |buffer[1];
     LCM_DBG("OTM8018B 0x%x , 0x%x , 0x%x \n",buffer[0],buffer[1],id);
+
+    lcm_driver_id = id;
+    // TBD
+    lcm_module_id = 0x0;
+
     //return (id == LCM_ID_OTM8018B)?1:0;
     if(LCM_ID_OTM8018B == id){
         #if defined(BUILD_UBOOT) || defined(BUILD_LK)
@@ -703,6 +738,8 @@ LCM_DRIVER otm8018b_dsi_vdo_boe_g6_lcm_drv =
 {
     .name            = "otm8018b_fwvga_dsi_vdo_boe_g6",
     .set_util_funcs = lcm_set_util_funcs,
+    .set_params     = lcm_set_params,
+    .get_id     = lcm_get_id,
     .get_params     = lcm_get_params,
     .init           = lcm_init,
     .suspend        = lcm_suspend,

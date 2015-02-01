@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -20,7 +20,7 @@
  *
  * Project:
  * --------
- *   Yusu
+ *   sprout
  *
  * Description:
  * ------------
@@ -57,11 +57,11 @@
  * .
  *
  * 07 23 2010 chipeng.chang
- * [ALPS00122386][Music]The playing music is no sound after below steps. 
+ * [ALPS00122386][Music]The playing music is no sound after below steps.
  * when mode change , record deivce for volume setting.
  *
  * 07 03 2010 chipeng.chang
- * [ALPS00002838][Need Patch] [Volunteer Patch] for speech volume step 
+ * [ALPS00002838][Need Patch] [Volunteer Patch] for speech volume step
  * modify for headset customization.
  *
  *******************************************************************************/
@@ -84,20 +84,20 @@
 
   enum EAMP_CONTROL_SUBCOMMAND
  {
-	 EAMP_SPEAKER_CLOSE =0,
-	 EAMP_SPEAKER_OPEN,
-	 EAMP_HEADPHONE_OPEN,
-	 EAMP_HEADPHONE_CLOSE,
-	 EAMP_EARPIECE_OPEN,
-	 EAMP_EARPIECE_CLOSE,
-	 EAMP_GETREGISTER_VALUE,
-	 EAMP_SETREGISTER_VALUE,
-	 EAMP_SETAMP_GAIN,
-	 EAMP_GETAMP_GAIN,
-	 EAMP_GET_CTRP_NUM ,
-	 EAMP_GET_CTRP_BITS,
-	 EAMP_GET_CTRP_TABLE,
-	 EAMP_SETMODE,
+	EAMP_SPEAKER_CLOSE =0,
+	EAMP_SPEAKER_OPEN,
+	EAMP_HEADPHONE_OPEN,
+	EAMP_HEADPHONE_CLOSE,
+	EAMP_EARPIECE_OPEN,
+	EAMP_EARPIECE_CLOSE,
+	EAMP_GETREGISTER_VALUE,
+	EAMP_SETREGISTER_VALUE,
+	EAMP_SETAMP_GAIN,
+	EAMP_GETAMP_GAIN,
+	EAMP_GET_CTRP_NUM ,
+	EAMP_GET_CTRP_BITS,
+	EAMP_GET_CTRP_TABLE,
+	EAMP_SETMODE,
  };
 
 enum AUDIO_AMP_CONTROL_COMMAND{
@@ -113,9 +113,9 @@ enum AUDIO_AMP_CONTROL_COMMAND{
 };
 
 typedef struct {
-	unsigned long int	command;
-	unsigned long int 	param1;
-	unsigned long int 	param2;
+	unsigned long int command;
+	unsigned long int param1;
+	unsigned long int param2;
 }AMP_Control;
 
 enum SPEAKER_CHANNEL
@@ -126,34 +126,26 @@ enum SPEAKER_CHANNEL
       Channel_Stereo
 };
 
-bool Speaker_Init(void);
-bool Speaker_DeInit(void);
-bool Speaker_Register(void);
-int  ExternalAmp(void);
-
-void Sound_Speaker_Turnon(int channel);
-void Sound_Speaker_Turnoff(int channel);
-void Sound_Speaker_SetVolLevel(int level);
-
-void Sound_Headset_Turnon(void);
-void Sound_Headset_Turnoff(void);
-
+struct loudspeaker_amp_operations {
+bool (*Speaker_Init)(void);
+bool (*Speaker_DeInit)(void);
+bool (*Speaker_Register)(void);
+int  (*ExternalAmp)(void);
+void (*Sound_Speaker_Turnon)(int channel);
+void (*Sound_Speaker_Turnoff)(int channel);
+void (*Sound_Speaker_SetVolLevel)(int level);
+void (*Sound_Headset_Turnon)(void);
+void (*Sound_Headset_Turnoff)(void);
 //now for  kernal use
-void AudioAMPDevice_Suspend(void);
-void AudioAMPDevice_Resume(void);
+void (*AudioAMPDevice_Suspend)(void);
+void (*AudioAMPDevice_Resume)(void);
 // used for AEE beep sound
-void AudioAMPDevice_SpeakerLouderOpen(void); //some times kernal need to force  speaker for notification
-void AudioAMPDevice_SpeakerLouderClose(void);
-void AudioAMPDevice_mute(void);
-
-
-int Audio_eamp_command(unsigned int type, unsigned long args, unsigned int count);
-
-
-
-
-kal_int32 Sound_ExtFunction(const char* name, void* param, int param_size);
-
+void (*AudioAMPDevice_SpeakerLouderOpen)(void); //some times kernal need to force  speaker for notification
+void (*AudioAMPDevice_SpeakerLouderClose)(void);
+void (*AudioAMPDevice_mute)(void);
+int (*Audio_eamp_command)(unsigned int type, unsigned long args, unsigned int count);
+kal_int32 (*Sound_ExtFunction)(const char* name, void* param, int param_size);
+};
 
 #endif
 

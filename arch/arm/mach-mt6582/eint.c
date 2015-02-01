@@ -20,6 +20,7 @@
 //#include <linux/miscdevice.h>
 #include <linux/platform_device.h>
 #include <linux/timer.h>
+#include <asm/setup.h>
 #include <asm/delay.h>
 #include <mach/mt_reg_base.h>
 #include <mach/eint.h>
@@ -1923,3 +1924,144 @@ EXPORT_SYMBOL(mt_eint_print_status);
 #if defined(EINT_TEST)
 EXPORT_SYMBOL(mt_eint_soft_set);
 #endif
+
+/* first MP list */
+struct cust_eint cust_eint_chr_stat;
+struct cust_eint cust_eint_als;
+struct cust_eint cust_eint_touch_panel;
+struct cust_eint cust_eint_gse_2;
+struct cust_eint cust_eint_accdet;
+struct cust_eint cust_eint_gse_1;
+struct cust_eint cust_eint_mt6323_pmic;
+
+static int cust_eint_sanity_check(int num, int debounce_cn, int type, int debounce_en)
+{
+	if ((num < 0) || (num > EINT_MAX_CHANNEL)) {
+		pr_err("In %s: num(%d) out of range\n", __func__, num);
+		return -1;
+	}
+
+	if ((type != CUST_EINTF_TRIGGER_RISING) && (type != CUST_EINTF_TRIGGER_FALLING) &&
+		(type != CUST_EINTF_TRIGGER_HIGH) && (type != CUST_EINTF_TRIGGER_LOW)) {
+		pr_err("In %s: type(%d) out of range\n", __func__, type);
+		return -1;
+	}
+
+	if ((debounce_en != CUST_EINT_DEBOUNCE_ENABLE) && (debounce_en != CUST_EINT_DEBOUNCE_DISABLE)) {
+		pr_err("In %s: debounce_en(%d) out of range\n", __func__, debounce_en);
+		return -1;
+	}
+
+	return 0;
+}
+
+static inline int cust_eint_dev_init(struct cust_eint *dev,
+	int num, int debounce_cn, int type, int debounce_en)
+{
+	if (unlikely(!dev)) {
+		pr_err("In %s:%d: eint dev does not exist\n", __func__, __LINE__);
+		return -1;
+	}
+
+	if (unlikely(cust_eint_sanity_check(num, debounce_cn, type, debounce_en) != 0)) {
+		pr_err("In %s:%d: %s has no proper attribute num = %d, debounce_cn = %d, type = %d, debounce_en = %d\n",
+			__func__, __LINE__, dev->name, num, debounce_cn, type, debounce_en);
+		return -1;
+	}
+
+	dev->num = num;
+	dev->debounce_cn = debounce_cn;
+	dev->type = type;
+	dev->debounce_en = debounce_en;
+
+	return 0;
+}
+
+/*
+    This function is for those loads without SSB info,
+    setup each device's attributes of EINT as the first MP setting
+*/
+void __init eint_fixup_default(void)
+{
+	pr_notice("EINT set default settings!!\n");
+
+	strncpy(cust_eint_chr_stat.name, "CHR_STAT", sizeof(cust_eint_chr_stat.name));
+	cust_eint_dev_init(&cust_eint_chr_stat, 0, 0, CUST_EINTF_TRIGGER_LOW, CUST_EINT_DEBOUNCE_DISABLE);
+
+	strncpy(cust_eint_als.name, "ALS", sizeof(cust_eint_als.name));
+	cust_eint_dev_init(&cust_eint_als, 1, 0, CUST_EINTF_TRIGGER_FALLING, CUST_EINT_DEBOUNCE_DISABLE);
+	
+	strncpy(cust_eint_touch_panel.name, "TOUCH_PANEL", sizeof(cust_eint_touch_panel.name));
+	cust_eint_dev_init(&cust_eint_touch_panel, 2, 0, CUST_EINTF_TRIGGER_FALLING, CUST_EINT_DEBOUNCE_DISABLE);
+
+	strncpy(cust_eint_gse_2.name, "GSE_2", sizeof(cust_eint_gse_2.name));
+	cust_eint_dev_init(&cust_eint_gse_2, 3, 0, CUST_EINTF_TRIGGER_RISING, CUST_EINT_DEBOUNCE_DISABLE);
+
+	strncpy(cust_eint_accdet.name, "ACCDET", sizeof(cust_eint_accdet.name));
+	cust_eint_dev_init(&cust_eint_accdet, 4, 256, CUST_EINTF_TRIGGER_LOW, CUST_EINT_DEBOUNCE_ENABLE);
+
+	strncpy(cust_eint_gse_1.name, "GSE_1", sizeof(cust_eint_gse_1.name));
+	cust_eint_dev_init(&cust_eint_gse_1, 5, 0, CUST_EINTF_TRIGGER_FALLING, CUST_EINT_DEBOUNCE_DISABLE);
+
+	strncpy(cust_eint_mt6323_pmic.name, "MT6323_PMIC", sizeof(cust_eint_mt6323_pmic.name));
+	cust_eint_dev_init(&cust_eint_mt6323_pmic, 25, 1, CUST_EINTF_TRIGGER_HIGH, CUST_EINT_DEBOUNCE_ENABLE);
+}
+
+struct cust_eint_item {
+	char name[64];
+	struct cust_eint *dev;
+};
+
+struct cust_eint_item cust_eint_items[] = {
+	{ "CHR_STAT", &cust_eint_chr_stat },
+	{ "ALS", &cust_eint_als },
+	{ "TOUCH_PANEL", &cust_eint_touch_panel },
+	{ "GSE_2", &cust_eint_gse_2 },
+	{ "ACCDET", &cust_eint_accdet },
+	{ "GSE_1", &cust_eint_gse_1 },
+	{ "MT6323_PMIC", &cust_eint_mt6323_pmic },	
+};
+
+struct cust_eint *find_cust_eint(const char *name)
+{
+	int i = 0;
+
+	for (i = 0; i < ARRAY_SIZE(cust_eint_items) ; ++i) {
+		if (strcmp(cust_eint_items[i].name, name) == 0) {
+			return cust_eint_items[i].dev;
+		}
+	}
+
+	return NULL;
+}
+
+int __init parse_tag_eint_ssb_fixup(const struct tag *tags)
+{
+	const struct tag_eint_data *data = &tags->u.eint_data;
+	int i = 0;
+
+	pr_notice("EINT magic: %c%c%c%c\n", data->magic[0], data->magic[1], data->magic[2], data->magic[3]);
+	pr_notice("COUNT = %d\n", data->count);
+
+	for (i = 0; i < data->count; ++i) {
+		struct cust_eint *setting = (struct cust_eint *)&data->payload[i*sizeof(struct cust_eint)];
+		struct cust_eint *dev = NULL;
+
+		if ((dev = find_cust_eint(setting->name)) == NULL) {
+			pr_warn("EINT Not found: NAME = %s, num = %d, debounce_cn = %d, type = %d, debounce_en = %d\n",
+				setting->name, setting->num, setting->debounce_cn, setting->type, setting->debounce_en);
+			continue;
+		}
+
+		strncpy(dev->name, setting->name, sizeof(dev->name));
+		cust_eint_dev_init(dev, setting->num,
+					setting->debounce_cn,
+					setting->type,
+					setting->debounce_en);
+
+		pr_notice("EINT GOT NAME = %s, num = %d, debounce_cn = %d, type = %d, debounce_en = %d\n",
+				dev->name, dev->num, dev->debounce_cn, dev->type, dev->debounce_en);
+	}
+
+	return 0;
+}

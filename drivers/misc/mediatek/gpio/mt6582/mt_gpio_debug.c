@@ -763,53 +763,8 @@ struct mt_gpio_modem_info {
 	int num;
 };
 
-static struct mt_gpio_modem_info mt_gpio_info[]={
-	{"GPIO_MD_TEST",800},
-#ifdef GPIO_AST_CS_PIN
-	{"GPIO_AST_HIF_CS",GPIO_AST_CS_PIN},
-#endif
-#ifdef GPIO_AST_CS_PIN_NCE
-	{"GPIO_AST_HIF_CS_ID",GPIO_AST_CS_PIN_NCE},
-#endif
-#ifdef GPIO_AST_RST_PIN
-	{"GPIO_AST_Reset",GPIO_AST_RST_PIN},
-#endif
-#ifdef GPIO_AST_CLK32K_PIN
-	{"GPIO_AST_CLK_32K",GPIO_AST_CLK32K_PIN},
-#endif
-#ifdef GPIO_AST_CLK32K_PIN_CLK
-	{"GPIO_AST_CLK_32K_CLKM",GPIO_AST_CLK32K_PIN_CLK},
-#endif
-#ifdef GPIO_AST_WAKEUP_PIN
-	{"GPIO_AST_Wakeup",GPIO_AST_WAKEUP_PIN},
-#endif
-#ifdef GPIO_AST_INTR_PIN
-	{"GPIO_AST_INT",GPIO_AST_INTR_PIN},
-#endif
-#ifdef GPIO_AST_WAKEUP_INTR_PIN
-	{"GPIO_AST_WAKEUP_INT",GPIO_AST_WAKEUP_INTR_PIN},
-#endif
-#ifdef GPIO_AST_AFC_SWITCH_PIN
-	{"GPIO_AST_AFC_Switch",GPIO_AST_AFC_SWITCH_PIN},
-#endif
-#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_1ST_PIN
-	{"GPIO_FDD_Band_Support_Detection_1",GPIO_FDD_BAND_SUPPORT_DETECT_1ST_PIN},
-#endif
-#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_2ND_PIN
-	{"GPIO_FDD_Band_Support_Detection_2",GPIO_FDD_BAND_SUPPORT_DETECT_2ND_PIN},
-#endif
-#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_3RD_PIN
-	{"GPIO_FDD_Band_Support_Detection_3",GPIO_FDD_BAND_SUPPORT_DETECT_3RD_PIN},
-#endif
-#ifdef GPIO_SIM_SWITCH_CLK_PIN
-	{"GPIO_SIM_SWITCH_CLK",GPIO_SIM_SWITCH_CLK_PIN},
-#endif
-#ifdef GPIO_SIM_SWITCH_DAT_PIN
-	{"GPIO_SIM_SWITCH_DAT",GPIO_SIM_SWITCH_DAT_PIN},
-#endif
-/*if you have new GPIO pin add bellow*/
+static struct mt_gpio_modem_info mt_gpio_info[20]={0};
 
-};
 int mt_get_md_gpio(char * gpio_name, int len)
 {
 	unsigned int i;
@@ -841,4 +796,83 @@ void mt_get_md_gpio_debug(char * str)
 	}
 	return;
 }
+
+static int __init mtk_gpio_debug_init(void)
+{
+    //
+
+    int i=0;
+    printk("fwq mtk_gpio_debug_init \n");
+    //&(mt_gpio_info[0].name) ="GPIO_MD_TEST";
+    strcpy(mt_gpio_info[0].name,"GPIO_MD_TEST");
+    mt_gpio_info[0].num = 800;
+#ifdef GPIO_AST_CS_PIN
+    mt_gpio_info[1].name ="GPIO_AST_HIF_CS";
+    mt_gpio_info[1].num = GPIO_AST_CS_PIN;
+#endif
+#ifdef GPIO_AST_CS_PIN_NCE
+    mt_gpio_info[2].name ="GPIO_AST_HIF_CS_ID";
+    mt_gpio_info[2].num = GPIO_AST_CS_PIN_NCE;
+#endif
+#ifdef GPIO_AST_RST_PIN
+    mt_gpio_info[3].name ="GPIO_AST_Reset";
+    mt_gpio_info[3].num = GPIO_AST_RST_PIN;
+#endif
+#ifdef GPIO_AST_CLK32K_PIN
+    mt_gpio_info[3].name ="GPIO_AST_CLK_32K";
+    mt_gpio_info[3].num = GPIO_AST_CLK32K_PIN;
+#endif
+#ifdef GPIO_AST_CLK32K_PIN_CLK
+    mt_gpio_info[4].name ="GPIO_AST_CLK_32K_CLKM";
+    mt_gpio_info[4].num = GPIO_AST_CLK32K_PIN_CLK;
+#endif
+#ifdef GPIO_AST_WAKEUP_PIN
+    mt_gpio_info[5].name ="GPIO_AST_Wakeup";
+    mt_gpio_info[5].num = GPIO_AST_WAKEUP_PIN;
+#endif
+#ifdef GPIO_AST_INTR_PIN
+    mt_gpio_info[6].name ="GPIO_AST_INT";
+    mt_gpio_info[6].num = GPIO_AST_INTR_PIN;
+#endif
+#ifdef GPIO_AST_WAKEUP_INTR_PIN
+    mt_gpio_info[7].name ="GPIO_AST_WAKEUP_INT";
+    mt_gpio_info[7].num = GPIO_AST_WAKEUP_INTR_PIN;
+#endif
+#ifdef GPIO_AST_AFC_SWITCH_PIN
+    mt_gpio_info[8].name ="GPIO_AST_AFC_Switch";
+    mt_gpio_info[8].num = GPIO_AST_AFC_SWITCH_PIN;
+#endif
+#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_1ST_PIN
+    strcpy(mt_gpio_info[9].name ,"GPIO_FDD_Band_Support_Detection_1");
+    mt_gpio_info[9].num = GPIO_FDD_BAND_SUPPORT_DETECT_1ST_PIN;
+#endif
+#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_2ND_PIN
+    strcpy(mt_gpio_info[10].name ,"GPIO_FDD_Band_Support_Detection_2");
+    mt_gpio_info[10].num = GPIO_FDD_BAND_SUPPORT_DETECT_2ND_PIN;
+#endif
+#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_3RD_PIN
+    strcpy(mt_gpio_info[11].name ,"GPIO_FDD_Band_Support_Detection_3");
+    mt_gpio_info[11].num = GPIO_FDD_BAND_SUPPORT_DETECT_3RD_PIN;
+#endif
+#ifdef GPIO_SIM_SWITCH_CLK_PIN
+    mt_gpio_info[12].name ="GPIO_SIM_SWITCH_CLK";
+    mt_gpio_info[12].num = GPIO_SIM_SWITCH_CLK_PIN;
+#endif
+#ifdef GPIO_SIM_SWITCH_DAT_PIN
+    mt_gpio_info[13].name ="GPIO_SIM_SWITCH_DAT";
+    mt_gpio_info[13].num = GPIO_SIM_SWITCH_DAT_PIN;
+#endif
+#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_4TH_PIN
+    strcpy(mt_gpio_info[14].name ,"GPIO_FDD_Band_Support_Detection_4");
+    mt_gpio_info[14].num = GPIO_FDD_BAND_SUPPORT_DETECT_4TH_PIN;
+#endif
+
+    for(i=0;i<ARRAY_SIZE(mt_gpio_info);i++){
+        printk("md debugGPIO number=%d,%s\n", mt_gpio_info[i].num, mt_gpio_info[i].name);
+    }
+
+}
+
+postcore_initcall(mtk_gpio_debug_init);
+
 

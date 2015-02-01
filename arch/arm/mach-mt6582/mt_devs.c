@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -44,24 +44,118 @@
 #include <linux/aee.h>
 #include <linux/mrdump.h>
 #include <mach/i2c.h>
+#include <mach/mt_keypad_ssb_cust.h>
+#include <mach/mt_auxadc_ssb_cust.h>
+#include <mach/mt_msdc_ssb_cust.h>
+#include <mach/accdet_ssb.h>
+#include <cust_gpio_usage.h>
+
+#include <mach/mt_touch_ssb_cust.h>
+#include <mach/mt_leds_cust.h>
+#include <mach/mt_vibrator_cust.h>
+
+#include <mach/battery_ssb.h>
 
 #define SERIALNO_LEN 32
 static char serial_number[SERIALNO_LEN];
 
+extern void eint_fixup_default(void);
+extern int parse_tag_eint_ssb_fixup(const struct tag *tags);
 extern BOOTMODE get_boot_mode(void);
 extern u32 get_devinfo_with_index(u32 index);
 extern u32 g_devinfo_data[];
 extern u32 g_devinfo_data_size;
 extern void adjust_kernel_cmd_line_setting_for_console(char*, char*);
 unsigned int mtk_get_max_DRAM_size(void);
-
+static struct sensor_tuning_data sensors_data;
+struct sensor_tuning_data *sensors_tuning_data;
+static struct _gpio_usage g_usage;
+struct _gpio_usage *gpio_usage=NULL;
+static struct accdet_ssb_data accdet_data ;
+struct accdet_ssb_data *accdet_tuning_data = NULL;
+char g_para_model[32];
+unsigned int g_para_version=0;
 struct {
 	u32 base;
 	u32 size;
 } bl_fb = {0, 0};
 
 static int use_bl_fb = 0;
+extern int mtk_get_sound_pa_id;
+struct tag_para_auxadc_ssb_data auxadc_cust_ssb_data = {0x6789, -1, 13, -1, 0, 0x9876};
+static struct tag_msdc_hw_para    msdc_para_hw_data[2];
+struct tag_msdc_hw_para *msdc_para_hw_datap[2] = { NULL,NULL};
+struct tag_para_touch_ssb_data touch_cust_ssb_data = {
+    0x6789,
+    {
+    {
+        "msg2133",
+        0x0,
+        0x26,
+        5,
+        {139, 172, 158},
+        {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
+        {480, 854},
+        0,
+        0x2222,
+    },
+    {
+        "s3508",
+        0x0,
+        0x20,
+        5,
+        {139, 172, 158},
+        {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
+        {480, 854},
+        0,
+        0x2222,
+    },
+    {
+        "ft6x06",
+        0x0,
+        0x38,
+        5,
+        {139, 172, 158},
+        {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
+        {480, 854},
+        1,
+        0x2222,
+    },
+    {
+        "s3203",
+        0x0,
+        0x39,
+        5,
+        {139, 172, 158},
+        {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
+        {480, 854},
+        0,
+        0x2222,
+    },
+    {
+        "gt913",
+        0x0,
+        0x5d,
+        5,
+        {139, 172, 158},
+        {{90, 883, 100, 40}, {230, 883, 100, 40}, {370, 883, 100, 40}},
+        {480, 854},
+        0,
+        0x2222,
+    },
+    {0},
+    },
+    0x9876,
+};
 
+struct tag_para_keypad_ssb_data keypad_cust_ssb_data = {
+    0x6789,
+    {[0] = 115,},
+    0,
+    32,
+    114,
+    0x9876,
+};
 /*=======================================================================*/
 /* MT6582 USB GADGET                                                     */
 /*=======================================================================*/
@@ -1084,6 +1178,47 @@ static void cmdline_filter(struct tag *cmdline_tag, char *default_cmdline)
 	}
 }
 /*=======================================================================*/
+/* Parse the model version info                         */
+/*=======================================================================*/
+static int __init parse_tag_model_version_fixup(const struct tag *tags)
+{
+    int i;
+
+    for (i=0; i< 32; i++) {
+        g_para_model[i] = tags->u.model_version_data.model[i];
+
+    }
+    g_para_model[31] = '\0'; //trailing NUL char at string end
+    g_para_version = tags->u.model_version_data.version;
+    printk(KERN_ALERT "g_para_model %s\n", g_para_model);
+    printk(KERN_ALERT "g_para_version %d\n", g_para_version);
+    return 0;
+}
+
+/*=======================================================================*/
+/* Parse the battery info						 */
+/*=======================================================================*/
+static int __init parse_tag_battery_fixup(const struct tag *tags)
+{
+	int i, size = tags->hdr.size;
+
+	printk(KERN_ALERT "parse_tag_battery_fixup size %d\n", size);
+
+	if (size > MAX_BATTERY_PARA_SIZE) {
+		printk(KERN_ALERT "size is out of bound %d/%d, stop parsing\n", size, MAX_BATTERY_PARA_SIZE);
+	} else {
+		for (i=0; i< size; i++) {
+			battery_cust_buf[i] = tags->u.battery_data.battery_buf[i];
+	
+			//for (j=0; j<BATTERY_NODE_CNT)
+			//	bat_hdr.battery_node[j].label =  tags->u.battery_data.battery_buf[0];
+			//printk(KERN_ALERT "parse_tag_battery_fixup, indx[%d]:%d\n", i, bat_cust_buf[i]);
+		}
+	}
+	return 0;
+}
+
+/*=======================================================================*/
 /* Parse the framebuffer info						 */
 /*=======================================================================*/
 static int __init parse_tag_videofb_fixup(const struct tag *tags)
@@ -1109,7 +1244,186 @@ static int __init parse_tag_devinfo_data_fixup(const struct tag *tags)
 	return 0;
 }
 
+static int __init parse_tag_auxadc_data_fixup(const struct tag *tags)
+{
+    auxadc_cust_ssb_data.TEMPERATURE_CHANNEL = tags->u.auxadc_ssb_cust.TEMPERATURE_CHANNEL;
+    auxadc_cust_ssb_data.ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL = tags->u.auxadc_ssb_cust.ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL;
+    auxadc_cust_ssb_data.HF_MIC_CHANNEL = tags->u.auxadc_ssb_cust.HF_MIC_CHANNEL;
+    auxadc_cust_ssb_data.LCM_VOLTAGE = tags->u.auxadc_ssb_cust.LCM_VOLTAGE;
+    /*printk("%s: TEMPERATURE_CHANNEL(%d), ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL(%d), HF_MIC_CHANNEL(%d)\n"
+        ,__func__
+        ,auxadc_cust_ssb_data.TEMPERATURE_CHANNEL
+        ,auxadc_cust_ssb_data.ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH_CHANNEL
+        ,auxadc_cust_ssb_data.HF_MIC_CHANNEL);*/
+    return 0;
+}
+
+static int __init parse_tag_keypad_data_fixup(const struct tag *tags)
+{
+    int i = 0;
+
+    keypad_cust_ssb_data.version = tags->u.keypad_ssb_cust.version;
+    keypad_cust_ssb_data.volume_down = tags->u.keypad_ssb_cust.volume_down;
+    keypad_cust_ssb_data.volume_up = tags->u.keypad_ssb_cust.volume_up;
+    keypad_cust_ssb_data.endflag = tags->u.keypad_ssb_cust.endflag;
+    keypad_cust_ssb_data.pmic_rst = tags->u.keypad_ssb_cust.pmic_rst;
+    memcpy(keypad_cust_ssb_data.kpd_keymap_cust, tags->u.keypad_ssb_cust.kpd_keymap_cust, sizeof(keypad_cust_ssb_data.kpd_keymap_cust[72]));
+    /*printk("%s: version(0x%x), volume_down(%d), volume_up(%d), pmic_rst(%d), endflag(0x%x)\n"
+        ,__func__
+        ,keypad_cust_ssb_data.version
+        ,keypad_cust_ssb_data.volume_down
+        ,keypad_cust_ssb_data.volume_up
+        ,keypad_cust_ssb_data.pmic_rst
+        ,keypad_cust_ssb_data.endflag);*/
+
+    for(i = 0; i < 72; i++)
+        keypad_cust_ssb_data.kpd_keymap_cust[i]= tags->u.keypad_ssb_cust.kpd_keymap_cust[i];
+    return 0;
+}
+static int __init parse_tag_gpio_use_data_fixup(const struct tag *tags)
+{
+
+  int gpio_map_len=0;
+  int i;
+  g_usage  = tags->u.gpio_usage_data;
+  gpio_usage = &g_usage;
+
+  gpio_map_len = sizeof(tags->u.gpio_usage_data)/sizeof(int);
+  printk("gu map len=%d,ver=%x \n",gpio_map_len,gpio_usage->version);
+
+  printk( "gu start =(%x,%x)\n",gpio_usage->als_eint_pin,GPIO_ALS_EINT_PIN);
+  printk( "gu end =(%x,%x)\n",gpio_usage->msdc1_dat3_m_msdc1_dat,GPIO_MSDC1_DAT3_M_MSDC1_DAT);
+  /*
+  for(i=0;i<gpio_map_len;i++){
+    printk("fwq gpiouse map %d \n", *ptr);
+    ptr++;
+  }
+*/
+}
+static struct _gpio_usage default_value=
+        {     0xff00,
+   0, 0, 1, 0, 1, 0, 3, 1, 0, 2,
+   0, 1, 3, 6, 0, 0, -1, 3, 0, 1,
+   4, 6, 0, 1, -1, 4, 0, 1, 0, 2,
+   -1, 5, 0, 6, 0, 7, 0, 9, 0, 1,
+   5, 2, 3, 4, 4, -1, 10, 0, 1, 5,
+   0, 5, -1, 0, 11, 0, 1, 3, 2, 0,
+   4, -1, 12, 0, 1, 3, 2, 5, -1, 13,
+   0, 4, 14, 0, 4, 2, 3, 5, 7, 16,
+   0, 17, 0, 2, 0, -1, 17, 0, 2, 0,
+   -1, 18, 0, 18, 0, 19, 0, 4, 1, -1,
+   19, 0, 4, 1, -1, 20, 0, 4, 2, -1,
+   25, 0, 0, 29, 0, 1, 2, 30, 0, 3,
+   1, 2, 31, 0, 1, 2, 32, 0, 1, 2,
+   33, 0, 3, 1, 2, 34, 0, 1, 2, 7,
+   39, 0, 5, 6, 1, 2, 3, 4, 40, 0,
+   6, 1, 2, 3, 4, 5, 41, 0, 6, 5,
+   1, 2, 3, 4, 42, 0, 6, 5, 1, 2,
+   3, 4, 43, 0, 1, 44, 0, 45, 0, 46,
+   0, 47, 0, 2, 1, 3, 7, 74, 0, 1,
+   75, 0, 1, 81, 0, 84, 0, 1, 85, 0,
+   1, 86, 0, 1, 87, 0, 1, 88, 0, 2,
+   1, 89, 0, 2, 1, 108, 0, 1, 2, 3,
+   7, 109, 0, 1, 2, 3, 4, 7, 110, 0,
+   1, 2, 3, 7, 111, 0, 1, 2, 3, 4,
+   7, 124, 0, 1, 125, 0, 1, 126, 0, 1,
+   127, 0, 1, 128, 0, 1, 129, 0, 1
+};
+
+void gpio_usage_set_default(void)
+{
+    int gpio_map_len=0;
+    //int i=0;
+    gpio_usage = &default_value;
+    gpio_map_len = sizeof(default_value)/sizeof(int);
+
+    printk("gu default map len=%d,ver=%x \n",gpio_map_len,gpio_usage->version);
+
+      printk( "gu default start =(%x,%x)\n",gpio_usage->als_eint_pin,GPIO_ALS_EINT_PIN);
+      printk( "gu default end =(%x,%x)\n",gpio_usage->msdc1_dat3_m_msdc1_dat,GPIO_MSDC1_DAT3_M_MSDC1_DAT);
+    /*
+    for(i=0;i<gpio_map_len;i++){
+        printk("fwq gpiouse default %d \n", *ptr);
+        ptr++;
+    }
+
+    */
+
+}
+
+struct led_cust_data led_cust_data_fromtag = {false,{0},{0}};
+
+static int __init parse_tag_leds_data_fixup(const struct tag *tags)
+{
+    int i = 0;
+
+    for(i = 0; i < 3; i++) {
+        led_cust_data_fromtag.led_mode[i] = tags->u.leds_data.led_mode[i];
+        led_cust_data_fromtag.led_pmic[i] = tags->u.leds_data.led_pmic[i];
+        printk("led[%d] 's mode is :%d  pmic is :%d \n",i,led_cust_data_fromtag.led_mode[i],led_cust_data_fromtag.led_pmic[i]);
+    }
+    led_cust_data_fromtag.isInited = true;
+}
+
+struct vibrator_cust_data vibrator_cust_data_fromtag = {false,0};
+
+static int __init parse_tag_vibrator_data_fixup(const struct tag *tags)
+{
+    vibrator_cust_data_fromtag.vib_vol = tags->u.vibrator_data.vib_vol;
+    printk("the vibrator value is %d \n",vibrator_cust_data_fromtag.vib_vol);
+    vibrator_cust_data_fromtag.isInited = true;
+}
+
+static int __init parse_tag_touch_data_fixup(const struct tag *tags)
+{
+    int index = 0;
+    int i = 0;
+    int j = 0;
+
+    for(index = 0; index < TOUCH_DRIVER_NUM; index++){
+        touch_cust_ssb_data.touch_ssb_data[index].endflag = tags->u.touch_ssb_cust.touch_ssb_data[index].endflag;
+        touch_cust_ssb_data.touch_ssb_data[index].i2c_number = tags->u.touch_ssb_cust.touch_ssb_data[index].i2c_number;
+        touch_cust_ssb_data.touch_ssb_data[index].i2c_addr= tags->u.touch_ssb_cust.touch_ssb_data[index].i2c_addr;
+        touch_cust_ssb_data.touch_ssb_data[index].power_id = tags->u.touch_ssb_cust.touch_ssb_data[index].power_id;
+        touch_cust_ssb_data.touch_ssb_data[index].use_tpd_button = tags->u.touch_ssb_cust.touch_ssb_data[index].use_tpd_button;
+
+        //printk("parse_tag_touch_data_fixup, index(%d):: endflag:0x%x, i2c_number:0x%x, i2c_addr:0x%x,power_id:%d, use_tpd_buttom:%d\n",
+        //index,
+        //touch_cust_ssb_data.touch_ssb_data[index].endflag,
+        //touch_cust_ssb_data.touch_ssb_data[index].i2c_number,
+        //touch_cust_ssb_data.touch_ssb_data[index].i2c_addr,
+        //touch_cust_ssb_data.touch_ssb_data[index].power_id,
+        //touch_cust_ssb_data.touch_ssb_data[index].use_tpd_button
+        //);
+
+        for(i = 0; i < NAME_LENGTH; i++){
+            touch_cust_ssb_data.touch_ssb_data[index].identifier[i] = (tags->u.touch_ssb_cust.touch_ssb_data[index].identifier[i]);
+        }
+
+        for(i = 0; i < 2; i++){
+            touch_cust_ssb_data.touch_ssb_data[index].tpd_resolution[i] = tags->u.touch_ssb_cust.touch_ssb_data[index].tpd_resolution[i];
+            //printk("parse_tag_touch_data_fixup, index(%d)::tpd_resolution[%d]:%d\n",index,i,touch_cust_ssb_data.touch_ssb_data[index].tpd_resolution[i]);
+        }
+
+        for(i = 0; i < 3; i++){
+            touch_cust_ssb_data.touch_ssb_data[index].tpd_key_local[i] = tags->u.touch_ssb_cust.touch_ssb_data[index].tpd_key_local[i];
+            //printk("parse_tag_touch_data_fixup, index(%d)::tpd_key_local[%d]:%d\n",index,i,touch_cust_ssb_data.touch_ssb_data[index].tpd_key_local[i]);
+        }
+        for(i = 0; i < 3; i++)
+        {
+            for(j = 0; j < 4; j++){
+                touch_cust_ssb_data.touch_ssb_data[index].tpd_key_dim_local[i][j] = tags->u.touch_ssb_cust.touch_ssb_data[index].tpd_key_dim_local[i][j];
+                //printk("parse_tag_touch_data_fixup, index(%d)::tpd_key_dim_local[%d][%d]:%d\n",index,i,j,touch_cust_ssb_data.touch_ssb_data[index].tpd_key_dim_local[i][j]);
+            }
+        }
+    }
+    return 0;
+}
+
 extern unsigned int mtkfb_parse_dfo_setting(void *dfo_tbl, int num);
+
+extern int parse_tag_lcminfo_data_fixup(unsigned int index);
+extern int parse_tag_lcm_fixup(void *buf, unsigned int size);
 
 static void parse_boot_reason(char** cmdline) /*parse boot reason*/
 {
@@ -1167,6 +1481,7 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
     resource_size_t avail_dram = 0;
     resource_size_t bl_mem_sz = 0;
     unsigned char md_inf_from_meta[4] = {0};
+    int eint_ssb_bin_exist = 0;
 
 #if defined(CONFIG_MTK_FB)
 	struct tag *temp_tags = tags;
@@ -1218,6 +1533,42 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
         }else if (tags->hdr.tag == ATAG_DEVINFO_DATA){
             parse_tag_devinfo_data_fixup(tags);
         }
+        else if(tags->hdr.tag == ATAG_GPIO_USAGE_TAG){
+            printk( "fwq gpio use para\n");
+            parse_tag_gpio_use_data_fixup(tags);
+
+        }
+        else if (tags->hdr.tag == ATAG_AUXADC_TAG){
+            parse_tag_auxadc_data_fixup(tags);
+        } else if (tags->hdr.tag == ATAG_MSDC0_TAG){
+            msdc_para_hw_data[0] = tags->u.msdc0_data ;
+            msdc_para_hw_datap[0] = &msdc_para_hw_data[0];
+        } else if (tags->hdr.tag == ATAG_MSDC1_TAG){
+            msdc_para_hw_data[1] = tags->u.msdc0_data ;
+            msdc_para_hw_datap[1] = &msdc_para_hw_data[1];
+        }
+        else if (tags->hdr.tag == ATAG_TOUCH_CUST_TAG){
+            parse_tag_touch_data_fixup(tags);
+        }
+        else if (tags->hdr.tag == ATAG_KEYPAD_TAG){
+            parse_tag_keypad_data_fixup(tags);
+        }
+        else if (tags->hdr.tag == ATAG_LCMINFO_DATA){
+            parse_tag_lcminfo_data_fixup(tags->u.lcminfo_data.lcm_index);
+        }
+        else if (tags->hdr.tag == ATAG_LCM_TAG){
+            parse_tag_lcm_fixup(&(tags->u.lcm_data), ((tags->hdr.size << 2)-sizeof(struct tag_header)));
+        }
+        else if (tags->hdr.tag == ATAG_SENSORS_TAG) {
+            sensors_data = tags->u.sensors_tuning;
+            sensors_tuning_data = &sensors_data;
+        }
+        else if (tags->hdr.tag == ATAG_LEDS_TAG){
+            parse_tag_leds_data_fixup(tags);
+        }
+        else if (tags->hdr.tag == ATAG_VIBRATOR_TAG){
+            parse_tag_vibrator_data_fixup(tags);
+        }
         else if(tags->hdr.tag == ATAG_META_COM)
         {
           g_meta_com_type = tags->u.meta_com.meta_com_type;
@@ -1226,6 +1577,13 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
             parse_ccci_dfo_setting(&tags->u.dfo_data, DFO_BOOT_COUNT);
             parse_eemcs_dfo_setting(&tags->u.dfo_data, DFO_BOOT_COUNT);
             mtkfb_parse_dfo_setting(&tags->u.dfo_data, DFO_BOOT_COUNT);
+        } else if (tags->hdr.tag == ATAG_EINT_TAG) {
+            parse_tag_eint_ssb_fixup(tags);
+            eint_ssb_bin_exist = 1;
+        }
+        else if (tags->hdr.tag == ATAG_ACCDET_TAG){
+            accdet_data = tags->u.accdet_mode_data;
+            accdet_tuning_data = &accdet_data;
         }
 		else if(tags->hdr.tag == ATAG_MDINFO_DATA) {
             printk(KERN_ALERT "Get MD inf from META\n");
@@ -1235,13 +1593,32 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
             printk(KERN_ALERT "md_inf[3]=%d\n",tags->u.mdinfo_data.md_type[3]);
             md_inf_from_meta[0]=tags->u.mdinfo_data.md_type[0];
             md_inf_from_meta[1]=tags->u.mdinfo_data.md_type[1];
-            md_inf_from_meta[2]=tags->u.mdinfo_data.md_type[2]; 
+            md_inf_from_meta[2]=tags->u.mdinfo_data.md_type[2];
             md_inf_from_meta[3]=tags->u.mdinfo_data.md_type[3];
+        } else if (tags->hdr.tag == ATAG_BATTERY_TAG) {
+            printk(KERN_ALERT "battery tag %d\n", tags->hdr.size);
+            parse_tag_battery_fixup(tags);
+        } else if (tags->hdr.tag == ATAG_AUDIOPA_TAG) {
+            printk( "audio pa use stName [%s]\n",tags->u.audiopa_data.stName);
+            printk( "audio pa use version [0x%x]\n",tags->u.audiopa_data.version);
+            printk( "audio pa use pa_type [0x%x]\n",tags->u.audiopa_data.pa_type);
+            mtk_get_sound_pa_id = tags->u.audiopa_data.pa_type;
+        } else if (tags->hdr.tag == ATAG_MODEL_VERSION_TAG) {
+            parse_tag_model_version_fixup(tags);
         }
     }
 
+    if (!eint_ssb_bin_exist) {
+        eint_fixup_default();
+    }
+
+    if(NULL == gpio_usage)
+    {
+            //set default value
+            gpio_usage_set_default();
+    }
     if ((g_boot_mode == META_BOOT) || (g_boot_mode == ADVMETA_BOOT)) {
-        /* 
+        /*
          * Always use default dfo setting in META mode.
          * We can fix abnormal dfo setting this way.
          */

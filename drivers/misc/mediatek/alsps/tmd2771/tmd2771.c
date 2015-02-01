@@ -43,6 +43,7 @@
 #include "tmd2771.h"
 #include <alsps.h>
 #include <linux/sched.h>
+#include <mach/sensors_ssb.h>
 /******************************************************************************
  * configuration
 *******************************************************************************/
@@ -75,7 +76,6 @@ extern void mt_eint_print_status(void);
 static struct i2c_client *TMD2771_i2c_client = NULL;
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id TMD2771_i2c_id[] = {{TMD2771_DEV_NAME,0},{}};
-static struct i2c_board_info __initdata i2c_TMD2771={ I2C_BOARD_INFO("TMD2771", 0x39)};
 /*----------------------------------------------------------------------------*/
 static int TMD2771_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id);
 static int TMD2771_i2c_remove(struct i2c_client *client);
@@ -1165,10 +1165,8 @@ static void TMD2771_eint_work(struct work_struct *work)
         }
         APS_LOG("TMD2771_eint_work TMD2771_CMM_INT_HIGH_THD_LOW after databuf[0]=%d databuf[1]=%d!\n",databuf[0],databuf[1]);
         #endif
-        if((err = hwmsen_get_interrupt_data(ID_PROXIMITY, &sensor_data)))
-        {
-          APS_ERR("call hwmsen_get_interrupt_data fail = %d\n", err);
-        }
+        APS_LOG("TMD2771 interrupt value = %d\n", sensor_data.values[0]);
+        ps_report_interrupt_data(sensor_data.values[0]);
     }
 
     TMD2771_clear_intr(obj->client);
@@ -2102,11 +2100,34 @@ static int  TMD2771_local_init(void)
     return 0;
 }
 
+static int update_alsps_data(void)
+{
+    struct alsps_hw_ssb *tmd2771_alsps_data = NULL;
+    int i=0;
+    const char *name = "tmd2771";
 
+    if ((tmd2771_alsps_data = find_alsps_data(name))) {
+        TMD2771_get_cust_alsps_hw()->i2c_addr[0]      = tmd2771_alsps_data->i2c_addr[0];
+        TMD2771_get_cust_alsps_hw()->i2c_num           = tmd2771_alsps_data->i2c_num;
+        TMD2771_get_cust_alsps_hw()->ps_threshold_high      = tmd2771_alsps_data->ps_threshold_high;
+        TMD2771_get_cust_alsps_hw()->ps_threshold_low    = tmd2771_alsps_data->ps_threshold_low;
+
+        for (i=0; i<15; i++)
+            TMD2771_get_cust_alsps_hw()->als_level[i] = tmd2771_alsps_data->als_level[i];
+        for (i=0; i<16; i++)
+            TMD2771_get_cust_alsps_hw()->als_value[i] = tmd2771_alsps_data->als_value[i];
+        APS_LOG("[%s]tmd2771 success update addr=0x%x,i2c_num=%d,threshold_high=%d,threshold_low=%d\n",
+        __func__,tmd2771_alsps_data->i2c_addr[0],tmd2771_alsps_data->i2c_num,tmd2771_alsps_data->ps_threshold_high,tmd2771_alsps_data->ps_threshold_low);
+    }
+    return 0;
+}
 static int __init TMD2771_init(void)
 {
-    struct alsps_hw *hw = TMD2771_get_cust_alsps_hw();
+    struct alsps_hw *hw = NULL;
+    update_alsps_data();
+    hw = TMD2771_get_cust_alsps_hw();
     APS_LOG("%s: i2c_number=%d, i2c_addr: 0x%x\n", __func__, hw->i2c_num, hw->i2c_addr[0]);
+     struct i2c_board_info i2c_TMD2771={ I2C_BOARD_INFO("TMD2771", hw->i2c_addr[0])};
     i2c_register_board_info(hw->i2c_num, &i2c_TMD2771, 1);
     alsps_driver_add(&TMD2771_init_info);
     return 0;

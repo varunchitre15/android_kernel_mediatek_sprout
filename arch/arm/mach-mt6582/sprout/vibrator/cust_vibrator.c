@@ -14,6 +14,7 @@
 
 #include <cust_vibrator.h>
 #include <linux/types.h>
+#include <mach/mt_vibrator_cust.h>
 
 static struct vibrator_hw cust_vibrator_hw = {
 	.vib_timer = 50,
@@ -27,6 +28,9 @@ static struct vibrator_hw cust_vibrator_hw = {
 
 struct vibrator_hw *get_cust_vibrator_hw(void)
 {
+    if(vibrator_cust_data_fromtag.isInited == true) {
+        cust_vibrator_hw.vib_vol = vibrator_cust_data_fromtag.vib_vol;
+    }
     return &cust_vibrator_hw;
 }
 

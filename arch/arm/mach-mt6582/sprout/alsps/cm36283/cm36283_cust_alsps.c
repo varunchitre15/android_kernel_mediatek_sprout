@@ -18,6 +18,7 @@
 #include <mach/upmu_common.h>
 
 static struct alsps_hw cust_alsps_hw = {
+    .i2c_addr[0]= 0x60,
     .i2c_num    = 2,
     .polling_mode_ps =0,
     .polling_mode_als =1,

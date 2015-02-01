@@ -1223,22 +1223,6 @@ config MTK_LENS_DUMMYLENS_SUPPORT
        bool "Dummy Lens Driver"
        default n
 
-config MTK_LENS_AD5823AF_SUPPORT
-       bool "AD5823AF Lens Driver"
-       default n
-
-config MTK_LENS_BU6424AF_SUPPORT
-       bool "BU6424AF Lens Driver"
-       default n
-
-config MTK_LENS_BU6429AF_SUPPORT
-       bool "BU6429AF Lens Driver"
-       default n
-
-config MTK_LENS_DW9718AF_SUPPORT
-       bool "DW9718AF Lens Driver"
-       default n
-       
 config MTK_LENS_DW9714AF_SUPPORT
        bool "DW9714AF Lens Driver"
        default n
@@ -1246,12 +1230,14 @@ config MTK_LENS_DW9714AF_SUPPORT
 config MTK_LENS_FM50AF_SUPPORT
        bool "FM50AF Lens Driver"
        default n
-
-config MTK_LENS_MT9P017AF_SUPPORT
-       bool "MT9P017AF Lens Driver"
+config MTK_LENS_GAF001AF_SUPPORT
+       bool "GAF001AF Lens Driver"
        default n
 
-config MTK_LENS_OV8825AF_SUPPORT
-       bool "OV8825AF Lens Driver"
+config MTK_LENS_GAF002AF_SUPPORT
+       bool "GAF002AF Lens Driver"
        default n
 
+config MTK_LENS_GAF008AF_SUPPORT
+       bool "GAF008AF Lens Driver"
+       default n

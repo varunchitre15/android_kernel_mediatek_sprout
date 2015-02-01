@@ -1,15 +1,25 @@
 /*
-* Copyright (C) 2011-2014 MediaTek Inc.
+* Copyright(C)2014 MediaTek Inc. 
+* Modification based on code covered by the below mentioned copyright
+* and/or permission notice(S). 
+*/
+
+/* bmm050.c - bmm050 compass driver
 *
-* This program is free software: you can redistribute it and/or modify it under the terms of the
-* GNU General Public License version 2 as published by the Free Software Foundation.
 *
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See the GNU General Public License for more details.
+ * This software program is licensed subject to the GNU General Public License
+ * (GPL).Version 2,June 1991, available at http://www.fsf.org/copyleft/gpl.html
+
+ * (C) Copyright 2011 Bosch Sensortec GmbH
+ * All Rights Reserved
 *
-* You should have received a copy of the GNU General Public License along with this program.
-* If not, see <http://www.gnu.org/licenses/>.
+ * VERSION: V1.3
+ * History:	V1.0 --- Driver creation
+ *          V1.1 --- Add share I2C address solution
+ *          V1.2 --- Fix bug that daemon can't get
+ *                   delay command.
+ *          V1.3 --- Fix the issue of accuracy loss of rotation vector data
+ *                   that leads to safari jitter.
 */
 
 #include <linux/interrupt.h>
@@ -37,6 +47,7 @@
 #include <linux/hwmsensor.h>
 #include <linux/hwmsen_dev.h>
 #include <linux/sensors_io.h>
+#include <mach/sensors_ssb.h>
 #include "bmc156_mag.h"
 #include <mag.h>
 
@@ -675,7 +686,105 @@ BMM050_RETURN_FUNCTION_TYPE bmm050api_set_control_measurement_y(
         unsigned char enable_disable);
 BMM050_RETURN_FUNCTION_TYPE bmm050api_soft_reset(void);
 
+/*----------------------------------------------------------------------------*/
+#define DEBUG 0
+#define BMM050_DEV_NAME         "bmm050"
+/*----------------------------------------------------------------------------*/
+
+#define SENSOR_CHIP_ID_BMM     (0x32)
+
+#define BMM050_DEFAULT_DELAY    100
+#define BMM050_BUFSIZE  0x20
+
+static struct i2c_client *this_client = NULL;
 static struct bmm050api *p_bmm050;
+#define MSE_TAG                    "[MAGNETIC] "
+#define MSE_FUN(f)                printk(MSE_TAG"%s\n", __FUNCTION__)
+#define MSE_ERR(fmt, args...)        printk(KERN_ERR MSE_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
+#define MSE_LOG(fmt, args...)        printk(MSE_TAG fmt, ##args)
+
+#define C_I2C_FIFO_SIZE 8
+
+static DEFINE_MUTEX(bmc156_i2c_mutex);
+
+static int bmc156_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 len)
+{
+    u8 beg = addr;
+    int err;
+    struct i2c_msg msgs[2]={{0},{0}};
+
+    mutex_lock(&bmc156_i2c_mutex);
+
+    msgs[0].addr = client->addr;
+    msgs[0].flags = 0;
+    msgs[0].len =1;
+    msgs[0].buf = &beg;
+
+    msgs[1].addr = client->addr;
+    msgs[1].flags = I2C_M_RD;
+    msgs[1].len =len;
+    msgs[1].buf = data;
+
+    if (!client)
+    {
+        mutex_unlock(&bmc156_i2c_mutex);
+        return -EINVAL;
+    }
+    else if (len > C_I2C_FIFO_SIZE)
+    {
+        MSE_ERR(" length %d exceeds %d\n", len,C_I2C_FIFO_SIZE);
+        mutex_unlock(&bmc156_i2c_mutex);
+        return -EINVAL;
+    }
+    err = i2c_transfer(client->adapter, msgs, sizeof(msgs)/sizeof(msgs[0]));
+    if (err != 2)
+    {
+        MSE_ERR("i2c_transfer error: (%d %p %d) %d\n",addr, data, len, err);
+        err = -EIO;
+    }
+    else
+    {
+        err = 0;
+    }
+    mutex_unlock(&bmc156_i2c_mutex);
+    return err;
+}
+
+static char bmc156_i2c_write_block(struct i2c_client *client, u8 addr, u8 *data, u8 len)
+{   /*because address also occupies one byte, the maximum length for write is 7 bytes*/
+    int err, idx, num;
+    char buf[C_I2C_FIFO_SIZE];
+    err =0;
+    mutex_lock(&bmc156_i2c_mutex);
+    if (!client)
+    {
+        mutex_unlock(&bmc156_i2c_mutex);
+        return -EINVAL;
+    }
+    else if (len >= C_I2C_FIFO_SIZE)
+    {
+        MSE_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
+        mutex_unlock(&bmc156_i2c_mutex);
+        return -EINVAL;
+    }
+
+    num = 0;
+    buf[num++] = addr;
+    for (idx = 0; idx < len; idx++)
+    {
+        buf[num++] = data[idx];
+    }
+
+    err = i2c_master_send(client, buf, num);
+    if (err < 0)
+    {
+        MSE_ERR("send command error!!\n");
+        mutex_unlock(&bmc156_i2c_mutex);
+        return -EFAULT;
+    }
+    mutex_unlock(&bmc156_i2c_mutex);
+    return err;
+}
 
 BMM050_RETURN_FUNCTION_TYPE bmm050api_init(struct bmm050api *bmm050)
 {
@@ -1819,23 +1928,6 @@ BMM050_RETURN_FUNCTION_TYPE bmm050api_get_raw_xyz(struct bmm050api_mdata *mdata)
 /* End of API Section */
 /*----------------------------------------------------------------------------*/
 
-/*----------------------------------------------------------------------------*/
-#define DEBUG 0
-#define BMM050_DEV_NAME         "bmm050"
-/*----------------------------------------------------------------------------*/
-
-#define SENSOR_CHIP_ID_BMM     (0x32)
-
-#define BMM050_DEFAULT_DELAY    100
-#define BMM050_BUFSIZE  0x20
-
-#define MSE_TAG                    "[MAGNETIC] "
-#define MSE_FUN(f)                printk(MSE_TAG"%s\n", __FUNCTION__)
-#define MSE_ERR(fmt, args...)        printk(KERN_ERR MSE_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
-#define MSE_LOG(fmt, args...)        printk(MSE_TAG fmt, ##args)
-
-static struct i2c_client *this_client = NULL;
-
 // calibration msensor and orientation data
 static int sensor_data[CALIBRATION_DATA_SIZE];
 #if defined(BMC050_M4G) || defined(BMC050_VRV)
@@ -1916,7 +2008,6 @@ enum {
 /*----------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id bmm050_i2c_id[] = {{BMM050_DEV_NAME,0},{}};
-static struct i2c_board_info __initdata bmm050_i2c_info = {I2C_BOARD_INFO(BMM050_DEV_NAME, BMM050_I2C_ADDR)};
 
 /*----------------------------------------------------------------------------*/
 
@@ -4045,7 +4136,7 @@ static int bmm050_wakeup(struct i2c_client *client)
 
         mdelay(BMM_I2C_WRITE_DELAY_TIME);
         dummy = 0;
-        if((err = hwmsen_read_block(client, BMM050_POWER_CNTL, &dummy, 1)))
+        if((err = bmc156_i2c_read_block(client, BMM050_POWER_CNTL, &dummy, 1)))
         {
             MSE_ERR("read block error: %d\n", err);
             //try_times--;
@@ -4073,7 +4164,7 @@ static int bmm050_checkchipid(struct i2c_client *client)
     u8 chip_id = 0;
     MSE_FUN();
 
-    if((err = hwmsen_read_block(client, BMM050_CHIP_ID, &chip_id, 1)))
+    if((err = bmc156_i2c_read_block(client, BMM050_CHIP_ID, &chip_id, 1)))
     {
         MSE_ERR("bmm050_checkchipid read block error: %d\n", err);
         return -1;
@@ -4092,7 +4183,7 @@ static int bmm050_checkchipid(struct i2c_client *client)
 /*----------------------------------------------------------------------------*/
 static char bmm050_i2c_read_wrapper(u8 dev_addr, u8 reg_addr, u8 *data, u8 len)
 {
-    return hwmsen_read_block(this_client, reg_addr, data, len);
+    return bmc156_i2c_read_block(this_client, reg_addr, data, len);
 }
 /*----------------------------------------------------------------------------*/
 static char bmm050_i2c_write_wrapper(u8 dev_addr, u8 reg_addr, u8 *data, u8 len)
@@ -4103,16 +4194,18 @@ static char bmm050_i2c_write_wrapper(u8 dev_addr, u8 reg_addr, u8 *data, u8 len)
     {
         return -1;
     }
-
+    mutex_lock(&bmc156_i2c_mutex);
     buff[0] = reg_addr;
     memcpy(buff+1, data, len);
     if (i2c_master_send(this_client, buff, len+1) != (len+1))
     {
         /* I2C transfer error */
+        mutex_unlock(&bmc156_i2c_mutex);
         return -EIO;
     }
     else
     {
+        mutex_unlock(&bmc156_i2c_mutex);
         return 0;
     }
 }
@@ -4503,11 +4596,28 @@ static int    bmm050_local_init(void)
     return 0;
 }
 
+static int update_mag_data(void)
+{
+    struct mag_hw_ssb *bmc156_mag_data;
+    const char *name = "bmc156";
+    int err = 0;
 
+    if ((bmc156_mag_data = find_mag_data(name))) {
+        bmc156_get_cust_mag_hw()->i2c_addr[0]  = bmc156_mag_data->i2c_addr;
+        bmc156_get_cust_mag_hw()->i2c_num   = bmc156_mag_data->i2c_num;
+        bmc156_get_cust_mag_hw()->direction = bmc156_mag_data->direction;
+        MAG_LOG("[%s]bmc156 success update addr=0x%x,i2c_num=%d,direction=%d\n",
+        __func__,bmc156_mag_data->i2c_addr,bmc156_mag_data->i2c_num,bmc156_mag_data->direction);
+    }
+    return err;
+}
 /*----------------------------------------------------------------------------*/
 static int __init bmm050_init(void)
 {
-    struct mag_hw *hw = bmc156_get_cust_mag_hw();
+    struct mag_hw *hw = NULL;
+    update_mag_data();
+    hw = bmc156_get_cust_mag_hw();
+    struct i2c_board_info bmm050_i2c_info = {I2C_BOARD_INFO(BMM050_DEV_NAME, hw->i2c_addr[0])};
     MSE_LOG("%s: i2c_number=%d\n", __func__,hw->i2c_num);
     i2c_register_board_info(hw->i2c_num, &bmm050_i2c_info, 1);
     mag_driver_add(&bmm050_init_info);

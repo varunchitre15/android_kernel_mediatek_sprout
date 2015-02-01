@@ -1,10 +1,10 @@
 /*
 * Copyright (C) 2011-2014 MediaTek Inc.
-* 
-* This program is free software: you can redistribute it and/or modify it under the terms of the 
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
-* 
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
 *
@@ -42,6 +42,8 @@
 #include "cust_charging.h"
 #include <mach/charging.h>
 #endif
+#include <mach/battery_ssb.h>
+#include <mach/charging_hw_common.h>
 
 /**********************************************************
   *
@@ -52,8 +54,7 @@
 #define bq24196_SLAVE_ADDR_READ    0xD7
 
 static struct i2c_client *new_client = NULL;
-static const struct i2c_device_id bq24196_i2c_id[] = {{"bq24196",0},{}};   
-kal_bool chargin_hw_init_done = KAL_FALSE;
+static const struct i2c_device_id bq24196_i2c_id[] = {{"bq24196",0},{}};
 static int bq24196_driver_probe(struct i2c_client *client, const struct i2c_device_id *id);
 
 static struct i2c_driver bq24196_driver = {
@@ -631,35 +632,39 @@ static struct platform_driver bq24196_user_space_driver = {
 static struct i2c_board_info __initdata i2c_bq24196 = { I2C_BOARD_INFO("bq24196", (0xd6>>1))};
 
 static int __init bq24196_init(void)
-{    
+{
     int ret=0;
-    
+
     printk("[bq24196_init] init start\n");
-    
-    i2c_register_board_info(BQ24196_BUSNUM, &i2c_bq24196, 1);
 
-    if(i2c_add_driver(&bq24196_driver)!=0)
-    {
-        printk("[bq24196_init] failed to register bq24196 i2c driver.\n");
-    }
-    else
-    {
-        printk("[bq24196_init] Success to register bq24196 i2c driver.\n");
-    }
+	parsing_battery_init_para(FEATURE_LABEL_CODE);
 
-    // bq24196 user space access interface
-    ret = platform_device_register(&bq24196_user_space_device);
-    if (ret) {
-        printk("****[bq24196_init] Unable to device register(%d)\n", ret);
-        return ret;
-    }    
-    ret = platform_driver_register(&bq24196_user_space_driver);
-    if (ret) {
-        printk("****[bq24196_init] Unable to register driver (%d)\n", ret);
-        return ret;
-    }
-    
-    return 0;        
+	if (ext_chr_ic_id == EXT_BQ24196) {
+	    i2c_register_board_info(BQ24196_BUSNUM, &i2c_bq24196, 1);
+
+	    if(i2c_add_driver(&bq24196_driver)!=0)
+	    {
+	        printk("[bq24196_init] failed to register bq24196 i2c driver.\n");
+	    }
+	    else
+	    {
+	        printk("[bq24196_init] Success to register bq24196 i2c driver.\n");
+	    }
+
+	    // bq24196 user space access interface
+	    ret = platform_device_register(&bq24196_user_space_device);
+	    if (ret) {
+	        printk("****[bq24196_init] Unable to device register(%d)\n", ret);
+	        return ret;
+	    }
+	    ret = platform_driver_register(&bq24196_user_space_driver);
+	    if (ret) {
+	        printk("****[bq24196_init] Unable to register driver (%d)\n", ret);
+	        return ret;
+	    }
+	}
+
+	return 0;
 }
 
 static void __exit bq24196_exit(void)

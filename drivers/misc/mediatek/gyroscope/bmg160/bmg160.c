@@ -1,15 +1,21 @@
 /*
-* Copyright (C) 2011-2014 MediaTek Inc.
+* Copyright(C)2014 MediaTek Inc. 
+* Modification based on code covered by the below mentioned copyright
+* and/or permission notice(S). 
+*/
+
+/* BOSCH Gyroscope Sensor Driver
 *
-* This program is free software: you can redistribute it and/or modify it under the terms of the
-* GNU General Public License version 2 as published by the Free Software Foundation.
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
 *
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
 *
-* You should have received a copy of the GNU General Public License along with this program.
-* If not, see <http://www.gnu.org/licenses/>.
+ * History: V1.00 --- [2013.01.29]Driver creation
 */
 
 #include <linux/interrupt.h>
@@ -40,7 +46,7 @@
 #include <cust_gyro.h>
 #include <gyroscope.h>
 #include "bmg160.h"
-
+#include <mach/sensors_ssb.h>
 
 #define POWER_NONE_MACRO MT65XX_POWER_NONE
 extern struct gyro_hw* bmg160_get_cust_gyro_hw(void);
@@ -161,9 +167,6 @@ static const struct i2c_device_id bmg_i2c_id[] = {
     {}
 };
 
-static struct i2c_board_info __initdata bmg_i2c_info = {
-    I2C_BOARD_INFO(BMG_DEV_NAME, BMG160_I2C_ADDRESS)
-};
 
 /* I2C operation functions */
 static int bmg_i2c_read_block(struct i2c_client *client, u8 addr,
@@ -1942,11 +1945,29 @@ static int bmg160_local_init(void)
     }
     return 0;
 }
+static int update_gyro_data(void)
+{
+    struct gyro_hw_ssb *bmg160_gyro_data =NULL;
+    const char *name = "bmg160";
+    int err = 0;
 
+    if ((bmg160_gyro_data = find_gyro_data(name))) {
+        bmg160_get_cust_gyro_hw()->addr  = bmg160_gyro_data->i2c_addr;
+        bmg160_get_cust_gyro_hw()->i2c_num   = bmg160_gyro_data->i2c_num;
+        bmg160_get_cust_gyro_hw()->direction = bmg160_gyro_data->direction;
+        bmg160_get_cust_gyro_hw()->firlen    = bmg160_gyro_data->firlen;
+        GYRO_LOG("[%s]bmg160 success update addr=0x%x,i2c_num=%d,direction=%d\n",
+        __func__,bmg160_gyro_data->i2c_addr,bmg160_gyro_data->i2c_num,bmg160_gyro_data->direction);
+    }
+    return err;
+}
 static int __init bmg_init(void)
 {
-    struct gyro_hw *hw = bmg160_get_cust_gyro_hw();
+    struct gyro_hw *hw = NULL;
+    update_gyro_data();
+    hw = bmg160_get_cust_gyro_hw();
     GYRO_LOG("%s: i2c_number=%d\n", __func__,hw->i2c_num);
+    struct i2c_board_info bmg_i2c_info = {I2C_BOARD_INFO(BMG_DEV_NAME, hw->addr)};
     i2c_register_board_info(hw->i2c_num, &bmg_i2c_info, 1);
     gyro_driver_add(&bmg160_init_info);
 

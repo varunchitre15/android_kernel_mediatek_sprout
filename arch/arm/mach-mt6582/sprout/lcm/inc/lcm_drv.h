@@ -22,6 +22,18 @@
 #define ARY_SIZE(x) (sizeof((x)) / sizeof((x[0])))
 #endif
 
+#ifndef MAX_LCM_CNT
+#define MAX_LCM_CNT 10
+#endif
+
+#ifndef MAX_VAR_CNT
+#define MAX_VAR_CNT 2
+#endif
+
+#ifndef MAX_INIT_CNT
+#define MAX_INIT_CNT 256
+#endif
+
 // ---------------------------------------------------------------------------
 
 /* common enumerations */
@@ -75,6 +87,17 @@ typedef enum
    LCM_DRIVING_CURRENT_6575_12MA  = (2 << 4),
    LCM_DRIVING_CURRENT_6575_16MA  = (4 << 4)
 } LCM_DRIVING_CURRENT;
+
+
+typedef enum{
+    LCM_INTERFACE_NOTDEFINED = 0,
+    LCM_INTERFACE_DSI0,
+    LCM_INTERFACE_DSI1,
+    LCM_INTERFACE_DSI_DUAL,
+    LCM_INTERFACE_DPI0,
+    LCM_INTERFACE_DPI1,
+    LCM_INTERFACE_DBI0
+}LCM_INTERFACE_ID;
 
 
 /* DBI related enumerations */
@@ -512,6 +535,7 @@ typedef struct
 {
     LCM_TYPE type;
     LCM_CTRL ctrl;  //! how to control LCM registers
+    LCM_INTERFACE_ID lcm_if;
 
     /* common parameters */
     unsigned int width;
@@ -532,12 +556,23 @@ typedef struct
 #define REGFLAG_ESCAPE_ID		(0x00)
 #define REGFLAG_DELAY_MS_V3		(0xFF)
 
+#define REGFLAG_DELAY                                         0xAB
+#define REGFLAG_END_OF_TABLE                                  0xAA   // END OF REGISTERS MARKER
+
 typedef struct {
     unsigned char id;    
     unsigned char cmd;
     unsigned char count;
     unsigned char para_list[128];
 } LCM_setting_table_V3;
+
+
+struct LCM_setting_table {
+    unsigned char cmd;
+    unsigned char count;
+    unsigned char para_list[64];
+};
+
 
 typedef struct
 {
@@ -576,6 +611,8 @@ typedef struct
 {
     const char* name;
     void (*set_util_funcs)(const LCM_UTIL_FUNCS *util);
+    void (*set_params)(struct LCM_setting_table *init_table, unsigned int init_size, LCM_PARAMS *params);
+    void (*get_id)(unsigned int* driver_id, unsigned int* module_id);
     void (*get_params)(LCM_PARAMS *params);
 
     void (*init)(void);
@@ -605,6 +642,31 @@ typedef struct
 	void (*read_fb)(unsigned char *buffer);
     /////////////////////////////////////////////////
 } LCM_DRIVER;
+
+
+struct lcm_custom_node
+{
+    int offset;
+    int len;
+};
+
+
+struct lcm_custom_header
+{
+    unsigned int driver_id;  // driver ID of LCM
+    unsigned int module_id;  // module ID of LCM
+    struct lcm_custom_node node_list[MAX_VAR_CNT];  // custom node of LCM
+};
+
+
+struct lcm_para_header
+{
+    unsigned int version;
+    unsigned int list;
+    unsigned int count;
+    unsigned int size;
+    struct lcm_custom_header header_list[MAX_LCM_CNT];
+};
 
 
 // ---------------------------------------------------------------------------

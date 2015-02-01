@@ -38,7 +38,7 @@
 #include <gyroscope.h>
 #include <linux/batch.h>
 #include "mpu3050c.h"
-
+#include <mach/sensors_ssb.h>
 /*-------------------------MT6516&MT6573 define-------------------------------*/
 
 
@@ -62,7 +62,6 @@
 #define MPU3000_DEV_NAME        "MPU3000"
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id mpu3000_i2c_id[] = {{MPU3000_DEV_NAME,0},{}};
-static struct i2c_board_info __initdata i2c_mpu3000={ I2C_BOARD_INFO("MPU3000", (0xD0>>1))};
 /*the adapter id will be available in customization*/
 //static unsigned short mpu3000_force[] = {0x00, MPU3000_I2C_SLAVE_ADDR, I2C_CLIENT_END, I2C_CLIENT_END};
 //static const unsigned short *const mpu3000_forces[] = { mpu3000_force, NULL };
@@ -1705,10 +1704,28 @@ static int mpu3050_local_init(void)
     return 0;
 }
 
+static int update_gyro_data(void)
+{
+    struct gyro_hw_ssb *mpu3050c_gyro_data = NULL;
+    const char *name = "mpu3050c";
+    int err = 0;
+
+    if ((mpu3050c_gyro_data = find_gyro_data(name))) {
+        mpu3050_get_cust_gyro_hw()->addr  = mpu3050c_gyro_data->i2c_addr;
+        mpu3050_get_cust_gyro_hw()->i2c_num   = mpu3050c_gyro_data->i2c_num;
+        mpu3050_get_cust_gyro_hw()->direction = mpu3050c_gyro_data->direction;
+        mpu3050_get_cust_gyro_hw()->firlen    = mpu3050c_gyro_data->firlen;
+        GYRO_LOG("[%s]mpu3050c success update addr=0x%x,i2c_num=%d,direction=%d\n",
+        __func__,mpu3050c_gyro_data->i2c_addr,mpu3050c_gyro_data->i2c_num,mpu3050c_gyro_data->direction);
+    }
+    return err;
+}
 static int __init mpu3000_init(void)
 {
-    struct gyro_hw *hw = mpu3050_get_cust_gyro_hw();
-    GYRO_LOG("%s: i2c_number=%d\n", __func__,hw->i2c_num);
+    struct gyro_hw *hw = NULL;
+    update_gyro_data();
+    hw = mpu3050_get_cust_gyro_hw();
+    struct i2c_board_info i2c_mpu3000={ I2C_BOARD_INFO("MPU3000", hw->addr)};
     i2c_register_board_info(hw->i2c_num, &i2c_mpu3000, 1);
     gyro_driver_add(&mpu3050_init_info);
 

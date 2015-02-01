@@ -20,9 +20,9 @@
 // ============================================================
 // define
 // ============================================================
-//#define SOC_BY_AUXADC
-//#define SOC_BY_HW_FG
-#define SOC_BY_SW_FG
+#define SOC_BY_AUXADC 0
+#define SOC_BY_HW_FG 1
+#define SOC_BY_SW_FG 2
 
 //#define CONFIG_DIS_CHECK_BATTERY
 //#define FIXED_TBAT_25
@@ -35,8 +35,8 @@
 #define VBATTEMP_CHANNEL_NUMBER  5
 
 /* ADC resistor  */
-#define R_BAT_SENSE 4					
-#define R_I_SENSE 4						
+#define R_BAT_SENSE 4
+#define R_I_SENSE 4
 #define R_CHARGER_1 330
 #define R_CHARGER_2 39
 

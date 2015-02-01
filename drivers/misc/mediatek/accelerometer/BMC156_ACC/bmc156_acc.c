@@ -1,15 +1,24 @@
 /*
-* Copyright (C) 2011-2014 MediaTek Inc.
+* Copyright(C)2014 MediaTek Inc.
+* Modification based on code covered by the below mentioned copyright
+* and/or permission notice(S).
+*/
+
+/* BMA255 motion sensor driver
 *
-* This program is free software: you can redistribute it and/or modify it under the terms of the
-* GNU General Public License version 2 as published by the Free Software Foundation.
 *
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See the GNU General Public License for more details.
+ * This software program is licensed subject to the GNU General Public License
+ * (GPL).Version 2,June 1991, available at http://www.fsf.org/copyleft/gpl.html
+
+ * (C) Copyright 2011 Bosch Sensortec GmbH
+ * All Rights Reserved
 *
-* You should have received a copy of the GNU General Public License along with this program.
-* If not, see <http://www.gnu.org/licenses/>.
+ * VERSION: V1.4
+ * HISTORY: V1.0 --- Driver creation
+ *          V1.1 --- Add share I2C address function
+ *          V1.2 --- Fix the bug that sometimes sensor is stuck after system resume.
+ *          V1.3 --- Add FIFO interfaces.
+ *          V1.4 --- Use basic i2c function to read fifo data instead of i2c DMA mode.
 */
 
 #include <linux/interrupt.h>
@@ -38,6 +47,7 @@
 #include <linux/hwmsen_dev.h>
 #include <linux/sensors_io.h>
 #include <linux/hwmsen_helper.h>
+#include <mach/sensors_ssb.h>
 #include "bmc156_acc.h"
 
 #define  GSENSOR_MOTION_DETECT
@@ -172,7 +182,6 @@ extern void mt_eint_print_status(void);
 
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id bma255_i2c_id[] = {{BMA255_DEV_NAME,0},{}};
-static struct i2c_board_info __initdata bmc156_i2c_info ={ I2C_BOARD_INFO(BMA255_DEV_NAME, BMA255_I2C_ADDR)};
 
 /*----------------------------------------------------------------------------*/
 static int bma255_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id);
@@ -2953,13 +2962,33 @@ static int  bmc156_acc_local_init(void)
     return 0;
 }
 
+static int update_acc_data(void)
+{
+    struct acc_hw_ssb *bmc156_acc_data = NULL;
+    const char *name = "bmc156";
+    int err = 0;
+
+    if ((bmc156_acc_data = find_acc_data(name))) {
+        bmc156_get_cust_acc_hw()->i2c_addr  = bmc156_acc_data->i2c_addr;
+        bmc156_get_cust_acc_hw()->i2c_num   = bmc156_acc_data->i2c_num;
+        bmc156_get_cust_acc_hw()->direction = bmc156_acc_data->direction;
+        bmc156_get_cust_acc_hw()->firlen    = bmc156_acc_data->firlen;
+        GSE_LOG("[%s]bmc156 success update addr=0x%x,i2c_num=%d,direction=%d\n",
+        __func__,bmc156_acc_data->i2c_addr,bmc156_acc_data->i2c_num,bmc156_acc_data->direction);
+    }
+    return err;
+}
 /*----------------------------------------------------------------------------*/
 static int __init bmc156_init(void)
 {
-    struct acc_hw *hw = bmc156_get_cust_acc_hw();
+    struct acc_hw *hw = NULL;
+    update_acc_data();
+    hw = bmc156_get_cust_acc_hw();
     GSE_FUN();
+    struct i2c_board_info bmc156_i2c_info ={ I2C_BOARD_INFO(BMA255_DEV_NAME, hw->i2c_addr)};
     i2c_register_board_info(hw->i2c_num, &bmc156_i2c_info, 1);
     acc_driver_add(&bmc156_acc_init_info);
+    GSE_LOG("i2c_num:%d, i2c_addr:0x%x\n",hw->i2c_num, hw->i2c_addr);
     return 0;
 }
 /*----------------------------------------------------------------------------*/

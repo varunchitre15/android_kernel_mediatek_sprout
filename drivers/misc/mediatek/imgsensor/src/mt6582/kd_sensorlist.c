@@ -1195,6 +1195,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
         case SENSOR_FEATURE_GET_TEST_PATTERN_CHECKSUM_VALUE:
         case SENSOR_FEATURE_GET_SENSOR_CURRENT_TEMPERATURE:
         case SENSOR_FEATURE_SET_YUV_3A_CMD:
+        case SENSOR_FEATURE_SET_MIRROR_FLIP:
             //
             if(copy_from_user((void*)pFeaturePara , (void *) pFeatureCtrl->pFeaturePara, FeatureParaLen)) {
                 kfree(pFeaturePara);
@@ -1738,45 +1739,57 @@ static int CAMERA_HW_resume(struct platform_device *pdev)
   * CAMERA_HW_DumpReg_To_Proc()
   * Used to dump some critical sensor register
   ********************************************************************************/
-static int  CAMERA_HW_DumpReg_To_Proc(char *page, char **start, off_t off,
-                                                                                       int count, int *eof, void *data)
+static ssize_t CAMERA_HW_DumpReg_To_Proc(struct file *file, char *buffer, size_t count,
+					 loff_t *offp)
 {
-    return count;
+	return count;
 }
 
 /*******************************************************************************
   * CAMERA_HW_Reg_Debug()
   * Used for sensor register read/write by proc file
   ********************************************************************************/
-static int  CAMERA_HW_Reg_Debug( struct file *file, const char *buffer, unsigned long count,
-                                                                     void *data)
+static ssize_t CAMERA_HW_Reg_Debug(struct file *file, const char *buffer, size_t count,
+				   loff_t *data)
 {
-    char regBuf[64] = {'\0'};
-    u32 u4CopyBufSize = (count < (sizeof(regBuf) - 1)) ? (count) : (sizeof(regBuf) - 1);
+	char regBuf[64] = { '\0' };
+	u32 u4CopyBufSize = (count < (sizeof(regBuf) - 1)) ? (count) : (sizeof(regBuf) - 1);
 
-    MSDK_SENSOR_REG_INFO_STRUCT sensorReg;
-    memset(&sensorReg, 0, sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
+	MSDK_SENSOR_REG_INFO_STRUCT sensorReg;
+	memset(&sensorReg, 0, sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
 
-    if (copy_from_user(regBuf, buffer, u4CopyBufSize))
-        return -EFAULT;
+	if (copy_from_user(regBuf, buffer, u4CopyBufSize))
+		return -EFAULT;
 
-    if (sscanf(regBuf, "%x %x",  &sensorReg.RegAddr, &sensorReg.RegData) == 2) {
-        if (g_pSensorFunc != NULL) {
-            g_pSensorFunc->SensorFeatureControl(DUAL_CAMERA_MAIN_SENSOR, SENSOR_FEATURE_SET_REGISTER, (MUINT8*)&sensorReg, (MUINT32*)sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
-            g_pSensorFunc->SensorFeatureControl(DUAL_CAMERA_MAIN_SENSOR, SENSOR_FEATURE_GET_REGISTER, (MUINT8*)&sensorReg, (MUINT32*)sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
-            PK_DBG("write addr = 0x%08x, data = 0x%08x\n", sensorReg.RegAddr, sensorReg.RegData);
-        }
-    }
-    else if (sscanf(regBuf, "%x", &sensorReg.RegAddr) == 1) {
-        if (g_pSensorFunc != NULL) {
-            g_pSensorFunc->SensorFeatureControl(DUAL_CAMERA_MAIN_SENSOR, SENSOR_FEATURE_GET_REGISTER, (MUINT8*)&sensorReg, (MUINT32*)sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
-            PK_DBG("read addr = 0x%08x, data = 0x%08x\n", sensorReg.RegAddr, sensorReg.RegData);
-        }
-    }
+	if (sscanf(regBuf, "%x %x", &sensorReg.RegAddr, &sensorReg.RegData) == 2) {
+		if (g_pSensorFunc != NULL) {
+			g_pSensorFunc->SensorFeatureControl(DUAL_CAMERA_MAIN_SENSOR,
+							    SENSOR_FEATURE_SET_REGISTER,
+							    (MUINT8 *) &sensorReg,
+							    (MUINT32 *)
+							    sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
+			g_pSensorFunc->SensorFeatureControl(DUAL_CAMERA_MAIN_SENSOR,
+							    SENSOR_FEATURE_GET_REGISTER,
+							    (MUINT8 *) &sensorReg,
+							    (MUINT32 *)
+							    sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
+			PK_DBG("write addr = 0x%08x, data = 0x%08x\n", sensorReg.RegAddr,
+			       sensorReg.RegData);
+		}
+	} else if (sscanf(regBuf, "%x", &sensorReg.RegAddr) == 1) {
+		if (g_pSensorFunc != NULL) {
+			g_pSensorFunc->SensorFeatureControl(DUAL_CAMERA_MAIN_SENSOR,
+							    SENSOR_FEATURE_GET_REGISTER,
+							    (MUINT8 *) &sensorReg,
+							    (MUINT32 *)
+							    sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
+			PK_DBG("read addr = 0x%08x, data = 0x%08x\n", sensorReg.RegAddr,
+			       sensorReg.RegData);
+		}
+	}
 
-    return count;
+	return count;
 }
-
 
 
 
@@ -1795,14 +1808,20 @@ static struct platform_driver g_stCAMERA_HW_Driver = {
     }
 };
 
+static const struct file_operations fcamera_proc_fops = {
+	.read = CAMERA_HW_DumpReg_To_Proc,
+	.write = CAMERA_HW_Reg_Debug,
+};
 /*=======================================================================
   * CAMERA_HW_i2C_init()
   *=======================================================================*/
 static int __init CAMERA_HW_i2C_init(void)
 {
-    struct proc_dir_entry *prEntry;
+#if 0
+	struct proc_dir_entry *prEntry;
+#endif
 
-    //i2c_register_board_info(CAMERA_I2C_BUSNUM, &kd_camera_dev, 1);
+	/* i2c_register_board_info(CAMERA_I2C_BUSNUM, &kd_camera_dev, 1); */
     i2c_register_board_info(SUPPORT_I2C_BUS_NUM1, &i2c_devs1, 1);
 
 
@@ -1811,8 +1830,12 @@ static int __init CAMERA_HW_i2C_init(void)
         PK_ERR("failed to register CAMERA_HW driver\n");
         return -ENODEV;
     }
+/* FIX-ME: linux-3.10 procfs API changed */
+#if 1
+	proc_create("driver/camsensor", 0, NULL, &fcamera_proc_fops);
 
 
+#else
     //Register proc file for main sensor register debug
     prEntry = create_proc_entry("driver/camsensor", 0, NULL);
     if (prEntry) {
@@ -1824,6 +1847,7 @@ static int __init CAMERA_HW_i2C_init(void)
     }
 
 
+#endif
     atomic_set(&g_CamHWOpend, 0);
 
     return 0;
