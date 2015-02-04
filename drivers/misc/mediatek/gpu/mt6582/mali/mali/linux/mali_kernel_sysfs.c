@@ -913,20 +913,30 @@ static const struct file_operations profiling_events_human_readable_fops = {
 
 #endif
 
-static ssize_t memory_used_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
+static int memory_debugfs_show(struct seq_file *s, void *private_data)
 {
-	char buf[64];
-	size_t r;
-	u32 mem = _mali_ukk_report_memory_usage();
+	seq_printf(s, "%-25s  %-10s  %-10s  %-15s  %-15s  %-10s  %-10s\n"\
+		   "==============================================================================================================\n",
+		   "Name (:bytes)", "pid", "mali_mem", "max_mali_mem",
+		   "external_mem", "ump_mem", "dma_mem");
+	mali_session_memory_tracking(s);
+	return 0;
+}
 
-	r = snprintf(buf, 64, "%u\n", mem);
-	return simple_read_from_buffer(ubuf, cnt, ppos, buf, r);
+
+static int memory_debugfs_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, memory_debugfs_show, inode->i_private);
 }
 
 static const struct file_operations memory_usage_fops = {
 	.owner = THIS_MODULE,
-	.read = memory_used_read,
+	.open = memory_debugfs_open,
+	.read  = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
 };
+
 
 static ssize_t utilization_gp_pp_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
 {
@@ -1370,7 +1380,7 @@ int mali_sysfs_register(const char *mali_dev_name)
 				}
 			}
 
-			debugfs_create_file("memory_usage", 0400, mali_debugfs_dir, NULL, &memory_usage_fops);
+			debugfs_create_file("gpu_memory", 0444, mali_debugfs_dir, NULL, &memory_usage_fops);
 
 			debugfs_create_file("utilization_gp_pp", 0400, mali_debugfs_dir, NULL, &utilization_gp_pp_fops);
 			debugfs_create_file("utilization_gp", 0400, mali_debugfs_dir, NULL, &utilization_gp_fops);

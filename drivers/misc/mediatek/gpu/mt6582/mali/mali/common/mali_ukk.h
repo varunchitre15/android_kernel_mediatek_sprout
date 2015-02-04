@@ -601,6 +601,8 @@ _mali_osk_errcode_t _mali_ukk_sw_counters_report(_mali_uk_sw_counters_report_s *
 
 u32 _mali_ukk_report_memory_usage(void);
 
+u32 _mali_ukk_report_total_memory_size(void);
+
 u32 _mali_ukk_utilization_gp_pp(void);
 
 u32 _mali_ukk_utilization_gp(void);

@@ -23,6 +23,7 @@ typedef enum mali_mem_type {
 	MALI_MEM_DMA_BUF,
 	MALI_MEM_UMP,
 	MALI_MEM_BLOCK,
+	MALI_MEM_TYPE_MAX,
 } mali_mem_type;
 
 typedef struct mali_mem_os_mem {

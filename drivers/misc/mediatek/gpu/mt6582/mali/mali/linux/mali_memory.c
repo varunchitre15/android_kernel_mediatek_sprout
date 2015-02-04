@@ -28,6 +28,9 @@
 #include "mali_memory_os_alloc.h"
 #include "mali_memory_block_alloc.h"
 
+extern unsigned int mali_dedicated_mem_size;
+extern unsigned int mali_shared_mem_size;
+
 /* session->memory_lock must be held when calling this function */
 static void mali_mem_release(mali_mem_allocation *descriptor)
 {
@@ -55,6 +58,9 @@ static void mali_mem_release(mali_mem_allocation *descriptor)
 		break;
 	case MALI_MEM_BLOCK:
 		mali_mem_block_release(descriptor);
+		break;
+	default:
+		MALI_DEBUG_PRINT(1, ("mem type %d is not in the mali_mem_type enum.\n", descriptor->type));
 		break;
 	}
 }
@@ -264,6 +270,12 @@ u32 _mali_ukk_report_memory_usage(void)
 
 	return sum;
 }
+
+u32 _mali_ukk_report_total_memory_size(void)
+{
+	return mali_dedicated_mem_size + mali_shared_mem_size;
+}
+
 
 /**
  * Per-session memory descriptor mapping table sizes

@@ -1294,6 +1294,12 @@ _mali_osk_errcode_t _mali_ukk_open(void **context)
 		_MALI_OSK_INIT_LIST_HEAD(&session->pp_job_fb_lookup_list[i]);
 	}
 
+	session->pid = _mali_osk_get_pid();
+	session->comm = _mali_osk_get_comm();
+
+	session->max_mali_mem_allocated = 0;
+	_mali_osk_memset(session->mali_mem_array, 0, sizeof(size_t) * MALI_MEM_TYPE_MAX);
+
 	*context = (void*)session;
 
 	/* Add session to the list of all sessions. */
