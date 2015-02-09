@@ -1329,12 +1329,12 @@ static void tpd_down(int x, int y, int p ,int id)
 
 
     if(touch_ssb_data.use_tpd_button == 1){
-    /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
-    if (FACTORY_BOOT == boot_mode || RECOVERY_BOOT == boot_mode)
-    /*END PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
-    {
-        tpd_button(x, y, 1);
-    }
+        /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
+        if (FACTORY_BOOT == boot_mode || RECOVERY_BOOT == boot_mode)
+        /*END PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
+        {
+            tpd_button(x, y, 1);
+        }
     }
 }
 #else
@@ -1349,12 +1349,12 @@ static void tpd_down(int x, int y, int p,int id)
     input_mt_sync(tpd->dev);
 
     if(touch_ssb_data.use_tpd_button == 1){
-    /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
-    if (FACTORY_BOOT == boot_mode || RECOVERY_BOOT == boot_mode)
-    /*END PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
-    {
-        tpd_button(x, y, 1);
-    }
+        /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
+        if (FACTORY_BOOT == boot_mode || RECOVERY_BOOT == boot_mode)
+        /*END PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
+        {
+            tpd_button(x, y, 1);
+        }
     }
 
     /* < DTS2012042803609 gkf61766 20120428 begin */
@@ -1375,12 +1375,12 @@ static void tpd_up(int x, int y,int id)
 
 
     if(touch_ssb_data.use_tpd_button == 1){
-    /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
-    if (FACTORY_BOOT == boot_mode || RECOVERY_BOOT == boot_mode)
-    /*END PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
-    {
-        tpd_button(x, y, 1);
-    }
+        /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
+        if (FACTORY_BOOT == boot_mode || RECOVERY_BOOT == boot_mode)
+        /*END PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
+        {
+            tpd_button(x, y, 1);
+        }
     }
 
 }
@@ -1392,12 +1392,12 @@ static void tpd_up(int x, int y ,int id)
     input_mt_sync(tpd->dev);
 
     if(touch_ssb_data.use_tpd_button == 1){
-    /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
-    if (FACTORY_BOOT == boot_mode || RECOVERY_BOOT == boot_mode)
-    /*END PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
-    {
-        tpd_button(x, y, 0);
-    }
+        /*BEGIN PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
+        if (FACTORY_BOOT == boot_mode || RECOVERY_BOOT == boot_mode)
+        /*END PN: DTS2012051505359 ,modified by s00179437 , 2012-05-31*/
+        {
+            tpd_button(x, y, 0);
+        }
     }
 
     /* < DTS2012042803609 gkf61766 20120428 begin */
@@ -1971,6 +1971,9 @@ static int tpd_local_init(void)
         TPD_DMESG("Error unable to add i2c driver.\n");
         return -1;
     }
+
+
+    input_set_abs_params(tpd->dev, ABS_MT_TRACKING_ID, 0, 10, 0, 0);
 
     if(touch_ssb_data.use_tpd_button == 1)
          tpd_button_setting(TPD_KEY_COUNT, touch_ssb_data.tpd_key_local, touch_ssb_data.tpd_key_dim_local);
