@@ -55,7 +55,7 @@
 *1 degree = rad*180/PI, about rad*180/3.1416
 */
 #define BMG160_OUT_MAGNIFY            131
-#define DEGREE_TO_RAD                7506
+#define DEGREE_TO_RAD                (7506*164)
 
 /*********************************[BMG160]*************************************/
 /* chip id */
