@@ -875,9 +875,9 @@ static int bmg_read_sensor_data(struct i2c_client *client,
             obj->cvt.sign[BMG_AXIS_Z]*databuf[BMG_AXIS_Z];
 
         /* convert: LSB -> degree/second(o/s) */
-        gyro[BMG_AXIS_X] = gyro[BMG_AXIS_X] * BMG160_OUT_MAGNIFY / obj->sensitivity;
-        gyro[BMG_AXIS_Y] = gyro[BMG_AXIS_Y] * BMG160_OUT_MAGNIFY / obj->sensitivity;
-        gyro[BMG_AXIS_Z] = gyro[BMG_AXIS_Z] * BMG160_OUT_MAGNIFY / obj->sensitivity;
+        gyro[BMG_AXIS_X] = gyro[BMG_AXIS_X] * BMG160_OUT_MAGNIFY *10;
+        gyro[BMG_AXIS_Y] = gyro[BMG_AXIS_Y] * BMG160_OUT_MAGNIFY *10;
+        gyro[BMG_AXIS_Z] = gyro[BMG_AXIS_Z] * BMG160_OUT_MAGNIFY *10;
 
         sprintf(buf, "%04x %04x %04x",
             gyro[BMG_AXIS_X], gyro[BMG_AXIS_Y], gyro[BMG_AXIS_Z]);
@@ -1511,7 +1511,7 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd,
     long err = 0;
     int cali[BMG_AXES_NUM];
     int copy_cnt = 0;
-    int smtRes=1;
+    int smtRes=2;
 
     if (obj == NULL)
         return -EFAULT;
@@ -1582,9 +1582,16 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd,
         err = -EINVAL;
     } else {
         /* convert: degree/second -> LSB */
-        cali[BMG_AXIS_X] = (sensor_data.x * obj->sensitivity) / BMG160_OUT_MAGNIFY;
-        cali[BMG_AXIS_Y] = (sensor_data.y * obj->sensitivity) / BMG160_OUT_MAGNIFY;
-        cali[BMG_AXIS_Z] = (sensor_data.z * obj->sensitivity) / BMG160_OUT_MAGNIFY;
+        if( abs(sensor_data.x) >1310 || abs(sensor_data.y) >1310 || abs(sensor_data.z) >1310) {
+            cali[BMG_AXIS_X] = (sensor_data.x ) / (BMG160_OUT_MAGNIFY*10);
+            cali[BMG_AXIS_Y] = (sensor_data.y ) / (BMG160_OUT_MAGNIFY*10);
+            cali[BMG_AXIS_Z] = (sensor_data.z ) / (BMG160_OUT_MAGNIFY*10);
+        }
+       else {
+            cali[BMG_AXIS_X] = (sensor_data.x * obj->sensitivity) / BMG160_OUT_MAGNIFY;
+            cali[BMG_AXIS_Y] = (sensor_data.y * obj->sensitivity) / BMG160_OUT_MAGNIFY;
+            cali[BMG_AXIS_Z] = (sensor_data.z * obj->sensitivity) / BMG160_OUT_MAGNIFY;
+        }
         err = bmg_write_calibration(client, cali);
     }
     break;
@@ -1601,9 +1608,9 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd,
     if (err)
         break;
 
-    sensor_data.x = (cali[BMG_AXIS_X] * BMG160_OUT_MAGNIFY) /obj->sensitivity;
-    sensor_data.y = (cali[BMG_AXIS_Y] * BMG160_OUT_MAGNIFY) /obj->sensitivity;
-    sensor_data.z = (cali[BMG_AXIS_Z] * BMG160_OUT_MAGNIFY) /obj->sensitivity;
+    sensor_data.x = (cali[BMG_AXIS_X] * BMG160_OUT_MAGNIFY) *10;
+    sensor_data.y = (cali[BMG_AXIS_Y] * BMG160_OUT_MAGNIFY) *10;
+    sensor_data.z = (cali[BMG_AXIS_Z] * BMG160_OUT_MAGNIFY) *10;
     if (copy_to_user(data, &sensor_data, sizeof(sensor_data))) {
         err = -EFAULT;
         break;
