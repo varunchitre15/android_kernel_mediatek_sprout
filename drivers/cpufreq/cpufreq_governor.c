@@ -321,6 +321,13 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 			   && (!policy->governor->initialized)
 			   && (!cpu)
 			   ) {
+			struct cpu_dbs_common_info *cdbs =
+				dbs_data->cdata->get_cpu_cdbs(0);
+
+			mutex_init(&cdbs->timer_mutex);
+			INIT_DEFERRABLE_WORK(&cdbs->work,
+						dbs_data->cdata->gov_dbs_timer);
+
 			hp_ops = dbs_data->cdata->gov_ops;
 			rc = input_register_handler(hp_ops->input_handler);
 			pr_debug("@%s(CPUFREQ_GOV_POLICY_INIT), rc = %d\n", __func__, rc);
@@ -335,9 +342,16 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 	case CPUFREQ_GOV_POLICY_EXIT:
 		// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		if ((dbs_data->cdata->governor == GOV_HOTPLUG) && (!cpu)) {
+			struct cpu_dbs_common_info *cdbs =
+				dbs_data->cdata->get_cpu_cdbs(0);
+
 			hp_ops = dbs_data->cdata->gov_ops;
 			input_unregister_handler(hp_ops->input_handler);
 			pr_debug("@%s(CPUFREQ_GOV_POLICY_EXIT), rc = %d\n", __func__, rc);
+
+			mutex_lock(&dbs_data->mutex);
+			mutex_destroy(&cdbs->timer_mutex);
+			mutex_unlock(&dbs_data->mutex);
 		}
 		// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -405,8 +419,8 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 				j_cdbs->prev_cpu_nice =
 					kcpustat_cpu(j).cpustat[CPUTIME_NICE];
 
-			mutex_init(&j_cdbs->timer_mutex);
-			if (j == 0 || dbs_data->cdata->governor != GOV_HOTPLUG) { // <-XXX
+			if (dbs_data->cdata->governor != GOV_HOTPLUG) { // <-XXX
+				mutex_init(&j_cdbs->timer_mutex);
 				INIT_DEFERRABLE_WORK(&j_cdbs->work,
 						     dbs_data->cdata->gov_dbs_timer);
 			}
@@ -445,9 +459,11 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 
 		gov_cancel_work(dbs_data, policy);
 
-		mutex_lock(&dbs_data->mutex);
-		mutex_destroy(&cpu_cdbs->timer_mutex);
-		mutex_unlock(&dbs_data->mutex);
+		if (dbs_data->cdata->governor != GOV_HOTPLUG) { // <-XXX
+			mutex_lock(&dbs_data->mutex);
+			mutex_destroy(&cpu_cdbs->timer_mutex);
+			mutex_unlock(&dbs_data->mutex);
+		}
 
 		break;
 
