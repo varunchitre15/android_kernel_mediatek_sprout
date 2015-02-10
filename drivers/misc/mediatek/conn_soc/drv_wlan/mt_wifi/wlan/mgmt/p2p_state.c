@@ -123,7 +123,8 @@ p2pStateInit_CHNL_ON_HAND (
                             prChnlReqInfo->eBand,
                             prChnlReqInfo->eChnlSco,
                             prChnlReqInfo->u4MaxInterval);
-
+        /* Complete channel request */
+        complete(&prAdapter->prGlueInfo->rChannelReq);
     } while (FALSE);
 
     return;
@@ -159,6 +160,8 @@ p2pStateAbort_CHNL_ON_HAND (
 
             // Return Channel.
             p2pFuncReleaseCh(prAdapter, &(prP2pFsmInfo->rChnlReqInfo));
+            /* case: if supplicant cancel remain on channel */
+            complete(&prAdapter->prGlueInfo->rChannelReq);
         }
 
     } while (FALSE);
@@ -202,6 +205,8 @@ p2pStateAbort_REQING_CHANNEL (
             else {
                 // Return Channel.
                 p2pFuncReleaseCh(prAdapter, &(prP2pFsmInfo->rChnlReqInfo));
+                /* possible have not acquire channel */
+                complete(&prAdapter->prGlueInfo->rChannelReq);
             }
 
         }

@@ -2339,24 +2339,26 @@ wlanNetCreate(
     //4 <3.1.3> co-relate net device & prDev
     SET_NETDEV_DEV(prGlueInfo->prDevHandler, wiphy_dev(prWdev->wiphy));
 
-    //4 <3.2> initiali glue variables 
+    //4 <3.2> initiali glue variables
     prGlueInfo->eParamMediaStateIndicated = PARAM_MEDIA_STATE_DISCONNECTED;
     prGlueInfo->ePowerState = ParamDeviceStateD0;
     prGlueInfo->fgIsMacAddrOverride = FALSE;
     prGlueInfo->fgIsRegistered = FALSE;
     prGlueInfo->prScanRequest = NULL;
 
-#if CFG_SUPPORT_HOTSPOT_2_0 
+#if CFG_SUPPORT_HOTSPOT_2_0
 	/* Init DAD */
 	prGlueInfo->fgIsDad  = FALSE;
 	prGlueInfo->fgIs6Dad = FALSE;
 	kalMemZero(prGlueInfo->aucDADipv4,4);
-	kalMemZero(prGlueInfo->aucDADipv6,16);	
+	kalMemZero(prGlueInfo->aucDADipv6,16);
 #endif
 
     init_completion(&prGlueInfo->rScanComp);
     init_completion(&prGlueInfo->rHaltComp);
     init_completion(&prGlueInfo->rPendComp);
+    init_completion(&prGlueInfo->rChannelReq);
+
 #if CFG_ENABLE_WIFI_DIRECT
     init_completion(&prGlueInfo->rSubModComp);
 #endif

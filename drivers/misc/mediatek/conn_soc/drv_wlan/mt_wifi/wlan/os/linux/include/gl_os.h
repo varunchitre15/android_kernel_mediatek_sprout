@@ -847,6 +847,8 @@ struct _GLUE_INFO_T {
     struct completion rScanComp; /* indicate scan complete */
     struct completion rHaltComp; /* indicate main thread halt complete */
     struct completion rPendComp; /* indicate main thread halt complete */
+    struct completion rChannelReq; /* indicate channel request complete */
+
 #if CFG_ENABLE_WIFI_DIRECT
     struct completion rSubModComp; /*indicate sub module init or exit complete*/
 #endif

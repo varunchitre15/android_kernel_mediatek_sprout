@@ -1525,6 +1525,9 @@ p2pFsmRunEventChannelAbort (
                             (prP2pFsmInfo->eCurrentState == P2P_STATE_CHNL_ON_HAND)));
 
             p2pFsmStateTransition(prAdapter, prP2pFsmInfo, P2P_STATE_IDLE);
+        } else {
+            /* just avoid supplicant waiting too long */
+            complete(&prAdapter->prGlueInfo->rChannelReq);
         }
 
     } while (FALSE);
@@ -2495,6 +2498,8 @@ p2pFsmRunEventMgmtFrameTxDone (
                             (UINT_32)prMsduInfo->u2FrameLength);
 
             prMgmtTxReqInfo->prMgmtTxMsdu = NULL;
+
+            complete(&prAdapter->prGlueInfo->rChannelReq);
         }
 
     } while (FALSE);
