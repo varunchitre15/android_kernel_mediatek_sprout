@@ -50,7 +50,7 @@
 #endif
 ///
 #define TIMESTAMP_SOF          0   // default:0, SOP interval
-#define _USE_TASKLET           0   //use tasklet to print log in IRQ
+#define _USE_TASKLET           1   //use tasklet to print log in IRQ
 
 //
 #define CAMSV_DBG
@@ -728,14 +728,24 @@ static MUINT32 ISP_DumpDmaDeepDbg(void){
         g_DmaErr_p1[3] = (MUINT32)ISP_RD32(_BASE + 0x1C8);
         g_DmaErr_p1[4] = (MUINT32)ISP_RD32(_BASE + 0x1D0);
         g_DmaErr_p1[5] = (MUINT32)ISP_RD32(_BASE + 0x1D4);
-
-        LOG_ERR("IMGI:0x%x,LSCI=0x%x,imgo=0x%x,img2o:0x%x,esfko:0x%x,aao:0x%x",\
+#if !(_USE_TASKLET)
+        LOG_ERR("IMGI:0x%x,LSCI=0x%x,imgo=0x%x,img2o:0x%x,esfko:0x%x,aao:0x%x\n",\
         g_DmaErr_p1[0],\
         g_DmaErr_p1[1],\
         g_DmaErr_p1[2],\
         g_DmaErr_p1[3],\
         g_DmaErr_p1[4],\
         g_DmaErr_p1[5]);
+#else
+        IRQ_LOG_KEEPER(_IRQ,m_CurrentPPB,_LOG_ERR,"IMGI:0x%x,LSCI=0x%x,imgo=0x%x,img2o:0x%x,esfko:0x%x,aao:0x%x\n",\
+        g_DmaErr_p1[0],\
+        g_DmaErr_p1[1],\
+        g_DmaErr_p1[2],\
+        g_DmaErr_p1[3],\
+        g_DmaErr_p1[4],\
+        g_DmaErr_p1[5]);
+#endif
+
         g_bDmaERR_p1 = MFALSE;
     }
     if(g_bDmaERR_p1_d){
@@ -2059,15 +2069,15 @@ static long ISP_Buf_CTRL_FUNC_FRMB(MUINT32 Param)
                                         if(_openedDma == 1){
                                             p1_fbc[rt_dma].Bits.RCNT_INC = 1;
                                             ISP_WR32(p1_fbc_reg[rt_dma],p1_fbc[rt_dma].Reg_val);
-                                            IRQ_LOG_KEEPER(irqT,0,_LOG_DBG,"  RCNT_INC(dma:0x%x)\n",rt_dma);
+                                            IRQ_LOG_KEEPER(irqT,0,_LOG_DBG,"  RCNT_INC(dma:0x%x)%d\n",rt_dma,m_P1_RCNT_INC_CNT);
                                         }
                                         else{
                                             p1_fbc[ch_imgo].Bits.RCNT_INC = 1;
                                             ISP_WR32(p1_fbc_reg[ch_imgo],p1_fbc[ch_imgo].Reg_val);
                                             p1_fbc[ch_img2o].Bits.RCNT_INC = 1;
                                             ISP_WR32(p1_fbc_reg[ch_img2o],p1_fbc[ch_img2o].Reg_val);
-                                            IRQ_LOG_KEEPER(irqT,0,_LOG_DBG,"  RCNT_INC(dma:0x%x)\n",ch_imgo);
-                                            IRQ_LOG_KEEPER(irqT,0,_LOG_DBG,"  RCNT_INC(dma:0x%x)\n",ch_img2o);
+                                            IRQ_LOG_KEEPER(irqT,0,_LOG_DBG,"  RCNT_INC(dma:0x%x)%d\n",ch_imgo,m_P1_RCNT_INC_CNT);
+                                            IRQ_LOG_KEEPER(irqT,0,_LOG_DBG,"  RCNT_INC(dma:0x%x)%d\n",ch_img2o,m_P1_RCNT_INC_CNT);
                                         }
 #ifdef _89SERIAL_
                                         ++m_P1_RCNT_INC_CNT;
@@ -4301,7 +4311,11 @@ static void ISP_Irq_FrmB(MUINT32 *IrqStatus)
                 LOG_INF("warning: fifo may overrun");
             }
             if(IrqStatus[ISP_IRQ_TYPE_INTX] & IspInfo_FrmB.IrqInfo.ErrMask[ISP_IRQ_TYPE_INTX]){
+#if !(_USE_TASKLET)
                 LOG_ERR("ISP INT ERR_P1 0x%x\n",IrqStatus[ISP_IRQ_TYPE_INTX]);
+#else
+                IRQ_LOG_KEEPER(_IRQ,m_CurrentPPB,_LOG_ERR,"ISP INT ERR_P1 0x%x\n",IrqStatus[ISP_IRQ_TYPE_INTX]);
+#endif
                 g_ISPIntErr[_IRQ] |= IrqStatus[ISP_IRQ_TYPE_INTX];
             }
 
@@ -4451,7 +4465,7 @@ static void ISP_Irq_FrmB(MUINT32 *IrqStatus)
                     p1_fbc[1].Bits.RCNT_INC = 1;
                     ISP_WR32(ISP_REG_ADDR_IMG2O_FBC,p1_fbc[1].Reg_val);
                     if(IspInfo_FrmB.DebugMask & ISP_DBG_INT)
-                        IRQ_LOG_KEEPER(_IRQ,m_CurrentPPB,_LOG_INF," p1:RCNT_INC: ");
+                        IRQ_LOG_KEEPER(_IRQ,m_CurrentPPB,_LOG_INF," p1:RCNT_INC: %d\n", m_P1_RCNT_INC_CNT);
 #ifdef _89SERIAL_
                     ++m_P1_RCNT_INC_CNT;
 #endif
@@ -4545,9 +4559,10 @@ static void ISP_Irq_FrmB(MUINT32 *IrqStatus)
 
 static void ISP_TaskletFunc(unsigned long data)
 {
-    LOG_INF("tks_%d",(sof_count[_PASS1])?(sof_count[_PASS1]-1):(sof_count[_PASS1]));
+    LOG_INF("tks_%d\n",(sof_count[_PASS1])?(sof_count[_PASS1]-1):(sof_count[_PASS1]));
+    IRQ_LOG_PRINTER(_IRQ,m_CurrentPPB,_LOG_ERR);
     IRQ_LOG_PRINTER(_IRQ,m_CurrentPPB,_LOG_INF);
-    LOG_INF("tke_%d",(sof_count[_PASS1])?(sof_count[_PASS1]-1):(sof_count[_PASS1]));
+    LOG_INF("tke_%d\n",(sof_count[_PASS1])?(sof_count[_PASS1]-1):(sof_count[_PASS1]));
 
     //IRQ_LOG_PRINTER(_IRQ_D,m_CurrentPPB,_LOG_INF);
 }
