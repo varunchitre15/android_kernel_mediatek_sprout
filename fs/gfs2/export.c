@@ -109,7 +109,6 @@ static int gfs2_get_name(struct dentry *parent, char *name,
 	*name = 0;
 	gnfd.inum.no_addr = ip->i_no_addr;
 	gnfd.inum.no_formal_ino = ip->i_no_formal_ino;
-	gnfd.name = name;
 
 	error = gfs2_glock_nq_init(dip->i_gl, LM_ST_SHARED, 0, &gh);
 	if (error)
