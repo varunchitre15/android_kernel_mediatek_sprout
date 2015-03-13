@@ -1,0 +1,12 @@
+ARCH=arm
+BRANCH=android-mediatek-sprout-3.10-svelte
+CROSS_COMPILE=arm-eabi-
+DEFCONFIG=sprout-svelte_defconfig
+EXTRA_CMDS=''
+KERNEL_DIR=private/mediatek
+LINUX_GCC_CROSS_COMPILE_PREBUILTS_BIN=prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin
+FILES="
+arch/arm/boot/zImage
+vmlinux
+System.map
+"
