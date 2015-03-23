@@ -751,6 +751,8 @@ typedef enum _ENUM_CMD_ID_T {
 #endif
     CMD_ID_DUMP_MEM,                      /* 0xc8 (Query) */
 
+	CMD_ID_CHIP_CONFIG			= 0xCA, /* 0xca (Set / Query) */
+
 #if CFG_SUPPORT_RDD_TEST_MODE
     CMD_ID_SET_RDD_CH = 0xE1,
 #endif

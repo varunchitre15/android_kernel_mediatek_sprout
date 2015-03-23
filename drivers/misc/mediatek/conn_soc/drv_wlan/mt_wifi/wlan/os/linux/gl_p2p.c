@@ -2328,6 +2328,10 @@ p2pDoIOCTL(
         ret = mtk_p2p_wext_get_rssi(prDev, &rIwReqInfo, &(prIwReq->u), NULL);
         break;
 #endif
+	case IOC_GET_PRIVATE_IOCTL_CMD:
+		ret = priv_support_driver_cmd(prDev, prIFReq, i4Cmd);
+
+		break;
     default:
         ret = -ENOTTY;
     }

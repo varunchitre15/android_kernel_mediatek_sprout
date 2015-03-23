@@ -234,6 +234,8 @@
 *                              C O N S T A N T S
 ********************************************************************************
 */
+/* Device private ioctl calls */
+#define IOC_GET_PRIVATE_IOCTL_CMD	(SIOCDEVPRIVATE+1)
 
 // (WirelessExtension) Private I/O Controls
 #define IOC_P2P_CFG_DEVICE              (SIOCIWFIRSTPRIV+0)

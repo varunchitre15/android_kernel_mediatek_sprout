@@ -425,6 +425,16 @@ priv_support_ioctl (
     IN int i4Cmd
     );
 
+int priv_support_driver_cmd(
+	IN struct net_device *prDev,
+	IN OUT struct ifreq *prReq,
+	IN int i4Cmd);
+
+INT_32 priv_driver_cmds(
+	IN struct net_device *prNetDev,
+	IN PCHAR pcCommand,
+	IN INT_32 i4TotalLen);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

@@ -807,6 +807,11 @@ BOOLEAN kalIndicateAgpsNotify(P_ADAPTER_T prAdapter, UINT_8 cmd, PUINT_8 data
 
 /* Zero specific memory block */
 #define kalMemZero(pvAddr, u4Size)                  memset(pvAddr, 0, u4Size)
+#define kalStrnCpy(dest, src, n)                      strncpy(dest, src, n)
+#define kalStrnChr(s, n, c)                           strnchr(s, n, c)
+#define kalStrLen(s)                                strlen(s)
+#define kalStrnLen(s, b)                             strnlen(s, b)
+#define kalStrtoul(cp, endp, base)                    simple_strtoul(cp, endp, base)
 
 /* defined for wince sdio driver only */
 #if defined(_HIF_SDIO)

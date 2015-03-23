@@ -669,6 +669,24 @@ typedef struct _PARAM_CUSTOM_SW_CTRL_STRUC_T {
 } PARAM_CUSTOM_SW_CTRL_STRUC_T, *P_PARAM_CUSTOM_SW_CTRL_STRUC_T;
 
 
+typedef struct _CMD_CHIP_CONFIG_T {
+    UINT_16  u2Id;
+    UINT_8   ucType;
+    UINT_8   ucRespType;
+    UINT_16  u2MsgSize;
+    UINT_8   aucReserved0[2];
+    UINT_8   aucCmd[CHIP_CONFIG_RESP_SIZE];
+} CMD_CHIP_CONFIG_T, *P_CMD_CHIP_CONFIG_T;
+
+
+typedef struct _PARAM_CUSTOM_CHIP_CONFIG_STRUC_T {
+	UINT_16 u2Id;
+	UINT_8 ucType;
+	UINT_8 ucRespType;
+	UINT_16 u2MsgSize;
+	UINT_8 aucReserved0[2];
+	UINT_8 aucCmd[CHIP_CONFIG_RESP_SIZE];
+} PARAM_CUSTOM_CHIP_CONFIG_STRUC_T, *P_PARAM_CUSTOM_CHIP_CONFIG_STRUC_T;
 typedef struct _PARAM_CUSTOM_EEPROM_RW_STRUC_T {
     UINT_8              ucEepromMethod; /* For read only read: 1, query size: 0*/
     UINT_8              ucEepromIndex;
@@ -2145,6 +2163,14 @@ wlanoidSetRoamingInfo (
 *                              F U N C T I O N S
 ********************************************************************************
 */
+
+WLAN_STATUS
+wlanoidSetChipConfig(
+	IN 	P_ADAPTER_T prAdapter,
+	IN 	PVOID 		pvSetBuffer,
+	IN 	UINT_32 	u4SetBufferLen,
+	OUT PUINT_32 	pu4SetInfoLen
+	);
 
 #endif /* _WLAN_OID_H */
 

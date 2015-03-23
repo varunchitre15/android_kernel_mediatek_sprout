@@ -11425,3 +11425,68 @@ wlanoidSetRoamingInfo (
 }
 #endif /* CFG_SUPPORT_ROAMING_ENC */
 
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This routine is called to set chip
+*
+* \param[in] prAdapter Pointer to the Adapter structure.
+* \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
+* \param[in] u4SetBufferLen The length of the set buffer.
+* \param[out] pu4SetInfoLen If the call is successful, returns the number of
+*                           bytes read from the set buffer. If the call failed
+*                           due to invalid length of the set buffer, returns
+*                           the amount of storage needed.
+*
+* \retval WLAN_STATUS_SUCCESS
+* \retval WLAN_STATUS_INVALID_LENGTH
+*/
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS
+wlanoidSetChipConfig(IN P_ADAPTER_T prAdapter,
+		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	P_PARAM_CUSTOM_CHIP_CONFIG_STRUC_T prChipConfigInfo;
+	CMD_CHIP_CONFIG_T rCmdChipConfig;
+	WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	DATA_STRUC_INSPECTING_ASSERT(sizeof(prChipConfigInfo->aucCmd) == CHIP_CONFIG_RESP_SIZE);
+	DEBUGFUNC("wlanoidSetChipConfig");
+	DBGLOG(INIT, LOUD, ("\n"));
+
+	ASSERT(prAdapter);
+	ASSERT(pu4SetInfoLen);
+
+	*pu4SetInfoLen = sizeof(PARAM_CUSTOM_CHIP_CONFIG_STRUC_T);
+
+	if (u4SetBufferLen < sizeof(PARAM_CUSTOM_CHIP_CONFIG_STRUC_T)) {
+		return WLAN_STATUS_INVALID_LENGTH;
+	}
+
+	ASSERT(pvSetBuffer);
+
+	prChipConfigInfo = (P_PARAM_CUSTOM_CHIP_CONFIG_STRUC_T) pvSetBuffer;
+	kalMemZero(&rCmdChipConfig, sizeof(rCmdChipConfig));
+
+	rCmdChipConfig.u2Id = prChipConfigInfo->u2Id;
+	rCmdChipConfig.ucType = prChipConfigInfo->ucType;
+	rCmdChipConfig.ucRespType = prChipConfigInfo->ucRespType;
+	rCmdChipConfig.u2MsgSize = prChipConfigInfo->u2MsgSize;
+	if (rCmdChipConfig.u2MsgSize > CHIP_CONFIG_RESP_SIZE) {
+		DBGLOG(REQ, INFO,
+		       ("Chip config Msg Size %u is not valid (set)\n", rCmdChipConfig.u2MsgSize));
+		rCmdChipConfig.u2MsgSize = CHIP_CONFIG_RESP_SIZE;
+	}
+	kalMemCopy(rCmdChipConfig.aucCmd, prChipConfigInfo->aucCmd, rCmdChipConfig.u2MsgSize);
+
+	DBGLOG(INIT,TRACE , ("rCmdChipConfig.aucCmd=%s\n",rCmdChipConfig.aucCmd));
+	rWlanStatus = wlanSendSetQueryCmd(prAdapter,
+					  CMD_ID_CHIP_CONFIG,
+					  TRUE,
+					  FALSE,
+					  TRUE,
+					  nicCmdEventSetCommon,
+					  nicOidCmdTimeoutCommon,
+					  sizeof(CMD_CHIP_CONFIG_T),
+					  (PUINT_8) &rCmdChipConfig, pvSetBuffer, u4SetBufferLen);
+	return rWlanStatus;
+}/* wlanoidSetChipConfig */

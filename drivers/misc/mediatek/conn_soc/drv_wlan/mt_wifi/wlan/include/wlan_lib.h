@@ -362,6 +362,7 @@
 
 #define NUM_TC_RESOURCE_TO_STATISTICS       4
 
+#define WLAN_CFG_ARGV_MAX 8
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -462,6 +463,16 @@ typedef enum _ENUM_REG_CH_MAP_T {
     REG_CH_MAP_NUM
 } ENUM_REG_CH_MAP_T, *P_ENUM_REG_CH_MAP_T;
 
+#define CHIP_CONFIG_RESP_SIZE 320
+enum {
+	CHIP_CONFIG_TYPE_WO_RESPONSE = 0x00,
+	CHIP_CONFIG_TYPE_MEM8 = 0x01,
+	CHIP_CONFIG_TYPE_MEM32 = 0x02,
+	CHIP_CONFIG_TYPE_ASCII = 0x03,
+	CHIP_CONFIG_TYPE_BINARY = 0x04,
+	CHIP_CONFIG_TYPE_DRV_PASSTHROUGH = 0x05,
+	CHIP_CONFIG_TYPE_END
+};
 typedef struct _SET_TXPWR_CTRL_T{
     INT_8    c2GLegacyStaPwrOffset;  /* Unit: 0.5dBm, default: 0*/
     INT_8    c2GHotspotPwrOffset;
@@ -1159,7 +1170,7 @@ wlanCheckSystemConfiguration (
 /*----------------------------------------------------------------------------*/
 /* query sta statistics information from driver and firmware                  */
 /*----------------------------------------------------------------------------*/
-WLAN_STATUS 
+WLAN_STATUS
 wlanoidQueryStaStatistics(
 	IN P_ADAPTER_T prAdapter,
 	IN PVOID pvQueryBuffer,
@@ -1167,6 +1178,11 @@ wlanoidQueryStaStatistics(
 	OUT PUINT_32 pu4QueryInfoLen
 	);
 
+WLAN_STATUS wlanCfgParseArgument(
+	CHAR *cmdLine,
+	INT_32 *argc,
+	CHAR *argv[]
+    );
 
 #endif /* _WLAN_LIB_H */
 

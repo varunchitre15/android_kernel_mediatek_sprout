@@ -211,6 +211,8 @@
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
 */
+#include "precomp.h"
+
 #include "gl_os.h"
 #include "gl_wext_priv.h"
 #if CFG_SUPPORT_WAPI
@@ -225,6 +227,18 @@
 ********************************************************************************
 */
 #define NUM_SUPPORTED_OIDS      (sizeof(arWlanOidReqTable) / sizeof(WLAN_REQ_ENTRY))
+#define CMD_MIRACAST		"MIRACAST"
+/* miracast related definition */
+#define MIRACAST_MODE_OFF	0
+#define MIRACAST_MODE_SOURCE	1
+#define MIRACAST_MODE_SINK	2
+#define CMD_SET_CHIP            "SET_CHIP"
+static UINT_8 g_ucMiracastMode = MIRACAST_MODE_OFF;
+typedef struct priv_driver_cmd_s {
+	char *buf;
+	int used_len;
+	int total_len;
+} priv_driver_cmd_t;
 
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
@@ -2593,3 +2607,248 @@ reqExtSetAcpiDevicePowerState (
     return rStatus;
 }
 
+int
+priv_driver_set_chip_config(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
+{
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	P_ADAPTER_T prAdapter = NULL;
+	UINT_32 u4BufLen = 0;
+	INT_32 i4BytesWritten = 0;
+	UINT_32 u4CmdLen = 0;
+	UINT_32 u4PrefixLen = 0;
+	/* INT_32 i4Argc = 0; */
+	/* PCHAR  apcArgv[WLAN_CFG_ARGV_MAX] = {0}; */
+
+	PARAM_CUSTOM_CHIP_CONFIG_STRUC_T rChipConfigInfo;
+
+	ASSERT(prNetDev);
+	if (FALSE == GLUE_CHK_PR2(prNetDev, pcCommand)) {
+		return -1;
+	}
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+	prAdapter = prGlueInfo->prAdapter;
+	DBGLOG(REQ, INFO, ("priv_driver_set_chip_config command is %s\n", pcCommand));
+	/* wlanCfgParseArgument(pcCommand, &i4Argc, apcArgv); */
+	/* DBGLOG(REQ, LOUD,("argc is %i\n",i4Argc)); */
+	u4CmdLen = kalStrnLen(pcCommand, i4TotalLen);
+	u4PrefixLen = kalStrLen(CMD_SET_CHIP) + 1 /*space */;
+
+	kalMemZero(&rChipConfigInfo, sizeof(rChipConfigInfo));
+
+	/* if(i4Argc >= 2) { */
+	if (u4CmdLen > u4PrefixLen) {
+
+		rChipConfigInfo.ucType = CHIP_CONFIG_TYPE_WO_RESPONSE;
+		/* rChipConfigInfo.u2MsgSize = kalStrnLen(apcArgv[1],CHIP_CONFIG_RESP_SIZE); */
+		rChipConfigInfo.u2MsgSize = u4CmdLen - u4PrefixLen;
+		/* kalStrnCpy(rChipConfigInfo.aucCmd,apcArgv[1],CHIP_CONFIG_RESP_SIZE); */
+		if( u4PrefixLen <= CHIP_CONFIG_RESP_SIZE) {
+			kalStrnCpy(rChipConfigInfo.aucCmd, pcCommand + u4PrefixLen, CHIP_CONFIG_RESP_SIZE-u4PrefixLen);
+
+			rStatus = kalIoctl(prGlueInfo,
+					   wlanoidSetChipConfig,
+					   &rChipConfigInfo,
+						sizeof(rChipConfigInfo), FALSE, FALSE, TRUE, TRUE,&u4BufLen);
+		} else {
+			DBGLOG(REQ, INFO, ("%s: kalIoctl Command Len > %d\n", __func__, CHIP_CONFIG_RESP_SIZE));
+			rStatus = WLAN_STATUS_FAILURE;
+		}
+
+		if (rStatus != WLAN_STATUS_SUCCESS) {
+			DBGLOG(REQ, INFO, ("%s: kalIoctl ret=%lu\n", __func__, rStatus));
+			i4BytesWritten = -1;
+		}
+	}
+
+	return i4BytesWritten;
+
+}
+
+int priv_driver_set_miracast(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
+{
+
+	P_ADAPTER_T prAdapter = NULL;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	UINT_32 i4BytesWritten = 0;
+	/* WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS; */
+	/* UINT_32 u4BufLen = 0; */
+	INT_32 i4Argc = 0;
+	UINT_8 ucMode = 0;
+	P_WFD_CFG_SETTINGS_T prWfdCfgSettings = (P_WFD_CFG_SETTINGS_T) NULL;
+	P_MSG_WFD_CONFIG_SETTINGS_CHANGED_T prMsgWfdCfgUpdate =
+	    (P_MSG_WFD_CONFIG_SETTINGS_CHANGED_T) NULL;
+	PCHAR apcArgv[WLAN_CFG_ARGV_MAX];
+
+	ASSERT(prNetDev);
+	if (FALSE == GLUE_CHK_PR2(prNetDev, pcCommand)) {
+		return -1;
+	}
+
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+
+	DBGLOG(REQ, LOUD, ("command is %s\n", pcCommand));
+	wlanCfgParseArgument(pcCommand, &i4Argc, apcArgv);
+	DBGLOG(REQ, LOUD, ("argc is %ld\n", i4Argc));
+
+	prAdapter = prGlueInfo->prAdapter;
+	if (i4Argc >= 2) {
+
+		ucMode = kalStrtoul(apcArgv[1], NULL, 0);
+
+		if (g_ucMiracastMode == ucMode) {
+			/* XXX: continue or skip */
+		}
+
+		g_ucMiracastMode = ucMode;
+		prMsgWfdCfgUpdate =
+		    cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(MSG_WFD_CONFIG_SETTINGS_CHANGED_T));
+
+		if (prMsgWfdCfgUpdate != NULL) {
+
+			prWfdCfgSettings = &(prGlueInfo->prAdapter->rWifiVar.prP2pFsmInfo->rWfdConfigureSettings);
+			prMsgWfdCfgUpdate->rMsgHdr.eMsgId = MID_MNY_P2P_WFD_CFG_UPDATE;
+			prMsgWfdCfgUpdate->prWfdCfgSettings = prWfdCfgSettings;
+
+			switch (ucMode) {
+			case MIRACAST_MODE_SOURCE:
+				prWfdCfgSettings->ucWfdEnable = 1;
+				snprintf(pcCommand, i4TotalLen, CMD_SET_CHIP " mira 1");
+				break;
+			case MIRACAST_MODE_SINK:
+				prWfdCfgSettings->ucWfdEnable = 2;
+				snprintf(pcCommand, i4TotalLen, CMD_SET_CHIP " mira 2");
+				break;
+			default:
+				prWfdCfgSettings->ucWfdEnable = 0;
+				snprintf(pcCommand, i4TotalLen, CMD_SET_CHIP " mira 0");
+				break;
+			}
+			mboxSendMsg(prAdapter,
+				    MBOX_ID_0,
+				    (P_MSG_HDR_T) prMsgWfdCfgUpdate, MSG_SEND_METHOD_BUF);
+
+			priv_driver_set_chip_config(prNetDev, pcCommand, i4TotalLen);
+		} /* prMsgWfdCfgUpdate */
+		else {
+			DBGLOG(REQ, ERROR, ("%s: Memory alloc failed\n", __func__));
+			i4BytesWritten = -1;
+		}
+	}
+
+	/* i4Argc */
+	return i4BytesWritten;
+}
+int
+priv_support_driver_cmd(IN struct net_device *prNetDev, IN OUT struct ifreq *prReq, IN int i4Cmd)
+{
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	int ret = 0;
+	char *pcCommand = NULL;
+	int i4BytesWritten = 0;
+	int i4TotalLen = 0;
+	priv_driver_cmd_t priv_cmd;
+	if (!prReq->ifr_data) {
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+	ASSERT(prGlueInfo);
+	if (!prGlueInfo) {
+		DBGLOG(REQ, WARN, ("No glue info\n"));
+		ret = -EFAULT;
+		goto exit;
+	}
+	if (prGlueInfo->u4ReadyFlag == 0) {
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	if (copy_from_user(&priv_cmd, prReq->ifr_data, sizeof(priv_driver_cmd_t))) {
+		DBGLOG(REQ, INFO, ("%s: copy_from_user fail\n", __func__));
+		ret = -EFAULT;
+		goto exit;
+	}
+
+	i4TotalLen = priv_cmd.total_len;
+
+	if (i4TotalLen <= 0) {
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	pcCommand = kmalloc(i4TotalLen, GFP_KERNEL);
+	if (!pcCommand) {
+		DBGLOG(REQ, INFO,
+		       ("%s: failed to allocate memory size %d\n", __func__, i4TotalLen));
+		ret = -ENOMEM;
+		goto exit;
+	}
+
+	if (copy_from_user(pcCommand, priv_cmd.buf, i4TotalLen)) {
+		ret = -EFAULT;
+		goto exit;
+	}
+
+	DBGLOG(REQ, INFO,
+	       ("%s: driver cmd \"%s\" on %s\n", __func__, pcCommand, prReq->ifr_name));
+
+	i4BytesWritten = priv_driver_cmds(prNetDev, pcCommand, i4TotalLen);
+
+	if (i4BytesWritten < 0) {
+		DBGLOG(REQ, INFO,
+		       ("%s: command %s Written is %d\n", __func__, pcCommand, i4BytesWritten));
+		if (i4TotalLen >= 3) {
+			snprintf(pcCommand, 3, "OK\n");
+			i4BytesWritten = strlen("OK\n");
+		}
+	} else {
+		if ((i4BytesWritten == 0) && (i4TotalLen > 0)) {
+			/* Reset the command buffers */
+			pcCommand[0] = '\0';
+		}
+		if (i4BytesWritten >= i4TotalLen) {
+			DBGLOG(REQ, INFO,
+			       ("%s: i4BytesWritten %d > i4TotalLen < %d\n", __func__,
+				i4BytesWritten, i4TotalLen));
+			i4BytesWritten = i4TotalLen;
+		} else {
+			pcCommand[i4BytesWritten] = '\0';
+			i4BytesWritten++;
+		}
+		priv_cmd.used_len = i4BytesWritten;
+		if (copy_to_user(priv_cmd.buf, pcCommand, i4BytesWritten)) {
+			DBGLOG(REQ, WARN, ("failed to copy data to user buffer\n"));
+			ret = -EFAULT;
+		}
+		if (copy_to_user(prReq->ifr_data, &priv_cmd, sizeof(priv_driver_cmd_t))) {
+			DBGLOG(REQ, WARN, ("failed to copy driver_cmd to user buffer\n"));
+			ret = -EFAULT;
+		}
+	}
+
+exit:
+	if (pcCommand) {
+		kfree(pcCommand);
+	}
+
+	return ret;
+}
+INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN INT_32 i4TotalLen)
+{
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	INT_32 i4BytesWritten = 0;
+	if (FALSE == GLUE_CHK_PR2(prNetDev, pcCommand)) {
+		return -1;
+	}
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+
+	if (strnicmp(pcCommand, CMD_MIRACAST, strlen(CMD_MIRACAST)) == 0) {
+		i4BytesWritten = priv_driver_set_miracast(prNetDev, pcCommand, i4TotalLen);
+	} else {
+		DBGLOG(REQ, INFO, ("Unknown driver command %s - ignored\n", pcCommand));
+		return -1;
+	}
+	return i4BytesWritten;
+}

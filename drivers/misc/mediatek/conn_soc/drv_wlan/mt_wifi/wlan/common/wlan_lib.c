@@ -11,7 +11,7 @@
 
 /*
 ** $Log: wlan_lib.c $
-** 
+**
 ** 08 15 2012 eason.tsai
 ** [ALPS00338170] [Need Patch] [Volunteer Patch] modify build warning
 ** fix build waring for codechange
@@ -5895,8 +5895,8 @@ wlanCheckSystemConfiguration (
 #if (CFG_NVRAM_EXISTENCE_CHECK == 1)
     #define NVRAM_ERR_MSG "NVRAM WARNING: Err = 0x01"
     if(kalIsConfigurationExist(prAdapter->prGlueInfo) == FALSE) {
-        COPY_SSID(prSsid->aucSSID, 
-                prSsid->ucLength, 
+        COPY_SSID(prSsid->aucSSID,
+                prSsid->ucLength,
                 NVRAM_ERR_MSG,
                 strlen(NVRAM_ERR_MSG));
 
@@ -5979,7 +5979,7 @@ wlanCheckSystemConfiguration (
 }
 
 
-WLAN_STATUS 
+WLAN_STATUS
 wlanoidQueryStaStatistics (
     IN P_ADAPTER_T  prAdapter,
     IN PVOID        pvQueryBuffer,
@@ -5994,7 +5994,7 @@ wlanoidQueryStaStatistics (
     P_QUE_MGT_T prQM = &prAdapter->rQM;
     CMD_GET_STA_STATISTICS_T rQueryCmdStaStatistics;
     UINT_8 ucIdx;
-	
+
 	do {
         ASSERT(pvQueryBuffer);
 
@@ -6012,7 +6012,7 @@ wlanoidQueryStaStatistics (
 			rResult = WLAN_STATUS_BUFFER_TOO_SHORT;
 			break;
 		}
-			 		
+
 		prQueryStaStatistics = (P_PARAM_GET_STA_STATISTICS)pvQueryBuffer;
         *pu4QueryInfoLen = sizeof(PARAM_GET_STA_STA_STATISTICS);
 
@@ -6024,7 +6024,7 @@ wlanoidQueryStaStatistics (
 
         //4 2. Get StaRec by MAC address
         prStaRec = NULL;
-        
+
         for(ucStaRecIdx = 0; ucStaRecIdx < CFG_NUM_OF_STA_RECORD; ucStaRecIdx++){
             prTempStaRec = &(prAdapter->arStaRec[ucStaRecIdx]);
             if(prTempStaRec->fgIsValid && prTempStaRec->fgIsInUse){
@@ -6070,7 +6070,7 @@ wlanoidQueryStaStatistics (
         for(ucIdx = TC0_INDEX; ucIdx <= TC3_INDEX; ucIdx++) {
             prQueryStaStatistics->au4TcQueLen[ucIdx] = prStaRec->arTxQueue[ucIdx].u4NumElem;
         }
-        
+
         rResult = WLAN_STATUS_SUCCESS;
 
         //4 6. Ensure FW supports get station link status
@@ -6079,7 +6079,7 @@ wlanoidQueryStaStatistics (
             rQueryCmdStaStatistics.ucIndex = prStaRec->ucIndex;
             COPY_MAC_ADDR(rQueryCmdStaStatistics.aucMacAddr, prQueryStaStatistics->aucMacAddr);
             rQueryCmdStaStatistics.ucReadClear = TRUE;
-            
+
             rResult = wlanSendSetQueryCmd(prAdapter,
                             CMD_ID_GET_STA_STATISTICS,
                             FALSE,
@@ -6092,21 +6092,21 @@ wlanoidQueryStaStatistics (
                             pvQueryBuffer,
                             u4QueryBufferLen
                             );
-            
+
             prQueryStaStatistics->u4Flag |= BIT(1);
         }
         else {
             rResult = WLAN_STATUS_NOT_SUPPORTED;
         }
-        
+
 	} while (FALSE);
-    
+
 	return rResult;
 } /* wlanoidQueryP2pVersion */
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
 
 //4   Auto Channel Selection
-WLAN_STATUS 
+WLAN_STATUS
 wlanoidQueryACSChannelList (
     IN P_ADAPTER_T  prAdapter,
     IN PVOID        pvQueryBuffer,
@@ -6122,9 +6122,9 @@ wlanoidQueryACSChannelList (
     P_QUE_MGT_T prQM = &prAdapter->rQM;
     CMD_GET_CHN_LOAD_T rQueryCmdStaStatistics;
     UINT_8 ucIdx;
-	
+
 	P_PARAM_CHN_LOAD_INFO prChnLoad;
-	
+
 	DBGLOG(P2P, INFO,("[Auto Channel]wlanoidQueryACSChannelList\n"));
 	do {
         ASSERT(pvQueryBuffer);
@@ -6143,7 +6143,7 @@ wlanoidQueryACSChannelList (
 			for(ucIdx=0;ucIdx<MAX_AUTO_CHAL_NUM;ucIdx++)
 			{
 				prChnLoad= (P_PARAM_CHN_LOAD_INFO)&(prAdapter->rWifiVar.rChnLoadInfo.rEachChnLoad[ucIdx]);
-				
+
 				DBGLOG(P2P, INFO,("[Auto Channel] AP Num: Chn[%d]=%d\n",ucIdx+1,prChnLoad->u2APNum));
 			}
         //4 3. Ensure FW supports get station link status
@@ -6153,7 +6153,7 @@ wlanoidQueryACSChannelList (
 			CMD_ACCESS_REG rCmdAccessReg;
          	rCmdAccessReg.u4Address = 0xFFFFFFFF;
             rCmdAccessReg.u4Data = ELEM_RM_TYPE_ACS_CHN;
-           
+
             rResult =wlanSendSetQueryCmd(prAdapter,
 			   CMD_ID_ACCESS_REG,
 			   TRUE,
@@ -6166,7 +6166,7 @@ wlanoidQueryACSChannelList (
                             pvQueryBuffer,
                             u4QueryBufferLen
                             );
-            
+
             prQueryChnLoad->u4Flag |= BIT(1);
         }
         else {
@@ -6176,8 +6176,8 @@ wlanoidQueryACSChannelList (
 		//4 4.Avoid LTE Channels
 				prLteMode->u4Flags &= BIT(0);
 				/*if(prAdapter->u4FwCompileFlag0 & COMPILE_FLAG0_GET_STA_LINK_STATUS)*/ {
-					
-					
+
+
 					CMD_GET_LTE_SAFE_CHN_T rQuery_LTE_SAFE_CHN;
 					rResult =wlanSendSetQueryCmd(prAdapter,
 					   CMD_ID_GET_LTE_CHN,
@@ -6195,7 +6195,7 @@ wlanoidQueryACSChannelList (
 				   DBGLOG(P2P, INFO,("[Auto Channel] Get LTE Channels\n"));
 					prLteMode->u4Flags |= BIT(1);
 				}
-				
+
 		/*
 				else {
 					rResult = WLAN_STATUS_NOT_SUPPORTED;
@@ -6203,11 +6203,66 @@ wlanoidQueryACSChannelList (
 		*/
 
 		//4 5. Calc the value
-        
+
 		DBGLOG(P2P, INFO,("[Auto Channel] Candidated Channels\n"));
 	} while (FALSE);
-    
+
 	return rResult;
 } /* wlanoidQueryP2pVersion */
 #endif
 
+
+/*process cmd line; After process:
+*argv[0] = CMD
+*argv[1] = param1 of CMD
+*argv[2] = param2 of CMD
+*argv[3] = param3 of CMD
+*...
+*example:
+*cmd = "MIRACAST 2"
+* after process:
+* argv[0] = MIRACAST
+* argv[1] = 2
+*return:
+* argc
+*/
+INT_32 tokenizeCmd(CHAR *cmd, CHAR *argv[])
+{
+	CHAR *pos;
+	INT_32 argc = 0;
+
+	pos = cmd;
+	for (;;) {
+		while (*pos == ' ' || *pos == '\t')
+			pos++;
+		if (*pos == '\0')
+			break;
+		argv[argc] = pos;
+		argc++;
+		/* Limit num of params to 10 */
+		if (argc == 10)
+			break;
+		if (*pos == '"') {
+			char *pos2 = strrchr(pos, '"');
+			if (pos2)
+				pos = pos2 + 1;
+		}
+		while (*pos != '\0' && *pos != ' ' &&
+				*pos != '\n' && *pos != '\r')
+			pos++;
+		if (*pos == ' ' || *pos == '\t')
+			*pos++ = '\0';
+	}
+
+	return argc;
+}
+
+WLAN_STATUS wlanCfgParseArgument(CHAR *cmdLine, INT_32 *argc, CHAR *argv[])
+{
+	if (cmdLine == NULL || argc == NULL || argv == NULL) {
+		DBGLOG(P2P, ERROR,("NULL pointer of cmdline/argc/argv\n"));
+		return WLAN_STATUS_FAILURE;
+	}
+	*argc = tokenizeCmd(cmdLine, argv);
+	return WLAN_STATUS_SUCCESS;
+}
