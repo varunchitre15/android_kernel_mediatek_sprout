@@ -29,7 +29,7 @@
 #include <linux/proc_fs.h>
 #include <linux/xlog.h>
 #include <linux/aio.h>
-#include "drivers/staging/android/logger.h"
+#include "xlog_logger.h"
 #include "xlog_internal.h"
 
 /*
