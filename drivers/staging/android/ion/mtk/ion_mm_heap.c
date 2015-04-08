@@ -367,21 +367,39 @@ static int ion_mm_heap_phys(struct ion_heap *heap,
 
 void ion_mm_heap_add_freelist(struct ion_buffer *buffer)
 {
-    ion_mm_heap_free_bufferInfo(buffer);
+	ion_mm_heap_free_bufferInfo(buffer);
 }
 
+int ion_mm_heap_pool_total(struct ion_heap *heap)
+{
+	struct ion_system_heap *sys_heap;
+	int total = 0;
+	int i;
+
+	sys_heap = container_of(heap, struct ion_system_heap, heap);
+
+	for (i = 0; i < num_orders; i++) {
+		struct ion_page_pool *pool = sys_heap->pools[i];
+		total += (pool->high_count + pool->low_count) * (1 << pool->order);
+		pool = sys_heap->cached_pools[i];
+		total += (pool->high_count + pool->low_count) * (1 << pool->order);
+	}
+
+	return total;
+}
 
 static struct ion_heap_ops system_heap_ops = {
-    .allocate = ion_mm_heap_allocate,
-    .free = ion_mm_heap_free,
-    .map_dma = ion_mm_heap_map_dma,
-    .unmap_dma = ion_mm_heap_unmap_dma,
-    .map_kernel = ion_heap_map_kernel,
-    .unmap_kernel = ion_heap_unmap_kernel,
-    .map_user = ion_heap_map_user,
-    .phys = ion_mm_heap_phys,
+	.allocate = ion_mm_heap_allocate,
+	.free = ion_mm_heap_free,
+	.map_dma = ion_mm_heap_map_dma,
+	.unmap_dma = ion_mm_heap_unmap_dma,
+	.map_kernel = ion_heap_map_kernel,
+	.unmap_kernel = ion_heap_unmap_kernel,
+	.map_user = ion_heap_map_user,
+	.phys = ion_mm_heap_phys,
 	.shrink = ion_mm_heap_shrink,
-    .add_freelist = ion_mm_heap_add_freelist,
+	.add_freelist = ion_mm_heap_add_freelist,
+	.page_pool_total = ion_mm_heap_pool_total,
 };
 
 static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s,
