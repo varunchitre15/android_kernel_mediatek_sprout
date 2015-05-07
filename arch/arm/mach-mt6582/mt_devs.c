@@ -76,8 +76,8 @@ unsigned int g_para_version=0;
 char *loc_androidboot_variant=NULL;
 
 struct {
-	u32 base;
-	u32 size;
+    u32 base;
+    u32 size;
 } bl_fb = {0, 0};
 
 static int use_bl_fb = 0;
@@ -131,7 +131,7 @@ struct tag_para_touch_ssb_data touch_cust_ssb_data = {
         0x2222,
     },
     {
-        "gt913",
+        "gt915",
         0x0,
         0x5d,
         5,
@@ -165,31 +165,31 @@ struct tag_msdc_hw_para *msdc_para_hw_datap[2] = { NULL,NULL};
 /*=======================================================================*/
 static u64 usb_dmamask = DMA_BIT_MASK(32);
 static struct musb_hdrc_config musb_config_mt65xx = {
-	.multipoint     = true,
-	.dyn_fifo       = true,
-	.soft_con       = true,
-	.dma            = true,
-	.num_eps        = 16,
-	.dma_channels   = 8,
+    .multipoint     = true,
+    .dyn_fifo       = true,
+    .soft_con       = true,
+    .dma            = true,
+    .num_eps        = 16,
+    .dma_channels   = 8,
 };
 
 static struct musb_hdrc_platform_data usb_data = {
 #ifdef CONFIG_USB_MTK_OTG
-	.mode           = MUSB_OTG,
+    .mode           = MUSB_OTG,
 #else
-	.mode           = MUSB_PERIPHERAL,
+    .mode           = MUSB_PERIPHERAL,
 #endif
-	.config         = &musb_config_mt65xx,
+    .config         = &musb_config_mt65xx,
 };
 struct platform_device mt_device_usb = {
-	.name		  = "mt_usb",
-	.id		  = -1,   //only one such device
-	.dev = {
-		.platform_data          = &usb_data,
-		.dma_mask               = &usb_dmamask,
-		.coherent_dma_mask      = DMA_BIT_MASK(32),
+    .name          = "mt_usb",
+    .id          = -1,   //only one such device
+    .dev = {
+        .platform_data          = &usb_data,
+        .dma_mask               = &usb_dmamask,
+        .coherent_dma_mask      = DMA_BIT_MASK(32),
         /*.release=musbfsh_hcd_release,*/
-	},
+    },
 };
 
 /*=======================================================================*/
@@ -200,26 +200,26 @@ static u64 usb11_dmamask = DMA_BIT_MASK(32);
 extern void musbfsh_hcd_release (struct device *dev);
 
 static struct musbfsh_hdrc_config musbfsh_config_mt65xx = {
-	.multipoint     = false,
-	.dyn_fifo       = true,
-	.soft_con       = true,
-	.dma            = true,
-	.num_eps        = 6,
-	.dma_channels   = 4,
+    .multipoint     = false,
+    .dyn_fifo       = true,
+    .soft_con       = true,
+    .dma            = true,
+    .num_eps        = 6,
+    .dma_channels   = 4,
 };
 static struct musbfsh_hdrc_platform_data usb_data_mt65xx = {
-	.mode           = 1,
-	.config         = &musbfsh_config_mt65xx,
+    .mode           = 1,
+    .config         = &musbfsh_config_mt65xx,
 };
 static struct platform_device mt_usb11_dev = {
-	.name           = "musbfsh_hdrc",
-	.id             = -1,
-	.dev = {
-		.platform_data          = &usb_data_mt65xx,
-		.dma_mask               = &usb11_dmamask,
-		.coherent_dma_mask      = DMA_BIT_MASK(32),
-		.release		= musbfsh_hcd_release,
-	},
+    .name           = "musbfsh_hdrc",
+    .id             = -1,
+    .dev = {
+        .platform_data          = &usb_data_mt65xx,
+        .dma_mask               = &usb11_dmamask,
+        .coherent_dma_mask      = DMA_BIT_MASK(32),
+        .release        = musbfsh_hcd_release,
+    },
 };
 #endif
 
@@ -228,69 +228,69 @@ static struct platform_device mt_usb11_dev = {
 /*=======================================================================*/
 #if defined(CFG_DEV_UART1)
 static struct resource mtk_resource_uart1[] = {
-	{
-		.start		= IO_VIRT_TO_PHYS(UART1_BASE),
-		.end		= IO_VIRT_TO_PHYS(UART1_BASE) + MTK_UART_SIZE - 1,
-		.flags		= IORESOURCE_MEM,
-	},
-	{
-		.start		= MT_UART1_IRQ_ID,
-		.flags		= IORESOURCE_IRQ,
-	},
+    {
+        .start        = IO_VIRT_TO_PHYS(UART1_BASE),
+        .end        = IO_VIRT_TO_PHYS(UART1_BASE) + MTK_UART_SIZE - 1,
+        .flags        = IORESOURCE_MEM,
+    },
+    {
+        .start        = MT_UART1_IRQ_ID,
+        .flags        = IORESOURCE_IRQ,
+    },
 };
 #endif
 
 #if defined(CFG_DEV_UART2)
 static struct resource mtk_resource_uart2[] = {
-	{
-		.start		= IO_VIRT_TO_PHYS(UART2_BASE),
-		.end		= IO_VIRT_TO_PHYS(UART2_BASE) + MTK_UART_SIZE - 1,
-		.flags		= IORESOURCE_MEM,
-	},
-	{
-		.start		= MT_UART2_IRQ_ID,
-		.flags		= IORESOURCE_IRQ,
-	},
+    {
+        .start        = IO_VIRT_TO_PHYS(UART2_BASE),
+        .end        = IO_VIRT_TO_PHYS(UART2_BASE) + MTK_UART_SIZE - 1,
+        .flags        = IORESOURCE_MEM,
+    },
+    {
+        .start        = MT_UART2_IRQ_ID,
+        .flags        = IORESOURCE_IRQ,
+    },
 };
 #endif
 
 #if defined(CFG_DEV_UART3)
 static struct resource mtk_resource_uart3[] = {
-	{
-		.start		= IO_VIRT_TO_PHYS(UART3_BASE),
-		.end		= IO_VIRT_TO_PHYS(UART3_BASE) + MTK_UART_SIZE - 1,
-		.flags		= IORESOURCE_MEM,
-	},
-	{
-		.start		= MT_UART3_IRQ_ID,
-		.flags		= IORESOURCE_IRQ,
-	},
+    {
+        .start        = IO_VIRT_TO_PHYS(UART3_BASE),
+        .end        = IO_VIRT_TO_PHYS(UART3_BASE) + MTK_UART_SIZE - 1,
+        .flags        = IORESOURCE_MEM,
+    },
+    {
+        .start        = MT_UART3_IRQ_ID,
+        .flags        = IORESOURCE_IRQ,
+    },
 };
 #endif
 
 #if defined(CFG_DEV_UART4)
 static struct resource mtk_resource_uart4[] = {
-	{
-		.start		= IO_VIRT_TO_PHYS(UART4_BASE),
-		.end		= IO_VIRT_TO_PHYS(UART4_BASE) + MTK_UART_SIZE - 1,
-		.flags		= IORESOURCE_MEM,
-	},
-	{
-		.start		= MT_UART4_IRQ_ID,
-		.flags		= IORESOURCE_IRQ,
-	},
+    {
+        .start        = IO_VIRT_TO_PHYS(UART4_BASE),
+        .end        = IO_VIRT_TO_PHYS(UART4_BASE) + MTK_UART_SIZE - 1,
+        .flags        = IORESOURCE_MEM,
+    },
+    {
+        .start        = MT_UART4_IRQ_ID,
+        .flags        = IORESOURCE_IRQ,
+    },
 };
 #endif
 
 static struct platform_device mtk_device_btif = {
-    .name			= "mtk_btif",
-    .id				= -1,
+    .name            = "mtk_btif",
+    .id                = -1,
 };
 
 extern unsigned long max_pfn;
 #define RESERVED_MEM_MODEM  (0x0) // do not reserve memory in advance, do it in mt_fixup
 #ifndef CONFIG_RESERVED_MEM_SIZE_FOR_PMEM
-#define CONFIG_RESERVED_MEM_SIZE_FOR_PMEM 	1
+#define CONFIG_RESERVED_MEM_SIZE_FOR_PMEM     1
 #endif
 
 
@@ -336,35 +336,35 @@ static struct platform_device mtk_device_uart[] = {
 
     #if defined(CFG_DEV_UART1)
     {
-    	.name			= "mtk-uart",
-    	.id				= 0,
-    	.num_resources	= ARRAY_SIZE(mtk_resource_uart1),
-    	.resource		= mtk_resource_uart1,
+        .name            = "mtk-uart",
+        .id                = 0,
+        .num_resources    = ARRAY_SIZE(mtk_resource_uart1),
+        .resource        = mtk_resource_uart1,
     },
     #endif
     #if defined(CFG_DEV_UART2)
     {
-    	.name			= "mtk-uart",
-    	.id				= 1,
-    	.num_resources	= ARRAY_SIZE(mtk_resource_uart2),
-    	.resource		= mtk_resource_uart2,
+        .name            = "mtk-uart",
+        .id                = 1,
+        .num_resources    = ARRAY_SIZE(mtk_resource_uart2),
+        .resource        = mtk_resource_uart2,
     },
     #endif
     #if defined(CFG_DEV_UART3)
     {
-    	.name			= "mtk-uart",
-    	.id				= 2,
-    	.num_resources	= ARRAY_SIZE(mtk_resource_uart3),
-    	.resource		= mtk_resource_uart3,
+        .name            = "mtk-uart",
+        .id                = 2,
+        .num_resources    = ARRAY_SIZE(mtk_resource_uart3),
+        .resource        = mtk_resource_uart3,
     },
     #endif
 
     #if defined(CFG_DEV_UART4)
     {
-    	.name			= "mtk-uart",
-    	.id				= 3,
-    	.num_resources	= ARRAY_SIZE(mtk_resource_uart4),
-    	.resource		= mtk_resource_uart4,
+        .name            = "mtk-uart",
+        .id                = 3,
+        .num_resources    = ARRAY_SIZE(mtk_resource_uart4),
+        .resource        = mtk_resource_uart4,
     },
     #endif
 };
@@ -590,11 +590,11 @@ static struct resource mt_resource_msdc4[] = {
 static u64 mtkfb_dmamask = ~(u32)0;
 
 static struct resource resource_fb[] = {
-	{
-		.start		= 0, /* Will be redefined later */
-		.end		= 0,
-		.flags		= IORESOURCE_MEM
-	}
+    {
+        .start        = 0, /* Will be redefined later */
+        .end        = 0,
+        .flags        = IORESOURCE_MEM
+    }
 };
 
 static struct platform_device mt6575_device_fb = {
@@ -634,21 +634,21 @@ static struct platform_device mtk_ckgen_dev = {
 #if defined (CONFIG_MTK_SPI)
 static struct resource mt_spi_resources[] =
 {
-	[0]={
-		.start = IO_VIRT_TO_PHYS(SPI1_BASE),
-		.end = IO_VIRT_TO_PHYS(SPI1_BASE) + 0x0028,
-		.flags = IORESOURCE_MEM,
-	},
-	[1]={
-		.start = MT6582_SPI1_IRQ_ID,
-		.flags = IORESOURCE_IRQ,
-	},
+    [0]={
+        .start = IO_VIRT_TO_PHYS(SPI1_BASE),
+        .end = IO_VIRT_TO_PHYS(SPI1_BASE) + 0x0028,
+        .flags = IORESOURCE_MEM,
+    },
+    [1]={
+        .start = MT6582_SPI1_IRQ_ID,
+        .flags = IORESOURCE_IRQ,
+    },
 };
 
 static struct platform_device mt_spi_device = {
-	.name = "mt-spi",
-	.num_resources = ARRAY_SIZE(mt_spi_resources),
-	.resource=mt_spi_resources
+    .name = "mt-spi",
+    .num_resources = ARRAY_SIZE(mt_spi_resources),
+    .resource=mt_spi_resources
 };
 
 #endif
@@ -656,18 +656,18 @@ static struct platform_device mt_spi_device = {
 
 #if defined(CONFIG_USB_MTK_ACM_TEMP)
 struct platform_device usbacm_temp_device = {
-	.name	  ="USB_ACM_Temp_Driver",
-	.id		  = -1,
+    .name      ="USB_ACM_Temp_Driver",
+    .id          = -1,
 };
 #endif
 
 #if defined(CONFIG_MTK_ACCDET)
 struct platform_device accdet_device = {
-	.name	  ="Accdet_Driver",
-	.id		  = -1,
-	//.dev    ={
-	//.release = accdet_dumy_release,
-	//}
+    .name      ="Accdet_Driver",
+    .id          = -1,
+    //.dev    ={
+    //.release = accdet_dumy_release,
+    //}
 };
 #endif
 
@@ -694,14 +694,14 @@ static struct resource mt6575_TVOUT_resource[] = {
 static u64 mt6575_TVOUT_dmamask = ~(u32)0;
 
 static struct platform_device mt6575_TVOUT_dev = {
-	.name		  = "TV-out",
-	.id		  = 0,
-	.num_resources	  = ARRAY_SIZE(mt6575_TVOUT_resource),
-	.resource	  = mt6575_TVOUT_resource,
-	.dev              = {
-		.dma_mask = &mt6575_TVOUT_dmamask,
-		.coherent_dma_mask = 0xffffffffUL
-	}
+    .name          = "TV-out",
+    .id          = 0,
+    .num_resources      = ARRAY_SIZE(mt6575_TVOUT_resource),
+    .resource      = mt6575_TVOUT_resource,
+    .dev              = {
+        .dma_mask = &mt6575_TVOUT_dmamask,
+        .coherent_dma_mask = 0xffffffffUL
+    }
 };
 #endif
 static struct platform_device mt_device_msdc[] =
@@ -769,8 +769,8 @@ static struct platform_device mt_device_msdc[] =
 /*=======================================================================*/
 #ifdef CONFIG_MTK_KEYPAD
 static struct platform_device kpd_pdev = {
-	.name	= "mtk-kpd",
-	.id	= -1,
+    .name    = "mtk-kpd",
+    .id    = -1,
 };
 #endif
 
@@ -883,31 +883,31 @@ static struct platform_device masp_device =
 #define NFI_base    NFI_BASE//0x80032000
 #define NFIECC_base NFIECC_BASE//0x80038000
 static struct resource mtk_resource_nand[] = {
-	{
-		.start		= IO_VIRT_TO_PHYS(NFI_base),
-		.end		= IO_VIRT_TO_PHYS(NFI_base) + 0x1A0,
-		.flags		= IORESOURCE_MEM,
-	},
-	{
-		.start		= IO_VIRT_TO_PHYS(NFIECC_base),
-		.end		= IO_VIRT_TO_PHYS(NFIECC_base) + 0x150,
-		.flags		= IORESOURCE_MEM,
-	},
-	{
-		.start		= MT_NFI_IRQ_ID,
-		.flags		= IORESOURCE_IRQ,
-	},
-	{
-		.start		= MT_NFIECC_IRQ_ID,
-		.flags		= IORESOURCE_IRQ,
-	},
+    {
+        .start        = IO_VIRT_TO_PHYS(NFI_base),
+        .end        = IO_VIRT_TO_PHYS(NFI_base) + 0x1A0,
+        .flags        = IORESOURCE_MEM,
+    },
+    {
+        .start        = IO_VIRT_TO_PHYS(NFIECC_base),
+        .end        = IO_VIRT_TO_PHYS(NFIECC_base) + 0x150,
+        .flags        = IORESOURCE_MEM,
+    },
+    {
+        .start        = MT_NFI_IRQ_ID,
+        .flags        = IORESOURCE_IRQ,
+    },
+    {
+        .start        = MT_NFIECC_IRQ_ID,
+        .flags        = IORESOURCE_IRQ,
+    },
 };
 
 static struct platform_device mtk_nand_dev = {
     .name = "mtk-nand",
     .id   = 0,
-   	.num_resources	= ARRAY_SIZE(mtk_resource_nand),
-   	.resource		= mtk_resource_nand,
+       .num_resources    = ARRAY_SIZE(mtk_resource_nand),
+       .resource        = mtk_resource_nand,
     .dev            = {
         .platform_data = &mtk_nand_hw,
     },
@@ -919,12 +919,12 @@ static struct platform_device mtk_nand_dev = {
 /*=======================================================================*/
 static u64        AudDrv_dmamask      = 0xffffffffUL;
 static struct platform_device AudDrv_device = {
-	.name  = "AudDrv_driver_device",
-	.id    = 0,
-	.dev   = {
-		        .dma_mask = &AudDrv_dmamask,
-		        .coherent_dma_mask =  0xffffffffUL
-	         }
+    .name  = "AudDrv_driver_device",
+    .id    = 0,
+    .dev   = {
+                .dma_mask = &AudDrv_dmamask,
+                .coherent_dma_mask =  0xffffffffUL
+             }
 };
 
 static u64        AudDrv_btcvsd_dmamask      = 0xffffffffUL;
@@ -942,43 +942,43 @@ static struct platform_device AudDrv_device2 = {
 /* MTK I2C                                                            */
 /*=======================================================================*/
 //static struct i2c_board_info __initdata i2c_devs0[]={
-//	{ I2C_BOARD_INFO("ADXL345", 0x53),},
-//	{ I2C_BOARD_INFO("A320", 0x57),},
-//	{ I2C_BOARD_INFO("ami304", (0x1E>>1)),},//0x1E>>1
-//	{ I2C_BOARD_INFO("CM3623", (0x92>>1)),},//0x92>>1
-//	{ I2C_BOARD_INFO("MPU3000", (0xD0>>1)),},//0xD0>>1
-//	{ I2C_BOARD_INFO("mtk-tpd", (0xBA>>1)),},
+//    { I2C_BOARD_INFO("ADXL345", 0x53),},
+//    { I2C_BOARD_INFO("A320", 0x57),},
+//    { I2C_BOARD_INFO("ami304", (0x1E>>1)),},//0x1E>>1
+//    { I2C_BOARD_INFO("CM3623", (0x92>>1)),},//0x92>>1
+//    { I2C_BOARD_INFO("MPU3000", (0xD0>>1)),},//0xD0>>1
+//    { I2C_BOARD_INFO("mtk-tpd", (0xBA>>1)),},
 //};
 //static struct i2c_board_info __initdata i2c_devs1[]={
-//	{ I2C_BOARD_INFO("kd_camera_hw", 0xfe), },
-//	{ I2C_BOARD_INFO("FM50AF", 0x18), },
-//	{ I2C_BOARD_INFO("dummy_eeprom", 0xA0),},
-//	{ I2C_BOARD_INFO("EEPROM_S24CS64A", 0xAA),},
-//	{},
+//    { I2C_BOARD_INFO("kd_camera_hw", 0xfe), },
+//    { I2C_BOARD_INFO("FM50AF", 0x18), },
+//    { I2C_BOARD_INFO("dummy_eeprom", 0xA0),},
+//    { I2C_BOARD_INFO("EEPROM_S24CS64A", 0xAA),},
+//    {},
 //};
 //static struct i2c_board_info __initdata i2c_devs2[]={
 //#ifndef CONFIG_MT6582_FPGA
-//	{ I2C_BOARD_INFO("mt6329_pmic", 0x60), },
-//#endif	//End of CONFIG_MT6582_FPGA
-//	{ I2C_BOARD_INFO("mt6329_pmic_bank1", 0x61), },
+//    { I2C_BOARD_INFO("mt6329_pmic", 0x60), },
+//#endif    //End of CONFIG_MT6582_FPGA
+//    { I2C_BOARD_INFO("mt6329_pmic_bank1", 0x61), },
 //};
 
 struct mt_i2c_data mt_i2c_data_t[] = {
-	{
-		.pdn	= 0,
-		.speed	= 100,
-		.flags  = 0,
-	},
-	{
-		.pdn	= 1,
-		.speed	= 110,
-		.flags  = 0,
-	},
-	{
-		.pdn	= 2,
-		.speed	= 120,
-		.flags  = 0,
-	},
+    {
+        .pdn    = 0,
+        .speed    = 100,
+        .flags  = 0,
+    },
+    {
+        .pdn    = 1,
+        .speed    = 110,
+        .flags  = 0,
+    },
+    {
+        .pdn    = 2,
+        .speed    = 120,
+        .flags  = 0,
+    },
 
 };
 
@@ -1026,8 +1026,8 @@ static struct platform_device mt_device_i2c[] = {
         .num_resources  = ARRAY_SIZE(mt_resource_i2c0),
         .resource       = mt_resource_i2c0,
         .dev = {
-			.platform_data = &mt_i2c_data_t[0],
-		},
+            .platform_data = &mt_i2c_data_t[0],
+        },
     },
     {
         .name           = "mt-i2c",
@@ -1035,8 +1035,8 @@ static struct platform_device mt_device_i2c[] = {
         .num_resources  = ARRAY_SIZE(mt_resource_i2c1),
         .resource       = mt_resource_i2c1,
         .dev = {
-			.platform_data = &mt_i2c_data_t[1],
-		},
+            .platform_data = &mt_i2c_data_t[1],
+        },
     },
     {
         .name           = "mt-i2c",
@@ -1044,8 +1044,8 @@ static struct platform_device mt_device_i2c[] = {
         .num_resources  = ARRAY_SIZE(mt_resource_i2c2),
         .resource       = mt_resource_i2c2,
         .dev = {
-			.platform_data = &mt_i2c_data_t[2],
-		},
+            .platform_data = &mt_i2c_data_t[2],
+        },
     },
 
 };
@@ -1055,23 +1055,23 @@ static struct platform_device mt_device_i2c[] = {
 static u64 mtk_smi_dmamask = ~(u32)0;
 
 static struct platform_device mtk_smi_dev = {
-	.name		  = "MTK_SMI",
-	.id		  = 0,
-	.dev              = {
-		.dma_mask = &mtk_smi_dmamask,
-		.coherent_dma_mask = 0xffffffffUL
-	}
+    .name          = "MTK_SMI",
+    .id          = 0,
+    .dev              = {
+        .dma_mask = &mtk_smi_dmamask,
+        .coherent_dma_mask = 0xffffffffUL
+    }
 };
 
 static u64 mtk_m4u_dmamask = ~(u32)0;
 
 static struct platform_device mtk_m4u_dev = {
-	.name		  = "M4U_device",
-	.id		  = 0,
-	.dev              = {
-		.dma_mask = &mtk_m4u_dmamask,
-		.coherent_dma_mask = 0xffffffffUL
-	}
+    .name          = "M4U_device",
+    .id          = 0,
+    .dev              = {
+        .dma_mask = &mtk_m4u_dmamask,
+        .coherent_dma_mask = 0xffffffffUL
+    }
 };
 
 static u64 mtk_cmdq_dmamask = ~(u32)0;
@@ -1092,9 +1092,9 @@ static struct platform_device mtk_cmdq_dev = {
 /* MT3326 GPS */
 #ifdef CONFIG_MTK_GPS
 struct platform_device mt3326_device_gps = {
-	.name	       = "mt3326-gps",
-	.id            = -1,
-	.dev = {
+    .name           = "mt3326-gps",
+    .id            = -1,
+    .dev = {
         .platform_data = &mt3326_gps_hw,
     },
 };
@@ -1137,8 +1137,8 @@ static struct platform_device vmem_multimedia_device = {
 /* MT6575 SYSRAM                                                         */
 /*=======================================================================*/
 static struct platform_device camera_sysram_dev = {
-	.name	= "camera-sysram", /* FIXME. Sync to driver, init.rc, MHAL */
-	.id     = 0,
+    .name    = "camera-sysram", /* FIXME. Sync to driver, init.rc, MHAL */
+    .id     = 0,
 };
 
 /*=======================================================================*/
@@ -1148,49 +1148,49 @@ static struct platform_device camera_sysram_dev = {
 /*=======================================================================*/
 static void cmdline_filter(struct tag *cmdline_tag, char *default_cmdline)
 {
-	const char *undesired_cmds[] = {
-	                             "console=",
+    const char *undesired_cmds[] = {
+                                 "console=",
                                      "root=",
                                      "lk_t=",
                                      "pl_t=",
-			             };
+                         };
 
-	int i;
-	int ck_f = 0;
-	char *cs,*ce;
+    int i;
+    int ck_f = 0;
+    char *cs,*ce;
 
-	cs = cmdline_tag->u.cmdline.cmdline;
-	ce = cs;
-	while((__u32)ce < (__u32)tag_next(cmdline_tag)) {
+    cs = cmdline_tag->u.cmdline.cmdline;
+    ce = cs;
+    while((__u32)ce < (__u32)tag_next(cmdline_tag)) {
 
-	    while(*cs == ' ' || *cs == '\0') {
-	    	cs++;
-	    	ce = cs;
-	    }
+        while(*cs == ' ' || *cs == '\0') {
+            cs++;
+            ce = cs;
+        }
 
-	    if (*ce == ' ' || *ce == '\0') {
-	    	for (i = 0; i < sizeof(undesired_cmds)/sizeof(char *); i++){
-	    	    if (memcmp(cs, undesired_cmds[i], strlen(undesired_cmds[i])) == 0) {
-			ck_f = 1;
+        if (*ce == ' ' || *ce == '\0') {
+            for (i = 0; i < sizeof(undesired_cmds)/sizeof(char *); i++){
+                if (memcmp(cs, undesired_cmds[i], strlen(undesired_cmds[i])) == 0) {
+            ck_f = 1;
                         break;
                     }
-	    	}
+            }
 
                 if(ck_f == 0){
-		    *ce = '\0';
+            *ce = '\0';
                     //Append to the default command line
                     strcat(default_cmdline, " ");
                     strcat(default_cmdline, cs);
-		}
-		ck_f = 0;
-	    	cs = ce + 1;
-	    }
-	    ce++;
-	}
-	if (strlen(default_cmdline) >= COMMAND_LINE_SIZE)
-	{
-		panic("Command line length is too long.\n\r");
-	}
+        }
+        ck_f = 0;
+            cs = ce + 1;
+        }
+        ce++;
+    }
+    if (strlen(default_cmdline) >= COMMAND_LINE_SIZE)
+    {
+        panic("Command line length is too long.\n\r");
+    }
 }
 
 /*=======================================================================*/
@@ -1205,13 +1205,13 @@ static int __init parse_tag_battery_fixup(const struct tag *tags)
 	if (size > MAX_BATTERY_PARA_SIZE) {
 		printk(KERN_ALERT "size is out of bound %d/%d, stop parsing\n", size, MAX_BATTERY_PARA_SIZE);
 	} else {
-	for (i=0; i< size; i++) {
-		battery_cust_buf[i] = tags->u.battery_data.battery_buf[i];
-
-		//for (j=0; j<BATTERY_NODE_CNT)
-        //    bat_hdr.battery_node[j].label =  tags->u.battery_data.battery_buf[0];
-		//printk(KERN_ALERT "parse_tag_battery_fixup, indx[%d]:%d\n", i, bat_cust_buf[i]);
-	}
+		for (i=0; i< size; i++) {
+			battery_cust_buf[i] = tags->u.battery_data.battery_buf[i];
+	
+			//for (j=0; j<BATTERY_NODE_CNT)
+			//	bat_hdr.battery_node[j].label =  tags->u.battery_data.battery_buf[0];
+			//printk(KERN_ALERT "parse_tag_battery_fixup, indx[%d]:%d\n", i, bat_cust_buf[i]);
+		}
 	}
 	return 0;
 }
@@ -1237,10 +1237,10 @@ static int __init parse_tag_model_version_fixup(const struct tag *tags)
 /*=======================================================================*/
 static int __init parse_tag_videofb_fixup(const struct tag *tags)
 {
-	bl_fb.base = tags->u.videolfb.lfb_base;
-	bl_fb.size = tags->u.videolfb.lfb_size;
+    bl_fb.base = tags->u.videolfb.lfb_base;
+    bl_fb.size = tags->u.videolfb.lfb_size;
         use_bl_fb++;
-	return 0;
+    return 0;
 }
 
 static int __init parse_tag_devinfo_data_fixup(const struct tag *tags)
@@ -1255,7 +1255,7 @@ static int __init parse_tag_devinfo_data_fixup(const struct tag *tags)
     printk("tag_devinfo_data_rid, indx[%d]:0x%x\n", 12,g_devinfo_data[12]);
     printk("tag_devinfo_data size:%d\n", size);
     g_devinfo_data_size = size;
-	return 0;
+    return 0;
 }
 
 static int __init parse_tag_auxadc_data_fixup(const struct tag *tags)
@@ -1448,37 +1448,37 @@ static void parse_boot_reason(char** cmdline) /*parse boot reason*/
     int i;
 
     if ((br_ptr = strstr(*cmdline, "bootreason=")) != 0)
-	{
+    {
         /* get boot reason */
-		typedef struct
-		{
-			char* str;
-			boot_reason_t boot_reason;
-		} boot_item;
-		boot_item map_table[] =
-		{
-			{"power_key ", BR_POWER_KEY},
-			{"usb ", BR_USB},
-			{"rtc ", BR_RTC},
-			{"wdt ", BR_WDT},
-			{"wdt_by_pass_pwk ", BR_WDT_BY_PASS_PWK},
-			{"tool_by_pass_pwk ", BR_TOOL_BY_PASS_PWK},
-			{"2sec_reboot ", BR_2SEC_REBOOT},
-			{"unknown ", BR_UNKNOWN},
-			{"kernel_panic ", BR_KERNEL_PANIC},
-			{"reboot ", BR_WDT_SW},
-			{"watchdog ", BR_WDT_HW},
-		};
+        typedef struct
+        {
+            char* str;
+            boot_reason_t boot_reason;
+        } boot_item;
+        boot_item map_table[] =
+        {
+            {"power_key ", BR_POWER_KEY},
+            {"usb ", BR_USB},
+            {"rtc ", BR_RTC},
+            {"wdt ", BR_WDT},
+            {"wdt_by_pass_pwk ", BR_WDT_BY_PASS_PWK},
+            {"tool_by_pass_pwk ", BR_TOOL_BY_PASS_PWK},
+            {"2sec_reboot ", BR_2SEC_REBOOT},
+            {"unknown ", BR_UNKNOWN},
+            {"kernel_panic ", BR_KERNEL_PANIC},
+            {"reboot ", BR_WDT_SW},
+            {"watchdog ", BR_WDT_HW},
+        };
 
-		ptr = &br_ptr[11];
-		for (i = 0; i < sizeof(map_table)/sizeof(map_table[0]); i++)
-		{
-			if (!strncmp(ptr, map_table[i].str, strlen(map_table[i].str)))
-			{
-				g_boot_reason = map_table[i].boot_reason;
-				break;
-			}
-		}
+        ptr = &br_ptr[11];
+        for (i = 0; i < sizeof(map_table)/sizeof(map_table[0]); i++)
+        {
+            if (!strncmp(ptr, map_table[i].str, strlen(map_table[i].str)))
+            {
+                g_boot_reason = map_table[i].boot_reason;
+                break;
+            }
+        }
         printk("[dev] boot reason: %s[%d])", ptr, g_boot_reason);
     }
     else
@@ -1501,12 +1501,12 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
     int eint_ssb_bin_exist = 0;
 
 #if defined(CONFIG_MTK_FB)
-	struct tag *temp_tags = tags;
-	for (; temp_tags->hdr.size; temp_tags = tag_next(temp_tags))
-	{
-		if(temp_tags->hdr.tag == ATAG_CMDLINE)
-			cmdline_filter(temp_tags, (char*)&temp_command_line);
-	}
+    struct tag *temp_tags = tags;
+    for (; temp_tags->hdr.size; temp_tags = tag_next(temp_tags))
+    {
+        if(temp_tags->hdr.tag == ATAG_CMDLINE)
+            cmdline_filter(temp_tags, (char*)&temp_command_line);
+    }
 #endif
 
     printk(KERN_ALERT"Load default dfo data...\n");
@@ -1516,9 +1516,9 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
 
     for (; tags->hdr.size; tags = tag_next(tags)) {
         if (tags->hdr.tag == ATAG_MEM) {
-	    bl_mem_sz += tags->u.mem.size;
+        bl_mem_sz += tags->u.mem.size;
 
-	    /*
+        /*
              * Modify the memory tag to limit available memory to
              * CONFIG_MAX_DRAM_SIZE_SUPPORT
              */
@@ -1531,16 +1531,16 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
                     avail_dram += max_limit_size;
                     max_limit_size = 0;
                 }
-		// By Keene:
-		// remove this check to avoid calcuate pmem size before we know all dram size
-		// Assuming the minimum size of memory bank is 256MB
+        // By Keene:
+        // remove this check to avoid calcuate pmem size before we know all dram size
+        // Assuming the minimum size of memory bank is 256MB
                 //if (tags->u.mem.size >= (TOTAL_RESERVED_MEM_SIZE)) {
                     reserved_mem_bank_tag = tags;
                 //}
             } else {
                 tags->u.mem.size = 0;
             }
-	}
+    }
         else if (tags->hdr.tag == ATAG_CMDLINE) {
             cmdline_tag = tags;
         } else if (tags->hdr.tag == ATAG_BOOT) {
@@ -1551,8 +1551,8 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
             parse_tag_devinfo_data_fixup(tags);
         }
         else if (tags->hdr.tag == ATAG_SENSORS_TAG) {
-            sensors_data = tags->u.sensors_tuning;
-            sensors_tuning_data = &sensors_data;
+        sensors_data = tags->u.sensors_tuning;
+        sensors_tuning_data = &sensors_data;
         }
         else if(tags->hdr.tag == ATAG_GPIO_USAGE_TAG){
             printk( "fwq gpio use para\n");
@@ -1601,11 +1601,11 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
             parse_tag_eint_ssb_fixup(tags);
             eint_ssb_bin_exist = 1;
         }
-		else if (tags->hdr.tag == ATAG_ACCDET_TAG){
+    else if (tags->hdr.tag == ATAG_ACCDET_TAG){
             accdet_data = tags->u.accdet_mode_data;
             accdet_tuning_data = &accdet_data;
         }
-		else if(tags->hdr.tag == ATAG_MDINFO_DATA) {
+        else if(tags->hdr.tag == ATAG_MDINFO_DATA) {
             printk(KERN_ALERT "Get MD inf from META\n");
             printk(KERN_ALERT "md_inf[0]=%d\n",tags->u.mdinfo_data.md_type[0]);
             printk(KERN_ALERT "md_inf[1]=%d\n",tags->u.mdinfo_data.md_type[1]);
@@ -1657,7 +1657,7 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
     * initialized by BL
     */
     if (bl_mem_sz >= (CONFIG_MAX_DRAM_SIZE_SUPPORT - RESERVED_MEM_MODEM)) {
-	use_bl_fb++;
+    use_bl_fb++;
     }
 
     /*
@@ -1672,7 +1672,7 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
     /* Reserve memory in the last bank */
     if (reserved_mem_bank_tag) {
         reserved_mem_bank_tag->u.mem.size -= ((__u32)TOTAL_RESERVED_MEM_SIZE);
-	if(g_boot_mode == FACTORY_BOOT) {
+    if(g_boot_mode == FACTORY_BOOT) {
             /* we need to reserved the maximum FB_SIZE to get a fixed TEST_3D pa. */
             resource_size_t rest_fb_size = RESERVED_MEM_SIZE_FOR_FB_MAX - FB_SIZE;
             RESERVED_MEM_SIZE_FOR_TEST_3D = 0x9a00000 + rest_fb_size;
@@ -1681,7 +1681,7 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
         FB_SIZE_EXTERN = FB_SIZE;
         pmem_start = reserved_mem_bank_tag->u.mem.start + reserved_mem_bank_tag->u.mem.size;
     } else // we should always have reserved memory
-    	BUG();
+        BUG();
 
     MTK_MEMCFG_LOG_AND_PRINTK(KERN_ALERT
             "[PHY layout]avaiable DRAM size (lk) = 0x%llx\n"
@@ -1707,7 +1707,7 @@ void mt_fixup(struct tag *tags, char **cmdline, struct meminfo *mi)
     }
 
     if(tags->hdr.tag == ATAG_NONE)
-	none_tag = tags;
+    none_tag = tags;
     if (cmdline_tag != NULL) {
 #ifdef CONFIG_FIQ_DEBUGGER
         char *console_ptr;
@@ -1772,32 +1772,32 @@ struct platform_device auxadc_device = {
 /* MT6575 sensor module                                                  */
 /*=======================================================================*/
 struct platform_device sensor_gsensor = {
-	.name	       = "gsensor",
-	.id            = -1,
+    .name           = "gsensor",
+    .id            = -1,
 };
 
 struct platform_device sensor_msensor = {
-	.name	       = "msensor",
-	.id            = -1,
+    .name           = "msensor",
+    .id            = -1,
 };
 
 struct platform_device sensor_orientation = {
-	.name	       = "orientation",
-	.id            = -1,
+    .name           = "orientation",
+    .id            = -1,
 };
 
 struct platform_device sensor_alsps = {
-	.name	       = "als_ps",
-	.id            = -1,
+    .name           = "als_ps",
+    .id            = -1,
 };
 
 struct platform_device sensor_gyroscope = {
-	.name	       = "gyroscope",
-	.id            = -1,
+    .name           = "gyroscope",
+    .id            = -1,
 };
 
 struct platform_device sensor_barometer = {
-	.name	       = "barometer",
+    .name           = "barometer",
     .id            = -1,
 };
 struct platform_device sensor_temperature = {
@@ -1812,13 +1812,13 @@ struct platform_device sensor_batch = {
 
 /* hwmon sensor */
 struct platform_device hwmon_sensor = {
-	.name	       = "hwmsensor",
-	.id            = -1,
+    .name           = "hwmsensor",
+    .id            = -1,
 };
 
 struct platform_device acc_sensor = {
-	.name	       = "m_acc_pl",
-	.id            = -1,
+    .name           = "m_acc_pl",
+    .id            = -1,
 };
 struct platform_device mag_sensor = {
     .name           = "m_mag_pl",
@@ -1846,7 +1846,7 @@ struct platform_device temp_sensor = {
 
 struct platform_device batch_sensor = {
     .name           = "m_batch_pl",
-	.id            = -1,
+    .id            = -1,
 };
 
 /*=======================================================================*/
@@ -1855,13 +1855,13 @@ struct platform_device batch_sensor = {
 static u64 disp_dmamask = ~(u32)0;
 
 static struct platform_device disp_device = {
-	.name	 = "mtk_disp",
-	.id      = 0,
-	.dev     = {
-		.dma_mask = &disp_dmamask,
-		.coherent_dma_mask = 0xffffffff,
-	},
-	.num_resources = 0,
+    .name     = "mtk_disp",
+    .id      = 0,
+    .dev     = {
+        .dma_mask = &disp_dmamask,
+        .coherent_dma_mask = 0xffffffff,
+    },
+    .num_resources = 0,
 };
 
 
@@ -1882,14 +1882,14 @@ static struct resource mt_resource_isp[] = {
 static u64 mt_isp_dmamask = ~(u32) 0;
 //
 static struct platform_device mt_isp_dev = {
-	.name		   = "camera-isp",
-	.id		       = 0,
-	.num_resources = ARRAY_SIZE(mt_resource_isp),
-	.resource	   = mt_resource_isp,
-	.dev           = {
-		.dma_mask  = &mt_isp_dmamask,
-		.coherent_dma_mask = 0xffffffffUL
-	}
+    .name           = "camera-isp",
+    .id               = 0,
+    .num_resources = ARRAY_SIZE(mt_resource_isp),
+    .resource       = mt_resource_isp,
+    .dev           = {
+        .dma_mask  = &mt_isp_dmamask,
+        .coherent_dma_mask = 0xffffffffUL
+    }
 };
 
 #if 0
@@ -1906,14 +1906,14 @@ static struct resource mt_resource_eis[] = {
 static u64 mt_eis_dmamask = ~(u32) 0;
 //
 static struct platform_device mt_eis_dev = {
-	.name		   = "camera-eis",
-	.id		       = 0,
-	.num_resources = ARRAY_SIZE(mt_resource_eis),
-	.resource	   = mt_resource_eis,
-	.dev           = {
-		.dma_mask  = &mt_eis_dmamask,
-		.coherent_dma_mask = 0xffffffffUL
-	}
+    .name           = "camera-eis",
+    .id               = 0,
+    .num_resources = ARRAY_SIZE(mt_resource_eis),
+    .resource       = mt_resource_eis,
+    .dev           = {
+        .dma_mask  = &mt_eis_dmamask,
+        .coherent_dma_mask = 0xffffffffUL
+    }
 };
 
 #endif
@@ -1922,12 +1922,12 @@ static struct platform_device mt_eis_dev = {
 /* Image sensor                                                        */
 /*=======================================================================*/
 static struct platform_device sensor_dev = {
-	.name		  = "image_sensor",
-	.id		  = -1,
+    .name          = "image_sensor",
+    .id          = -1,
 };
 static struct platform_device sensor_dev_bus2 = {
-	.name		  = "image_sensor_bus2",
-	.id		  = -1,
+    .name          = "image_sensor_bus2",
+    .id          = -1,
 };
 
 //
@@ -1935,16 +1935,16 @@ static struct platform_device sensor_dev_bus2 = {
 /* Lens actuator                                                        */
 /*=======================================================================*/
 static struct platform_device actuator_dev = {
-	.name		  = "lens_actuator",
-	.id		  = -1,
+    .name          = "lens_actuator",
+    .id          = -1,
 };
 static struct platform_device actuator_dev2 = {
-	.name		  = "lens_actuator2",
-	.id		  = -1,
+    .name          = "lens_actuator2",
+    .id          = -1,
 };
 static struct platform_device actuator_dev3 = {
-	.name		  = "lens_actuator3",
-	.id		  = -1,
+    .name          = "lens_actuator3",
+    .id          = -1,
 };
 
 /*=======================================================================*/
@@ -1952,8 +1952,8 @@ static struct platform_device actuator_dev3 = {
 /*=======================================================================*/
 #ifdef CONFIG_MOUSE_PANASONIC_EVQWJN
 static struct platform_device jbd_pdev = {
-	.name = "mt6575-jb",
-	.id = -1,
+    .name = "mt6575-jb",
+    .id = -1,
 };
 #endif
 
@@ -1961,13 +1961,13 @@ static struct platform_device jbd_pdev = {
 /* MT6582 Pipe Manager                                                         */
 /*=======================================================================*/
 static struct platform_device camera_pipemgr_dev = {
-	.name	= "camera-pipemgr",
-	.id     = -1,
+    .name    = "camera-pipemgr",
+    .id     = -1,
 };
 
 static struct platform_device mt65xx_leds_device = {
-	.name = "leds-mt65xx",
-	.id = -1
+    .name = "leds-mt65xx",
+    .id = -1
 };
 /*=======================================================================*/
 /* NFC                                                                          */
@@ -1982,8 +1982,8 @@ static struct platform_device mtk_nfc_6605_dev = {
 /* MT6572/82 WIFI module                                                 */
 /*=======================================================================*/
 struct platform_device mt_device_wifi = {
-	.name	       = "mt-wifi",
-	.id            = -1,
+    .name           = "mt-wifi",
+    .id            = -1,
 };
 //#endif
 
@@ -1992,8 +1992,8 @@ struct platform_device mt_device_wifi = {
 /*=======================================================================*/
 #ifdef MTK_USE_RESERVED_EXT_MEM
 static struct platform_device mt_extmem = {
-	.name           = "mt-extmem",
-	.id             = 0,
+    .name           = "mt-extmem",
+    .id             = 0,
 };
 #endif
 /*=======================================================================*/
@@ -2002,24 +2002,24 @@ static struct platform_device mt_extmem = {
 /*=======================================================================*/
 #if defined (CONFIG_CUSTOM_KERNEL_SSW)
 static struct platform_device ssw_device = {
-	.name = "sim-switch",
-	.id = -1};
+    .name = "sim-switch",
+    .id = -1};
 #endif
 
 /*=======================================================================*/
 /* CPU Hoptlug driver                                                    */
 /*=======================================================================*/
 struct platform_device cpu_hotplug_pdev = {
-	.name	       = "mt_cpu_hotplug",
-	.id            = -1,
+    .name           = "mt_cpu_hotplug",
+    .id            = -1,
 };
 
 /*=======================================================================*/
 /* battery driver                                                         */
 /*=======================================================================*/
 struct platform_device battery_device = {
-	.name = "battery",
-	.id = -1,
+    .name = "battery",
+    .id = -1,
 };
 
 /*=======================================================================*/
@@ -2045,24 +2045,24 @@ __init int mt_board_init(void)
         }
 #endif
 
-	{
-		uint64_t key;
+    {
+        uint64_t key;
 #if defined(CONFIG_MTK_USB_UNIQUE_SERIAL)
-		key = get_devinfo_with_index(13);
-		key = (key << 32) | get_devinfo_with_index(12);
+        key = get_devinfo_with_index(13);
+        key = (key << 32) | get_devinfo_with_index(12);
 #else
-		key = 0;
+        key = 0;
 #endif
-		if (key != 0)
-			get_serial(key, get_chip_code(), serial_number);
-		else
-			memcpy(serial_number, "0123456789ABCDEF", 16);
+        if (key != 0)
+            get_serial(key, get_chip_code(), serial_number);
+        else
+            memcpy(serial_number, "0123456789ABCDEF", 16);
 
-		retval = kobject_init_and_add(&sn_kobj, &sn_ktype, NULL, "sys_info");
+        retval = kobject_init_and_add(&sn_kobj, &sn_ktype, NULL, "sys_info");
 
-		if (retval < 0)
-			printk("[%s] fail to add kobject\n", "sys_info");
-	}
+        if (retval < 0)
+            printk("[%s] fail to add kobject\n", "sys_info");
+    }
 
 #if defined(CONFIG_MTK_MTD_NAND)
     retval = platform_device_register(&mtk_nand_dev);
@@ -2072,53 +2072,53 @@ __init int mt_board_init(void)
     }
 #endif
 
-	retval = platform_device_register(&gpio_dev);
-	if (retval != 0){
-		return retval;
-	}
-	retval = platform_device_register(&fh_dev);
-	if (retval != 0){
-		return retval;
-	}
+    retval = platform_device_register(&gpio_dev);
+    if (retval != 0){
+        return retval;
+    }
+    retval = platform_device_register(&fh_dev);
+    if (retval != 0){
+        return retval;
+    }
 #ifdef CONFIG_MTK_KEYPAD
-	retval = platform_device_register(&kpd_pdev);
-	if (retval != 0) {
-		return retval;
-	}
+    retval = platform_device_register(&kpd_pdev);
+    if (retval != 0) {
+        return retval;
+    }
 #endif
 
 #ifdef CONFIG_MOUSE_PANASONIC_EVQWJN
-	retval = platform_device_register(&jbd_pdev);
-	if (retval != 0) {
-		return retval;
-	}
+    retval = platform_device_register(&jbd_pdev);
+    if (retval != 0) {
+        return retval;
+    }
 #endif
 
 #if defined(CONFIG_KEYBOARD_HID)
-	retval = platform_device_register(&mt_hid_dev);
-	if (retval != 0){
-		return retval;
-	}
+    retval = platform_device_register(&mt_hid_dev);
+    if (retval != 0){
+        return retval;
+    }
 #endif
 
 #if defined(CONFIG_MTK_I2C)
-	//i2c_register_board_info(0, i2c_devs0, ARRAY_SIZE(i2c_devs0));
-	//i2c_register_board_info(1, i2c_devs1, ARRAY_SIZE(i2c_devs1));
-	//i2c_register_board_info(2, i2c_devs2, ARRAY_SIZE(i2c_devs2));
-		for (i = 0; i < ARRAY_SIZE(mt_device_i2c); i++){
-			retval = platform_device_register(&mt_device_i2c[i]);
-			if (retval != 0){
-				return retval;
-			}
-		}
+    //i2c_register_board_info(0, i2c_devs0, ARRAY_SIZE(i2c_devs0));
+    //i2c_register_board_info(1, i2c_devs1, ARRAY_SIZE(i2c_devs1));
+    //i2c_register_board_info(2, i2c_devs2, ARRAY_SIZE(i2c_devs2));
+        for (i = 0; i < ARRAY_SIZE(mt_device_i2c); i++){
+            retval = platform_device_register(&mt_device_i2c[i]);
+            if (retval != 0){
+                return retval;
+            }
+        }
 #endif
 #if defined(CONFIG_MTK_MMC)
     for (i = 0; i < ARRAY_SIZE(mt_device_msdc); i++){
         retval = platform_device_register(&mt_device_msdc[i]);
-			if (retval != 0){
-				return retval;
-			}
-		}
+            if (retval != 0){
+                return retval;
+            }
+        }
 #endif
 
 #if defined(CONFIG_MTK_SOUND)
@@ -2128,12 +2128,12 @@ __init int mt_board_init(void)
        return retval;
     }
 
-	retval = platform_device_register(&AudDrv_device2);
-	printk("AudioMTKBTCVSD AudDrv_device2 \n!");
-	if (retval != 0){
-		 printk("AudioMTKBTCVSD AudDrv_device2 Fail:%d \n", retval);
-		return retval;
-	}
+    retval = platform_device_register(&AudDrv_device2);
+    printk("AudioMTKBTCVSD AudDrv_device2 \n!");
+    if (retval != 0){
+         printk("AudioMTKBTCVSD AudDrv_device2 Fail:%d \n", retval);
+        return retval;
+    }
 
 #endif
 
@@ -2183,7 +2183,7 @@ __init int mt_board_init(void)
 // DISP DEV
 //=======================================================================
 
-	retval = platform_device_register(&disp_device);
+    retval = platform_device_register(&disp_device);
 #if 1
     if (retval != 0){
         return retval;
@@ -2193,7 +2193,7 @@ __init int mt_board_init(void)
 printk("register M4U device: %d\n", retval);
 retval = platform_device_register(&mtk_m4u_dev);
 if (retval != 0) {
-	return retval;
+    return retval;
 }
 
 
@@ -2256,17 +2256,17 @@ if (retval != 0) {
 #endif
 
 #if defined(CONFIG_MTK_LEDS)
-	retval = platform_device_register(&mt65xx_leds_device);
-	if (retval != 0)
-		return retval;
-	printk("bei:device LEDS register\n");
+    retval = platform_device_register(&mt65xx_leds_device);
+    if (retval != 0)
+        return retval;
+    printk("bei:device LEDS register\n");
 #endif
 
 #ifdef CONFIG_MTK_HDMI_SUPPORT
-	retval = platform_device_register(&mtk_hdmi_dev);
-	if (retval != 0){
-		return retval;
-	}
+    retval = platform_device_register(&mtk_hdmi_dev);
+    if (retval != 0){
+        return retval;
+    }
 #endif
 
 
@@ -2277,7 +2277,7 @@ if (retval != 0) {
 
 #if defined(CONFIG_MTK_TVOUT_SUPPORT)
     retval = platform_device_register(&mt6575_TVOUT_dev);
-	printk("register TV-out device\n");
+    printk("register TV-out device\n");
     if (retval != 0) {
          return retval;
     }
@@ -2288,7 +2288,7 @@ if (retval != 0) {
   if(retval != 0)
   {
      printk("****[auxadc_driver] Unable to device register(%d)\n", retval);
-	 return retval;
+     return retval;
   }
 #endif
 
@@ -2296,34 +2296,34 @@ if (retval != 0) {
 
 
     retval = platform_device_register(&accdet_device);
-	printk("register accdet device\n");
+    printk("register accdet device\n");
 
-	if (retval != 0)
-	{
-		printk("platform_device_accdet_register error:(%d)\n", retval);
-		return retval;
-	}
-	else
-	{
-		printk("platform_device_accdet_register done!\n");
-	}
+    if (retval != 0)
+    {
+        printk("platform_device_accdet_register error:(%d)\n", retval);
+        return retval;
+    }
+    else
+    {
+        printk("platform_device_accdet_register done!\n");
+    }
 
 #endif
 
 #if defined(CONFIG_USB_MTK_ACM_TEMP)
 
     retval = platform_device_register(&usbacm_temp_device);
-	printk("register usbacm temp device\n");
+    printk("register usbacm temp device\n");
 
-	if (retval != 0)
-	{
-		printk("platform_device_usbacm_register error:(%d)\n", retval);
-		return retval;
-	}
-	else
-	{
-		printk("platform_device_usbacm_register done!\n");
-	}
+    if (retval != 0)
+    {
+        printk("platform_device_usbacm_register error:(%d)\n", retval);
+        return retval;
+    }
+    else
+    {
+        printk("platform_device_usbacm_register done!\n");
+    }
 
 #endif
 
@@ -2423,7 +2423,7 @@ if (retval != 0) {
 #endif
 
 #if defined(CONFIG_CUSTOM_KERNEL_BAROMETER)
-	retval = platform_device_register(&sensor_barometer);
+    retval = platform_device_register(&sensor_barometer);
     if (retval != 0)
     {
         printk("[%s]: sensor_barometer device register fail \n", __func__);
@@ -2451,29 +2451,29 @@ if (retval != 0) {
 #endif
 
 #if defined(CONFIG_MTK_USBFSH)
-	printk("register musbfsh device\n");
-	retval = platform_device_register(&mt_usb11_dev);
-	if (retval != 0){
-		printk("register musbfsh device fail!\n");
-		return retval;
-	}
+    printk("register musbfsh device\n");
+    retval = platform_device_register(&mt_usb11_dev);
+    if (retval != 0){
+        printk("register musbfsh device fail!\n");
+        return retval;
+    }
 #endif
 
 #if defined(CONFIG_USB_MTK_HDRC)
-	printk("mt_device_usb register\n");
-	retval = platform_device_register(&mt_device_usb);
-	if (retval != 0){
-	printk("mt_device_usb register fail\n");
+    printk("mt_device_usb register\n");
+    retval = platform_device_register(&mt_device_usb);
+    if (retval != 0){
+    printk("mt_device_usb register fail\n");
         return retval;
-	}
+    }
 #endif
 
 #if 1
-	retval = platform_device_register(&battery_device);
-	if (retval) {
-		printk("[battery_driver] Unable to device register\n");
-		return retval;
-	}
+    retval = platform_device_register(&battery_device);
+    if (retval) {
+        printk("[battery_driver] Unable to device register\n");
+        return retval;
+    }
 #endif
 
 #if defined(CONFIG_MTK_TOUCHPANEL)
@@ -2491,9 +2491,9 @@ if (retval != 0) {
 
 #if (defined(CONFIG_MTK_MTD_NAND) ||defined(CONFIG_MTK_MMC))
 retval = platform_device_register(&dummychar_device);
-	if (retval != 0){
-		return retval;
-	}
+    if (retval != 0){
+        return retval;
+    }
 #endif
 
 
@@ -2515,7 +2515,7 @@ retval = platform_device_register(&dummychar_device);
 
     retval = platform_device_register(&vmem_multimedia_device);
     if (retval != 0){
-	printk("vmem platform register failed\n");
+    printk("vmem platform register failed\n");
        return retval;
     }
 #endif
@@ -2558,13 +2558,13 @@ retval = platform_device_register(&dummychar_device);
 #if 1 ///defined(CONFIG_VIDEO_CAPTURE_DRIVERS)
     retval = platform_device_register(&sensor_dev);
     if (retval != 0){
-    	return retval;
+        return retval;
     }
 #endif
 #if 1 ///defined(CONFIG_VIDEO_CAPTURE_DRIVERS)
     retval = platform_device_register(&sensor_dev_bus2);
     if (retval != 0){
-    	return retval;
+        return retval;
     }
 #endif
 
@@ -2619,54 +2619,54 @@ retval = platform_device_register(&dummychar_device);
 #endif
 
 #if 1
-	retval = platform_device_register(&camera_sysram_dev);
-	if (retval != 0){
-		return retval;
-	}
+    retval = platform_device_register(&camera_sysram_dev);
+    if (retval != 0){
+        return retval;
+    }
 #endif
 
 #if defined(CONFIG_MTK_GPS)
-	retval = platform_device_register(&mt3326_device_gps);
-	if (retval != 0){
-		return retval;
-	}
+    retval = platform_device_register(&mt3326_device_gps);
+    if (retval != 0){
+        return retval;
+    }
 #endif
 
-	retval = platform_device_register(&camera_pipemgr_dev);
-	if (retval != 0){
-		return retval;
-	}
+    retval = platform_device_register(&camera_pipemgr_dev);
+    if (retval != 0){
+        return retval;
+    }
 
 
 #if 1//defined(CONFIG_MTK_NFC) //NFC
-	retval = platform_device_register(&mtk_nfc_6605_dev);
-	printk("mtk_nfc_6605_dev register ret %d", retval);
-	if (retval != 0){
-		return retval;
-	}
+    retval = platform_device_register(&mtk_nfc_6605_dev);
+    printk("mtk_nfc_6605_dev register ret %d", retval);
+    if (retval != 0){
+        return retval;
+    }
 #endif
 
 //#if defined(CONFIG_MTK_WIFI)
-	retval = platform_device_register(&mt_device_wifi);
-	if (retval != 0){
-		return retval;
-	}
+    retval = platform_device_register(&mt_device_wifi);
+    if (retval != 0){
+        return retval;
+    }
 //#endif
 
 #if defined (CONFIG_CUSTOM_KERNEL_SSW)
-	retval = platform_device_register(&ssw_device);
-	if (retval != 0) {
-		return retval;
-	}
+    retval = platform_device_register(&ssw_device);
+    if (retval != 0) {
+        return retval;
+    }
 #endif
 
 #ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
-	retval = platform_device_register(&mt_extmem);
+    retval = platform_device_register(&mt_extmem);
 
-	printk("%s[%d] ret: %d\n", __FILE__, __LINE__, retval);
-	if (retval != 0){
-		return retval;
-	}
+    printk("%s[%d] ret: %d\n", __FILE__, __LINE__, retval);
+    if (retval != 0){
+        return retval;
+    }
 #endif
 
     retval = platform_device_register(&masp_device);
@@ -2716,7 +2716,7 @@ unsigned int mtk_get_max_DRAM_size(void)
 
 unsigned int get_phys_offset(void)
 {
-	return PHYS_OFFSET;
+    return PHYS_OFFSET;
 }
 EXPORT_SYMBOL(get_phys_offset);
 
@@ -2769,7 +2769,6 @@ void mt_reserve(void)
     eemcs_memory_reserve();
 #endif
     /* Last line of dynamic reserve functions */
-
     /* Limit memory for Android "svelte" testing. */
 
     if (limit_mem) {
