@@ -2328,7 +2328,7 @@ static int bma255_release(struct inode *inode, struct file *file)
 /*----------------------------------------------------------------------------*/
 static long bma255_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-    struct i2c_client *client = (struct i2c_client*)file->private_data;
+    struct i2c_client *client = (struct i2c_client *)(file->private_data);
     struct bma255_i2c_data *obj = (struct bma255_i2c_data*)i2c_get_clientdata(client);
     char strbuf[BMA255_BUFSIZE];
     void __user *data;
@@ -2824,7 +2824,7 @@ static int bma255_i2c_probe(struct i2c_client *client, const struct i2c_device_i
             break;
     }
         GSE_LOG("init client fail\n");
-
+        goto exit_kfree;
     }
 /*
     I2CDMABuf_va = (u8 *)dma_alloc_coherent(NULL, 4096, &I2CDMABuf_pa, GFP_KERNEL);
@@ -2878,14 +2878,14 @@ static int bma255_i2c_probe(struct i2c_client *client, const struct i2c_device_i
     GSE_LOG("%s: OK\n", __func__);
     return 0;
 
-    exit_create_attr_failed:
+exit_create_attr_failed:
     misc_deregister(&bma255_device);
-    exit_misc_device_register_failed:
+exit_misc_device_register_failed:
 
     //i2c_detach_client(new_client);
-    exit_kfree:
+exit_kfree:
     kfree(obj);
-    exit:
+exit:
     GSE_ERR("%s: err = %d\n", __func__, err);
     bma255_init_flag =-1;
     return err;

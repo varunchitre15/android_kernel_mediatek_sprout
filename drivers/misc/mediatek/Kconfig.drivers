@@ -705,6 +705,11 @@ config MTK_BMC156_ACC
 config MTK_LSM303D
 	bool "MediaTek Accelerometer&Magnetometer Support"
 	default n
+
+config MTK_KXTIK1004
+	bool "MediaTek Accelerometer Support"
+	default n
+
 #ALSPS sensor
 config MTK_CM36283
 	bool "MediaTek Ambient and proximity sensor Support"
