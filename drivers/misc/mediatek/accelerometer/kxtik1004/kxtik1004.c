@@ -253,13 +253,13 @@ static int kxt_i2c_write_block(struct i2c_client *client, u8 addr, u8 *data, u8 
     err = i2c_master_send(client, buf, len+1);
 	mutex_unlock(&kxtik1004_i2c_mutex);
 
-    if (err < 0)
+    if (err != (len+1))
 	{
         GSE_ERR("send command error!!\n");
         return -EFAULT;
     }
 
-    return err;
+    return 0;
 }
 /*----------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------*/
@@ -692,7 +692,7 @@ static int KXTIK1004_SetBWRate(struct i2c_client *client, u8 bwrate)
 	databuf[0] |= bwrate;
 
 	res = kxt_i2c_write_block(client, KXTIK1004_REG_BW_RATE, databuf, 0x1);
-	if(res <= 0)
+	if(res < 0)
 	{
 		return KXTIK1004_ERR_I2C;
 	}
@@ -711,7 +711,7 @@ static int KXTIK1004_SetIntEnable(struct i2c_client *client, u8 intenable)
 
 	res = kxt_i2c_write_block(client, KXTIK1004_REG_INT_ENABLE, databuf, 0x1);
 
-	if(res <= 0)
+	if(res < 0)
 	{
 		return KXTIK1004_ERR_I2C;
 	}
