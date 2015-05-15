@@ -4428,6 +4428,7 @@ static long ISP_ioctl(struct file *pFile,MUINT32 Cmd,unsigned long Param)
                 spin_lock_irqsave(&SpinLockCamHaVer, flags);
                 CAM_HAL_VER_IS3 = bIspVer;
                 spin_unlock_irqrestore(&SpinLockCamHaVer, flags);
+                LOG_DBG("SET_ISP_Ver(%d)",bIspVer);
             }
             break;
         }
@@ -5675,9 +5676,6 @@ static MINT32 __init ISP_Init(MVOID)
 
     memset(g_pBuf_kmalloc,0x00,RT_BUF_TBL_NPAGES * PAGE_SIZE);
     //
-    spin_lock_irqsave(&SpinLockCamHaVer, flags);
-    LOG_INF("register isp callback for MDP,is_v3(%d)",CAM_HAL_VER_IS3);
-    spin_unlock_irqrestore(&SpinLockCamHaVer, flags);
     ISP_ControlMdpClock(MTRUE);
 
     // round it up to the page bondary
@@ -5709,9 +5707,6 @@ static MVOID __exit ISP_Exit(MVOID)
 
     platform_driver_unregister(&IspDriver);
     //
-    spin_lock_irqsave(&SpinLockCamHaVer, flags);
-    LOG_INF("unregister isp callback for MDP,is_v3(%d)",CAM_HAL_VER_IS3);
-    spin_unlock_irqrestore(&SpinLockCamHaVer, flags);
     ISP_ControlMdpClock(FALSE);
 
     // unreserve the pages
