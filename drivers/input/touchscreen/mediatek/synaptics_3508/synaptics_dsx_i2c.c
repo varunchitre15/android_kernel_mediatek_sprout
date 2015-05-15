@@ -2771,7 +2771,7 @@ printk("[s3508]synaptics_rmi4_probe\n");
             input_set_capability(tpd->dev,EV_KEY,touch_ssb_data.tpd_key_local[retval]);
     }
     }
-
+	rmi4_data->i2c_client->ext_flag |= I2C_A_FILTER_MSG;
 	retval = synaptics_rmi4_set_input_dev(rmi4_data);
 	if (retval < 0) {
 		dev_err(&client->dev,
@@ -2779,6 +2779,7 @@ printk("[s3508]synaptics_rmi4_probe\n");
 				__func__);
 		goto err_set_input_dev;
 	}
+	rmi4_data->i2c_client->ext_flag &= ~I2C_A_FILTER_MSG;
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	rmi4_data->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;

@@ -1859,12 +1859,13 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
     ts->client = client;
     mutex_init(&(ts->io_ctrl_mutex));
-
+    ts->client->ext_flag |= I2C_A_FILTER_MSG;
     retval = tpd_rmi4_read_pdt(ts);
     if (retval <= 0) {
         TPD_DMESG("Failed to query device\n");
         goto err_query_device;
     }
+    ts->client->ext_flag &= ~I2C_A_FILTER_MSG;
 
     if (!exp_fn_inited) {
         mutex_init(&exp_fn_list_mutex);

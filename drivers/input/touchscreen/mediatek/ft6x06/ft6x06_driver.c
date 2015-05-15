@@ -663,7 +663,7 @@ int focaltech_auto_upgrade(void)
     mutex_init(&ts->mutex);
 
     i2c_set_clientdata(client, ts);
-
+    g_pts->client->ext_flag |= I2C_A_FILTER_MSG;
     fts_6x06_hw_init();
     msleep(120);
 
@@ -684,6 +684,7 @@ int focaltech_auto_upgrade(void)
         iRetry--;
         msleep(15);
     }
+    g_pts->client->ext_flag &= ~I2C_A_FILTER_MSG;
     if ( panel_version < 0 || panel_vendor<0 || ret<0 ){
         goto err_get_version;
     }

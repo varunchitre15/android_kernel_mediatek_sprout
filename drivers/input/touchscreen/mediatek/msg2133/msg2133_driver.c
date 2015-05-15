@@ -3246,7 +3246,7 @@ static int __devinit tpd_probe(struct i2c_client *client, const struct i2c_devic
 
 #endif
     msleep(100);
-	
+	i2c_client->ext_flag |= I2C_A_FILTER_MSG;
 	{
 	    msg2033_i2c_read(&data,1);
 	    printk("The CTP_ID=0x%x in %s(),L:%d\n",data,__func__,__LINE__);
@@ -3256,6 +3256,7 @@ static int __devinit tpd_probe(struct i2c_client *client, const struct i2c_devic
 	    printk("I2C transfer error, func: %s\n", __func__);
 	    return -1;
 	}
+	i2c_client->ext_flag &= ~I2C_A_FILTER_MSG;
 	
     tpd_load_status = 1;
 
