@@ -2075,7 +2075,7 @@ void mt_battery_GetBatteryData(void)
 	if (g_battery_soc_ready == KAL_FALSE)
 		g_battery_soc_ready = KAL_TRUE;
 
-	battery_xlog_printk(BAT_LOG_CRTI,
+	battery_xlog_init_printk(BAT_LOG_CRTI,
 			    "AvgVbat=(%d),bat_vol=(%d),AvgI=(%d),I=(%d),VChr=(%d),AvgT=(%d),T=(%d),pre_SOC=(%d),SOC=(%d),ZCV=(%d)\n",
 			    BMT_status.bat_vol, bat_vol, BMT_status.ICharging, ICharging,
 			    BMT_status.charger_vol, BMT_status.temperature, temperature,
@@ -2410,7 +2410,7 @@ static void mt_battery_thermal_check(void)
 					struct battery_data *bat_data = &battery_main;
 					struct power_supply *bat_psy = &bat_data->psy;
 
-					battery_xlog_printk(BAT_LOG_CRTI,
+					battery_xlog_init_printk(BAT_LOG_CRTI,
 							    "[Battery] Tbat(%d)>=%d, system need power down.\n",
 							    BMT_status.temperature, thermal_shut_down);
 
@@ -2554,7 +2554,7 @@ static void mt_kpoc_power_off_check(void)
 	    || g_platform_boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
 		if ((upmu_is_chr_det() == KAL_FALSE) && (BMT_status.charger_vol < 2500))	/* vbus < 2.5V */
 		{
-			battery_xlog_printk(BAT_LOG_CRTI,
+			battery_xlog_init_printk(BAT_LOG_CRTI,
 					    "[bat_thread_kthread] Unplug Charger/USB In Kernel Power Off Charging Mode!  Shutdown OS!\r\n");
 			battery_charging_control(CHARGING_CMD_SET_POWER_OFF, NULL);
 		}
@@ -2591,7 +2591,7 @@ void do_chrdet_int_task(void)
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 			if (g_platform_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 			    || g_platform_boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
-				battery_xlog_printk(BAT_LOG_CRTI,
+				battery_xlog_init_printk(BAT_LOG_CRTI,
 						    "[pmic_thread_kthread] Unplug Charger/USB In Kernel Power Off Charging Mode!  Shutdown OS!\r\n");
 				battery_charging_control(CHARGING_CMD_SET_POWER_OFF, NULL);
 				/* mt_power_off(); */
@@ -2962,8 +2962,8 @@ void check_battery_exist(void)
 					    "[BATTERY] boot mode = %d, bypass battery check\n",
 					    g_platform_boot_mode);
 		} else {
-			battery_xlog_printk(BAT_LOG_FULL,
-					    "[BATTERY] Battery is not exist, power off FAN5405 and system (%d)\n",
+			battery_xlog_init_printk(BAT_LOG_FULL,
+					    "[BATTERY] Battery is not exist, power off system (%d)\n",
 					    baton_count);
 
 			battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
@@ -3001,7 +3001,7 @@ int charger_hv_detect_sw_thread_handler(void *unused)
 			battery_charging_control(CHARGING_CMD_GET_HV_STATUS, &hv_status);
 
 		if (hv_status == KAL_TRUE) {
-			battery_xlog_printk(BAT_LOG_CRTI,
+			battery_xlog_init_printk(BAT_LOG_CRTI,
 					    "[charger_hv_detect_sw_thread_handler] charger hv\n");
 
 			charging_enable = KAL_FALSE;

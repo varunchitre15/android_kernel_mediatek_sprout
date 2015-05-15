@@ -306,23 +306,23 @@ kal_uint32 charging_set_power_off(void *data)
 			case EXT_NONE:
 				status = charging_func_pmic[cmd](data);
 				chargin_hw_init_done = KAL_TRUE;
-				battery_xlog_init_printk(BAT_LOG_CRTI, "charging_func_pmic\n");
+				battery_xlog_printk(BAT_LOG_CRTI, "charging_func_pmic\n");
 				break;
 			case EXT_BQ24158:
 				status = charging_func_bq24158[cmd](data);
-				battery_xlog_init_printk(BAT_LOG_CRTI, "charging_func_bq24158\n");
+				battery_xlog_printk(BAT_LOG_CRTI, "charging_func_bq24158\n");
 				break;
 			case EXT_BQ24196:
 				status = charging_func_bq24196[cmd](data);
-				battery_xlog_init_printk(BAT_LOG_CRTI, "charging_func_bq24196\n");
+				battery_xlog_printk(BAT_LOG_CRTI, "charging_func_bq24196\n");
 				break;
 			case EXT_FAN5405:
 				status = charging_func_fan5405[cmd](data);
-				battery_xlog_init_printk(BAT_LOG_CRTI, "charging_func_fan5405\n");
+				battery_xlog_printk(BAT_LOG_CRTI, "charging_func_fan5405\n");
 				break;
 			case EXT_HW6333:
 				status = charging_func_hw6333[cmd](data);
-				battery_xlog_init_printk(BAT_LOG_CRTI, "charging_func_hw6333\n");
+				battery_xlog_printk(BAT_LOG_CRTI, "charging_func_hw6333\n");
 				break;
 			default:
 				status = charging_func_pmic[cmd](data);

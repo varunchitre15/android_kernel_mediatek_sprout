@@ -65,7 +65,7 @@
 #define battery_xlog_printk(num, fmt, args...) \
   do { \
     if (Enable_BATDRV_LOG >= (int)num) { \
-      pr_notice(fmt, ##args); \
+      pr_debug(fmt, ##args); \
     } \
   } while (0)
 
