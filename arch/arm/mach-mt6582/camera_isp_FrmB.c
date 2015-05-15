@@ -1844,10 +1844,13 @@ static long ISP_Buf_CTRL_FUNC_FRMB(MUINT32 Param)
                                 ISP_FBC_DUMP(rt_dma,1,0,0,0);
                             }
 #endif
-                            spin_lock_irqsave(&(IspInfo_FrmB.SpinLockIrq[irqT_Lock]), flags);
+                            /* copy_from_user()/copy_to_user() might sleep when page fault,
+                               it can't use in atomic context, e.g. spin_lock_irqsave()      */
+                            /* spin_lock_irqsave(&(IspInfo_FrmB.SpinLockIrq[irqT_Lock]), flags);*/
                             if ( 0 != rt_buf_ctrl.ex_data_ptr ) {
                                 //borrow deque_buf.data memory , in order to shirnk memory required,avoid compile err
                                 if(copy_from_user(&deque_buf.data[0], (void*)rt_buf_ctrl.ex_data_ptr, sizeof(ISP_RT_BUF_INFO_STRUCT_FRMB)) == 0) {
+                                    spin_lock_irqsave(&(IspInfo_FrmB.SpinLockIrq[irqT_Lock]), flags);
                                     //
                                     i = 0;
                                     if (deque_buf.data[0].bufIdx != 0xFFFF){
@@ -1916,11 +1919,12 @@ static long ISP_Buf_CTRL_FUNC_FRMB(MUINT32 Param)
                                 }
                                 else{
                                     LOG_ERR("cpy from user fail\n");
-                                    spin_unlock_irqrestore(&(IspInfo_FrmB.SpinLockIrq[irqT_Lock]), flags);
+                                    /* spin_unlock_irqrestore(&(IspInfo_FrmB.SpinLockIrq[irqT_Lock]), flags);*/
                                     return -EFAULT;
                                 }
                             }
                             else {//this case for camsv & pass1 fw rtbc
+                                spin_lock_irqsave(&(IspInfo_FrmB.SpinLockIrq[irqT_Lock]), flags);
                                 for (i=0;i<ISP_RT_BUF_SIZE;i++) {
                                     //
                                     if ( pstRTBuf_FrmB->ring_buf[rt_dma].data[i].base_pAddr == rt_buf_info.base_pAddr ) {
@@ -2010,6 +2014,7 @@ static long ISP_Buf_CTRL_FUNC_FRMB(MUINT32 Param)
                                                 }
                                             }
                                             else {
+                                                spin_unlock_irqrestore(&(IspInfo_FrmB.SpinLockIrq[irqT_Lock]), flags);
                                                 LOG_ERR("[rtbc]error:dma(%d) r not being activated(%d)",rt_dma,pstRTBuf_FrmB->ring_buf[rt_dma].active);
                                                 return -EFAULT;
                                             }
@@ -2037,6 +2042,7 @@ static long ISP_Buf_CTRL_FUNC_FRMB(MUINT32 Param)
                                             }
                                         }
                                         else {
+                                            spin_unlock_irqrestore(&(IspInfo_FrmB.SpinLockIrq[irqT_Lock]), flags);
                                             LOG_ERR("[rtbc]error:dma(%d) r not being activated(%d)",rt_dma,pstRTBuf_FrmB->ring_buf[rt_dma].active);
                                             return -EFAULT;
                                         }
@@ -2151,10 +2157,11 @@ static long ISP_Buf_CTRL_FUNC_FRMB(MUINT32 Param)
                 //
                 reg_val  = ISP_RD32(ISP_REG_ADDR_TG_VF_CON);
                 //VF start already
-                spin_lock_irqsave(&(IspInfo_FrmB.SpinLockIrq[irqT_Lock]), flags);
                 if (reg_val & 0x01) {
                     if(MTRUE == _bFlag) {
+                        MUINT32 out;
                         deque_buf.count = P1_DEQUE_CNT;
+                        spin_lock_irqsave(&(IspInfo_FrmB.SpinLockIrq[irqT_Lock]), flags);
 #ifdef _rtbc_buf_que_2_0_
                         iBuf = pstRTBuf_FrmB->ring_buf[rt_dma].read_idx;//p1_fbc[rt_dma].Bits.WCNT - 1;    //WCNT = [1,2,..]
                         pstRTBuf_FrmB->ring_buf[rt_dma].read_idx = (pstRTBuf_FrmB->ring_buf[rt_dma].read_idx +1 )%pstRTBuf_FrmB->ring_buf[rt_dma].total_count;
@@ -2165,154 +2172,154 @@ static long ISP_Buf_CTRL_FUNC_FRMB(MUINT32 Param)
 #else
                         iBuf = p1_fbc[rt_dma].Bits.RCNT - 1;    //RCNT = [1,2,3,...]
 #endif
-                        for (i=0;i<deque_buf.count;i++) {
-                            MUINT32 out;
 
-                            deque_buf.data[i].memID         = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].memID;
-                            deque_buf.data[i].size          = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].size;
-                            deque_buf.data[i].base_vAddr    = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].base_vAddr;
-                            deque_buf.data[i].base_pAddr    = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].base_pAddr;
-                            deque_buf.data[i].timeStampS    = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].timeStampS;
-                            deque_buf.data[i].timeStampUs   = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].timeStampUs;
-                            deque_buf.data[i].image.w       = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].image.w;
-                            deque_buf.data[i].image.h       = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].image.h;
-                            deque_buf.data[i].image.xsize   = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].image.xsize;
-                            deque_buf.data[i].image.stride  = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].image.stride;
-                            deque_buf.data[i].image.fmt     = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].image.fmt;
-                            deque_buf.data[i].image.pxl_id  = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].image.pxl_id;
-                            deque_buf.data[i].image.wbn     = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].image.wbn;
-                            deque_buf.data[i].image.ob      = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].image.ob;
-                            deque_buf.data[i].image.lsc     = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].image.lsc;
-                            deque_buf.data[i].image.rpg     = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].image.rpg;
-                            deque_buf.data[i].image.m_num_0 = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].image.m_num_0;
-                            deque_buf.data[i].image.frm_cnt = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].image.frm_cnt;
-                            deque_buf.data[i].HrzInfo.srcX  = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].HrzInfo.srcX;
-                            deque_buf.data[i].HrzInfo.srcY  = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].HrzInfo.srcY;
-                            deque_buf.data[i].HrzInfo.srcW  = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].HrzInfo.srcW;
-                            deque_buf.data[i].HrzInfo.srcH  = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].HrzInfo.srcH;
-                            deque_buf.data[i].HrzInfo.dstW  = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].HrzInfo.dstW;
-                            deque_buf.data[i].HrzInfo.dstH  = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].HrzInfo.dstH;
-                            deque_buf.data[i].dmaoCrop.x    = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].dmaoCrop.x;
-                            deque_buf.data[i].dmaoCrop.y    = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].dmaoCrop.y;
-                            deque_buf.data[i].dmaoCrop.w    = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].dmaoCrop.w;
-                            deque_buf.data[i].dmaoCrop.h    = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].dmaoCrop.h;
+                        if (ISP_RTBC_BUF_LOCKED == pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].bFilled)
+                            LOG_ERR("deque the same buffer twice\n");
+
+                        deque_buf.data[0].memID         = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].memID;
+                        deque_buf.data[0].size          = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].size;
+                        deque_buf.data[0].base_vAddr    = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].base_vAddr;
+                        deque_buf.data[0].base_pAddr    = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].base_pAddr;
+                        deque_buf.data[0].timeStampS    = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].timeStampS;
+                        deque_buf.data[0].timeStampUs   = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].timeStampUs;
+                        deque_buf.data[0].image.w       = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].image.w;
+                        deque_buf.data[0].image.h       = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].image.h;
+                        deque_buf.data[0].image.xsize   = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].image.xsize;
+                        deque_buf.data[0].image.stride  = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].image.stride;
+                        deque_buf.data[0].image.fmt     = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].image.fmt;
+                        deque_buf.data[0].image.pxl_id  = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].image.pxl_id;
+                        deque_buf.data[0].image.wbn     = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].image.wbn;
+                        deque_buf.data[0].image.ob      = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].image.ob;
+                        deque_buf.data[0].image.lsc     = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].image.lsc;
+                        deque_buf.data[0].image.rpg     = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].image.rpg;
+                        deque_buf.data[0].image.m_num_0 = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].image.m_num_0;
+                        deque_buf.data[0].image.frm_cnt = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].image.frm_cnt;
+                        deque_buf.data[0].HrzInfo.srcX  = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].HrzInfo.srcX;
+                        deque_buf.data[0].HrzInfo.srcY  = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].HrzInfo.srcY;
+                        deque_buf.data[0].HrzInfo.srcW  = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].HrzInfo.srcW;
+                        deque_buf.data[0].HrzInfo.srcH  = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].HrzInfo.srcH;
+                        deque_buf.data[0].HrzInfo.dstW  = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].HrzInfo.dstW;
+                        deque_buf.data[0].HrzInfo.dstH  = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].HrzInfo.dstH;
+                        deque_buf.data[0].dmaoCrop.x    = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].dmaoCrop.x;
+                        deque_buf.data[0].dmaoCrop.y    = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].dmaoCrop.y;
+                        deque_buf.data[0].dmaoCrop.w    = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].dmaoCrop.w;
+                        deque_buf.data[0].dmaoCrop.h    = pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].dmaoCrop.h;
 #ifdef _MAGIC_NUM_ERR_HANDLING_
 
-                            /*LOG_ERR("[rtbc][deque][m_num]:d(%d),fc(0x%x),lfc0x%x,m0(0x%x),lm#(0x%x)\n", \
-                                                rt_dma, \
-                                                deque_buf.data[i].image.frm_cnt, \
-                                                m_LastFrmCnt[rt_dma] \
-                                                ,deque_buf.data[i].image.m_num_0, \
-                                                m_LastMNum[rt_dma]);
-                                            */
-                            MUINT32 _magic = deque_buf.data[i].image.m_num_0;
-                            if(_DUMMY_MAGIC_ & deque_buf.data[i].image.m_num_0)
-                                _magic = (deque_buf.data[i].image.m_num_0 & (~_DUMMY_MAGIC_));
+                        /*LOG_ERR("[rtbc][deque][m_num]:d(%d),fc(0x%x),lfc0x%x,m0(0x%x),lm#(0x%x)\n", \
+                                            rt_dma, \
+                                            deque_buf.data[0].image.frm_cnt, \
+                                            m_LastFrmCnt[rt_dma] \
+                                            ,deque_buf.data[0].image.m_num_0, \
+                                            m_LastMNum[rt_dma]);
+                                        */
+                        MUINT32 _magic = deque_buf.data[0].image.m_num_0;
+                        if(_DUMMY_MAGIC_ & deque_buf.data[0].image.m_num_0)
+                            _magic = (deque_buf.data[0].image.m_num_0 & (~_DUMMY_MAGIC_));
 
 
-                            if ( (_INVALID_FRM_CNT_ == deque_buf.data[i].image.frm_cnt) || \
-                                 (m_LastMNum[rt_dma] > _magic) ) {
-                                //
-                                if((_DUMMY_MAGIC_ & deque_buf.data[i].image.m_num_0) == 0)
-                                    deque_buf.data[i].image.m_num_0 |= _UNCERTAIN_MAGIC_NUM_FLAG_;
-                                //
-                                IRQ_LOG_KEEPER(irqT,0,_LOG_DBG,"m# uncertain:dma(%d),m0(0x%x),fcnt(0x%x),Lm#(0x%x)", \
-                                        rt_dma,
-                                        deque_buf.data[i].image.m_num_0,\
-                                        deque_buf.data[i].image.frm_cnt,\
-                                        m_LastMNum[rt_dma]);
-#ifdef T_STAMP_2_0
-                                if(m_T_STAMP.fps > SlowMotion){//patch here is because of that uncertain should happen only in missing SOF. And because of FBC, image still can be deque. That's why  timestamp still need to be increased here.
-                                    m_T_STAMP.T_ns += ((unsigned long long)m_T_STAMP.interval_us*1000);
-                                    if(++m_T_STAMP.fcnt  == m_T_STAMP.fps){
-                                        m_T_STAMP.fcnt = 0;
-                                        m_T_STAMP.T_ns += ((unsigned long long)m_T_STAMP.compensation_us*1000);
-                                    }
-                                }
-#endif
-                            }
-                            else {
-                                m_LastMNum[rt_dma] = _magic;
-                            }
-
-#endif
-
-                            DMA_TRANS(rt_dma,out);
-                            bBufFilled = MTRUE;
-                            if(pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].bFilled != ISP_RTBC_BUF_FILLED){
-                                bBufFilled = MFALSE;
-                            }
-                            pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf+i].bFilled = ISP_RTBC_BUF_LOCKED;
-                            deque_buf.sof_cnt = sof_count[out];
-                            deque_buf.img_cnt = pstRTBuf_FrmB->ring_buf[rt_dma].img_cnt;
-                            spin_unlock_irqrestore(&(IspInfo_FrmB.SpinLockIrq[irqT_Lock]), flags);
-                            IRQ_LOG_PRINTER(irqT,0,_LOG_DBG);
+                        if ( (_INVALID_FRM_CNT_ == deque_buf.data[0].image.frm_cnt) || \
+                             (m_LastMNum[rt_dma] > _magic) ) {
                             //
-                            if(MFALSE == bBufFilled){
-                                LOG_ERR("deque buf:d(%d) is not filled.", rt_dma);
-                            }
-                            //LOG_INF("RTBC_DBG7 d_dma_%d:%d %d %d\n",rt_dma,pstRTBuf_FrmB->ring_buf[rt_dma].data[0].bFilled,pstRTBuf_FrmB->ring_buf[rt_dma].data[1].bFilled,pstRTBuf_FrmB->ring_buf[rt_dma].data[2].bFilled);
-                            if(IspInfo_FrmB.DebugMask & ISP_DBG_BUF_CTRL) {
-                                LOG_DBG("[rtbc][DEQUE](%d):d(%d)/id(0x%x)/bs(0x%x)/va(0x%x)/pa(0x%x)/t(%d.%d)/img(%d,%d,%d,%d,%d,%d,%d,%d)/m(0x%x)/fc(%d)/hrz(%d,%d,%d,%d,%d,%d),dmao(%d,%d,%d,%d),lm#(0x%x)", \
-                                    iBuf+i,\
-                                    rt_dma, \
-                                    deque_buf.data[i].memID, \
-                                    deque_buf.data[i].size, \
-                                    deque_buf.data[i].base_vAddr, \
-                                    deque_buf.data[i].base_pAddr, \
-                                    deque_buf.data[i].timeStampS, \
-                                    deque_buf.data[i].timeStampUs, \
-                                    deque_buf.data[i].image.w, \
-                                    deque_buf.data[i].image.h, \
-                                    deque_buf.data[i].image.stride, \
-                                    deque_buf.data[i].image.fmt, \
-                                    deque_buf.data[i].image.wbn, \
-                                    deque_buf.data[i].image.ob, \
-                                    deque_buf.data[i].image.lsc, \
-                                    deque_buf.data[i].image.rpg, \
-                                    deque_buf.data[i].image.m_num_0, \
-                                    deque_buf.data[i].image.frm_cnt, \
-                                    deque_buf.data[i].HrzInfo.srcX, \
-                                    deque_buf.data[i].HrzInfo.srcY, \
-                                    deque_buf.data[i].HrzInfo.srcW, \
-                                    deque_buf.data[i].HrzInfo.srcH, \
-                                    deque_buf.data[i].HrzInfo.dstW,\
-                                    deque_buf.data[i].HrzInfo.dstH,\
-                                    deque_buf.data[i].dmaoCrop.x,\
-                                    deque_buf.data[i].dmaoCrop.y,\
-                                    deque_buf.data[i].dmaoCrop.w,\
-                                    deque_buf.data[i].dmaoCrop.h,\
+                            if((_DUMMY_MAGIC_ & deque_buf.data[0].image.m_num_0) == 0)
+                                deque_buf.data[0].image.m_num_0 |= _UNCERTAIN_MAGIC_NUM_FLAG_;
+                            //
+                            IRQ_LOG_KEEPER(irqT,0,_LOG_DBG,"m# uncertain:dma(%d),m0(0x%x),fcnt(0x%x),Lm#(0x%x)", \
+                                    rt_dma,
+                                    deque_buf.data[0].image.m_num_0,\
+                                    deque_buf.data[0].image.frm_cnt,\
                                     m_LastMNum[rt_dma]);
-
-
-                            //
-#if 0
-                                LOG_DBG("[rtbc][DEQUE]:D(%d),TStamp\"%d.%06d\",o(0x%08x),2o(0x%08x),i(%d),VA(0x%x),PA(0x%x),O(0x%x),2O(0x%x)", \
-                                    rt_dma, \
-                                    deque_buf.data[i].timeStampS, \
-                                    deque_buf.data[i].timeStampUs, \
-                                    p1_fbc[_imgo_], \
-                                    p1_fbc[_img2o_], \
-                                    iBuf+i, \
-                                    deque_buf.data[i].base_vAddr, \
-                                    deque_buf.data[i].base_pAddr, \
-                                    ISP_RD32(ISP_REG_ADDR_IMGO_BASE_ADDR), \
-                                    ISP_RD32(ISP_REG_ADDR_IMG2O_BASE_ADDR));
-#endif
-                            }
-                            //
-                            //tstamp = deque_buf.data[i].timeStampS*1000000+deque_buf.data[i].timeStampUs;
-                            //if ( (0 != prv_tstamp) && (prv_tstamp >= tstamp) ) {
-                            if ( 0 != prv_tstamp_s[rt_dma] ) {
-                                if ( ( prv_tstamp_s[rt_dma] > deque_buf.data[i].timeStampS) ||
-                                     ( (prv_tstamp_s[rt_dma] == deque_buf.data[i].timeStampS)&&(prv_tstamp_us[rt_dma] >= deque_buf.data[i].timeStampUs) ) ) {
-                                    LOG_ERR("[rtbc]TS rollback,D(%d),prv\"%d.%06d\",cur\"%d.%06d\"",rt_dma,(int)(prv_tstamp_s),(int)(prv_tstamp_us),(int)(deque_buf.data[i].timeStampS),(int)(deque_buf.data[i].timeStampUs));
-                                    ISP_DumpReg_FrmB();
+#ifdef T_STAMP_2_0
+                            if(m_T_STAMP.fps > SlowMotion){//patch here is because of that uncertain should happen only in missing SOF. And because of FBC, image still can be deque. That's why  timestamp still need to be increased here.
+                                m_T_STAMP.T_ns += ((unsigned long long)m_T_STAMP.interval_us*1000);
+                                if(++m_T_STAMP.fcnt  == m_T_STAMP.fps){
+                                    m_T_STAMP.fcnt = 0;
+                                    m_T_STAMP.T_ns += ((unsigned long long)m_T_STAMP.compensation_us*1000);
                                 }
                             }
-                            prv_tstamp_s[rt_dma] = deque_buf.data[i].timeStampS;
-                            prv_tstamp_us[rt_dma] = deque_buf.data[i].timeStampUs;
+#endif
                         }
+                        else {
+                            m_LastMNum[rt_dma] = _magic;
+                        }
+
+#endif
+
+                        DMA_TRANS(rt_dma,out);
+                        bBufFilled = MTRUE;
+                        if(pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].bFilled != ISP_RTBC_BUF_FILLED){
+                            bBufFilled = MFALSE;
+                        }
+                        pstRTBuf_FrmB->ring_buf[rt_dma].data[iBuf].bFilled = ISP_RTBC_BUF_LOCKED;
+                        deque_buf.sof_cnt = sof_count[out];
+                        deque_buf.img_cnt = pstRTBuf_FrmB->ring_buf[rt_dma].img_cnt;
+                        spin_unlock_irqrestore(&(IspInfo_FrmB.SpinLockIrq[irqT_Lock]), flags);
+                        IRQ_LOG_PRINTER(irqT,0,_LOG_DBG);
+                        //
+                        if(MFALSE == bBufFilled){
+                            LOG_ERR("deque buf:d(%d) is not filled.", rt_dma);
+                        }
+                        //LOG_INF("RTBC_DBG7 d_dma_%d:%d %d %d\n",rt_dma,pstRTBuf_FrmB->ring_buf[rt_dma].data[0].bFilled,pstRTBuf_FrmB->ring_buf[rt_dma].data[1].bFilled,pstRTBuf_FrmB->ring_buf[rt_dma].data[2].bFilled);
+                        if(IspInfo_FrmB.DebugMask & ISP_DBG_BUF_CTRL) {
+                            LOG_DBG("[rtbc][DEQUE](%d):d(%d)/id(0x%x)/bs(0x%x)/va(0x%x)/pa(0x%x)/t(%d.%d)/img(%d,%d,%d,%d,%d,%d,%d,%d)/m(0x%x)/fc(%d)/hrz(%d,%d,%d,%d,%d,%d),dmao(%d,%d,%d,%d),lm#(0x%x)", \
+                                iBuf,\
+                                rt_dma, \
+                                deque_buf.data[0].memID, \
+                                deque_buf.data[0].size, \
+                                deque_buf.data[0].base_vAddr, \
+                                deque_buf.data[0].base_pAddr, \
+                                deque_buf.data[0].timeStampS, \
+                                deque_buf.data[0].timeStampUs, \
+                                deque_buf.data[0].image.w, \
+                                deque_buf.data[0].image.h, \
+                                deque_buf.data[0].image.stride, \
+                                deque_buf.data[0].image.fmt, \
+                                deque_buf.data[0].image.wbn, \
+                                deque_buf.data[0].image.ob, \
+                                deque_buf.data[0].image.lsc, \
+                                deque_buf.data[0].image.rpg, \
+                                deque_buf.data[0].image.m_num_0, \
+                                deque_buf.data[0].image.frm_cnt, \
+                                deque_buf.data[0].HrzInfo.srcX, \
+                                deque_buf.data[0].HrzInfo.srcY, \
+                                deque_buf.data[0].HrzInfo.srcW, \
+                                deque_buf.data[0].HrzInfo.srcH, \
+                                deque_buf.data[0].HrzInfo.dstW,\
+                                deque_buf.data[0].HrzInfo.dstH,\
+                                deque_buf.data[0].dmaoCrop.x,\
+                                deque_buf.data[0].dmaoCrop.y,\
+                                deque_buf.data[0].dmaoCrop.w,\
+                                deque_buf.data[0].dmaoCrop.h,\
+                                m_LastMNum[rt_dma]);
+
+
+                        //
+#if 0
+                            LOG_DBG("[rtbc][DEQUE]:D(%d),TStamp\"%d.%06d\",o(0x%08x),2o(0x%08x),i(%d),VA(0x%x),PA(0x%x),O(0x%x),2O(0x%x)", \
+                                rt_dma, \
+                                deque_buf.data[0].timeStampS, \
+                                deque_buf.data[0].timeStampUs, \
+                                p1_fbc[_imgo_], \
+                                p1_fbc[_img2o_], \
+                                iBuf+i, \
+                                deque_buf.data[0].base_vAddr, \
+                                deque_buf.data[0].base_pAddr, \
+                                ISP_RD32(ISP_REG_ADDR_IMGO_BASE_ADDR), \
+                                ISP_RD32(ISP_REG_ADDR_IMG2O_BASE_ADDR));
+#endif
+                        }
+                        //
+                        //tstamp = deque_buf.data[0].timeStampS*1000000+deque_buf.data[0].timeStampUs;
+                        //if ( (0 != prv_tstamp) && (prv_tstamp >= tstamp) ) {
+                        if ( 0 != prv_tstamp_s[rt_dma] ) {
+                            if ( ( prv_tstamp_s[rt_dma] > deque_buf.data[0].timeStampS) ||
+                                 ( (prv_tstamp_s[rt_dma] == deque_buf.data[0].timeStampS)&&(prv_tstamp_us[rt_dma] >= deque_buf.data[0].timeStampUs) ) ) {
+                                LOG_ERR("[rtbc]TS rollback,D(%d),prv\"%d.%06d\",cur\"%d.%06d\"",rt_dma,(int)(prv_tstamp_s),(int)(prv_tstamp_us),(int)(deque_buf.data[0].timeStampS),(int)(deque_buf.data[0].timeStampUs));
+                                ISP_DumpReg_FrmB();
+                            }
+                        }
+                        prv_tstamp_s[rt_dma] = deque_buf.data[0].timeStampS;
+                        prv_tstamp_us[rt_dma] = deque_buf.data[0].timeStampUs;
 
 #if 0
 LOG_DBG("+LARB in DEQUE,BWL(0x%08X)/(0x%08X)/(0x%08X)/(0x%08X),220(0x%08X)/(0x%08X),0x14(0x%08X)/(0x%08X)/(0x%08X)/(0x%08X)/(0x%08X)", \
@@ -3710,8 +3717,6 @@ static MINT32 ISP_REGISTER_IRQ_USERKEY(char* userName)
     char m_UserName[USERKEY_STR_LEN];//local veriable for saving Username from user space
     MBOOL bCopyFromUser = MTRUE;
 
-    spin_lock(&SpinLock_UserKey);
-
     if(NULL == userName){
         LOG_ERR(" [regUser] userName is NULL\n");
     }else{
@@ -3730,6 +3735,7 @@ static MINT32 ISP_REGISTER_IRQ_USERKEY(char* userName)
 
         if(MTRUE == bCopyFromUser)
         {
+            spin_lock(&SpinLock_UserKey);
             //check String length, add end
             if(length == USERKEY_STR_LEN) //string length too long
             {
@@ -3768,13 +3774,13 @@ static MINT32 ISP_REGISTER_IRQ_USERKEY(char* userName)
                     FirstUnusedIrqUserKey++;
                 }
             }
+            spin_unlock(&SpinLock_UserKey);
         }
         else
         {
             LOG_ERR(" [regUser] copy_from_user failed (%d)\n", i);
         }
     }
-    spin_unlock(&SpinLock_UserKey);
     return key;
 }
 
