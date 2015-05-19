@@ -7,10 +7,10 @@
 * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See the GNU General Public License for more details.
- *
+*
 * You should have received a copy of the GNU General Public License along with this program.
 * If not, see <http://www.gnu.org/licenses/>.
- */
+*/
 
 #include <linux/i2c.h>
 #include <linux/delay.h>
@@ -58,56 +58,68 @@ extern int mt_set_gpio_dir(unsigned long pin, unsigned long dir);*/
   ************************************************************/
 static s16 s4RUMBAAF_ReadReg( u16 RamAddr, u8 *RegData )
 {
+    s16 ret = 0;
     u8 pBuff[2] = {(u8)(RamAddr >> 8) , (u8)(RamAddr & 0xFF)};
     g_pstGAF002AF_I2Cclient->addr = (0x48 >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, pBuff, 2) < 0 )
     {
         GAF002AFDB("[RUMBAAF] read I2C send failed!!\n");
-        return -1;
+        ret = -1;
     }
 
     GAF002AFDB("[RUMBAAFDB]I2C r (%x %x) \n",RamAddr,*RegData);
     if (i2c_master_recv(g_pstGAF002AF_I2Cclient, (u8*)RegData, 1) != 1)
     {
         GAF002AFDB("[RUMBAAF] I2C read failed!! \n");
-        return  -1;
+        ret = -1;
     }
-    return 0;
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
+    return ret;
 }
 
 static s16 s4RUMBAAF_WriteReg(u16 a_u2Add, u16 a_u2Data)
 {
+    s16 ret = 0;
     u8 puSendCmd[3] = {(u8)(a_u2Add>>8), (u8)(a_u2Add&0xFF), (u8)(a_u2Data&0xFF)};
     g_pstGAF002AF_I2Cclient->addr = (0x48 >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, puSendCmd, 3) < 0)
     {
         GAF002AFDB("[RUMBAAF] I2C send failed!! %d\n",a_u2Add);
-        return -1;
+        ret = -1;
     }
-    return 0;
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
+    return ret;
 }
 
 static s16 s4RUMBAAF_WriteReg2(u16 a_u2Add, u16 a_u2Data)
 {
+    s16 ret = 0;
     u8 puSendCmd[4] = {(u8)(a_u2Add>>8), (u8)(a_u2Add&0xFF), (u8)(a_u2Data>>8), (u8)(a_u2Data&0xFF)};
     g_pstGAF002AF_I2Cclient->addr = (0x48 >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, puSendCmd, 4) < 0)
     {
         GAF002AFDB("[RUMBAAF] I2C send failed!! %d\n",a_u2Add);
-        return -1;
+        ret = -1;
     }
-    return 0;
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
+    return ret;
 }
 static s16 s4RUMBAAF_SrWriteReg(u16 a_u2Add, u16 a_u2Data)
 {
+    s16 ret = 0;
     u8 puSendCmd[3] = { (u8)(a_u2Add>>8),  (u8)(a_u2Add&0xFF),(u8)(a_u2Data&0xFF) };
     g_pstGAF002AF_I2Cclient->addr = (0x20 >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, puSendCmd, 3) < 0)
     {
         GAF002AFDB("[RUMBAAF] I2C sr send failed!! 1\n");
-        return -1;
+        ret = -1;
     }
-    return 0;
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
+    return ret;
 }
 
 
@@ -116,55 +128,67 @@ static s16 s4RUMBAAF_SrWriteReg(u16 a_u2Add, u16 a_u2Data)
   ************************************************************/
 static s16 s4DW9714AF_ReadReg(u16 * a_pu2Result)
 {
+    s16 ret = 0;
     u8 pBuff[2];
     g_pstGAF002AF_I2Cclient->addr = (0x18 >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_recv(g_pstGAF002AF_I2Cclient, pBuff , 2) < 0)
     {
         GAF002AFDB("[DW9714AF] I2C read failed!! \n");
-        return -1;
+        ret = -1;
     }
     *a_pu2Result = (((u16)pBuff[0]) << 4) + (u16)(pBuff[1] >> 4);
-    return 0;
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
+    return ret;
 }
 
 static s16 s4FM50AF_ReadReg(u16 * a_pu2Result)
 {
+    s16 ret = 0;
     u8 pBuff[2];
     g_pstGAF002AF_I2Cclient->addr = (0x18 >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_recv(g_pstGAF002AF_I2Cclient, pBuff , 2) < 0)
     {
         GAF002AFDB("[FM50AF] I2C read failed!! \n");
-        return -1;
+        ret = -1;
     }
     *a_pu2Result = (((u16)pBuff[0]) << 4) + (u16)(pBuff[1] >> 4);
-    return 0;
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
+    return ret;
 }
 static s16 s4BU6424AF_ReadReg(u16 * a_pu2Result)
 {
+    s16 ret = 0;
     u8 pBuff[2];
    /* mt_set_gpio_mode(GPIO_CAMERA_AF_EN_PIN,GPIO_MODE_00);
     mt_set_gpio_dir(GPIO_CAMERA_AF_EN_PIN,GPIO_DIR_OUT);
     mt_set_gpio_out(GPIO_CAMERA_AF_EN_PIN,1);*/
     g_pstGAF002AF_I2Cclient->addr = (0x18 >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_recv(g_pstGAF002AF_I2Cclient, pBuff , 2) < 0)
     {
         GAF002AFDB("[BU6424AF]I2C read failed!! \n");
-        return -1;
+        ret = -1;
     }
     *a_pu2Result = (((u16)(pBuff[0] & 0x03)) << 8) + (u16)pBuff[1];
-    return 0;
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
+    return ret;
 }
 static s16 s4BU6429AF_ReadReg(u16 * a_pu2Result)
 {
+    s16 ret = 0;
     u8 pBuff[2];
     g_pstGAF002AF_I2Cclient->addr = (0x18 >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_recv(g_pstGAF002AF_I2Cclient, pBuff , 2) < 0)
     {
         GAF002AFDB("[BU6429AF] I2C read failed!! \n");
-        return -1;
+        ret = -1;
     }
     *a_pu2Result = (((u16)pBuff[0]) << 4) + (u16)(pBuff[1] >> 4);
-    return 0;
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
+    return ret;
 }
 static s16 s4AD5823AF_ReadReg(u16 * a_pu2Result)
 {
@@ -176,29 +200,35 @@ static s16 s4DW9718AF_ReadPosition(u16 * a_pu2Result)
     u8 pBuff2 = 0x03;
     u8 RegData1=0, RegData2=0;
     g_pstGAF002AF_I2Cclient->addr = (0x18 >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, &pBuff1, 1) < 0 )
     {
         GAF002AFDB("[DW9718AF] read I2C send failed!!\n");
+        g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
         return -1;
     }
     if (i2c_master_recv(g_pstGAF002AF_I2Cclient, &RegData1, 1) != 1)
     {
         GAF002AFDB("[DW9718AF] I2C read failed!! \n");
+        g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
         return  -1;
     }
 
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, &pBuff2, 1) < 0 )
     {
         GAF002AFDB("[DW9718AF] read I2C send failed!!\n");
+        g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
         return -1;
     }
 
     if (i2c_master_recv(g_pstGAF002AF_I2Cclient, &RegData2, 1) != 1)
     {
         GAF002AFDB("[DW9718AF] I2C read failed!! \n");
+        g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
         return  -1;
     }
     *a_pu2Result= (((u16)RegData1)<<8) +  (u16)(RegData2);
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
     return 0;
 }
 
@@ -232,30 +262,37 @@ static s16 s4OV8825AF_ReadPosition(u16 *a_pu2Result)
     u8 pBuff2[2] = {0x36, 0x19};
     u8 RegData1=0, RegData2=0;
     g_pstGAF002AF_I2Cclient->addr = (0x6c >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, pBuff1, 2) < 0 )
     {
         GAF002AFDB("[OV8825AF] read I2C send failed!!\n");
+        g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
         return -1;
     }
     if (i2c_master_recv(g_pstGAF002AF_I2Cclient, &RegData1, 1) != 1)
     {
         GAF002AFDB("[OV8825AF] I2C read failed!! \n");
+        g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
         return  -1;
     }
 
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, pBuff2, 2) < 0 )
     {
         GAF002AFDB("[OV8825AF] read I2C send failed!!\n");
+        g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
         return -1;
     }
 
     if (i2c_master_recv(g_pstGAF002AF_I2Cclient, &RegData2, 1) != 1)
     {
         GAF002AFDB("[OV8825AF] I2C read failed!! \n");
+        g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
         return  -1;
     }
 
     *a_pu2Result= ((u16)RegData1 +  (((u16)RegData2)<<8))>>4;
+
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
 
     return 0;
 }
@@ -267,64 +304,78 @@ static s16 s4OV8825AF_ReadPosition(u16 *a_pu2Result)
   ************************************************************/
 static s16 s4DW9718AF_WriteReg(u16 a_u2Data)
 {
+    s16 ret = 0;
     u8 puSendCmd[3] = {0x02,(u8)(a_u2Data >> 8) , (u8)(a_u2Data & 0xFF)};
     g_pstGAF002AF_I2Cclient->addr = (0x18 >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, puSendCmd, 3) < 0)
     {
         GAF002AFDB("[DW9718AF] I2C send failed!! \n");
-        return -1;
+        ret = -1;
     }
-    return 0;
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
+    return ret;
 }
 
 static s16 s4DW9714AF_WriteReg(u16 a_u2Data)
 {
+    s16 ret = 0;
     u8 puSendCmd[2] = {(u8)(a_u2Data >> 4) , (u8)((a_u2Data & 0xF) << 4)};
     g_pstGAF002AF_I2Cclient->addr = (0x18 >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, puSendCmd, 2) < 0)
     {
         GAF002AFDB("[DW9714AF] I2C send failed!!\n");
-        return -1;
+        ret = -1;
     }
-    return 0;
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
+    return ret;
 }
 static s16 s4FM50AF_WriteReg(u16 a_u2Data)
 {
-
+    s16 ret = 0;
     u8 puSendCmd[2] = {(u8)(a_u2Data >> 4) , (u8)(((a_u2Data & 0xF) << 4)+3)};
     g_pstGAF002AF_I2Cclient->addr = (0x18 >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, puSendCmd, 2) < 0)
     {
         GAF002AFDB("[FM50AF] I2C send failed!! \n");
-        return -1;
+        ret = -1;
     }
-    return 0;
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
+    return ret;
 }
 
 static s16 s4BU6424AF_WriteReg(u16 a_u2Data)
 {
+    s16 ret = 0;
     u8 puSendCmd[2] = {(u8)(((a_u2Data >> 8) & 0x03) | 0xc0), (u8)(a_u2Data & 0xff)};
     /*mt_set_gpio_mode(GPIO_CAMERA_AF_EN_PIN,GPIO_MODE_00);
     mt_set_gpio_dir(GPIO_CAMERA_AF_EN_PIN,GPIO_DIR_OUT);
     mt_set_gpio_out(GPIO_CAMERA_AF_EN_PIN,1);*/
     g_pstGAF002AF_I2Cclient->addr = (0x18 >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, puSendCmd, 2) < 0)
     {
         GAF002AFDB("[BU6424AF]I2C send failed!! \n");
-        return -1;
+        ret = -1;
     }
-    return 0;
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
+    return ret;
 }
 static s16 s4BU6429AF_WriteReg(u16 a_u2Data)
 {
+    s16 ret = 0;
     u8 puSendCmd[2] = {(u8)(((a_u2Data >> 8) & 0x03) | 0xF4), (u8)(a_u2Data & 0xFF)};
     g_pstGAF002AF_I2Cclient->addr = (0x18 >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, puSendCmd, 2) < 0)
     {
         GAF002AFDB("[BU6429AF] I2C send failed!! \n");
-        return -1;
+        ret = -1;
     }
-    return 0;
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
+    return ret;
 }
 
 static s16 s4AD5823AF_WriteReg(u16 a_u2Data)
@@ -332,16 +383,20 @@ static s16 s4AD5823AF_WriteReg(u16 a_u2Data)
     u8 VCMMSB[2] = {(u8)(0x04) , (u8)((a_u2Data >>8)&0x03)};
     u8 VCMLSB[2] = {(u8)(0x05) , (u8)(a_u2Data & 0xFF)};
     g_pstGAF002AF_I2Cclient->addr = (0x18 >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, VCMMSB, 2) < 0)
     {
         GAF002AFDB("[AD5823] I2C send failed!! \n");
+        g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
         return -1;
     }
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, VCMLSB, 2) < 0)
     {
         GAF002AFDB("[AD5823] I2C send failed!! \n");
+        g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
         return -1;
     }
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
     return 0;
 }
 
@@ -358,16 +413,20 @@ static s16 s4OV8825AF_WritePosition(u16 a_u2Data)
     u8 puSendCmd2[3] = {0x36, 0x18, (u8)(temp&0xFF)};   //(0x3618,temp&0xff);
 
     g_pstGAF002AF_I2Cclient->addr = (0x6c >> 1);
+    g_pstGAF002AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, puSendCmd1, 3) < 0)
     {
         GAF002AFDB("[OV8825AF] I2C sr send failed!! 1\n");
+        g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
         return -1;
     }
     if (i2c_master_send(g_pstGAF002AF_I2Cclient, puSendCmd2, 3) < 0)
     {
         GAF002AFDB("[OV8825AF] I2C sr send failed!! 1\n");
+        g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
         return -1;
     }
+    g_pstGAF002AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
     return 0;
 }
 
@@ -460,7 +519,7 @@ static s16 s4AF_WritePosition(u16 a_u2Data)
 /***********************************************************
   init action
   ************************************************************/
-static s16 s4RUMBAAF_init()
+static s16 s4RUMBAAF_init(void)
 {
     //power on OIS
     GAF002AFDB("[RUMBAAF] init \n");
@@ -478,7 +537,7 @@ static s16 s4RUMBAAF_init()
   uninit action
   ************************************************************/
 
-static s16 s4RUMBAAF_uninit()
+static s16 s4RUMBAAF_uninit(void)
 {
     GAF002AFDB("[RUMBAAF] feee \n");
     s4RUMBAAF_WriteReg2(0x0062, 200 );
@@ -498,7 +557,7 @@ static s16 s4RUMBAAF_uninit()
 /***********************************************************
   do init /uninit driver
   ************************************************************/
-static s16 s4AF_init()
+static s16 s4AF_init(void)
 {
     switch(gAF_drvID)
     {
@@ -520,7 +579,7 @@ static s16 s4AF_init()
     }
     return 0;
 }
-static s16 s4AF_uninit()
+static s16 s4AF_uninit(void)
 {
     switch(gAF_drvID)
     {

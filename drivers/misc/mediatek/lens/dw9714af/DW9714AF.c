@@ -51,9 +51,9 @@ static int s4DW9714AF_ReadReg(unsigned short *a_pu2Result)
 	int i4RetValue = 0;
 	char pBuff[2];
 	g_pstDW9714AF_I2Cclient->addr = (0x18 >> 1);
-
+	g_pstDW9714AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
 	i4RetValue = i2c_master_recv(g_pstDW9714AF_I2Cclient, pBuff, 2);
-
+	g_pstDW9714AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
 	if (i4RetValue < 0) {
 		DW9714AFDB("[DW9714AF] I2C read failed!!\n");
 		return -1;
@@ -70,8 +70,9 @@ static int s4DW9714AF_WriteReg(u16 a_u2Data)
 
 	char puSendCmd[2] = { (char)(a_u2Data >> 4), (char)((a_u2Data & 0xF) << 4) };
 	g_pstDW9714AF_I2Cclient->addr = (0x18 >> 1);
-	/* g_pstDW9714AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG; */
+	g_pstDW9714AF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
 	i4RetValue = i2c_master_send(g_pstDW9714AF_I2Cclient, puSendCmd, 2);
+	g_pstDW9714AF_I2Cclient->ext_flag &= ~I2C_A_FILTER_MSG;
 	if (i4RetValue < 0) {
 		DW9714AFDB("[DW9714AF]1 I2C send failed!! 1\n");
 		return -1;
