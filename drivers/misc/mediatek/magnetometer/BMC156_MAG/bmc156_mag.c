@@ -4118,7 +4118,7 @@ static void bmm050_late_resume(struct early_suspend *h)
 #endif /*CONFIG_HAS_EARLYSUSPEND*/
 /*----------------------------------------------------------------------------*/
 #define BMM_MAX_RETRY_WAKEUP (5)
-#define BMM_I2C_WRITE_DELAY_TIME (1)
+#define BMM_I2C_WRITE_DELAY_TIME (5)
 static int bmm050_wakeup(struct i2c_client *client)
 {
     int err = 0;
