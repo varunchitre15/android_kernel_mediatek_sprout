@@ -113,8 +113,8 @@ static void mt_hotplug_mechanism_early_suspend(struct early_suspend *h)
     if (!g_enable_cpu_rush_boost)
     {
     #ifdef CONFIG_CPU_FREQ_GOV_HOTPLUG
-        g_prev_cpu_rush_boost_enable = hp_get_cpu_rush_boost_enable();
-        hp_set_cpu_rush_boost_enable(0);
+     //   g_prev_cpu_rush_boost_enable = hp_get_cpu_rush_boost_enable();
+     //   hp_set_cpu_rush_boost_enable(0);
     #endif //#ifdef CONFIG_CPU_FREQ_GOV_HOTPLUG
     }
     
@@ -141,7 +141,7 @@ static void mt_hotplug_mechanism_late_resume(struct early_suspend *h)
     if (!g_enable_cpu_rush_boost)
     {
     #ifdef CONFIG_CPU_FREQ_GOV_HOTPLUG
-        hp_set_cpu_rush_boost_enable(g_prev_cpu_rush_boost_enable);
+     //   hp_set_cpu_rush_boost_enable(g_prev_cpu_rush_boost_enable);
     #endif //#ifdef CONFIG_CPU_FREQ_GOV_HOTPLUG
     }
     
@@ -179,8 +179,8 @@ static int mt_hotplug_mechanism_suspend(struct platform_device *pdev, pm_message
     if (!g_enable_dynamic_cpu_hotplug_at_suspend)
     {
     #ifdef CONFIG_CPU_FREQ_GOV_HOTPLUG
-        g_prev_dynamic_cpu_hotplug_enable = hp_get_dynamic_cpu_hotplug_enable();
-        hp_set_dynamic_cpu_hotplug_enable(0);
+    //    g_prev_dynamic_cpu_hotplug_enable = hp_get_dynamic_cpu_hotplug_enable();
+     //   hp_set_dynamic_cpu_hotplug_enable(0);
     #endif //#ifdef CONFIG_CPU_FREQ_GOV_HOTPLUG
     }
     
@@ -202,7 +202,7 @@ static int mt_hotplug_mechanism_resume(struct platform_device *pdev)
     if (!g_enable_dynamic_cpu_hotplug_at_suspend)
     {
     #ifdef CONFIG_CPU_FREQ_GOV_HOTPLUG
-        hp_set_dynamic_cpu_hotplug_enable(g_prev_dynamic_cpu_hotplug_enable);
+    //    hp_set_dynamic_cpu_hotplug_enable(g_prev_dynamic_cpu_hotplug_enable);
     #endif //#ifdef CONFIG_CPU_FREQ_GOV_HOTPLUG
     }
     
