@@ -76,6 +76,7 @@ static struct i2c_board_info __initdata i2c_devs1={I2C_BOARD_INFO(CAMERA_HW_DRVN
 
 #define SENSOR_RD32(addr)          ioread32(addr)
 #define SENSOR_WR32(addr, data)    iowrite32(data, addr)
+unsigned int gDrvIndex = 0;
 /*******************************************************************************
 * Proifling
 ********************************************************************************/
@@ -675,7 +676,7 @@ int kdSetDriver(unsigned int* pDrvIndex)
 
     PK_XLOG_INFO("pDrvIndex:0x%08x/0x%08x \n",pDrvIndex[KDIMGSENSOR_INVOKE_DRIVER_0],pDrvIndex[KDIMGSENSOR_INVOKE_DRIVER_1]);
     //set driver for MAIN or SUB sensor
-
+    gDrvIndex = pDrvIndex[KDIMGSENSOR_INVOKE_DRIVER_0];
     if (0 != kdGetSensorInitFuncList(&pSensorList))
     {
         PK_ERR("ERROR:kdGetSensorInitFuncList()\n");

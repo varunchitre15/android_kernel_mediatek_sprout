@@ -1827,6 +1827,9 @@ static void OV5648MIPI_Capture_Setting(void)
 *
 *************************************************************************/
 extern unsigned int g_para_version;
+extern char g_para_model[32];
+extern unsigned int gDrvIndex;
+
 UINT32 OV5648MIPITrulyOpen(void)
 {
     kal_uint16 sensor_id = 0;
@@ -1943,17 +1946,30 @@ static UINT32 OV5648GetSensorID(UINT32 *sensorID)
     }
     else
     {
-        /* GPIO_MAIN_CAM_ID_PIN	AC11(GPIO17) 0x80000011*/
-        /* Sunny(1), Truly(0)*/
-        unsigned int hw_id;
-        hw_id=mt_get_gpio_in(GPIO_MAIN_CAM_ID_PIN); // GPIO 19
-        mdelay(1);
-        SENSORDB("OV5648 hw_id:%x \n",hw_id);
-        if(hw_id != 0x00){
-            *sensorID = 0xFFFFFFFF;
-            SENSORDB("This is not truly ov5648: module_id = 0x%x ", hw_id);
-            return ERROR_SENSOR_CONNECT_FAIL;
+        SENSORDB("OV5648(index:%x), ParaName=%s\n",gDrvIndex >> 16, g_para_model);
+        if(0 == strcmp("BOARD_D3062", g_para_model))/*Only for Model "BOARD_D3062"*/
+        {
+            if((gDrvIndex >> 16)!= 0x02)
+            {
+                *sensorID = 0xFFFFFFFF;
+                SENSORDB("This is not truly ov5648: module_id = 0x%x ", gDrvIndex >> 16);
+                return ERROR_SENSOR_CONNECT_FAIL;
+            }
         }
+        else{
+            /* GPIO_MAIN_CAM_ID_PIN	AC11(GPIO17) 0x80000011*/
+            /* Sunny(1), Truly(0)*/
+            unsigned int hw_id;
+            hw_id=mt_get_gpio_in(GPIO_MAIN_CAM_ID_PIN); // GPIO 19
+            mdelay(1);
+            SENSORDB("OV5648 hw_id:%x \n",hw_id);
+            if(hw_id != 0x00){
+                *sensorID = 0xFFFFFFFF;
+                SENSORDB("This is not truly ov5648: module_id = 0x%x ", hw_id);
+                return ERROR_SENSOR_CONNECT_FAIL;
+            }
+        }
+
     }
     *sensorID +=0x02;
     SENSORDB("This is  truly ov5648, sensorID = 0x%x ", *sensorID);
