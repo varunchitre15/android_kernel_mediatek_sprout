@@ -3394,7 +3394,7 @@ UINT32 DSI_dcs_read_lcm_reg(UINT8 cmd)
 }
 
 /// return value: the data length we got
-UINT32 DSI_dcs_read_lcm_reg_v2(UINT8 cmd, UINT8 *buffer, UINT8 buffer_size)
+UINT32 DSI_dcs_read_lcm_reg_v2(UINT8 cmd, UINT8 *buffer, UINT8 buffer_size, UINT8 polling)
 {
     UINT32 max_try_count = 5;
     UINT32 recv_data_cnt;
@@ -3461,59 +3461,63 @@ UINT32 DSI_dcs_read_lcm_reg_v2(UINT8 cmd, UINT8 *buffer, UINT8 buffer_size)
        /// 3: wait for CMDQ_DONE
        /// 3: read data
 #if ENABLE_DSI_INTERRUPT
-       ret = wait_event_interruptible_timeout(_dsi_dcs_read_wait_queue,
+       if (polling == 0)
+       {
+           ret = wait_event_interruptible_timeout(_dsi_dcs_read_wait_queue,
                                                        !_IsEngineBusy(),
                                                        WAIT_TIMEOUT);
-        if (0 == ret) {
-            pr_warn("[DSI] Wait for DSI engine read ready timeout!!!\n");
+           if (0 == ret) {
+               pr_warn("[DSI] Wait for DSI engine read ready timeout!!!\n");
 
-                DSI_DumpRegisters();
+               DSI_DumpRegisters();
 
-                ///do necessary reset here
-                //DSI_REG->DSI_RACK.DSI_RACK = 1;
-                OUTREGBIT(DSI_RACK_REG,DSI_REG->DSI_RACK,DSI_RACK,1);
-                DSI_Reset();
+               ///do necessary reset here
+               //DSI_REG->DSI_RACK.DSI_RACK = 1;
+               OUTREGBIT(DSI_RACK_REG,DSI_REG->DSI_RACK,DSI_RACK,1);
+               DSI_Reset();
 
-                return 0;
-            }
-#else
-    #ifdef DDI_DRV_DEBUG_LOG_ENABLE
-    if(dsi_log_on)
-        pr_debug("[DSI] Start polling DSI read ready!!!\n");
-    #endif
-        while(DSI_REG->DSI_INTSTA.RD_RDY == 0)  ///read clear
-        {
-            ///keep polling
-            msleep(1);
-            read_timeout_ms --;
+               return 0;
+           }
+       }
+       else
+#endif
+       {
+#ifdef DDI_DRV_DEBUG_LOG_ENABLE
+           if(dsi_log_on)
+           pr_debug("[DSI] Start polling DSI read ready!!!\n");
+#endif
+           while(DSI_REG->DSI_INTSTA.RD_RDY == 0)  ///read clear
+           {
+               ///keep polling
+               mdelay(1);
+               read_timeout_ms --;
 
-            if(read_timeout_ms == 0)
-            {
-                pr_debug("[DSI] Polling DSI read ready timeout!!!\n");
-                DSI_DumpRegisters();
+               if(read_timeout_ms == 0)
+               {
+                   pr_debug("[DSI] Polling DSI read ready timeout!!!\n");
+                   DSI_DumpRegisters();
 
-                ///do necessary reset here
-                //DSI_REG->DSI_RACK.DSI_RACK = 1;
-                OUTREGBIT(DSI_RACK_REG,DSI_REG->DSI_RACK,DSI_RACK,1);
-                DSI_Reset();
-                return 0;
-            }
+                   ///do necessary reset here
+                   //DSI_REG->DSI_RACK.DSI_RACK = 1;
+                   OUTREGBIT(DSI_RACK_REG,DSI_REG->DSI_RACK,DSI_RACK,1);
+                   DSI_Reset();
+                   return 0;
+               }
         }
-    #ifdef DDI_DRV_DEBUG_LOG_ENABLE
-    if(dsi_log_on)
-        pr_debug("[DSI] End polling DSI read ready!!!\n");
-    #endif
+#ifdef DDI_DRV_DEBUG_LOG_ENABLE
+        if(dsi_log_on)
+            pr_debug("[DSI] End polling DSI read ready!!!\n");
+#endif
 
-        //DSI_REG->DSI_RACK.DSI_RACK = 1;
-        OUTREGBIT(DSI_RACK_REG,DSI_REG->DSI_RACK,DSI_RACK,1);
+       //DSI_REG->DSI_RACK.DSI_RACK = 1;
+       OUTREGBIT(DSI_RACK_REG,DSI_REG->DSI_RACK,DSI_RACK,1);
 
        ///clear interrupt status
        //DSI_REG->DSI_INTSTA.RD_RDY = 1;
        OUTREGBIT(DSI_INT_STATUS_REG,DSI_REG->DSI_INTSTA,RD_RDY,1);
        ///STOP DSI
        OUTREG32(&DSI_REG->DSI_START, 0);
-
-#endif
+       }
 
        //DSI_REG->DSI_INTEN.RD_RDY =  0;
        OUTREGBIT(DSI_INT_ENABLE_REG,DSI_REG->DSI_INTEN,RD_RDY,1);
@@ -3649,12 +3653,12 @@ DSI_STATUS DSI_read_lcm_fb(unsigned char *buffer)
    array[0] = 0x000A3700;// read size
    DSI_set_cmdq(array, 1, 1);
 
-   DSI_dcs_read_lcm_reg_v2(0x2E,buffer,10);
-   DSI_dcs_read_lcm_reg_v2(0x2E,buffer+10,10);
-   DSI_dcs_read_lcm_reg_v2(0x2E,buffer+10*2,10);
-   DSI_dcs_read_lcm_reg_v2(0x2E,buffer+10*3,10);
-   DSI_dcs_read_lcm_reg_v2(0x2E,buffer+10*4,10);
-   DSI_dcs_read_lcm_reg_v2(0x2E,buffer+10*5,10);
+   DSI_dcs_read_lcm_reg_v2(0x2E,buffer,10,0);
+   DSI_dcs_read_lcm_reg_v2(0x2E,buffer+10,10,0);
+   DSI_dcs_read_lcm_reg_v2(0x2E,buffer+10*2,10,0);
+   DSI_dcs_read_lcm_reg_v2(0x2E,buffer+10*3,10,0);
+   DSI_dcs_read_lcm_reg_v2(0x2E,buffer+10*4,10,0);
+   DSI_dcs_read_lcm_reg_v2(0x2E,buffer+10*5,10,0);
 #else
     // if read_fb not impl, should return info
     if(lcm_drv->read_fb)

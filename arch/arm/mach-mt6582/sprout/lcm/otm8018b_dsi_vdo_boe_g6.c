@@ -87,7 +87,7 @@ static unsigned char esdSwitch =  1;
 #define wrtie_cmd(cmd)                                        lcm_util.dsi_write_cmd(cmd)
 #define write_regs(addr, pdata, byte_nums)                    lcm_util.dsi_write_regs(addr, pdata, byte_nums)
 #define read_reg                                            lcm_util.dsi_read_reg()
-#define read_reg_V2(cmd, buffer, buffer_size)                lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)
+#define read_reg_V2(cmd, buffer, buffer_size)                lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size, 0)
 
 
 

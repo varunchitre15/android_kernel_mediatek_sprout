@@ -51,7 +51,7 @@ static LCM_UTIL_FUNCS lcm_util = {0};
 #define wrtie_cmd(cmd)                                        lcm_util.dsi_write_cmd(cmd)
 #define write_regs(addr, pdata, byte_nums)                    lcm_util.dsi_write_regs(addr, pdata, byte_nums)
 #define read_reg                                            lcm_util.dsi_read_reg()
-#define read_reg_v2(cmd, buffer, buffer_size)               lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)
+#define read_reg_v2(cmd, buffer, buffer_size)               lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size, 0)
 
 
 static struct LCM_setting_table lcm_initialization_setting[] = {

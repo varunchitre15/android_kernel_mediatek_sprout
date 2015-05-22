@@ -260,7 +260,7 @@ void DSI_write_lcm_cmd(unsigned int cmd);
 void DSI_write_lcm_regs(unsigned int addr, unsigned int *para, unsigned int nums);
 UINT32 DSI_read_lcm_reg(void);
 UINT32 DSI_dcs_read_lcm_reg(unsigned char);
-UINT32 DSI_dcs_read_lcm_reg_v2(UINT8 cmd, UINT8 *buffer, UINT8 buffer_size);
+UINT32 DSI_dcs_read_lcm_reg_v2(UINT8 cmd, UINT8 *buffer, UINT8 buffer_size, UINT8 polling);
 DSI_STATUS DSI_write_lcm_fb(unsigned int addr, bool long_length);
 DSI_STATUS DSI_read_lcm_fb(unsigned char *buffer);
 

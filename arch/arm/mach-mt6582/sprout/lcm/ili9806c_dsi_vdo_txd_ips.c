@@ -80,7 +80,7 @@ static unsigned int lcm_module_id = 0x0;
 #define wrtie_cmd(cmd)                                        lcm_util.dsi_write_cmd(cmd)
 #define write_regs(addr, pdata, byte_nums)                    lcm_util.dsi_write_regs(addr, pdata, byte_nums)
 #define read_reg(cmd)                                            lcm_util.dsi_dcs_read_lcm_reg(cmd)
-#define read_reg_v2(cmd, buffer, buffer_size)                   lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)
+#define read_reg_v2(cmd, buffer, buffer_size)                   lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size, 0)
 
 #define   LCM_DSI_CMD_MODE                            0
 

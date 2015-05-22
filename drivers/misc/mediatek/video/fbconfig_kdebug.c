@@ -41,7 +41,7 @@ BOOL fbconfig_start_LCM_config;
 #define FBCONFIG_MDELAY(n)	(fbconfig_lcm_utils.mdelay((n)))
 #define SET_RESET_PIN(v)	(fbconfig_lcm_utils.set_reset_pin((v)))
 #define dsi_set_cmdq(pdata, queue_size, force_update)		fbconfig_lcm_utils.dsi_set_cmdq(pdata, queue_size, force_update)
-#define read_reg_v2(cmd, buffer, buffer_size)   			fbconfig_lcm_utils.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size) 
+#define read_reg_v2(cmd, buffer, buffer_size)               fbconfig_lcm_utils.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size, 0)
 #define FBCONFIG_KEEP_NEW_SETTING 1
 #define FBCONFIG_DEBUG 0
 /* IOCTL commands. */

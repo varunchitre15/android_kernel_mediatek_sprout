@@ -594,7 +594,7 @@ typedef struct
     void (*dsi_write_regs)(unsigned int addr, unsigned int *para, unsigned int nums);
     unsigned int (*dsi_read_reg)(void);
     unsigned int (*dsi_dcs_read_lcm_reg)(unsigned char cmd);
-    unsigned int (*dsi_dcs_read_lcm_reg_v2)(unsigned char cmd, unsigned char *buffer, unsigned char buffer_size);
+    unsigned int (*dsi_dcs_read_lcm_reg_v2)(unsigned char cmd, unsigned char *buffer, unsigned char buffer_size, unsigned char mode);
     void (*wait_transfer_done)(void);
 
     /** FIXME: GPIO mode should not be configured in lcm driver
