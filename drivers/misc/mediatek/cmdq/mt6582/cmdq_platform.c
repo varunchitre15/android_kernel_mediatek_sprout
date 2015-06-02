@@ -247,25 +247,25 @@ void cmdq_core_enable_common_clock_locked_impl(bool enable)
 #ifdef CMDQ_PWR_AWARE
 
 	if (enable) {
-		CMDQ_LOG("[CLOCK] Enable CMDQ Clock\n");
+		CMDQ_VERBOSE("[CLOCK] Enable CMDQ Clock\n");
 		cmdq_core_enable_cmdq_clock_locked_impl(enable, CMDQ_DRIVER_DEVICE_NAME);
 
-		CMDQ_LOG("[CLOCK] Enable SMI & LARB0 Clock\n");
+		CMDQ_VERBOSE("[CLOCK] Enable SMI & LARB0 Clock\n");
 		enable_clock(MT_CG_DISP0_SMI_COMMON, "CMDQ_MDP");
 		enable_clock(MT_CG_DISP0_SMI_LARB0, "CMDQ_MDP");
 
-		CMDQ_LOG("[CLOCK] enable MT_CG_DISP0_MUTEX\n");
+		CMDQ_VERBOSE("[CLOCK] enable MT_CG_DISP0_MUTEX\n");
 		enable_clock(MT_CG_DISP0_MUTEX, "CMDQ_MDP");
 	} else {
-		CMDQ_LOG("[CLOCK] Disable CMDQ Clock\n");
+		CMDQ_VERBOSE("[CLOCK] Disable CMDQ Clock\n");
 		cmdq_core_enable_cmdq_clock_locked_impl(enable, CMDQ_DRIVER_DEVICE_NAME);
 
-		CMDQ_LOG("[CLOCK] Disable SMI & LARB0 Clock\n");
+		CMDQ_VERBOSE("[CLOCK] Disable SMI & LARB0 Clock\n");
 		/* disable, reverse the sequence */
 		disable_clock(MT_CG_DISP0_SMI_LARB0, "CMDQ_MDP");
 		disable_clock(MT_CG_DISP0_SMI_COMMON, "CMDQ_MDP");
 
-		CMDQ_LOG("[CLOCK] disable MT_CG_DISP0_MUTEX\n");
+		CMDQ_VERBOSE("[CLOCK] disable MT_CG_DISP0_MUTEX\n");
 		disable_clock(MT_CG_DISP0_MUTEX, "CMDQ_MDP");
 	}
 
