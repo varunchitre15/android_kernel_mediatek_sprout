@@ -2081,8 +2081,7 @@ static int __init cm36283_init(void)
 
     err = update_alsps_data();
     if (err < 0) {
-        APS_ERR("[%s] cm36283 update_alsps_data failed\n", __func__);
-        return err;
+        APS_LOG("[%s] cm36283 update_alsps_data failed. Use default\n", __func__);
     }
     hw = cm36283_get_cust_alsps_hw();
     if (hw != NULL) {
