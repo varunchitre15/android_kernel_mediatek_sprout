@@ -766,8 +766,8 @@ static void OV5648MIPI_Write_Shutter(kal_uint16 iShutter)
                 break;
         }
 
-        SENSORDB("AutoFlickerMode!!! min_framelength for AutoFlickerMode = %d (0x%x)\n", min_framelength, min_framelength);
-        SENSORDB("max framerate(10 base) autofilker = %d\n",(OV5648MIPI_sensor.pvPclk)*10 /line_length/min_framelength);
+        //SENSORDB("AutoFlickerMode!!! min_framelength for AutoFlickerMode = %d (0x%x)\n", min_framelength, min_framelength);
+        //SENSORDB("max framerate(10 base) autofilker = %d\n",(OV5648MIPI_sensor.pvPclk)*10 /line_length/min_framelength);
 
         if (iShutter < 3)
             iShutter = 3;
@@ -789,7 +789,7 @@ static void OV5648MIPI_Write_Shutter(kal_uint16 iShutter)
         {
             frame_length = OV5648MIPI_FULL_PERIOD_LINE_NUMS + OV5648MIPI_sensor.dummy_line + extra_lines ;
         }
-        SENSORDB("frame_length 0= %d\n",frame_length);
+        //SENSORDB("frame_length 0= %d\n",frame_length);
 
 
         if (frame_length < min_framelength)
@@ -810,7 +810,7 @@ static void OV5648MIPI_Write_Shutter(kal_uint16 iShutter)
             frame_length = min_framelength;
         }
 
-        SENSORDB("frame_length 1= %d\n", frame_length);
+        //SENSORDB("frame_length 1= %d\n", frame_length);
 
 
         //Set total frame length
@@ -828,8 +828,8 @@ static void OV5648MIPI_Write_Shutter(kal_uint16 iShutter)
         OV5648MIPI_write_cmos_sensor(0x3501, (iShutter>>4) & 0xFF);
         OV5648MIPI_write_cmos_sensor(0x3502, (iShutter<<4) & 0xF0);  /* Don't use the fraction part. */
 
-        SENSORDB("frame_length 2= %d\n",frame_length);
-        SENSORDB("shutter=%d, extra_lines=%d, line_length=%d, frame_length=%d\n", iShutter, extra_lines, line_length, frame_length);
+        //SENSORDB("frame_length 2= %d\n",frame_length);
+        //SENSORDB("shutter=%d, extra_lines=%d, line_length=%d, frame_length=%d\n", iShutter, extra_lines, line_length, frame_length);
     }
     else
     {
@@ -870,7 +870,7 @@ static void OV5648MIPI_Write_Shutter(kal_uint16 iShutter)
         {
             frame_length = OV5648MIPI_FULL_PERIOD_LINE_NUMS + OV5648MIPI_sensor.dummy_line + extra_lines ;
         }
-        SENSORDB("frame_length 0= %d\n",frame_length);
+        //SENSORDB("frame_length 0= %d\n",frame_length);
 
         //Set total frame length
         OV5648MIPI_write_cmos_sensor(0x380e, (frame_length >> 8) & 0xFF);
@@ -888,8 +888,8 @@ static void OV5648MIPI_Write_Shutter(kal_uint16 iShutter)
         OV5648MIPI_write_cmos_sensor(0x3501, (iShutter>>4) & 0xFF);
         OV5648MIPI_write_cmos_sensor(0x3502, (iShutter<<4) & 0xF0);  /* Don't use the fraction part. */
 
-        SENSORDB("frame_length 2= %d\n",frame_length);
-        SENSORDB("shutter=%d, extra_lines=%d, line_length=%d, frame_length=%d\n", iShutter, extra_lines, line_length, frame_length);
+        //SENSORDB("frame_length 2= %d\n",frame_length);
+        //SENSORDB("shutter=%d, extra_lines=%d, line_length=%d, frame_length=%d\n", iShutter, extra_lines, line_length, frame_length);
     }
 }   /*  OV5648MIPI_Write_Shutter  */
 
