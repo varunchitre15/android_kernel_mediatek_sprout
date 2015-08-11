@@ -1029,6 +1029,7 @@ static int AudDrv_probe(struct platform_device *dev)
 
 #ifdef AUDIO_MEMORY_SRAM
     AFE_SRAM_ADDRESS = ioremap_nocache(AFE_INTERNAL_SRAM_PHY_BASE, 0x10000);
+    AFE_AWB_SRAM_ADDRESS = AFE_SRAM_ADDRESS + AWB_BUFFER_BASE;
     pr_notice("AFE_BASE_ADDRESS = %p AFE_SRAM_ADDRESS = %p\n", AFE_BASE_ADDRESS, AFE_SRAM_ADDRESS);
 #endif
 
@@ -2304,14 +2305,23 @@ int AudDrv_Reassign_Buffer_In_SRAM(struct file *fp, unsigned long arg)
     }
 
     // Reassign memory
-    u4PhyAddr = AFE_INTERNAL_SRAM_PHY_BASE;
+    if (arg == MEM_AWB)
+        u4PhyAddr = AFE_INTERNAL_SRAM_PHY_BASE + AWB_BUFFER_BASE;
+    else
+        u4PhyAddr = AFE_INTERNAL_SRAM_PHY_BASE;
     pblock->pucPhysBufAddr = u4PhyAddr;
 
 #ifdef AUDIO_MEM_IOREMAP
-    pblock->pucVirtBufAddr = (kal_uint8 *)AFE_SRAM_ADDRESS;
+    if (arg == MEM_AWB)
+        pblock->pucVirtBufAddr = (kal_uint8 *)AFE_AWB_SRAM_ADDRESS;
+    else
+        pblock->pucVirtBufAddr = (kal_uint8 *)AFE_SRAM_ADDRESS;
     pr_debug("AudDrv_Reassign_Buffer_In_SRAM AUDIO_MEM_IOREMAP = %p, length = %d, addr 0x%p\n", fp, AFE_Buffer_Size, pblock->pucVirtBufAddr);
 #else
-    pblock->pucVirtBufAddr = AFE_INTERNAL_SRAM_VIR_BASE;
+    if (arg == MEM_AWB)
+        pblock->pucVirtBufAddr = AFE_INTERNAL_SRAM_VIR_BASE + AWB_BUFFER_BASE;
+    else
+        pblock->pucVirtBufAddr = AFE_INTERNAL_SRAM_VIR_BASE;
 #endif
 
     pr_debug("AudDrv_Reassign_Buffer_In_SRAM pucVirtBufAddr = %p\n", pblock->pucVirtBufAddr);
@@ -2465,7 +2475,9 @@ void Auddrv_Set_MemIF_Fp(struct file *fp, unsigned long arg)
 
 #if defined(MTK_AUDIO_DYNAMIC_SRAM_SUPPORT)
     spin_lock(&auddrv_lock);
-    if (Aud_Int_Mem_Flag == 0) //SRAM is not occupied, use SRAM
+    //SRAM is not occupied, use SRAM, make sure AWB use SRAM
+    if (((Aud_Int_Mem_Flag & ~(1 << MEM_AWB)) == 0 && arg != MEM_AWB)
+        || ((Aud_Int_Mem_Flag & (1 << MEM_AWB)) == 0 && arg == MEM_AWB))
     {
         AudDrv_Reassign_Buffer_In_SRAM(fp, arg);
         Aud_Int_Mem_Flag |= (1 << ((int)arg));
