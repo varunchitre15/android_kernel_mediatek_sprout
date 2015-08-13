@@ -20,12 +20,11 @@ static struct alsps_init_info* alsps_init_list[MAX_CHOOSE_ALSPS_NUM]= {0}; //mod
 static void alsps_early_suspend(struct early_suspend *h);
 static void alsps_late_resume(struct early_suspend *h);
 
-
 int als_data_report(struct input_dev *dev, int value, int status)
 {
     //ALSPS_LOG("+als_data_report! %d, %d\n",value,status);
-      input_report_abs(dev, EVENT_TYPE_ALS_VALUE, value);
-    input_report_abs(dev, EVENT_TYPE_ALS_STATUS, status);
+    input_report_rel(dev, EVENT_TYPE_ALS_VALUE, value);
+    input_report_rel(dev, EVENT_TYPE_ALS_STATUS, status);
     input_sync(dev);
     return 0;
 }
@@ -165,7 +164,7 @@ static void ps_work_func(struct work_struct *work)
     }
    if (cxt->is_get_valid_ps_data_after_enable == false)
     {
-        if(ALSPS_INVALID_VALUE != cxt->drv_data.als_data.values[0])
+        if(ALSPS_INVALID_VALUE != cxt->drv_data.ps_data.values[0])
             cxt->is_get_valid_ps_data_after_enable = true;
     }
     //report data to input device
@@ -838,11 +837,10 @@ static int alsps_input_init(struct alsps_context *cxt)
     set_bit(EV_SYN, dev->evbit);
     input_set_capability(dev, EV_REL, EVENT_TYPE_PS_VALUE);
     input_set_capability(dev, EV_REL, EVENT_TYPE_PS_STATUS);
-    input_set_capability(dev, EV_ABS, EVENT_TYPE_ALS_VALUE);
-    input_set_capability(dev, EV_ABS, EVENT_TYPE_ALS_STATUS);
 
-    input_set_abs_params(dev, EVENT_TYPE_ALS_VALUE, ALSPS_VALUE_MIN, ALSPS_VALUE_MAX, 0, 0);
-    input_set_abs_params(dev, EVENT_TYPE_ALS_STATUS, ALSPS_STATUS_MIN, ALSPS_STATUS_MAX, 0, 0);
+    input_set_capability(dev, EV_REL, EVENT_TYPE_ALS_VALUE);
+    input_set_capability(dev, EV_REL, EVENT_TYPE_ALS_STATUS);
+
     input_set_drvdata(dev, cxt);
 
     err = input_register_device(dev);

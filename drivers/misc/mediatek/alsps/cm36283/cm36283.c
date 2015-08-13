@@ -1794,7 +1794,7 @@ static int ps_set_delay(u64 ns)
 static int ps_get_data(int* value, int* status)
 {
     int err = 0;
-
+    msleep(1000);/* Solve sensor HAL received data before flush() command. */
     if(!cm36283_obj)
     {
         APS_ERR("cm36652_obj is null!!\n");
@@ -1917,9 +1917,9 @@ static int cm36283_i2c_probe(struct i2c_client *client, const struct i2c_device_
     ps_ctl.enable_nodata = ps_enable_nodata;
     ps_ctl.set_delay  = ps_set_delay;
     if (obj->hw->polling_mode_ps == 0) {
-        ps_ctl.is_report_input_direct = true;
-    } else {
         ps_ctl.is_report_input_direct = false;
+    } else {
+        ps_ctl.is_report_input_direct = true;
     }
     ps_ctl.is_support_batch = obj->hw->is_batch_supported_ps;
 
