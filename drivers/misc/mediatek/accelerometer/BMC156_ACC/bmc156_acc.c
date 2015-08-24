@@ -59,6 +59,7 @@ extern struct acc_hw* bmc156_get_cust_acc_hw(void);
 static int common_use = 0;
 static int sm_use = 0;
 static int motion_detect = 0;
+static int enable_significant_motion(int en);
 
 extern void mt_eint_mask(unsigned int eint_num);
 extern void mt_eint_unmask(unsigned int eint_num);
@@ -1064,9 +1065,10 @@ static void bmc156_eint_work(struct work_struct *work)
 struct i2c_client *client = bma255_i2c_client;
 
 motion_detect = (int)bma255_get_slope_int_status(client);
+/*The sensor must be deactivated before the event is reported through the HAL*/
+enable_significant_motion(0);
 acc_report_motion_detect(motion_detect);
 GSE_LOG("[%s] motion:%d enable:%d power:%d common_use:%d sm_use:%d\n",__func__,motion_detect,enable_status,sensor_power,common_use,sm_use);
-mt_eint_unmask(CUST_EINT_GSE_2_NUM);
 }
 
 static void bmc156_eint_func(void)
