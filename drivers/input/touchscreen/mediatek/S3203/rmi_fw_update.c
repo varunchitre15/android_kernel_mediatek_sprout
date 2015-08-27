@@ -115,9 +115,6 @@ static ssize_t fwu_sysfs_store_image(struct file *data_file,
         struct kobject *kobj, struct bin_attribute *attributes,
         char *buf, loff_t pos, size_t count);
 
-static ssize_t fwu_sysfs_do_reflash_store(struct device *dev,
-        struct device_attribute *attr, const char *buf, size_t count);
-
 static ssize_t fwu_sysfs_write_config_store(struct device *dev,
         struct device_attribute *attr, const char *buf, size_t count);
 
@@ -149,9 +146,6 @@ static ssize_t fwu_sysfs_disp_config_block_count_show(struct device *dev,
         struct device_attribute *attr, char *buf);
 
 static ssize_t fwu_sysfs_disp_firmware_version_show(struct device *dev,
-        struct device_attribute *attr, char *buf);
-
-static ssize_t fwu_sysfs_disp_firmware_update_show(struct device *dev,
         struct device_attribute *attr, char *buf);
 
 static int fwu_wait_for_idle(int timeout_ms);
@@ -278,9 +272,6 @@ static struct bin_attribute dev_attr_data = {
 };
 
 static struct device_attribute attrs[] = {
-    __ATTR(doreflash, 0660,
-            synaptics_rmi4_show_error,
-            fwu_sysfs_do_reflash_store),
     __ATTR(writeconfig, 0660,
             synaptics_rmi4_show_error,
             fwu_sysfs_write_config_store),
@@ -314,10 +305,6 @@ static struct device_attribute attrs[] = {
     __ATTR(firmwareversion, 0660,
             fwu_sysfs_disp_firmware_version_show,
             synaptics_rmi4_store_error),
-    __ATTR(firmwareupdate, 0660,
-            fwu_sysfs_disp_firmware_update_show,
-            synaptics_rmi4_store_error),
-
 };
 
 static struct synaptics_rmi4_fwu_handle *fwu;
@@ -1401,97 +1388,6 @@ static ssize_t fwu_sysfs_store_image(struct file *data_file,
     return count;
 }
 
-static ssize_t fwu_sysfs_do_reflash_store(struct device *dev,
-        struct device_attribute *attr, const char *buf, size_t count)
-{
-    int retval=0;
-    char *firmware_buf;
-    struct file    *filp;
-    struct inode *inode = NULL;
-    mm_segment_t oldfs;
-    uint16_t    length;
-    const char filename[]="/sdcard/synaptics.img";
-
-    /* open file */
-    oldfs = get_fs();
-    set_fs(KERNEL_DS);
-    filp = filp_open(filename, O_RDONLY, S_IRUSR);
-    if (IS_ERR(filp))
-    {
-            printk("[tpd]S3203: %s: file %s filp_open error\n", __FUNCTION__,filename);
-            set_fs(oldfs);
-            retval = -EINVAL;
-            goto exit;
-
-    }
-
-    if (!filp->f_op)
-    {
-            printk("[tpd]S3203: %s: File Operation Method Error\n", __FUNCTION__);
-            filp_close(filp, NULL);
-            set_fs(oldfs);
-            retval = -EINVAL;
-            goto exit;
-
-    }
-
-    inode = filp->f_path.dentry->d_inode;
-    if (!inode)
-    {
-        printk("[tpd]S3203: %s: Get inode from filp failed\n", __FUNCTION__);
-        filp_close(filp, NULL);
-        set_fs(oldfs);
-        retval = -EINVAL;
-        goto exit;
-
-    }
-
-    /* file's size */
-    length = i_size_read(inode->i_mapping->host);
-    if (!( length > 0 && length < 62*1024 ))
-    {
-        printk("[tpd]S3203: file size error\n");
-        filp_close(filp, NULL);
-        set_fs(oldfs);
-        retval = -EINVAL;
-        goto exit;
-
-    }
-
-    /* allocation buff size */
-    firmware_buf = vmalloc(length+(length%2));        /* buf size if even */
-    if (!firmware_buf)
-    {
-        printk("[tpd]S3203: alloctation memory failed\n");
-        filp_close(filp, NULL);
-        set_fs(oldfs);
-        retval = -EINVAL;
-        goto exit;
-
-    }
-
-    /* read data */
-    if (filp->f_op->read(filp, firmware_buf, length, &filp->f_pos) != length)
-    {
-        printk("[tpd]S3203: %s: file read error\n", __FUNCTION__);
-        filp_close(filp, NULL);
-        set_fs(oldfs);
-        vfree(firmware_buf);
-        retval = -EINVAL;
-        goto exit;
-
-    }
-
-    retval = synaptics_fw_updater_s3203(firmware_buf);
-
-     filp_close(filp, NULL);
-    set_fs(oldfs);
-    vfree(firmware_buf);
-
-exit:
-    return retval;
-}
-
 static ssize_t fwu_sysfs_write_config_store(struct device *dev,
         struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -1650,84 +1546,6 @@ static ssize_t fwu_sysfs_disp_firmware_version_show(struct device *dev,
 
     return snprintf(buf, PAGE_SIZE, "Device config ID 0x%02X, 0x%02X, 0x%02X, 0x%02X\n",
         config_id[0], config_id[1], config_id[2], config_id[3]);
-}
-
-static ssize_t fwu_sysfs_disp_firmware_update_show(struct device *dev,
-        struct device_attribute *attr, char *buf)
-{
-    char *buff;
-    struct file    *filp;
-    struct inode *inode = NULL;
-    mm_segment_t oldfs;
-    uint16_t    length;
-    int ret = 0;
-    const char filename[]="/sdcard/synaptics.img";
-    TPD_DMESG("-----------fwu_sysfs_disp_firmware_update_show----------\n");
-    /* open file */
-    oldfs = get_fs();
-    set_fs(KERNEL_DS);
-    filp = filp_open(filename, O_RDONLY, S_IRUSR);
-    if (IS_ERR(filp))
-    {
-            TPD_DMESG("%s: file %s filp_open error\n", __FUNCTION__,filename);
-            set_fs(oldfs);
-            return -1;
-    }
-
-    if (!filp->f_op)
-    {
-            TPD_DMESG("%s: File Operation Method Error\n", __FUNCTION__);
-            filp_close(filp, NULL);
-            set_fs(oldfs);
-            return -1;
-    }
-
-    inode = filp->f_path.dentry->d_inode;
-    if (!inode)
-    {
-        TPD_DMESG("%s: Get inode from filp failed\n", __FUNCTION__);
-        filp_close(filp, NULL);
-        set_fs(oldfs);
-        return -1;
-    }
-
-    /* file's size */
-    length = i_size_read(inode->i_mapping->host);
-    if (!( length > 0 && length < 62*1024 ))
-    {
-        TPD_DMESG("file size error\n");
-        filp_close(filp, NULL);
-        set_fs(oldfs);
-        return -1;
-    }
-
-    /* allocation buff size */
-    buff = vmalloc(length+(length%2));        /* buf size if even */
-    if (!buff)
-    {
-        TPD_DMESG("alloctation memory failed\n");
-        filp_close(filp, NULL);
-        set_fs(oldfs);
-        return -1;
-    }
-
-    /* read data */
-    if (filp->f_op->read(filp, buff, length, &filp->f_pos) != length)
-    {
-        TPD_DMESG("%s: file read error\n", __FUNCTION__);
-        filp_close(filp, NULL);
-        set_fs(oldfs);
-        vfree(buff);
-        return -1;
-    }
-    updateflag =1;
-    synaptics_fw_updater_s3203(buff);
-    //ret = synaptics_download(client,buff);
-
-     filp_close(filp, NULL);
-    set_fs(oldfs);
-    vfree(buff);
-    return ret;
 }
 
 static void synaptics_rmi4_fwu_attn(struct i2c_client *client,
