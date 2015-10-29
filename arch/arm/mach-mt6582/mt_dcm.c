@@ -740,10 +740,10 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 
 static ssize_t dcm_state_store(struct kobject *kobj, struct kobj_attribute *attr,const char *buf, size_t n)
 {
-    char cmd[10];
+    char cmd[16];
     unsigned int mask;
 
-    if (sscanf(buf, "%s %x", cmd, &mask) == 2) {
+    if (sscanf(buf, "%15s %x", cmd, &mask) == 2) {
         mask &= ALL_DCM;
 
         /*
