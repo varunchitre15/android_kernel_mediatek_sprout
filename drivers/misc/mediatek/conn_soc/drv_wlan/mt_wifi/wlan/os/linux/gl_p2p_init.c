@@ -76,6 +76,8 @@
 static PUCHAR ifname = P2P_MODE_INF_NAME;
 static UINT_16 mode = RUNNING_P2P_MODE;
 
+static bool p2p_suspend_registered = false;
+
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
@@ -485,12 +487,14 @@ p2pEalySuspendReg (
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	if (prGlueInfo->prAdapter->fgIsP2PRegistered == TRUE)
 	{
-		if(fgIsEnable) {
+		if(!p2p_suspend_registered && fgIsEnable) {
 			/* Here, we register the early suspend and resume callback  */
 			glRegisterEarlySuspend(&mt6620_p2p_early_suspend_desc, p2p_early_suspend, p2p_late_resume);
+			p2p_suspend_registered = true;
 		}
 		else {
 			glUnregisterEarlySuspend(&mt6620_p2p_early_suspend_desc);
+			p2p_suspend_registered = false;
 		}
 	}
 #endif
