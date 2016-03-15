@@ -323,7 +323,7 @@
 */
 
 #define MAX_NUM_GROUP_ADDR                      32      /* max number of group addresses */
-
+#define OID_SET_GET_STRUCT_LENGTH		4096	/* For SET_STRUCT/GET_STRUCT */
 
 
 #define TX_CS_TCP_UDP_GEN        BIT(1)

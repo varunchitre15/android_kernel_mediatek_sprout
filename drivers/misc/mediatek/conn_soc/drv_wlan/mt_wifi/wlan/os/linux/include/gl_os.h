@@ -643,6 +643,7 @@ extern BOOLEAN fgIsBusAccessFailed;
 //#define GLUE_BOW_DEVICE_NAME        "MT6620 802.11 AMP"
 #define GLUE_BOW_DEVICE_NAME        "ampc0"
 
+#define GLUE_INFO_WSCIE_LENGTH		500
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -894,16 +895,16 @@ struct _GLUE_INFO_T {
 #endif
 #endif
     BOOLEAN                 fgWpsActive;
-	UINT_8                  aucWSCIE[500]; /*for probe req*/
+    UINT_8                  aucWSCIE[GLUE_INFO_WSCIE_LENGTH]; /*for probe req*/
     UINT_16                 u2WSCIELen;
-	UINT_8                  aucWSCAssocInfoIE[200]; /*for Assoc req*/
+    UINT_8                  aucWSCAssocInfoIE[200]; /*for Assoc req*/
     UINT_16                 u2WSCAssocInfoIELen;
 
 #if CFG_SUPPORT_HOTSPOT_2_0
-	UINT_8					aucHS20AssocInfoIE[200]; /*for Assoc req*/
-	UINT_16 				u2HS20AssocInfoIELen;
-	UINT_8					ucHotspotConfig;
-	BOOLEAN 				fgConnectHS20AP;
+    UINT_8                  aucHS20AssocInfoIE[200]; /*for Assoc req*/
+    UINT_16                 u2HS20AssocInfoIELen;
+    UINT_8                  ucHotspotConfig;
+    BOOLEAN                 fgConnectHS20AP;
 #endif
 
     /* NVRAM availability */

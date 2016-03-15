@@ -233,6 +233,7 @@
 #define MIRACAST_MODE_SOURCE	1
 #define MIRACAST_MODE_SINK	2
 #define CMD_SET_CHIP            "SET_CHIP"
+#define CMD_OID_BUF_LENGTH		4096
 static UINT_8 g_ucMiracastMode = MIRACAST_MODE_OFF;
 typedef struct priv_driver_cmd_s {
 	char *buf;
@@ -313,7 +314,7 @@ reqExtSetAcpiDevicePowerState (
 *                       P R I V A T E   D A T A
 ********************************************************************************
 */
-static UINT_8 aucOidBuf[4096] = {0};
+static UINT_8 aucOidBuf[CMD_OID_BUF_LENGTH] = {0};
 
 /* OID processing table */
 /* Order is important here because the OIDs should be in order of
@@ -1582,30 +1583,39 @@ priv_set_struct (
 
 #if CFG_SUPPORT_WPS2
     case PRIV_CMD_WSC_PROBE_REQ:
-		{
-			/* retrieve IE for Probe Request */
-            if (prIwReqData->data.length > 0) {
-				if (copy_from_user(prGlueInfo->aucWSCIE, prIwReqData->data.pointer,
-					prIwReqData->data.length)) {
-                    status = -EFAULT;
-				    break;
-                }
-				prGlueInfo->u2WSCIELen = prIwReqData->data.length;
+        {
+            /* retrieve IE for Probe Request */
+            u4CmdLen = prIwReqData->data.length;
+            if (u4CmdLen > GLUE_INFO_WSCIE_LENGTH) {
+                DBGLOG(REQ, ERROR, ("Input data length is invalid %ld\n", u4CmdLen));
+                return -EINVAL;
             }
-			else {
-			    prGlueInfo->u2WSCIELen = 0;
-			}
-    	}
-		break;
+
+            if (u4CmdLen > 0) {
+                if (copy_from_user(prGlueInfo->aucWSCIE, prIwReqData->data.pointer,u4CmdLen)) {
+                    status = -EFAULT;
+                    break;
+                }
+                prGlueInfo->u2WSCIELen = u4CmdLen;
+            }
+            else {
+                prGlueInfo->u2WSCIELen = 0;
+            }
+        }
+        break;
 #endif
     case PRIV_CMD_OID:
-        if (copy_from_user(&aucOidBuf[0],
-                            prIwReqData->data.pointer,
-                            prIwReqData->data.length)) {
+        u4CmdLen = prIwReqData->data.length;
+        if (u4CmdLen > CMD_OID_BUF_LENGTH) {
+            DBGLOG(REQ, ERROR, ("Input data length is invalid %ld\n", u4CmdLen));
+            return -EINVAL;
+        }
+
+        if (copy_from_user(&aucOidBuf[0], prIwReqData->data.pointer, u4CmdLen)) {
             status = -EFAULT;
             break;
         }
-        if (!kalMemCmp(&aucOidBuf[0], pcExtra, prIwReqData->data.length)) {
+        if (!kalMemCmp(&aucOidBuf[0], pcExtra, u4CmdLen)) {
             DBGLOG(REQ, INFO, ("pcExtra buffer is valid\n"));
         }
         else
@@ -1627,12 +1637,18 @@ priv_set_struct (
 
     case PRIV_CMD_SW_CTRL:
         pu4IntBuf = (PUINT_32)prIwReqData->data.pointer;
+        u4CmdLen = prIwReqData->data.length;
         prNdisReq = (P_NDIS_TRANSPORT_STRUCT) &aucOidBuf[0];
+
+        if(u4CmdLen > sizeof(prNdisReq->ndisOidContent)) {
+            DBGLOG(REQ, ERROR, ("Input data length is invalid %ld\n", u4CmdLen));
+            return -EINVAL;
+        }
 
         //kalMemCopy(&prNdisReq->ndisOidContent[0], prIwReqData->data.pointer, 8);
         if (copy_from_user(&prNdisReq->ndisOidContent[0],
                            prIwReqData->data.pointer,
-                           prIwReqData->data.length)) {
+                           u4CmdLen)) {
             status = -EFAULT;
             break;
         }
@@ -2279,9 +2295,12 @@ priv_set_string(
     InBufLen = prIwReqData->data.length;
     Status = 0;
 
-    if (copy_from_user(InBuf,
-                       prIwReqData->data.pointer,
-                       prIwReqData->data.length)) {
+    if (InBufLen > CMD_OID_BUF_LENGTH) {
+       DBGLOG(REQ, ERROR, ("Input data length is invalid %ld\n", InBufLen));
+       return -EINVAL;
+    }
+
+    if (copy_from_user(InBuf, prIwReqData->data.pointer, InBufLen)) {
         return -EFAULT;
     }
 

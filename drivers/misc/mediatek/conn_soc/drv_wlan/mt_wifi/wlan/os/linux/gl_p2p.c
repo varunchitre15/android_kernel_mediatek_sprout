@@ -2242,6 +2242,10 @@ p2pDoIOCTL(
         /* Set Encryption Material after 4-way handshaking is done */
         if (prIwReq->u.encoding.pointer) {
             u4ExtraSize = prIwReq->u.encoding.length;
+            if (u4ExtraSize > sizeof(struct iw_encode_ext)) {
+                ret = -EINVAL;
+                break;
+            }
             prExtraBuf = kalMemAlloc(u4ExtraSize, VIR_MEM_TYPE);
 
             if (!prExtraBuf) {
@@ -2249,13 +2253,11 @@ p2pDoIOCTL(
                 break;
             }
 
-            if (copy_from_user(prExtraBuf,
-                        prIwReq->u.encoding.pointer,
-                        prIwReq->u.encoding.length)) {
+            if (copy_from_user(prExtraBuf, prIwReq->u.encoding.pointer, u4ExtraSize)) {
                 ret = -EFAULT;
             }
         }
-        else if (prIwReq->u.encoding.length != 0) {
+        else {
             ret = -EINVAL;
             break;
         }
@@ -3043,6 +3045,10 @@ mtk_p2p_wext_set_key(
     do {
         if (wrqu->encoding.pointer) {
             u4ExtraSize = wrqu->encoding.length;
+            if (u4ExtraSize > sizeof(struct iw_encode_ext)) {
+                ret = -EINVAL;
+                break;
+            }
             prExtraBuf = kalMemAlloc(u4ExtraSize, VIR_MEM_TYPE);
 
             if (!prExtraBuf) {
@@ -3050,14 +3056,12 @@ mtk_p2p_wext_set_key(
                 break;
             }
 
-            if (copy_from_user(prExtraBuf,
-                        wrqu->encoding.pointer,
-                        wrqu->encoding.length)) {
+            if (copy_from_user(prExtraBuf, wrqu->encoding.pointer, u4ExtraSize)) {
                 ret = -EFAULT;
                 break;
             }
         }
-        else if (wrqu->encoding.length != 0) {
+        else {
             ret = -EINVAL;
             break;
         }
@@ -3796,6 +3800,7 @@ mtk_p2p_wext_password_ready(
     P_GLUE_INFO_T prGlueInfo = NULL;
     P_IW_P2P_PASSWORD_READY prPasswordReady = (P_IW_P2P_PASSWORD_READY)extra;
     P_P2P_CONNECTION_SETTINGS_T prConnSettings;
+    UINT_16 u2CmdLen = 0;
 
     ASSERT(prDev);
 
@@ -3806,11 +3811,12 @@ mtk_p2p_wext_password_ready(
     ASSERT(prAdapter);
 
     prConnSettings = prAdapter->rWifiVar.prP2PConnSettings;
+    u2CmdLen = prPasswordReady->probe_req_len;
 
     /* retrieve IE for Probe Request */
-    if (prPasswordReady->probe_req_len > 0) {
-        if (prPasswordReady->probe_req_len <= MAX_WSC_IE_LENGTH) {
-            if (copy_from_user(prGlueInfo->prP2PInfo->aucWSCIE[1], prPasswordReady->probe_req_ie, prPasswordReady->probe_req_len)) {
+    if (u2CmdLen > 0) {
+        if (u2CmdLen <= MAX_WSC_IE_LENGTH) {
+            if (copy_from_user(prGlueInfo->prP2PInfo->aucWSCIE[1], prPasswordReady->probe_req_ie, u2CmdLen)) {
                 return -EFAULT;
             }
         }
@@ -3819,12 +3825,13 @@ mtk_p2p_wext_password_ready(
         }
     }
 
-    prGlueInfo->prP2PInfo->u2WSCIELen[1] = prPasswordReady->probe_req_len;
+    prGlueInfo->prP2PInfo->u2WSCIELen[1] = u2CmdLen;
 
     /* retrieve IE for Probe Response */
-    if (prPasswordReady->probe_rsp_len > 0) {
-        if (prPasswordReady->probe_rsp_len <= MAX_WSC_IE_LENGTH) {
-            if (copy_from_user(prGlueInfo->prP2PInfo->aucWSCIE[2], prPasswordReady->probe_rsp_ie, prPasswordReady->probe_rsp_len)) {
+    u2CmdLen = prPasswordReady->probe_rsp_len;
+    if (u2CmdLen > 0) {
+        if (u2CmdLen <= MAX_WSC_IE_LENGTH) {
+            if (copy_from_user(prGlueInfo->prP2PInfo->aucWSCIE[2], prPasswordReady->probe_rsp_ie, u2CmdLen)) {
                 return -EFAULT;
             }
         }
@@ -3833,7 +3840,7 @@ mtk_p2p_wext_password_ready(
         }
     }
 
-    prGlueInfo->prP2PInfo->u2WSCIELen[2] = prPasswordReady->probe_rsp_len;
+    prGlueInfo->prP2PInfo->u2WSCIELen[2] = u2CmdLen;
 
     switch (prPasswordReady->active_config_method) {
       case 1:
@@ -4375,6 +4382,7 @@ mtk_p2p_wext_set_struct (
 {
     int                         status = 0;
     UINT_32                     u4SubCmd = 0;
+    UINT_32                     u4CmdLen = 0;
     P_GLUE_INFO_T               prGlueInfo = NULL;
     P_IW_P2P_TRANSPORT_STRUCT   prP2PReq = NULL;
 
@@ -4389,20 +4397,27 @@ mtk_p2p_wext_set_struct (
     ASSERT(prGlueInfo);
 
     u4SubCmd = (UINT_32) wrqu->data.flags;
+    u4CmdLen = wrqu->data.length;
 
     kalMemZero(&prGlueInfo->prP2PInfo->aucOidBuf[0],
         sizeof(prGlueInfo->prP2PInfo->aucOidBuf));
 
     switch (u4SubCmd) {
     case PRIV_CMD_OID:
+        if (u4CmdLen > OID_SET_GET_STRUCT_LENGTH) {
+            printk(KERN_INFO DRV_NAME"input data length invalid %ld\n", u4CmdLen);
+            status = -EINVAL;
+            break;
+        }
+
         if (copy_from_user(&(prGlueInfo->prP2PInfo->aucOidBuf[0]),
                     wrqu->data.pointer,
-                    wrqu->data.length)) {
+                    u4CmdLen)) {
             status = -EFAULT;
             break;
         }
 
-        if (!kalMemCmp(&(prGlueInfo->prP2PInfo->aucOidBuf[0]), extra, wrqu->data.length)) {
+        if (!kalMemCmp(&(prGlueInfo->prP2PInfo->aucOidBuf[0]), extra, u4CmdLen)) {
             printk(KERN_INFO DRV_NAME"extra buffer is valid\n");
         }
         else {
@@ -4447,18 +4462,18 @@ mtk_p2p_wext_set_struct (
         break;
 #if CFG_SUPPORT_ANTI_PIRACY
     case PRIV_SEC_CHECK_OID:
-        if (wrqu->data.length > 256) {
+        if (u4CmdLen > 256) {
             status = -EOPNOTSUPP;
             break;
         }
         if (copy_from_user(&(prGlueInfo->prP2PInfo->aucSecCheck[0]),
                     wrqu->data.pointer,
-                    wrqu->data.length)) {
+                    u4CmdLen)) {
             status = -EFAULT;
             break;
         }
 
-        if (!kalMemCmp(&(prGlueInfo->prP2PInfo->aucSecCheck[0]), extra, wrqu->data.length)) {
+        if (!kalMemCmp(&(prGlueInfo->prP2PInfo->aucSecCheck[0]), extra, u4CmdLen)) {
             printk(KERN_INFO DRV_NAME"extra buffer is valid\n");
         }
         else {
@@ -4476,14 +4491,20 @@ mtk_p2p_wext_set_struct (
         break;
 #endif
     case PRIV_CMD_P2P_VERSION:
+        if (u4CmdLen > OID_SET_GET_STRUCT_LENGTH) {
+            printk(KERN_INFO DRV_NAME"input data length invalid %ld\n", u4CmdLen);
+            status = -EINVAL;
+            break;
+        }
+
         if (copy_from_user(&(prGlueInfo->prP2PInfo->aucOidBuf[0]),
                     wrqu->data.pointer,
-                    wrqu->data.length)) {
+                    u4CmdLen)) {
             status = -EFAULT;
             break;
         }
 
-        if (!kalMemCmp(&(prGlueInfo->prP2PInfo->aucOidBuf[0]), extra, wrqu->data.length)) {
+        if (!kalMemCmp(&(prGlueInfo->prP2PInfo->aucOidBuf[0]), extra, u4CmdLen)) {
             printk(KERN_INFO DRV_NAME"extra buffer is valid\n");
         }
         else {
@@ -4533,6 +4554,7 @@ mtk_p2p_wext_get_struct (
 {
     int                         status = 0;
     UINT_32                     u4SubCmd = 0;
+    UINT_32                     u4CmdLen = 0;
     P_GLUE_INFO_T               prGlueInfo = NULL;
     P_IW_P2P_TRANSPORT_STRUCT   prP2PReq = NULL;
 
@@ -4551,12 +4573,19 @@ mtk_p2p_wext_get_struct (
     ASSERT(prGlueInfo);
 
     u4SubCmd = (UINT_32) wrqu->data.flags;
+    u4CmdLen = wrqu->data.length;
 
     kalMemZero(&(prGlueInfo->prP2PInfo->aucOidBuf[0]),
         sizeof(prGlueInfo->prP2PInfo->aucOidBuf));
 
     switch (u4SubCmd) {
     case PRIV_CMD_OID:
+        if (u4CmdLen > sizeof(IW_P2P_TRANSPORT_STRUCT)) {
+            printk(KERN_INFO DRV_NAME"input data length invalid %ld\n", u4CmdLen);
+            status = -EINVAL;
+            break;
+        }
+
         if (copy_from_user(&(prGlueInfo->prP2PInfo->aucOidBuf[0]),
                     wrqu->data.pointer,
                     sizeof(IW_P2P_TRANSPORT_STRUCT))) {
@@ -4578,10 +4607,10 @@ mtk_p2p_wext_get_struct (
         case P2P_CMD_ID_INVITATION_INDICATE:
         {
             status = mtk_p2p_wext_invitation_indicate(prDev, info, wrqu, (char *)(prP2PReq->aucBuffer));
-            prP2PReq->outBufferLength = wrqu->data.length;
+            prP2PReq->outBufferLength = u4CmdLen;
             if (copy_to_user(wrqu->data.pointer,
                                     &(prGlueInfo->prP2PInfo->aucOidBuf[0]),
-                                    wrqu->data.length + OFFSET_OF(IW_P2P_TRANSPORT_STRUCT, aucBuffer))) {
+                                    u4CmdLen + OFFSET_OF(IW_P2P_TRANSPORT_STRUCT, aucBuffer))) {
                 printk(KERN_NOTICE "%s() copy_to_user() fail\n", __func__);
                 return -EIO;
             }
@@ -4593,10 +4622,10 @@ mtk_p2p_wext_get_struct (
         case P2P_CMD_ID_INVITATION_STATUS:
         {
             status = mtk_p2p_wext_invitation_status(prDev, info, wrqu, (char *)(prP2PReq->aucBuffer));
-            prP2PReq->outBufferLength = wrqu->data.length;
+            prP2PReq->outBufferLength = u4CmdLen;
             if (copy_to_user(wrqu->data.pointer,
                                 &(prGlueInfo->prP2PInfo->aucOidBuf[0]),
-                                wrqu->data.length + OFFSET_OF(IW_P2P_TRANSPORT_STRUCT, aucBuffer))) {
+                                u4CmdLen + OFFSET_OF(IW_P2P_TRANSPORT_STRUCT, aucBuffer))) {
                 printk(KERN_NOTICE "%s() copy_to_user() fail\n", __func__);
                 return -EIO;
             }
@@ -4674,8 +4703,8 @@ mtk_p2p_wext_get_struct (
         break;
 #if CFG_SUPPORT_ANTI_PIRACY
     case PRIV_SEC_CHECK_OID:
-        if (wrqu->data.length > 256) {
-            status = -EOPNOTSUPP;
+        if (u4CmdLen > sizeof(IW_P2P_TRANSPORT_STRUCT)) {
+            status = -EINVAL;
             break;
         }
         if (copy_from_user(&(prGlueInfo->prP2PInfo->aucSecCheck[0]),
@@ -4697,6 +4726,11 @@ mtk_p2p_wext_get_struct (
         break;
 #endif
     case PRIV_CMD_P2P_VERSION:
+        if (u4CmdLen > sizeof(IW_P2P_TRANSPORT_STRUCT)) {
+            status = -EINVAL;
+            break;
+        }
+
         if (copy_from_user(&(prGlueInfo->prP2PInfo->aucOidBuf[0]),
                     wrqu->data.pointer,
                     sizeof(IW_P2P_TRANSPORT_STRUCT))) {
