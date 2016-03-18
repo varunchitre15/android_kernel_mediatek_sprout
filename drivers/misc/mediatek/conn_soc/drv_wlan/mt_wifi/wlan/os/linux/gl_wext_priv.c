@@ -1285,11 +1285,13 @@ priv_set_ints (
     IN char *pcExtra
     )
 {
-    UINT_32                     u4SubCmd, u4BufLen;
+    UINT_32                     u4SubCmd, u4BufLen, u4CmdLen;
     P_GLUE_INFO_T               prGlueInfo;
     int                         status = 0;
     WLAN_STATUS                 rStatus = WLAN_STATUS_SUCCESS;
     P_SET_TXPWR_CTRL_T          prTxpwr;
+    UINT_16                     i = 0;
+    INT_32                      setting[4] = {0};
 
     ASSERT(prNetDev);
     ASSERT(prIwReqInfo);
@@ -1302,19 +1304,16 @@ priv_set_ints (
     prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
 
     u4SubCmd = (UINT_32) prIwReqData->data.flags;
+    u4CmdLen = prIwReqData->data.length;
 
     switch (u4SubCmd) {
     case PRIV_CMD_SET_TX_POWER:
         {
-        INT_32 *setting = prIwReqData->data.pointer;
-        UINT_16 i;
+        if (u4CmdLen > 4)
+            return -EINVAL;
+        if (copy_from_user(setting, prIwReqData->data.pointer, u4CmdLen))
+            return -EFAULT;
 
-#if 0
-        printk("Tx power num = %d\n", prIwReqData->data.length);
-
-        printk("Tx power setting = %d %d %d %d\n",
-                            setting[0], setting[1], setting[2], setting[3]);
-#endif
         prTxpwr = &prGlueInfo->rTxPwr;
         if (setting[0] == 0 && prIwReqData->data.length == 4 /* argc num */) {
             /* 0 (All networks), 1 (legacy STA), 2 (Hotspot AP), 3 (P2P), 4 (BT over Wi-Fi) */
@@ -1636,7 +1635,6 @@ priv_set_struct (
         break;
 
     case PRIV_CMD_SW_CTRL:
-        pu4IntBuf = (PUINT_32)prIwReqData->data.pointer;
         u4CmdLen = prIwReqData->data.length;
         prNdisReq = (P_NDIS_TRANSPORT_STRUCT) &aucOidBuf[0];
 
@@ -1645,7 +1643,6 @@ priv_set_struct (
             return -EINVAL;
         }
 
-        //kalMemCopy(&prNdisReq->ndisOidContent[0], prIwReqData->data.pointer, 8);
         if (copy_from_user(&prNdisReq->ndisOidContent[0],
                            prIwReqData->data.pointer,
                            u4CmdLen)) {
@@ -1764,9 +1761,7 @@ priv_get_struct (
         break;
 
     case PRIV_CMD_SW_CTRL:
-        pu4IntBuf = (PUINT_32)prIwReqData->data.pointer;
         prNdisReq = (P_NDIS_TRANSPORT_STRUCT) &aucOidBuf[0];
-
         u4CopyDataMax = sizeof(aucOidBuf) - OFFSET_OF(NDIS_TRANSPORT_STRUCT, ndisOidContent);
         if ((prIwReqData->data.length>u4CopyDataMax)
 	    || copy_from_user(&prNdisReq->ndisOidContent[0],
@@ -2270,10 +2265,10 @@ priv_set_string(
     )
 {
     P_GLUE_INFO_T GlueInfo;
-    INT_32 Status;
+    INT_32 Status = 0;
     UINT_32 Subcmd;
-    UINT_8 *InBuf;
-    UINT_32 InBufLen;
+    UINT_8 *InBuf = aucOidBuf;
+    UINT_32 BufLen;
 
 
     /* sanity check */
@@ -2282,29 +2277,24 @@ priv_set_string(
     ASSERT(prIwReqData);
     ASSERT(pcExtra);
 
-    /* init */
-    DBGLOG(REQ, INFO, ("priv_set_string (%s)(%d)\n",
-            (UINT8 *)prIwReqData->data.pointer, (INT32)prIwReqData->data.length));
-
     if (FALSE == GLUE_CHK_PR3(prNetDev, prIwReqData, pcExtra)) {
         return -EINVAL;
     }
+
+    BufLen = prIwReqData->data.length;
+    DBGLOG(REQ, INFO, ("priv_set_string (%ld)\n", BufLen));
     GlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
 
-    InBuf = aucOidBuf;
-    InBufLen = prIwReqData->data.length;
-    Status = 0;
-
-    if (InBufLen > CMD_OID_BUF_LENGTH) {
-       DBGLOG(REQ, ERROR, ("Input data length is invalid %ld\n", InBufLen));
+    if (BufLen > CMD_OID_BUF_LENGTH) {
+        DBGLOG(REQ, ERROR, ("Input data length is invalid %ld\n", BufLen));
        return -EINVAL;
     }
 
-    if (copy_from_user(InBuf, prIwReqData->data.pointer, InBufLen)) {
+    if (copy_from_user(InBuf, prIwReqData->data.pointer, BufLen)) {
         return -EFAULT;
     }
 
-    Subcmd = CmdStringDecParse(prIwReqData->data.pointer, &InBuf, &InBufLen);
+    Subcmd = CmdStringDecParse(InBuf, &InBuf, &BufLen);
     DBGLOG(REQ, INFO, ("priv_set_string> command = %u\n", (UINT32)Subcmd));
 
     /* handle the command */
@@ -2312,7 +2302,7 @@ priv_set_string(
     {
 #if (CFG_SUPPORT_TDLS == 1)
         case PRIV_CMD_OTHER_TDLS:
-			TdlsexCmd(GlueInfo, InBuf, InBufLen);
+                TdlsexCmd(GlueInfo, InBuf, BufLen);
 	        break;
 #endif /* CFG_SUPPORT_TDLS */
 
