@@ -27,7 +27,6 @@
 #define MTKFB_SET_OVERLAY_LAYER                MTK_IOW(0, struct fb_overlay_layer)
 #define MTKFB_TRIG_OVERLAY_OUT                 MTK_IO(1)
 #define MTKFB_SET_VIDEO_LAYERS                 MTK_IOW(2, struct fb_overlay_layer)
-#define MTKFB_CAPTURE_FRAMEBUFFER              MTK_IOW(3, unsigned long)
 #define MTKFB_CONFIG_IMMEDIATE_UPDATE          MTK_IOW(4, unsigned long)
 #define MTKFB_SET_MULTIPLE_LAYERS              MTK_IOW(5, struct fb_overlay_layer)
 #define MTKFB_REGISTER_OVERLAYBUFFER           MTK_IOW(6, struct fb_overlay_buffer_info)
@@ -60,7 +59,6 @@
 #define MTKFB_SLT_AUTO_CAPTURE                 MTK_IOWR(27, struct fb_slt_catpure)
 
 /* error handling */
-#define MTKFB_META_RESTORE_SCREEN              MTK_IOW(101, unsigned long)
 #define MTKFB_ERROR_INDEX_UPDATE_TIMEOUT       MTK_IO(103)
 #define MTKFB_ERROR_INDEX_UPDATE_TIMEOUT_AEE   MTK_IO(104)
 
