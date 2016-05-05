@@ -820,6 +820,7 @@ static ssize_t mt3326_gps_write(struct file *file, const char __user *buf, size_
 {
 	struct gps_data *dev = file->private_data;
 	ssize_t ret = 0;
+	size_t copy_size = 0;
 
 	GPS_TRC();
 
@@ -835,7 +836,8 @@ static ssize_t mt3326_gps_write(struct file *file, const char __user *buf, size_
 	if (down_interruptible(&dev->sem))
 		return -ERESTARTSYS;
 
-	if (copy_from_user(dev->dat_buf, buf, count)) {
+	copy_size = min(count, sizeof(dev->dat_buf));
+	if (copy_from_user(dev->dat_buf, buf, copy_size)) {
 		GPS_DBG("copy_from_user error");
 		ret = -EFAULT;
 	} else {
