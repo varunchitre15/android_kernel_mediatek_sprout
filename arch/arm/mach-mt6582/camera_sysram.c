@@ -1271,40 +1271,51 @@ static struct platform_driver SysramPlatformDriver =
 };
 //------------------------------------------------------------------------------
 static int SYSRAM_DumpLayoutToProc(
-    char*   pPage,
-    char**  ppStart,
-    off_t   Off,
-    int     Count,
-    int*    pEof,
-    void*   pData)
+    struct file *pFile,
+    char *pStart,
+    size_t Off,
+    loff_t *Count)
 {
-    char *p = pPage;
-    MUINT32 len = 0;
+    MINT32 Length = 0;
     MUINT32 Index = 0;
     SYSRAM_MEM_NODE_STRUCT* pCurrNode = NULL;
-    //
-    p += sprintf(p, "\n[SYSRAM_DumpLayoutToProc]\n");
-    p += sprintf(p, "AllocatedTbl = 0x%08lX\n",Sysram.AllocatedTbl);
-    p += sprintf(p, "=========================================\n" );
+
+    char *buffer_log = kmalloc(1000*sizeof(unsigned int), GFP_KERNEL);
+
+    if (buffer_log == NULL) {
+        LOG_ERR("kmalloc fail");
+        kfree(buffer_log);
+	return -EFAULT;
+    }
+
+    if (*Count > 0) {
+        kfree(buffer_log);
+	return 0;
+    }
+
+    Length += sprintf(buffer_log, "\n[SYSRAM_DumpLayoutToProc]\n");
+    Length += sprintf(buffer_log + Length, "AllocatedTbl = 0x%08lX\n",Sysram.AllocatedTbl);
+    Length += sprintf(buffer_log + Length, "=========================================\n" );
+
     for (Index = 0; Index < SYSRAM_MEM_BANK_AMOUNT; Index++)
     {
-        p += sprintf(p, "\n [Mem Pool %ld] (IndexTbl, UserCount)=(%lX, %ld)\n",
+        Length += sprintf(buffer_log + Length, "\n [Mem Pool %ld] (IndexTbl, UserCount)=(%lX, %ld)\n",
                         Index,
                         SysramMemPoolInfo[Index].IndexTbl,
                         SysramMemPoolInfo[Index].UserCount);
-        p += sprintf(p, "[Locked Time] [Owner   Offset   Size  Index pCurrent pPrevious pNext]  [pid tgid] [Proc Name / Owner Name]\n");
+        Length += sprintf(buffer_log + Length, "[Locked Time] [Owner   Offset   Size  Index pCurrent pPrevious pNext]  [pid tgid] [Proc Name / Owner Name]\n");
         pCurrNode = &SysramMemPoolInfo[Index].pMemNode[0];
         while ( NULL != pCurrNode )
         {
             SYSRAM_USER_ENUM const User = pCurrNode->User;
             if  ( SYSRAM_IsBadOwner(User) )
             {
-                p += sprintf(p, 
+                Length += sprintf(buffer_log + Length,
                     "------------ --------"
                     " %2d\t0x%05lX 0x%05lX  %ld    %p %p\t%p\n", 
                     pCurrNode->User,
                     pCurrNode->Offset,
-                    pCurrNode->Length, 
+                    pCurrNode->Length,
                     pCurrNode->Index,
                     pCurrNode,
                     pCurrNode->pPrev,
@@ -1314,7 +1325,7 @@ static int SYSRAM_DumpLayoutToProc(
             else
             {
                 SYSRAM_USER_STRUCT*const pUserInfo = &Sysram.UserInfo[User];
-                p += sprintf(p, 
+                Length += sprintf(buffer_log + Length,
                     "%5lu.%06lu"
                     " %2d\t0x%05lX 0x%05lX  %ld    %p %p\t%p"
                     "  %-4d %-4d \"%s\" / \"%s\"\n", 
@@ -1335,49 +1346,51 @@ static int SYSRAM_DumpLayoutToProc(
             pCurrNode = pCurrNode->pNext;
         };
     }
-    //
-    *ppStart = pPage + Off;
-    len = p - pPage;
-    if(len > Off)
-    {
-        len -= Off;
+
+    if (copy_to_user(pStart, buffer_log, Length)) {
+	LOG_ERR("copy_to_user fail");
+	kfree(buffer_log);
+	return -EFAULT;
     }
-    else
-    {
-        len = 0;
-    }
-    //
-    return len < Count ? len : Count;
+
+    *Count = *Count + Length;
+    kfree(buffer_log);
+    return Length;
 }
 //------------------------------------------------------------------------------
 static int SYSRAM_ReadFlag(
-    char*   pPage,
-    char**  ppStart,
-    off_t   Off,
-    int     Count,
-    int*    pEof,
-    void*   pData)
+    struct file *pFile,
+    char *pStart,
+    size_t Off,
+    loff_t *Count)
 {
-    char *p = pPage;
-    MUINT32 len = 0;
-    //
-    p += sprintf(p, "\r\n[SYSRAM_ReadFlag]\r\n");
-    p += sprintf(p, "=========================================\r\n" );
-    p += sprintf(p, "Sysram.DebugFlag = 0x%08lX\r\n",Sysram.DebugFlag);
+    MINT32 Length = 0;
 
-    *ppStart = pPage + Off;
+    char *buffer_log = kmalloc(1000*sizeof(unsigned int), GFP_KERNEL);
 
-    len = p - pPage;
-    if(len > Off)
-    {
-        len -= Off;
+    if (buffer_log == NULL) {
+        LOG_ERR("kmalloc fail");
+	kfree(buffer_log);
+	return -EFAULT;
     }
-    else
-    {
-        len = 0;
+
+    if (*Count > 0) {
+	kfree(buffer_log);
+	return 0;
     }
-    //
-    return len < Count ? len  : Count;
+
+    Length += sprintf(buffer_log, "\r\n[SYSRAM_ReadFlag]\r\n");
+    Length += sprintf(buffer_log + Length, "Sysram.DebugFlag = 0x%08lX\r\n",Sysram.DebugFlag);
+
+    if (copy_to_user(pStart, buffer_log, Length)) {
+	LOG_ERR("copy_to_user fail");
+	kfree(buffer_log);
+	return -EFAULT;
+    }
+
+    *Count = *Count + Length;
+    kfree(buffer_log);
+    return Length;
 }
 //------------------------------------------------------------------------------
 static int SYSRAM_WriteFlag(

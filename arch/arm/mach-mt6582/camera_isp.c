@@ -5406,99 +5406,38 @@ static struct platform_driver IspDriver =
 *
 ********************************************************************************/
 static MINT32 ISP_DumpRegToProc(
-    char  *pPage,
-    char **ppStart,
-    off_t  off,
-    MINT32 Count,
-    MINT32 *pEof,
-    MVOID *pData)
+    struct file *pFile,
+    char *pStart,
+    size_t Off,
+    loff_t *Count)
 {
-    char *p = pPage;
     MINT32 Length = 0;
-    MUINT32 i = 0;
-    MINT32 ret = 0;
 
-    LOG_DBG("pPage(0x%08x),off(%d),Count(%d)", (MUINT32)pPage, (MUINT32)off, Count);
+    char *buffer_log = kmalloc(1000*sizeof(unsigned int), GFP_KERNEL);
 
-    p += sprintf(p, " MT ISP Register\n");
-    p += sprintf(p, "====== top ====\n");
-
-    for(i = 0x0; i <= 0x1AC; i += 4)
-    {
-        p += sprintf(p,"+0x%08x 0x%08x\n", ISP_ADDR + i, ISP_RD32((void *)(ISP_ADDR + i)));
+    if (buffer_log == NULL) {
+	LOG_ERR("kmalloc fail");
+	kfree(buffer_log);
+        return -EFAULT;
     }
 
-    p += sprintf(p,"====== dma ====\n");
-    for(i = 0x200; i <= 0x3D8; i += 4)
-    {
-        p += sprintf(p,"+0x%08x 0x%08x\n\r", ISP_ADDR + i, ISP_RD32((void *)(ISP_ADDR + i)));
+    if (*Count > 0) {
+	kfree(buffer_log);
+	return 0;
     }
 
-    p += sprintf(p,"====== tg ====\n");
-    for(i = 0x400; i <= 0x4EC; i += 4)
-    {
-        p += sprintf(p,"+0x%08x 0x%08x\n", ISP_ADDR + i, ISP_RD32((void *)(ISP_ADDR + i)));
+    Length += sprintf(buffer_log, "MT ISP Register\n");
+    Length += sprintf(buffer_log + Length,"+0x%08x 0x%08x\n", ISP_ADDR + 0x4,ISP_RD32((void *)(ISP_ADDR + 0x4)));
+
+    if (copy_to_user(pStart, buffer_log, Length)) {
+	LOG_ERR("copy_to_user fail");
+	kfree(buffer_log);
+        return -EFAULT;
     }
 
-    p += sprintf(p,"====== cdp (including EIS) ====\n");
-    for(i = 0xB00; i <= 0xDE0; i += 4)
-    {
-        p += sprintf(p,"+0x%08x 0x%08x\n", ISP_ADDR + i, ISP_RD32((void *)(ISP_ADDR + i)));
-    }
-
-    p += sprintf(p,"====== seninf ====\n");
-    for(i = 0x4000; i <= 0x40C0; i += 4)
-    {
-        p += sprintf(p,"+0x%08x 0x%08x\n", ISP_ADDR + i, ISP_RD32((void *)(ISP_ADDR + i)));
-    }
-
-    for(i = 0x4100; i <= 0x41BC; i += 4)
-    {
-        p += sprintf(p,"+0x%08x 0x%08x\n", ISP_ADDR + i, ISP_RD32((void *)(ISP_ADDR + i)));
-    }
-
-    for(i = 0x4300; i <= 0x4310; i += 4)
-    {
-        p += sprintf(p,"+0x%08x 0x%08x\n", ISP_ADDR + i, ISP_RD32((void *)(ISP_ADDR + i)));
-    }
-
-    for(i = 0x43A0; i <= 0x43B0; i += 4)
-    {
-        p += sprintf(p,"+0x%08x 0x%08x\n", ISP_ADDR + i, ISP_RD32((void *)(ISP_ADDR + i)));
-    }
-
-    for(i = 0x4400; i <= 0x4424; i += 4)
-    {
-        p += sprintf(p,"+0x%08x 0x%08x\n", ISP_ADDR + i, ISP_RD32((void *)(ISP_ADDR + i)));
-    }
-
-    for(i = 0x4500; i <= 0x4520; i += 4)
-    {
-        p += sprintf(p,"+0x%08x 0x%08x\n", ISP_ADDR + i, ISP_RD32((void *)(ISP_ADDR + i)));
-    }
-
-    p += sprintf(p,"====== 3DNR ====\n");
-    for(i = 0x4F00; i <= 0x4F38; i += 4)
-    {
-        p += sprintf(p,"+0x%08x 0x%08x\n", ISP_ADDR + i, ISP_RD32((void *)(ISP_ADDR + i)));
-    }
-
-    *ppStart = pPage + off;
-
-    Length = p - pPage;
-    if(Length > off)
-    {
-        Length -= off;
-    }
-    else
-    {
-        Length = 0;
-    }
-
-    ret = Length < Count ? Length : Count;
-
-    LOG_DBG("ret(%d)", ret);
-    return ret;
+    *Count = *Count + Length;
+    kfree(buffer_log);
+    return Length;
 }
 
 /*******************************************************************************
@@ -5539,38 +5478,36 @@ static MINT32  ISP_RegDebug(
 
 static MUINT32 proc_regOfst = 0;
 static MINT32 CAMIO_DumpRegToProc(
-    char *pPage,
-    char **ppStart,
-    off_t   off,
-    MINT32  Count,
-    MINT32 *pEof,
-    MVOID *pData)
+    struct file *pFile,
+    char *pStart,
+    size_t Off,
+    loff_t *Count)
 {
-    char *p = pPage;
     MINT32 Length = 0;
-    MINT32 ret = 0;
 
-    LOG_DBG("pPage(0x%08x),off(%d),Count(%d)", (MUINT32)pPage, (MINT32)off, Count);
+    char *buffer_log = kmalloc(1000*sizeof(unsigned int), GFP_KERNEL);
 
-    p += sprintf(p,"reg_0x%08X = 0x%X \n", ISP_ADDR_CAMINF + proc_regOfst , ioread32((void *)(ISP_ADDR_CAMINF + proc_regOfst)));
-
-    *ppStart = pPage + off;
-
-    Length = p - pPage;
-    if(Length > off)
-    {
-        Length -= off;
+    if (buffer_log == NULL) {
+	LOG_ERR("kmalloc fail");
+	kfree(buffer_log);
+	return -EFAULT;
     }
-    else
-    {
-        Length = 0;
+
+    if (*Count > 0) {
+        kfree(buffer_log);
+	return 0;
     }
-    //
 
-    ret = Length < Count ? Length : Count;
+    Length += sprintf(buffer_log,"reg_0x%08X = 0x%X \n", ISP_ADDR_CAMINF + proc_regOfst , ioread32((void *)(ISP_ADDR_CAMINF + proc_regOfst)));
+    if (copy_to_user(pStart, buffer_log, Length)) {
+        LOG_ERR("copy_to_user fail");
+	kfree(buffer_log);
+	return -EFAULT;
+    }
 
-    LOG_DBG("ret(%d)", ret);
-    return ret;
+    *Count = *Count + Length;
+    kfree(buffer_log);
+    return Length;
 }
 
 /*******************************************************************************
