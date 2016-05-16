@@ -499,6 +499,11 @@ static int hwmsen_enable(struct hwmdev_object *obj, int sensor, int enable)
 
     sensor_type = 1 << sensor;
 
+    if (sensor > MAX_ANDROID_SENSOR_NUM) {
+	HWM_ERR("handle %d!\n", sensor);
+	return -EINVAL;
+    }
+
     if(!obj)
     {
         HWM_ERR("hwmdev obj pointer is NULL!\n");
@@ -609,6 +614,11 @@ static int hwmsen_enable_nodata(struct hwmdev_object *obj, int sensor, int enabl
     HWM_FUN(f);
     sensor_type = 1 << sensor;
 
+    if (sensor > MAX_ANDROID_SENSOR_NUM) {
+	HWM_ERR("handle %d!\n", sensor);
+	return -EINVAL;
+    }
+
     if(NULL == obj)
     {
         HWM_ERR("hwmdev obj pointer is NULL!\n");
@@ -668,6 +678,11 @@ static int hwmsen_set_delay(int delay, int handle )
 {
     int err = 0;
     struct hwmsen_context *cxt = NULL;
+
+    if (handle > MAX_ANDROID_SENSOR_NUM) {
+	HWM_ERR("handle %d!\n", handle);
+	return -EINVAL;
+    }
 
     cxt = hwm_obj->dc->cxt[handle];
     if(NULL == cxt ||(cxt->obj.sensor_operate == NULL))
