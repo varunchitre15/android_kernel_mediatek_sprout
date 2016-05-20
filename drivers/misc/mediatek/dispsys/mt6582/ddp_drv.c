@@ -1456,28 +1456,6 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
             }
             break;
 
-        case DISP_IOCTL_GET_OVL:
-            DISP_DBG("DISP_IOCTL_GET_OVL! \n");
-            if(copy_from_user(&ovl_info, (void*)arg , sizeof(DISP_OVL_INFO)))
-            {
-                DISP_ERR("DISP_IOCTL_SET_INTR, copy_from_user failed, %d\n", ret);
-                return -EFAULT;
-            }
-
-            layer = ovl_info.layer;
-
-            spin_lock(&gOvlLock);
-            ovl_info = disp_layer_info[layer];
-            spin_unlock(&gOvlLock);
-
-            if(copy_to_user((void *)arg, &ovl_info, sizeof(DISP_OVL_INFO)))
-            {
-                DISP_ERR("disp driver : Copy to user error (result)\n");
-                return -EFAULT;
-            }
-
-            break;
-
         case DISP_IOCTL_AAL_EVENTCTL:
 #if !defined(CONFIG_MTK_AAL_SUPPORT)
             pr_err("Invalid operation DISP_IOCTL_AAL_EVENTCTL since AAL is not turned on, in %s\n" , __FUNCTION__);
