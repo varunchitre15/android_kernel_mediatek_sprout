@@ -225,7 +225,6 @@ typedef enum
 
 #define DISP_IOCTL_MAGIC        'x'
 
-#define DISP_IOCTL_WRITE_REG       _IOW     (DISP_IOCTL_MAGIC, 1, DISP_WRITE_REG)
 #define DISP_IOCTL_READ_REG        _IOWR    (DISP_IOCTL_MAGIC, 2, DISP_READ_REG)
 #define DISP_IOCTL_WAIT_IRQ        _IOR     (DISP_IOCTL_MAGIC, 3, disp_wait_irq_struct)
 #define DISP_IOCTL_DUMP_REG        _IOR     (DISP_IOCTL_MAGIC, 4, int)
@@ -290,8 +289,6 @@ typedef enum
 #define DISP_IOCTL_GET_PQ_CAM_PARAM     _IOR    (DISP_IOCTL_MAGIC, 58 , DISP_PQ_PARAM)
 #define DISP_IOCTL_SET_PQ_GAL_PARAM     _IOW    (DISP_IOCTL_MAGIC, 59 , DISP_PQ_PARAM)
 #define DISP_IOCTL_GET_PQ_GAL_PARAM     _IOR    (DISP_IOCTL_MAGIC, 60 , DISP_PQ_PARAM)
-
-#define DISP_IOCTL_READ_REG_TABLE       _IOWR    (DISP_IOCTL_MAGIC, 61, DISP_READ_REG_TABLE)
 
 // secure video path implementation: the handle value
 #define DISP_IOCTL_SET_TPLAY_HANDLE    _IOW    (DISP_IOCTL_MAGIC, 62, unsigned int)
