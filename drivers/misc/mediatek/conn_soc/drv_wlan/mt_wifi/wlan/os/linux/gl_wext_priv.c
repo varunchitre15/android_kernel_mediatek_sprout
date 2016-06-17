@@ -1244,14 +1244,20 @@ priv_get_int (
 
     case PRIV_CMD_GET_DEBUG_CODE:
         {
-			wlanQueryDebugCode(prGlueInfo->prAdapter);
+	    wlanQueryDebugCode(prGlueInfo->prAdapter);
 
-				kalMemSet(gucBufDbgCode, '.', sizeof(gucBufDbgCode));
-                if (copy_to_user(prIwReqData->data.pointer, gucBufDbgCode, prIwReqData->data.length)) {
-                     return -EFAULT;
-                }
-                else
-                     return status;
+	    kalMemSet(gucBufDbgCode, '.', sizeof(gucBufDbgCode));
+
+            u4BufLen = prIwReqData->data.length;
+
+            if (prIwReqData->data.length > sizeof(gucBufDbgCode))
+                u4BufLen = sizeof(gucBufDbgCode);
+
+            if (copy_to_user(prIwReqData->data.pointer, gucBufDbgCode, u4BufLen)) {
+                return -EFAULT;
+            }
+            else
+                return status;
         }
 
     default:
