@@ -221,7 +221,7 @@ unsigned int custom_pll_clock_remap(int input_mipi_clock)
 #endif
 static void lcm_mdelay(UINT32 ms)
 {
-    udelay(1000 * ms);
+    mdelay(1 * ms);
 }
 void DSI_Enable_Log(bool enable)
 {
@@ -2821,7 +2821,7 @@ void DSI_set_cmdq_V3(LCM_setting_table_V3 *para_tbl, unsigned int size, unsigned
 
         if (data_id == REGFLAG_ESCAPE_ID && cmd == REGFLAG_DELAY_MS_V3)
         {
-            udelay(1000*count);
+            mdelay(1*count);
             pr_debug("[DSI] DSI_set_cmdq_V3[%d]. Delay %d (ms) \n", index, count);
 
             continue;
