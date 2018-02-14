@@ -181,10 +181,8 @@ extern void hdmi_setorientation(int orientation);
 extern void    MTK_HDMI_Set_Security_Output(int enable);
 #endif
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void mtkfb_late_resume(struct early_suspend *h);
-static void mtkfb_early_suspend(struct early_suspend *h);
-#endif
+static void mtkfb_late_resume(void);
+static void mtkfb_early_suspend(void);
 // ---------------------------------------------------------------------------
 //  Timer Routines
 // ---------------------------------------------------------------------------
@@ -1547,18 +1545,15 @@ static int mtkfb_ioctl(struct file *file, struct fb_info *info, unsigned int cmd
     }
     case MTKFB_POWEROFF:
        {
-#ifdef CONFIG_HAS_EARLYSUSPEND
         if(is_early_suspended) return r;
-        mtkfb_early_suspend(0);
-#endif
+        mtkfb_early_suspend();
         return r;
     }
 
     case MTKFB_POWERON:
        {
-#ifdef CONFIG_HAS_EARLYSUSPEND
         if(!is_early_suspended) return r;
-        mtkfb_late_resume(0);
+        mtkfb_late_resume();
         if (!lcd_fps)
         {
             msleep(30);
@@ -1569,7 +1564,6 @@ static int mtkfb_ioctl(struct file *file, struct fb_info *info, unsigned int cmd
         }
 #ifndef MTKFB_FPGA_ONLY
         mt65xx_leds_brightness_set(MT65XX_LED_TYPE_LCD,127);
-#endif
 #endif
         return r;
     }
@@ -2056,11 +2050,10 @@ unsigned int mtkfb_fm_auto_test()
 
 static int mtkfb_blank(int blank_mode, struct fb_info *info)
 {
-#ifdef CONFIG_HAS_EARLYSUSPEND
     switch (blank_mode) {
     case FB_BLANK_UNBLANK:
     case FB_BLANK_NORMAL:
-        mtkfb_late_resume(NULL);
+        mtkfb_late_resume();
         if (!lcd_fps)
         {
             msleep(30);
@@ -2080,15 +2073,12 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
     case FB_BLANK_HSYNC_SUSPEND:
         break;
     case FB_BLANK_POWERDOWN:
-        mtkfb_early_suspend(NULL);
+        mtkfb_early_suspend();
         break;
     default:
         return -EINVAL;
         }
     return 0;
-#else
-    return -EINVAL;
-#endif
 }
 
 /* Callback table for the frame buffer framework. Some of these pointers
@@ -2924,8 +2914,7 @@ void mtkfb_clear_lcm(void)
 }
 
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void mtkfb_early_suspend(struct early_suspend *h)
+static void mtkfb_early_suspend(void)
 {
     int i=0;
     MSG_FUNC_ENTER();
@@ -2999,7 +2988,6 @@ static void mtkfb_early_suspend(struct early_suspend *h)
 
     MSG_FUNC_LEAVE();
 }
-#endif
 
 /* PM resume */
 static int mtkfb_resume(struct device *pdev)
@@ -3011,8 +2999,7 @@ static int mtkfb_resume(struct device *pdev)
     return 0;
 }
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void mtkfb_late_resume(struct early_suspend *h)
+static void mtkfb_late_resume(void)
 {
     MSG_FUNC_ENTER();
 
@@ -3077,7 +3064,6 @@ static void mtkfb_late_resume(struct early_suspend *h)
 
     MSG_FUNC_LEAVE();
 }
-#endif
 
 /*---------------------------------------------------------------------------*/
 #ifdef CONFIG_PM
@@ -3165,15 +3151,6 @@ static struct platform_driver mtkfb_driver =
     },
 };
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static struct early_suspend mtkfb_early_suspend_handler =
-{
-    .level = EARLY_SUSPEND_LEVEL_DISABLE_FB,
-    .suspend = mtkfb_early_suspend,
-    .resume = mtkfb_late_resume,
-};
-#endif
-
 #ifdef DEFAULT_MMP_ENABLE
 void MMProfileEnable(int enable);
 void MMProfileStart(int start);
@@ -3203,10 +3180,6 @@ int __init mtkfb_init(void)
         goto exit;
     }
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-       register_early_suspend(&mtkfb_early_suspend_handler);
-#endif
-
     DBG_Init();
 //#ifdef MTK_DISP_CONFIG_SUPPORT
     ConfigPara_Init();//In order to Trigger Display Customization Tool..
@@ -3222,10 +3195,6 @@ static void __exit mtkfb_cleanup(void)
     MSG_FUNC_ENTER();
 
     platform_driver_unregister(&mtkfb_driver);
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-    unregister_early_suspend(&mtkfb_early_suspend_handler);
-#endif
 
     kthread_stop(screen_update_task);
     if(esd_recovery_task)
